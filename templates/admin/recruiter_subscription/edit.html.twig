@@ -1,0 +1,47 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Modifier l'abonnement recruteur{% endblock %}
+
+{% block content_title %}Modifier l'abonnement recruteur{% endblock %}
+
+{% block page_actions %}
+    <div class="btn-group" role="group">
+        <a href="{{ path('admin_recruiter_subscription_index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Retour à la liste
+        </a>
+        <a href="{{ path('admin_recruiter_subscription_show', {'id': recruiter_subscription.id}) }}" class="btn btn-info">
+            <i class="fas fa-eye"></i> Voir
+        </a>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Informations de l'abonnement</h5>
+                </div>
+                <div class="card-body">
+                    {{ include('admin/_form.html.twig', {
+                        'form': form,
+                        'cancel_path': path('admin_recruiter_subscription_show', {'id': recruiter_subscription.id})
+                    }) }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">Zone de danger</h5>
+                </div>
+                <div class="card-body">
+                    {{ include('admin/_delete_form.html.twig', {
+                        form: delete_form
+                    }) }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %} 

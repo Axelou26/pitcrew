@@ -1,0 +1,114 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Offres d'emploi - PITCREW{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                Offres d'emploi
+            </h2>
+        </div>
+        <div class="mt-4 flex md:mt-0 md:ml-4">
+            <a href="{{ path('app_applicant_dashboard') }}"
+               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Retour au tableau de bord
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="mt-8 bg-white shadow rounded-lg p-6">
+        <form method="get" action="{{ path('app_applicant_job_offers') }}" class="space-y-6">
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                <div>
+                    <label for="search" class="block text-sm font-medium text-gray-700">Recherche</label>
+                    <div class="mt-1">
+                        <input type="text" name="search" id="search" value="{{ filters.search }}"
+                               class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                               placeholder="Titre, description...">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="location" class="block text-sm font-medium text-gray-700">Localisation</label>
+                    <div class="mt-1">
+                        <input type="text" name="location" id="location" value="{{ filters.location }}"
+                               class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                               placeholder="Paris, France...">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="contractType" class="block text-sm font-medium text-gray-700">Type de contrat</label>
+                    <select id="contractType" name="contractType"
+                            class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                        <option value="">Tous les types</option>
+                        <option value="CDI" {% if filters.contractType == 'CDI' %}selected{% endif %}>CDI</option>
+                        <option value="CDD" {% if filters.contractType == 'CDD' %}selected{% endif %}>CDD</option>
+                        <option value="Freelance" {% if filters.contractType == 'Freelance' %}selected{% endif %}>Freelance</option>
+                        <option value="Stage" {% if filters.contractType == 'Stage' %}selected{% endif %}>Stage</option>
+                        <option value="Alternance" {% if filters.contractType == 'Alternance' %}selected{% endif %}>Alternance</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex justify-end">
+                <button type="submit"
+                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Filtrer les offres
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Liste des offres -->
+    <div class="mt-8">
+        {% if jobOffers is empty %}
+            <div class="bg-white shadow rounded-lg p-6 text-center">
+                <p class="text-gray-500">Aucune offre ne correspond à vos critères.</p>
+            </div>
+        {% else %}
+            <div class="grid gap-6 lg:grid-cols-2">
+                {% for offer in jobOffers %}
+                    <div class="bg-white shadow rounded-lg p-6">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-medium text-gray-900">{{ offer.title }}</h3>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {{ offer.contractType }}
+                            </span>
+                        </div>
+                        <div class="mt-2">
+                            <p class="text-sm text-gray-500">{{ offer.location }}</p>
+                            {% if offer.salary %}
+                                <p class="mt-1 text-sm text-gray-500">{{ offer.salary|number_format(0, ',', ' ') }} €/an</p>
+                            {% endif %}
+                        </div>
+                        <div class="mt-4">
+                            <p class="text-sm text-gray-600">{{ offer.description|slice(0, 150) }}...</p>
+                        </div>
+                        <div class="mt-6 flex items-center justify-between">
+                            <div class="flex items-center space-x-4">
+                                <a href="{{ path('app_applicant_job_offer_show', {id: offer.id}) }}"
+                                   class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    Voir l'offre
+                                </a>
+                                <a href="{{ path('app_applicant_toggle_favorite', {id: offer.id}) }}"
+                                   class="text-gray-400 hover:text-yellow-500">
+                                    <svg class="h-6 w-6 {% if app.user.favoriteOffers.contains(offer) %}text-yellow-500{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                    </svg>
+                                </a>
+                            </div>
+                            <span class="text-sm text-gray-500">
+                                Publiée le {{ offer.createdAt|date('d/m/Y') }}
+                            </span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

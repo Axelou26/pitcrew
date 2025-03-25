@@ -1,0 +1,44 @@
+{# Template partiel pour afficher une notification individuelle #}
+<div class="notification-item card mb-3 {% if not notification.isRead %}unread{% endif %}" id="notification-{{ notification.id }}">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="notification-icon me-3">
+                {% if notification.type == 'info' %}
+                    <span class="badge bg-info"><i class="bi bi-info-circle"></i></span>
+                {% elseif notification.type == 'success' %}
+                    <span class="badge bg-success"><i class="bi bi-check-circle"></i></span>
+                {% elseif notification.type == 'warning' %}
+                    <span class="badge bg-warning"><i class="bi bi-exclamation-triangle"></i></span>
+                {% elseif notification.type == 'danger' %}
+                    <span class="badge bg-danger"><i class="bi bi-x-circle"></i></span>
+                {% elseif notification.type == 'application' %}
+                    <span class="badge bg-primary"><i class="bi bi-file-earmark-text"></i></span>
+                {% else %}
+                    <span class="badge bg-secondary"><i class="bi bi-bell"></i></span>
+                {% endif %}
+            </div>
+            <div class="notification-content flex-grow-1">
+                <h6 class="notification-title mb-1">{{ notification.title }}</h6>
+                <p class="notification-message mb-2">{{ notification.message }}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">{{ notification.createdAt|ago }}</small>
+                    <div class="notification-actions">
+                        {% if not notification.isRead %}
+                            <button class="btn btn-sm btn-outline-primary mark-as-read" data-id="{{ notification.id }}">
+                                <i class="bi bi-check"></i> Marquer comme lu
+                            </button>
+                        {% endif %}
+                        {% if notification.link %}
+                            <a href="{{ notification.link }}" class="btn btn-sm btn-outline-secondary ms-2">
+                                <i class="bi bi-eye"></i> Voir
+                            </a>
+                        {% endif %}
+                        <button class="btn btn-sm btn-outline-danger ms-2 delete-notification" data-id="{{ notification.id }}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

@@ -1,0 +1,399 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Postuler - {{ offer.title }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .application-form-container {
+            background-color: #f8f9fa;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .application-form-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .application-form-header h1 {
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .application-form-header p {
+            color: var(--light-text);
+            font-size: 1.1rem;
+        }
+        
+        .form-section {
+            background-color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .form-section-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .form-section-title i {
+            margin-right: 0.5rem;
+            font-size: 1.2rem;
+        }
+        
+        .file-upload-container {
+            border: 2px dashed rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload-container:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(225, 6, 0, 0.05);
+        }
+        
+        .file-upload-icon {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        .file-upload-text {
+            color: var(--light-text);
+            margin-bottom: 1rem;
+        }
+        
+        .file-upload-button {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload-button:hover {
+            background-color: #c10500;
+        }
+        
+        .file-upload-input {
+            display: none;
+        }
+        
+        .submit-button {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .submit-button:hover {
+            background-color: #c10500;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .offer-card {
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .offer-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .offer-card-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1.5rem;
+        }
+        
+        .offer-card-body {
+            padding: 1.5rem;
+        }
+        
+        .offer-meta {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            color: var(--light-text);
+        }
+        
+        .offer-meta i {
+            margin-right: 0.5rem;
+            color: var(--primary-color);
+        }
+        
+        .skills-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .skill-badge {
+            background-color: rgba(225, 6, 0, 0.1);
+            color: var(--primary-color);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Résumé de l'offre -->
+        <div class="col-lg-4 mb-4">
+            <div class="offer-card sticky-top" style="top: 100px;">
+                <div class="offer-card-header">
+                    <h5 class="mb-1">{{ offer.title }}</h5>
+                    <p class="mb-0">{{ offer.recruiter.company }}</p>
+                </div>
+                <div class="offer-card-body">
+                    <div class="offer-meta">
+                        <i class="bi bi-geo-alt"></i>
+                        <span>{{ offer.location }}</span>
+                    </div>
+                    <div class="offer-meta">
+                        <i class="bi bi-briefcase"></i>
+                        <span>{{ offer.contractType }}</span>
+                    </div>
+                    {% if offer.salary %}
+                        <div class="offer-meta">
+                            <i class="bi bi-currency-euro"></i>
+                            <span>{{ offer.salary|number_format(0, ',', ' ') }} €/an</span>
+                        </div>
+                    {% endif %}
+                    
+                    {% if offer.requiredSkills is not empty %}
+                        <div class="mt-3">
+                            <h6 class="mb-2">Compétences requises :</h6>
+                            <div class="skills-container">
+                                {% for skill in offer.requiredSkills %}
+                                    <span class="skill-badge">{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="mt-4">
+                        <a href="{{ path('app_job_offer_show', {'id': offer.id}) }}" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-arrow-left me-2"></i> Retour à l'offre
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulaire de candidature -->
+        <div class="col-lg-8">
+            <div class="application-form-container">
+                <div class="application-form-header">
+                    <h1>Postuler à cette offre</h1>
+                    <p>Complétez le formulaire ci-dessous pour soumettre votre candidature</p>
+                </div>
+                
+                {{ form_start(form, {'attr': {'class': 'needs-validation'}}) }}
+                    
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="bi bi-file-earmark-text"></i> Lettre de motivation
+                        </h3>
+                        <div class="mb-3">
+                            {{ form_label(form.coverLetter) }}
+                            {{ form_widget(form.coverLetter, {
+                                'attr': {
+                                    'class': 'form-control',
+                                    'rows': 10,
+                                    'placeholder': 'Rédigez votre lettre de motivation...'
+                                }
+                            }) }}
+                            {{ form_errors(form.coverLetter) }}
+                            <small class="form-text text-muted mt-2">
+                                Expliquez votre motivation pour ce poste et mettez en avant vos compétences pertinentes.
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3 class="form-section-title">
+                            <i class="bi bi-file-person"></i> CV et documents
+                        </h3>
+                        <div class="mb-3">
+                            <div class="file-upload-container">
+                                <div class="file-upload-icon">
+                                    <i class="bi bi-file-earmark-person"></i>
+                                </div>
+                                <div class="file-upload-text">
+                                    Téléchargez votre CV au format PDF <span class="text-danger">*</span>
+                                </div>
+                                <label for="{{ form.resume.vars.id }}" class="file-upload-button">
+                                    <i class="bi bi-upload me-2"></i> Parcourir
+                                </label>
+                                {{ form_widget(form.resume, {
+                                    'attr': {
+                                        'class': 'file-upload-input',
+                                        'accept': 'application/pdf'
+                                    }
+                                }) }}
+                                <div class="selected-file-resume mt-3 text-muted"></div>
+                            </div>
+                            {{ form_errors(form.resume) }}
+                            <small class="form-text text-muted mt-2">
+                                Format accepté : PDF uniquement. Taille maximale : 5 Mo. <span class="text-danger fw-bold">Obligatoire</span>
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="file-upload-container">
+                                <div class="file-upload-icon">
+                                    <i class="bi bi-file-earmark-plus"></i>
+                                </div>
+                                <div class="file-upload-text">
+                                    Téléchargez des documents complémentaires (optionnel)
+                                </div>
+                                <label for="{{ form.additionalDocuments.vars.id }}" class="file-upload-button">
+                                    <i class="bi bi-upload me-2"></i> Parcourir
+                                </label>
+                                {{ form_widget(form.additionalDocuments, {'attr': {'class': 'file-upload-input'}}) }}
+                                <div class="selected-files-additional mt-3 text-muted"></div>
+                            </div>
+                            {{ form_errors(form.additionalDocuments) }}
+                            <small class="form-text text-muted mt-2">
+                                Formats acceptés : PDF uniquement. Taille maximale : 5 Mo par fichier. Maximum 5 fichiers.
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary submit-button">
+                            <i class="bi bi-send me-2"></i> Envoyer ma candidature
+                        </button>
+                    </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const coverLetterInput = document.getElementById('{{ form.coverLetter.vars.id }}');
+            const resumeInput = document.getElementById('{{ form.resume.vars.id }}');
+            const additionalInput = document.getElementById('{{ form.additionalDocuments.vars.id }}');
+            
+            // Fonction pour vérifier le type de fichier
+            function isValidPDF(file) {
+                return file.type === 'application/pdf';
+            }
+
+            // Fonction pour afficher une erreur
+            function showError(message) {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-danger mt-3';
+                alertDiv.textContent = message;
+                form.insertBefore(alertDiv, form.firstChild);
+                setTimeout(() => alertDiv.remove(), 5000);
+            }
+            
+            if (resumeInput) {
+                resumeInput.addEventListener('change', function() {
+                    if (this.files && this.files.length > 0) {
+                        const file = this.files[0];
+                        if (!isValidPDF(file)) {
+                            showError('Le CV doit être au format PDF');
+                            this.value = '';
+                            document.querySelector('.selected-file-resume').innerHTML = '';
+                            return;
+                        }
+                        const fileName = file.name;
+                        document.querySelector('.selected-file-resume').innerHTML = 
+                            '<i class="bi bi-check-circle-fill text-success me-2"></i>' + fileName;
+                    }
+                });
+            }
+            
+            if (additionalInput) {
+                additionalInput.addEventListener('change', function() {
+                    const files = Array.from(this.files);
+                    let hasInvalidFile = false;
+                    
+                    if (files.length > 5) {
+                        showError('Vous ne pouvez pas télécharger plus de 5 documents');
+                        this.value = '';
+                        document.querySelector('.selected-files-additional').innerHTML = '';
+                        return;
+                    }
+                    
+                    files.forEach(file => {
+                        if (!isValidPDF(file)) {
+                            hasInvalidFile = true;
+                        }
+                    });
+                    
+                    if (hasInvalidFile) {
+                        showError('Tous les documents doivent être au format PDF');
+                        this.value = '';
+                        document.querySelector('.selected-files-additional').innerHTML = '';
+                        return;
+                    }
+                    
+                    if (files.length > 0) {
+                        let html = '<ul class="list-unstyled mb-0">';
+                        files.forEach(file => {
+                            html += '<li><i class="bi bi-check-circle-fill text-success me-2"></i>' + file.name + '</li>';
+                        });
+                        html += '</ul>';
+                        document.querySelector('.selected-files-additional').innerHTML = html;
+                    }
+                });
+            }
+            
+            // Validation du formulaire avant soumission
+            form.addEventListener('submit', function(event) {
+                event.preventDefault(); // Empêcher la soumission par défaut
+                
+                let isValid = true;
+                let errorMessages = [];
+                
+                // Vérifier la lettre de motivation
+                if (!coverLetterInput.value.trim()) {
+                    isValid = false;
+                    errorMessages.push('La lettre de motivation est obligatoire');
+                }
+                
+                if (!isValid) {
+                    errorMessages.forEach(message => showError(message));
+                } else {
+                    form.submit(); // Soumettre le formulaire si tout est valide
+                }
+            });
+        });
+    </script>
+{% endblock %} 

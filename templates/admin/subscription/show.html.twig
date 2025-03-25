@@ -1,0 +1,95 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Détails du plan d'abonnement{% endblock %}
+
+{% block content_title %}Détails du plan d'abonnement{% endblock %}
+
+{% block page_actions %}
+    <div class="btn-group" role="group">
+        <a href="{{ path('admin_subscription_index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Retour à la liste
+        </a>
+        <a href="{{ path('admin_subscription_edit', {'id': subscription.id}) }}" class="btn btn-warning">
+            <i class="fas fa-edit"></i> Modifier
+        </a>
+        <form method="post" action="{{ path('admin_subscription_delete', {'id': subscription.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce plan d\'abonnement ?');" style="display: inline-block;">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ subscription.id) }}">
+            <button class="btn btn-danger">
+                <i class="fas fa-trash"></i> Supprimer
+            </button>
+        </form>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Informations du plan</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <th>ID</th>
+                                <td>{{ subscription.id }}</td>
+                            </tr>
+                            <tr>
+                                <th>Nom</th>
+                                <td>{{ subscription.name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Description</th>
+                                <td>{{ subscription.description }}</td>
+                            </tr>
+                            <tr>
+                                <th>Prix</th>
+                                <td>{{ subscription.price|format_currency('EUR') }}</td>
+                            </tr>
+                            <tr>
+                                <th>Durée</th>
+                                <td>{{ subscription.duration ?? 'Non définie' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Nombre max d'offres d'emploi</th>
+                                <td>{{ subscription.maxJobOffers }}</td>
+                            </tr>
+                            <tr>
+                                <th>ID du produit Stripe</th>
+                                <td>{{ subscription.stripeProductId ?? 'Non défini' }}</td>
+                            </tr>
+                            <tr>
+                                <th>ID du prix Stripe</th>
+                                <td>{{ subscription.stripePriceId ?? 'Non défini' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Statut</th>
+                                <td>
+                                    {% if subscription.isActive %}
+                                        <span class="badge bg-success">Actif</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactif</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">Zone de danger</h5>
+                </div>
+                <div class="card-body">
+                    {{ include('admin/_delete_form.html.twig', {
+                        form: delete_form
+                    }) }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %} 

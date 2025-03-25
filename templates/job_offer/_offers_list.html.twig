@@ -1,0 +1,48 @@
+{% if offers is empty %}
+    <div class="col-12">
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i> Aucune offre d'emploi ne correspond à vos critères.
+        </div>
+    </div>
+{% else %}
+    {% for offer in offers %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">
+                            <a href="{{ path('app_job_offer_show', {'id': offer.id}) }}" class="text-decoration-none">
+                                {{ offer.title }}
+                            </a>
+                        </h5>
+                        {% if offer.salary %}
+                            <span class="badge bg-success">{{ offer.salary|number_format(0, ',', ' ') }} €/an</span>
+                        {% endif %}
+                    </div>
+                    <h6 class="card-subtitle mb-2 text-muted">{{ offer.recruiter.company }}</h6>
+                    <p class="card-text text-truncate">{{ offer.description }}</p>
+                    <div class="d-flex gap-2 mb-3">
+                        <span class="badge bg-primary">{{ offer.contractType }}</span>
+                        <span class="badge bg-secondary">{{ offer.location }}</span>
+                    </div>
+                    <div class="d-flex flex-wrap gap-1 mb-3">
+                        {% for skill in offer.requiredSkills|slice(0, 3) %}
+                            <span class="badge bg-light text-dark">{{ skill }}</span>
+                        {% endfor %}
+                        {% if offer.requiredSkills|length > 3 %}
+                            <span class="badge bg-light text-dark">+{{ offer.requiredSkills|length - 3 }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="bi bi-clock me-1"></i> {{ offer.createdAt|ago }}
+                        </small>
+                        <a href="{{ path('app_job_offer_show', {'id': offer.id}) }}" class="btn btn-outline-primary btn-sm">
+                            Voir l'offre
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endif %} 

@@ -1,0 +1,158 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ jobOffer.id ? 'Modifier une offre' : 'Nouvelle offre' }} - PITCREW{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .collection-item {
+            position: relative;
+            padding-right: 2rem;
+        }
+        .collection-item .remove-item {
+            position: absolute;
+            right: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                {{ jobOffer.id ? 'Modifier une offre' : 'Nouvelle offre' }}
+            </h2>
+        </div>
+        <div class="mt-4 flex md:mt-0 md:ml-4">
+            <a href="{{ path('app_recruiter_dashboard') }}"
+               class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Retour au tableau de bord
+            </a>
+        </div>
+    </div>
+
+    <div class="mt-8">
+        <div class="md:grid md:grid-cols-3 md:gap-6">
+            <div class="md:col-span-1">
+                <div class="px-4 sm:px-0">
+                    <h3 class="text-lg font-medium leading-6 text-gray-900">Informations de l'offre</h3>
+                    <p class="mt-1 text-sm text-gray-600">
+                        Remplissez les informations ci-contre pour créer une nouvelle offre d'emploi.
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-5 md:mt-0 md:col-span-2">
+                <div class="bg-white shadow rounded-lg">
+                    {{ form_start(form, {'attr': {'class': 'space-y-6 p-6'}}) }}
+                        <div class="grid grid-cols-6 gap-6">
+                            <div class="col-span-6">
+                                {{ form_label(form.title, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                                {{ form_widget(form.title, {'attr': {'class': 'mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md'}}) }}
+                                {{ form_errors(form.title) }}
+                            </div>
+
+                            <div class="col-span-6">
+                                {{ form_label(form.description, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                                {{ form_widget(form.description, {'attr': {'class': 'mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md'}}) }}
+                                {{ form_errors(form.description) }}
+                            </div>
+
+                            <div class="col-span-6 sm:col-span-3">
+                                {{ form_label(form.location, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                                {{ form_widget(form.location, {'attr': {'class': 'mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md'}}) }}
+                                {{ form_errors(form.location) }}
+                            </div>
+
+                            <div class="col-span-6 sm:col-span-3">
+                                {{ form_label(form.contractType, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                                {{ form_widget(form.contractType, {'attr': {'class': 'mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md'}}) }}
+                                {{ form_errors(form.contractType) }}
+                            </div>
+
+                            <div class="col-span-6 sm:col-span-3">
+                                {{ form_label(form.salary, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                                {{ form_widget(form.salary, {'attr': {'class': 'mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md'}}) }}
+                                {{ form_errors(form.salary) }}
+                            </div>
+
+                            <div class="col-span-6 sm:col-span-3">
+                                {{ form_label(form.expiresAt, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                                {{ form_widget(form.expiresAt, {'attr': {'class': 'mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md'}}) }}
+                                {{ form_errors(form.expiresAt) }}
+                            </div>
+
+                            <div class="col-span-6" id="skills-collection">
+                                {{ form_label(form.requiredSkills, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700'}}) }}
+                                <div class="mt-1 space-y-2" data-prototype="{{ form_widget(form.requiredSkills.vars.prototype)|e('html_attr') }}">
+                                    {% for skill in form.requiredSkills %}
+                                        <div class="collection-item flex">
+                                            {{ form_widget(skill, {'attr': {'class': 'focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md'}}) }}
+                                            <button type="button" class="remove-item ml-2 text-red-600 hover:text-red-800">
+                                                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                <button type="button" class="add-skill-btn mt-2 inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    Ajouter une compétence
+                                </button>
+                                {{ form_errors(form.requiredSkills) }}
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="submit"
+                                    class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                {{ jobOffer.id ? 'Mettre à jour' : 'Créer l\'offre' }}
+                            </button>
+                        </div>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const skillsCollection = document.querySelector('#skills-collection');
+            const addButton = skillsCollection.querySelector('.add-skill-btn');
+            const container = skillsCollection.querySelector('[data-prototype]');
+            let index = container.children.length;
+
+            addButton.addEventListener('click', function() {
+                const prototype = container.dataset.prototype.replace(/__name__/g, index);
+                const div = document.createElement('div');
+                div.className = 'collection-item flex mt-2';
+                div.innerHTML = prototype + `
+                    <button type="button" class="remove-item ml-2 text-red-600 hover:text-red-800">
+                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                        </svg>
+                    </button>
+                `;
+                
+                const input = div.querySelector('input');
+                input.classList.add('focus:ring-blue-500', 'focus:border-blue-500', 'block', 'w-full', 'shadow-sm', 'sm:text-sm', 'border-gray-300', 'rounded-md');
+                
+                container.appendChild(div);
+                index++;
+            });
+
+            container.addEventListener('click', function(e) {
+                if (e.target.closest('.remove-item')) {
+                    e.target.closest('.collection-item').remove();
+                }
+            });
+        });
+    </script>
+{% endblock %} 

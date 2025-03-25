@@ -1,0 +1,298 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Facture - {{ subscription.name }}{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .invoice-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 5px 30px rgba(0, 0, 0, 0.05);
+        }
+        
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .invoice-logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .invoice-info {
+            text-align: right;
+        }
+        
+        .invoice-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+        
+        .invoice-number {
+            font-size: 1rem;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+        }
+        
+        .invoice-date {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .invoice-parties {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+        
+        .invoice-from, .invoice-to {
+            flex: 1;
+        }
+        
+        .invoice-from h5, .invoice-to h5 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: #495057;
+        }
+        
+        .invoice-address {
+            font-size: 0.9rem;
+            color: #6c757d;
+            line-height: 1.5;
+        }
+        
+        .invoice-items {
+            margin-bottom: 2rem;
+        }
+        
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .invoice-table th {
+            background-color: #f8f9fa;
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .invoice-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #dee2e6;
+            color: #6c757d;
+        }
+        
+        .invoice-table .text-right {
+            text-align: right;
+        }
+        
+        .invoice-total {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 2rem;
+        }
+        
+        .invoice-total-table {
+            width: 300px;
+        }
+        
+        .invoice-total-table td {
+            padding: 0.5rem 0;
+        }
+        
+        .invoice-total-table .total-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .invoice-total-table .total-value {
+            text-align: right;
+            font-weight: 600;
+        }
+        
+        .invoice-total-table .grand-total {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .invoice-notes {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        .invoice-footer {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+        }
+        
+        .btn-print {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-print:hover {
+            background-color: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .btn-download {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-download:hover {
+            background-color: #c10500;
+            transform: translateY(-2px);
+        }
+        
+        @media print {
+            body {
+                background-color: white;
+            }
+            
+            .invoice-container {
+                box-shadow: none;
+                margin: 0;
+                padding: 0;
+            }
+            
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container">
+    <div class="invoice-container">
+        <div class="invoice-header">
+            <div class="invoice-logo">
+                <i class="bi bi-tools me-2"></i>PitCrew
+            </div>
+            <div class="invoice-info">
+                <div class="invoice-title">FACTURE</div>
+                <div class="invoice-number">N° {{ invoice_number }}</div>
+                <div class="invoice-date">Date: {{ invoice_date|date('d/m/Y') }}</div>
+            </div>
+        </div>
+        
+        <div class="invoice-parties">
+            <div class="invoice-from">
+                <h5>ÉMETTEUR</h5>
+                <div class="invoice-address">
+                    <strong>PitCrew SAS</strong><br>
+                    123 Avenue de la F1<br>
+                    75008 Paris, France<br>
+                    Email: contact@pitcrew.fr<br>
+                    Tél: +33 1 23 45 67 89<br>
+                    SIRET: 123 456 789 00012
+                </div>
+            </div>
+            <div class="invoice-to">
+                <h5>DESTINATAIRE</h5>
+                <div class="invoice-address">
+                    <strong>{{ user.company }}</strong><br>
+                    {% if user.address %}{{ user.address }}<br>{% endif %}
+                    Email: {{ user.email }}<br>
+                    {% if user.phone %}Tél: {{ user.phone }}<br>{% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="invoice-items">
+            <table class="invoice-table">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Période</th>
+                        <th class="text-right">Prix unitaire</th>
+                        <th class="text-right">Quantité</th>
+                        <th class="text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Abonnement {{ subscription.name }}</td>
+                        <td>{{ start_date|date('d/m/Y') }} - {{ end_date|date('d/m/Y') }}</td>
+                        <td class="text-right">{{ (subscription.price * 0.8)|round(2) }}€</td>
+                        <td class="text-right">1</td>
+                        <td class="text-right">{{ (subscription.price * 0.8)|round(2) }}€</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="invoice-total">
+            <table class="invoice-total-table">
+                <tr>
+                    <td class="total-label">Sous-total</td>
+                    <td class="total-value">{{ (subscription.price * 0.8)|round(2) }}€</td>
+                </tr>
+                <tr>
+                    <td class="total-label">TVA (20%)</td>
+                    <td class="total-value">{{ (subscription.price * 0.2)|round(2) }}€</td>
+                </tr>
+                <tr>
+                    <td class="total-label">Total</td>
+                    <td class="total-value grand-total">{{ subscription.price }}€</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="invoice-notes">
+            <strong>Remarques:</strong><br>
+            Merci pour votre confiance. Cet abonnement sera automatiquement renouvelé à la fin de la période, sauf annulation de votre part.
+        </div>
+        
+        <div class="invoice-footer">
+            <p>PitCrew SAS - SIRET: 123 456 789 00012 - TVA: FR12 123 456 789</p>
+            <p>Paiement effectué par carte bancaire le {{ payment_date|date('d/m/Y') }}</p>
+        </div>
+        
+        <div class="text-center mt-4 no-print">
+            <button class="btn btn-print me-2" onclick="window.print()">
+                <i class="bi bi-printer me-2"></i> Imprimer
+            </button>
+            <a href="#" class="btn btn-download">
+                <i class="bi bi-download me-2"></i> Télécharger PDF
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

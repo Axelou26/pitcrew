@@ -1,0 +1,185 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ post.title }}{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Post principal -->
+            <div class="card mb-4">
+                {% if post.image %}
+                    <img src="{{ asset('uploads/posts/' ~ post.image) }}" 
+                         class="card-img-top" 
+                         alt="Image du post"
+                         style="max-height: 500px; object-fit: cover;">
+                {% endif %}
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-4">
+                        {% if post.author.profilePicture %}
+                            <img src="{{ asset('uploads/profile_pictures/' ~ post.author.profilePicture) }}" 
+                                 class="rounded-circle me-3"
+                                 alt="{{ post.author.fullName }}"
+                                 style="width: 60px; height: 60px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-3"
+                                 style="width: 60px; height: 60px;">
+                                <i class="bi bi-person fs-3 text-muted"></i>
+                            </div>
+                        {% endif %}
+                        <div>
+                            <h6 class="mb-1">{{ post.author.fullName }}</h6>
+                            <p class="text-muted mb-0">
+                                {{ post.createdAt|date('d/m/Y à H:i') }}
+                                {% if post.author.company %}
+                                    • {{ post.author.company }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <h1 class="card-title h3 mb-3">{{ post.title }}</h1>
+                    <p class="card-text fs-5">{{ post.content|nl2br }}</p>
+
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div>
+                            <a href="{{ path('app_post_like', {'id': post.id}) }}" class="btn btn-outline-primary me-2">
+                                {% if app.user and post.isLikedByUser(app.user) %}
+                                    <i class="bi bi-hand-thumbs-up-fill me-1"></i> J'aime ({{ post.likesCount }})
+                                {% else %}
+                                    <i class="bi bi-hand-thumbs-up me-1"></i> J'aime ({{ post.likesCount }})
+                                {% endif %}
+                            </a>
+                            <a href="#comments" class="btn btn-outline-secondary me-2">
+                                <i class="bi bi-chat-text me-1"></i> Commentaires ({{ post.commentsCount }})
+                            </a>
+                            <a href="{{ path('app_post_share', {'id': post.id}) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-share me-1"></i> Partager
+                            </a>
+                        </div>
+                        {% if post.author == app.user %}
+                            <div>
+                                <a href="{{ path('app_post_edit', {'id': post.id}) }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-pencil me-1"></i> Modifier
+                                </a>
+                                <form action="{{ path('app_post_delete', {'id': post.id}) }}" method="post" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce post ?')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ post.id) }}">
+                                    <button class="btn btn-outline-danger">
+                                        <i class="bi bi-trash me-1"></i> Supprimer
+                                    </button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ path('app_home') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Retour
+                    </a>
+                </div>
+            </div>
+
+            <!-- Zone de commentaires -->
+            <div id="comments" class="card mb-4">
+                <div class="card-header bg-white py-3">
+                    <h4 class="mb-0">Commentaires ({{ post.commentsCount }})</h4>
+                </div>
+                
+                <!-- Formulaire d'ajout de commentaire -->
+                {% if app.user %}
+                    <div class="card-body border-bottom">
+                        {{ form_start(commentForm) }}
+                            <div class="mb-0">
+                                {{ form_widget(commentForm.content, {'attr': {'rows': 3, 'class': 'form-control', 'placeholder': 'Écrivez votre commentaire...'}}) }}
+                                {{ form_errors(commentForm.content) }}
+                            </div>
+                            <div class="d-flex justify-content-end mt-3">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-send me-1"></i> Publier
+                                </button>
+                            </div>
+                        {{ form_end(commentForm) }}
+                    </div>
+                {% else %}
+                    <div class="card-body border-bottom text-center py-4">
+                        <p class="mb-3 text-muted">Connectez-vous pour laisser un commentaire</p>
+                        <a href="{{ path('app_login') }}" class="btn btn-primary">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Connexion
+                        </a>
+                    </div>
+                {% endif %}
+                
+                <!-- Liste des commentaires -->
+                <div class="list-group list-group-flush">
+                    {% if comments is empty %}
+                        <div class="list-group-item text-center py-4">
+                            <i class="bi bi-chat-text text-muted fs-4 mb-2"></i>
+                            <p class="text-muted mb-0">Aucun commentaire pour le moment</p>
+                        </div>
+                    {% else %}
+                        {% for comment in comments %}
+                            <div class="list-group-item">
+                                <div class="d-flex mb-2">
+                                    {% if comment.author.profilePicture %}
+                                        <img src="{{ asset('uploads/profile_pictures/' ~ comment.author.profilePicture) }}" 
+                                             class="rounded-circle me-2"
+                                             alt="{{ comment.author.fullName }}"
+                                             style="width: 40px; height: 40px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-2"
+                                             style="width: 40px; height: 40px;">
+                                            <i class="bi bi-person text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">{{ comment.author.fullName }}</h6>
+                                            <small class="text-muted">{{ comment.createdAt|date('d/m/Y à H:i') }}</small>
+                                        </div>
+                                        <p class="mb-1 mt-1">{{ comment.content|nl2br }}</p>
+                                        {% if app.user %}
+                                            <div class="mt-2">
+                                                <a href="{{ path('app_post_comment_reply', {'id': comment.id}) }}" class="btn btn-sm btn-light">
+                                                    <i class="bi bi-reply me-1"></i> Répondre
+                                                </a>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <!-- Réponses aux commentaires -->
+                                {% if comment.replies|length > 0 %}
+                                    <div class="ms-5 mt-3">
+                                        {% for reply in comment.replies %}
+                                            <div class="d-flex mb-3">
+                                                {% if reply.author.profilePicture %}
+                                                    <img src="{{ asset('uploads/profile_pictures/' ~ reply.author.profilePicture) }}" 
+                                                         class="rounded-circle me-2"
+                                                         alt="{{ reply.author.fullName }}"
+                                                         style="width: 32px; height: 32px; object-fit: cover;">
+                                                {% else %}
+                                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-2"
+                                                         style="width: 32px; height: 32px;">
+                                                        <i class="bi bi-person text-muted small"></i>
+                                                    </div>
+                                                {% endif %}
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <h6 class="mb-0 fs-6">{{ reply.author.fullName }}</h6>
+                                                        <small class="text-muted">{{ reply.createdAt|date('d/m/Y à H:i') }}</small>
+                                                    </div>
+                                                    <p class="mb-0 mt-1 small">{{ reply.content|nl2br }}</p>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

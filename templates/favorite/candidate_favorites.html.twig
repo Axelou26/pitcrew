@@ -1,0 +1,115 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes offres favorites{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <h1 class="mb-4">Mes offres favorites</h1>
+
+    {% for flash_error in app.flashes('error') %}
+        <div class="alert alert-danger" role="alert">{{ flash_error }}</div>
+    {% endfor %}
+    
+    {% for flash_success in app.flashes('success') %}
+        <div class="alert alert-success" role="alert">{{ flash_success }}</div>
+    {% endfor %}
+
+    {% if favorites is empty %}
+        <div class="alert alert-info">
+            <p class="mb-0">Vous n'avez pas encore d'offres en favoris.</p>
+            <p class="mb-0">Explorez les <a href="{{ path('app_job_offer_index') }}" class="alert-link">offres d'emploi</a> pour en ajouter à vos favoris.</p>
+        </div>
+    {% else %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for favorite in favorites %}
+                {% set jobOffer = favorite.jobOffer %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="card-title mb-0">
+                                    <a href="{{ path('app_job_offer_show', {'id': jobOffer.id}) }}" class="text-decoration-none text-dark">
+                                        {{ jobOffer.title }}
+                                    </a>
+                                </h5>
+                                <button class="btn btn-sm btn-outline-danger favorite-toggle" 
+                                        data-url="{{ path('app_favorites_toggle_job_offer', {'id': jobOffer.id}) }}"
+                                        title="Retirer des favoris">
+                                    <i class="bi bi-star-fill"></i>
+                                </button>
+                            </div>
+                            
+                            <h6 class="card-subtitle mb-2 text-muted">{{ jobOffer.recruiter.company }}</h6>
+                            
+                            <div class="mb-3">
+                                <span class="badge bg-primary">{{ jobOffer.contractType }}</span>
+                                <span class="badge bg-secondary">{{ jobOffer.location }}</span>
+                                {% if jobOffer.salary %}
+                                    <span class="badge bg-success">{{ jobOffer.salary }} €</span>
+                                {% endif %}
+                            </div>
+                            
+                            <p class="card-text">{{ jobOffer.description|striptags|u.truncate(150, '...') }}</p>
+                        </div>
+                        <div class="card-footer bg-white border-top-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Ajouté le {{ favorite.createdAt|date('d/m/Y') }}</small>
+                                <a href="{{ path('app_job_offer_show', {'id': jobOffer.id}) }}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-eye me-1"></i> Voir détails
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.favorite-toggle').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    const url = this.getAttribute('data-url');
+                    const card = this.closest('.col');
+                    
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Animation de suppression
+                            card.style.transition = 'opacity 0.3s, transform 0.3s';
+                            card.style.opacity = '0';
+                            card.style.transform = 'scale(0.9)';
+                            
+                            setTimeout(() => {
+                                card.remove();
+                                
+                                // Afficher un message si plus aucune offre
+                                const remainingCards = document.querySelectorAll('.col');
+                                if (remainingCards.length === 0) {
+                                    const container = document.querySelector('.row');
+                                    container.parentNode.innerHTML = `
+                                        <div class="alert alert-info">
+                                            <p class="mb-0">Vous n'avez pas encore d'offres en favoris.</p>
+                                            <p class="mb-0">Explorez les <a href="{{ path('app_job_offer_index') }}" class="alert-link">offres d'emploi</a> pour en ajouter à vos favoris.</p>
+                                        </div>
+                                    `;
+                                }
+                            }, 300);
+                        }
+                    })
+                    .catch(error => console.error('Erreur:', error));
+                });
+            });
+        });
+    </script>
+{% endblock %} 

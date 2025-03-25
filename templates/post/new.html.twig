@@ -1,0 +1,51 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Créer un post{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h1 class="h3 mb-0">Créer un post</h1>
+                </div>
+                <div class="card-body">
+                    {{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate', 'enctype': 'multipart/form-data'}}) }}
+                        <div class="mb-3">
+                            {{ form_label(form.title) }}
+                            {{ form_widget(form.title) }}
+                            <div class="invalid-feedback">
+                                {{ form_errors(form.title) }}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            {{ form_label(form.content) }}
+                            {{ form_widget(form.content) }}
+                            <div class="invalid-feedback">
+                                {{ form_errors(form.content) }}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            {{ form_label(form.imageFile) }}
+                            {{ form_widget(form.imageFile) }}
+                            <div class="invalid-feedback">
+                                {{ form_errors(form.imageFile) }}
+                            </div>
+                            <small class="form-text text-muted">Formats acceptés : JPEG, PNG, GIF. Taille maximale : 5 Mo.</small>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ path('app_home') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Retour
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send me-1"></i> Publier
+                            </button>
+                        </div>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

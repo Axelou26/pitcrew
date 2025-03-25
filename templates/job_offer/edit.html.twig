@@ -1,0 +1,317 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier l'offre d'emploi{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .collection-item {
+            position: relative;
+            padding-right: 2rem;
+            transition: all 0.3s ease;
+        }
+        .collection-item:hover {
+            background-color: rgba(225, 6, 0, 0.05);
+            border-radius: 8px;
+        }
+        .collection-item .remove-item {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.2s ease;
+        }
+        .collection-item .remove-item:hover {
+            opacity: 1;
+            color: var(--danger-color) !important;
+        }
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--dark-text);
+        }
+        .form-hint {
+            font-size: 0.875rem;
+            color: var(--light-text);
+            margin-top: 0.25rem;
+        }
+        .ck-editor__editable {
+            min-height: 200px;
+        }
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 0 0 20px 20px;
+        }
+        .btn-add-skill {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: var(--secondary-color);
+            font-weight: 500;
+        }
+        .btn-add-skill:hover {
+            background-color: #d9a31f;
+            border-color: #d9a31f;
+            color: var(--secondary-color);
+        }
+        .status-card {
+            border-left: 4px solid var(--info-color);
+        }
+        .status-icon {
+            color: var(--info-color);
+        }
+        .badge-active {
+            background-color: var(--success-color);
+        }
+        .badge-inactive {
+            background-color: var(--danger-color);
+        }
+        .btn-activate {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+        }
+        .btn-deactivate {
+            background-color: var(--warning-color);
+            border-color: var(--warning-color);
+            color: var(--secondary-color);
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="h2 mb-0">Modifier l'offre d'emploi</h1>
+                <p class="lead mb-0">Mettez à jour les informations de votre offre</p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb justify-content-md-end mb-0">
+                        <li class="breadcrumb-item"><a href="{{ path('app_home') }}" class="text-white text-decoration-none">Accueil</a></li>
+                        <li class="breadcrumb-item"><a href="{{ path('app_job_offer_index') }}" class="text-white text-decoration-none">Offres d'emploi</a></li>
+                        <li class="breadcrumb-item"><a href="{{ path('app_job_offer_show', {'id': offer.id}) }}" class="text-white text-decoration-none">{{ offer.title }}</a></li>
+                        <li class="breadcrumb-item active text-white-50" aria-current="page">Modifier</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <h2 class="h4 mb-2">Informations sur le poste</h2>
+                        <p class="text-muted">Modifiez les détails de votre offre d'emploi</p>
+                    </div>
+
+                    {{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate'}}) }}
+                        <div class="mb-4">
+                            {{ form_label(form.title, 'Titre du poste') }}
+                            {{ form_widget(form.title, {'attr': {'class': 'form-control form-control-lg', 'placeholder': 'Ex: Ingénieur Aérodynamique F1'}}) }}
+                            {{ form_errors(form.title) }}
+                            <div class="form-hint">Choisissez un titre précis et attractif pour attirer les bons candidats</div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                {{ form_label(form.contractType, 'Type de contrat') }}
+                                {{ form_widget(form.contractType) }}
+                                {{ form_errors(form.contractType) }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form_label(form.location, 'Lieu') }}
+                                {{ form_widget(form.location, {'attr': {'placeholder': 'Ex: Paris, France'}}) }}
+                                {{ form_errors(form.location) }}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            {{ form_label(form.description, 'Description du poste') }}
+                            {{ form_widget(form.description) }}
+                            {{ form_errors(form.description) }}
+                            <div class="form-hint">Décrivez les responsabilités, les qualifications requises et les avantages du poste</div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                {{ form_label(form.salary, 'Salaire annuel (€)') }}
+                                {{ form_widget(form.salary, {'attr': {'placeholder': 'Ex: 45000'}}) }}
+                                {{ form_errors(form.salary) }}
+                                <div class="form-hint">Laissez vide si vous préférez ne pas préciser</div>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form_label(form.expiresAt, 'Date d\'expiration') }}
+                                {{ form_widget(form.expiresAt) }}
+                                {{ form_errors(form.expiresAt) }}
+                                <div class="form-hint">Date à laquelle l'offre ne sera plus visible</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                {{ form_label(form.requiredSkills, 'Compétences requises') }}
+                                <button type="button" class="btn btn-sm btn-add-skill" id="add-skill">
+                                    <i class="bi bi-plus-lg me-1"></i> Ajouter
+                                </button>
+                            </div>
+                            <div class="skills-collection p-3 border rounded bg-light" 
+                                 data-prototype="{{ form_widget(form.requiredSkills.vars.prototype)|e('html_attr') }}">
+                                {% if form.requiredSkills|length > 0 %}
+                                    {% for skill in form.requiredSkills %}
+                                        <div class="collection-item mb-2 p-2">
+                                            {{ form_widget(skill, {'attr': {'class': 'form-control', 'placeholder': 'Ex: Aérodynamique, CAO, Analyse de données'}}) }}
+                                            <span class="remove-item text-danger">
+                                                <i class="bi bi-x-circle"></i>
+                                            </span>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="text-center text-muted py-3">
+                                        <i class="bi bi-lightbulb display-6 mb-3 tips-icon"></i>
+                                        <p>Ajoutez les compétences requises pour ce poste</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {{ form_errors(form.requiredSkills) }}
+                            <div class="form-hint">Listez les compétences techniques et personnelles nécessaires pour le poste</div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ path('app_job_offer_show', {'id': offer.id}) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg px-4">
+                                <i class="bi bi-check-lg me-2"></i> Enregistrer les modifications
+                            </button>
+                        </div>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+            
+            <div class="card mt-4 border-0 bg-light status-card">
+                <div class="card-body p-4">
+                    <h3 class="h5 mb-3"><i class="bi bi-info-circle me-2 status-icon"></i> Statut de l'offre</h3>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="me-3">
+                            {% if offer.isActive %}
+                                <span class="badge badge-active p-2"><i class="bi bi-check-circle me-1"></i> Active</span>
+                            {% else %}
+                                <span class="badge badge-inactive p-2"><i class="bi bi-x-circle me-1"></i> Inactive</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <small class="text-muted">
+                                Publiée le {{ offer.createdAt|date('d/m/Y') }}
+                                {% if offer.expiresAt %}
+                                    • Expire le {{ offer.expiresAt|date('d/m/Y') }}
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{{ path('app_job_offer_show', {'id': offer.id}) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye me-1"></i> Voir l'offre
+                        </a>
+                        {% if offer.isActive %}
+                            <a href="#" class="btn btn-sm btn-deactivate">
+                                <i class="bi bi-pause-circle me-1"></i> Désactiver
+                            </a>
+                        {% else %}
+                            <a href="#" class="btn btn-sm btn-activate text-white">
+                                <i class="bi bi-play-circle me-1"></i> Activer
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var collectionHolder = document.querySelector('.skills-collection');
+            var addButton = document.querySelector('#add-skill');
+            
+            // Vérifier s'il y a des compétences existantes
+            function checkEmptyCollection() {
+                if (collectionHolder.children.length === 0 || 
+                    (collectionHolder.children.length === 1 && collectionHolder.children[0].classList.contains('text-center'))) {
+                    collectionHolder.innerHTML = '';
+                }
+            }
+
+            // Ajouter une nouvelle compétence
+            addButton.addEventListener('click', function() {
+                checkEmptyCollection();
+                
+                var prototype = collectionHolder.dataset.prototype;
+                var index = collectionHolder.querySelectorAll('.collection-item').length;
+                var newForm = prototype.replace(/__name__/g, index);
+                
+                var div = document.createElement('div');
+                div.classList.add('collection-item', 'mb-2', 'p-2');
+                div.innerHTML = newForm + '<span class="remove-item text-danger"><i class="bi bi-x-circle"></i></span>';
+                
+                // Ajouter des attributs au champ
+                var input = div.querySelector('input');
+                if (input) {
+                    input.classList.add('form-control');
+                    input.setAttribute('placeholder', 'Ex: Aérodynamique, CAO, Analyse de données');
+                }
+                
+                collectionHolder.appendChild(div);
+
+                // Ajouter l'événement de suppression au nouveau bouton
+                addRemoveButton(div);
+                
+                // Focus sur le nouveau champ
+                div.querySelector('input').focus();
+            });
+
+            // Ajouter les événements de suppression aux boutons existants
+            document.querySelectorAll('.collection-item').forEach(function(item) {
+                addRemoveButton(item);
+            });
+
+            function addRemoveButton(item) {
+                item.querySelector('.remove-item').addEventListener('click', function() {
+                    item.remove();
+                    
+                    // Vérifier si la collection est vide après suppression
+                    if (collectionHolder.querySelectorAll('.collection-item').length === 0) {
+                        collectionHolder.innerHTML = `
+                            <div class="text-center text-muted py-3">
+                                <i class="bi bi-lightbulb display-6 mb-3 tips-icon"></i>
+                                <p>Ajoutez les compétences requises pour ce poste</p>
+                            </div>
+                        `;
+                    }
+                });
+            }
+            
+            // Animation des champs de formulaire
+            document.querySelectorAll('.form-control, .form-select').forEach(function(field) {
+                field.addEventListener('focus', function() {
+                    this.closest('.mb-4')?.classList.add('was-validated');
+                });
+            });
+        });
+    </script>
+{% endblock %} 

@@ -1,0 +1,410 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes offres d'emploi{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+            position: relative;
+            border-radius: 0 0 1rem 1rem;
+        }
+        
+        .offer-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: none;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+            height: 100%;
+        }
+        
+        .offer-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+        
+        .offer-status {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+        }
+        
+        .card-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .no-offers {
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+        }
+        
+        .stats-card {
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            color: white;
+            transition: transform 0.3s ease;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stats-primary {
+            background: linear-gradient(135deg, #4e73df, #224abe);
+        }
+        
+        .stats-success {
+            background: linear-gradient(135deg, #1cc88a, #13855c);
+        }
+        
+        .stats-info {
+            background: linear-gradient(135deg, #36b9cc, #258391);
+        }
+        
+        .stats-warning {
+            background: linear-gradient(135deg, #f6c23e, #dda20a);
+        }
+
+        .nav-pills .nav-link {
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-pills .nav-link.active {
+            background-color: var(--primary-color);
+        }
+        
+        .nav-pills .nav-link:hover:not(.active) {
+            background-color: rgba(225, 6, 0, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .sidebar-sticky {
+            position: sticky;
+            top: 1rem;
+        }
+        
+        .badge-lg {
+            font-size: 0.9rem;
+            padding: 0.5rem 0.75rem;
+        }
+        
+        .location-badge {
+            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
+            background-color: rgba(21, 21, 30, 0.1);
+            border-radius: 20px;
+            color: var(--dark-text);
+        }
+
+        .salary-badge {
+            display: inline-block;
+            font-size: 0.9rem;
+            padding: 0.4rem 0.8rem;
+            background-color: rgba(240, 179, 35, 0.2);
+            border-radius: 20px;
+            color: #d9a31f;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-card {
+                margin-bottom: 1rem;
+            }
+            
+            .page-header {
+                padding: 2rem 0;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <!-- En-tête de page -->
+    <div class="page-header mb-4">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-4 fw-bold mb-2">Mes offres d'emploi</h1>
+                    <p class="lead mb-0">Gérez les offres que vous avez publiées</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <a href="{{ path('app_job_offer_new') }}" class="btn btn-light btn-lg">
+                        <i class="bi bi-plus-circle me-2"></i>Publier une offre
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container py-4">
+        <div class="row">
+            <!-- Sidebar avec navigation -->
+            <div class="col-md-3 mb-4">
+                <div class="sidebar-sticky">
+                    <div class="card mb-4">
+                        <div class="card-body text-center">
+                            {% if app.user.profilePicture %}
+                                <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}" 
+                                     alt="{{ app.user.fullName }}"
+                                     class="rounded-circle mb-3"
+                                     style="width: 100px; height: 100px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                                     style="width: 100px; height: 100px;">
+                                    <i class="bi bi-person display-4 text-muted"></i>
+                                </div>
+                            {% endif %}
+                            <h5 class="card-title">{{ app.user.fullName }}</h5>
+                            {% if app.user.company %}
+                                <p class="card-text text-muted">{{ app.user.company }}</p>
+                            {% endif %}
+                            <a href="{{ path('app_profile_edit') }}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-pencil me-1"></i> Modifier le profil
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="nav flex-column nav-pills mb-4">
+                        <a href="{{ path('app_dashboard') }}" class="nav-link">
+                            <i class="bi bi-speedometer2 me-2"></i> Tableau de bord
+                        </a>
+                        <a href="{{ path('app_dashboard_posts') }}" class="nav-link">
+                            <i class="bi bi-file-text me-2"></i> Mes posts
+                        </a>
+                        <a href="{{ path('app_message_index') }}" class="nav-link">
+                            <i class="bi bi-chat-dots me-2"></i> Messages
+                        </a>
+                        <a href="{{ path('app_dashboard_offers') }}" class="nav-link active">
+                            <i class="bi bi-briefcase me-2"></i> Mes offres
+                        </a>
+                        <a href="{{ path('app_dashboard_applications') }}" class="nav-link">
+                            <i class="bi bi-send me-2"></i> Candidatures
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenu principal -->
+            <div class="col-md-9">
+                <!-- Statistiques -->
+                <div class="row mb-4">
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stats-card stats-primary">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-white-50">Total</h6>
+                                    <h2 class="mb-0">{{ offers|length }}</h2>
+                                </div>
+                                <i class="bi bi-briefcase fs-1 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stats-card stats-success">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-white-50">Actives</h6>
+                                    <h2 class="mb-0">{{ offers|filter(o => o.isActive)|length }}</h2>
+                                </div>
+                                <i class="bi bi-check-circle fs-1 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stats-card stats-warning">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-white-50">Inactives</h6>
+                                    <h2 class="mb-0">{{ offers|filter(o => not o.isActive)|length }}</h2>
+                                </div>
+                                <i class="bi bi-pause-circle fs-1 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stats-card stats-info">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-white-50">Candidatures</h6>
+                                    {% set totalApplications = 0 %}
+                                    {% for offer in offers %}
+                                        {% set totalApplications = totalApplications + offer.applications|length %}
+                                    {% endfor %}
+                                    <h2 class="mb-0">{{ totalApplications }}</h2>
+                                </div>
+                                <i class="bi bi-people fs-1 opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Liste des offres -->
+                {% if offers is empty %}
+                    <div class="no-offers">
+                        <div class="text-center mb-4">
+                            <i class="bi bi-briefcase-fill text-muted" style="font-size: 4rem;"></i>
+                        </div>
+                        <h3 class="h4 mb-3">Vous n'avez pas encore publié d'offres d'emploi</h3>
+                        <p class="mb-4">Commencez par publier votre première offre pour attirer des candidats.</p>
+                        <a href="{{ path('app_job_offer_new') }}" class="btn btn-primary btn-lg">
+                            <i class="bi bi-plus-circle me-2"></i>Publier une offre
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="mb-0">Liste de vos offres ({{ offers|length }})</h5>
+                                <div class="input-group" style="max-width: 300px;">
+                                    <input type="text" class="form-control" id="searchOffers" placeholder="Rechercher...">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                </div>
+                            </div>
+                            
+                            <div class="row" id="offersContainer">
+                                {% for offer in offers %}
+                                    <div class="col-md-6 mb-4 offer-item">
+                                        <div class="card offer-card h-100">
+                                            <div class="card-body position-relative p-4">
+                                                <div class="offer-status">
+                                                    {% if offer.isActive %}
+                                                        <span class="badge bg-success">Active</span>
+                                                    {% else %}
+                                                        <span class="badge bg-danger">Inactive</span>
+                                                    {% endif %}
+                                                </div>
+                                                <h3 class="h5 card-title mb-3">{{ offer.title }}</h3>
+                                                <div class="mb-3">
+                                                    <div class="d-flex flex-wrap gap-2 mb-2">
+                                                        <span class="location-badge">
+                                                            <i class="bi bi-geo-alt me-1"></i>{{ offer.location }}
+                                                        </span>
+                                                        <span class="badge rounded-pill bg-light text-dark">
+                                                            <i class="bi bi-briefcase me-1"></i>{{ offer.contractType }}
+                                                        </span>
+                                                        {% if offer.salary %}
+                                                            <span class="salary-badge">
+                                                                <i class="bi bi-currency-euro me-1"></i>{{ offer.salary|number_format(0, ',', ' ') }} €/an
+                                                            </span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                <p class="card-text text-muted small mb-3">
+                                                    {{ offer.description|striptags|slice(0, 100) }}{% if offer.description|length > 100 %}...{% endif %}
+                                                </p>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <i class="bi bi-clock me-1"></i>
+                                                        <small>Publiée le {{ offer.createdAt|date('d/m/Y') }}</small>
+                                                    </div>
+                                                    <div>
+                                                        <span class="badge {% if offer.applications|length > 0 %}bg-primary{% else %}bg-secondary{% endif %}">
+                                                            <i class="bi bi-people-fill me-1"></i>
+                                                            {{ offer.applications|length }} candidature(s)
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="card-footer bg-white border-top-0 p-3">
+                                                <div class="card-actions">
+                                                    <a href="{{ path('app_job_offer_show', {'id': offer.id}) }}" class="btn btn-outline-primary flex-grow-1">
+                                                        <i class="bi bi-eye me-1"></i>Voir
+                                                    </a>
+                                                    <a href="{{ path('app_job_offer_edit', {'id': offer.id}) }}" class="btn btn-outline-warning flex-grow-1">
+                                                        <i class="bi bi-pencil me-1"></i>Modifier
+                                                    </a>
+                                                    <button type="button" class="btn btn-outline-danger flex-grow-1" data-bs-toggle="modal" data-bs-target="#deleteModal{{ offer.id }}">
+                                                        <i class="bi bi-trash me-1"></i>Supprimer
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Modal de confirmation de suppression -->
+                                    <div class="modal fade" id="deleteModal{{ offer.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ offer.id }}" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="deleteModalLabel{{ offer.id }}">Confirmer la suppression</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    Êtes-vous sûr de vouloir supprimer l'offre <strong>"{{ offer.title }}"</strong> ? Cette action est irréversible.
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                    <form method="post" action="{{ path('app_job_offer_delete', {'id': offer.id}) }}">
+                                                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ offer.id) }}">
+                                                        <button type="submit" class="btn btn-danger">
+                                                            <i class="bi bi-trash me-1"></i>Supprimer
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fonction de recherche en temps réel
+            const searchInput = document.getElementById('searchOffers');
+            const offerItems = document.querySelectorAll('.offer-item');
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    
+                    offerItems.forEach(item => {
+                        const title = item.querySelector('.card-title').textContent.toLowerCase();
+                        const location = item.querySelector('.location-badge').textContent.toLowerCase();
+                        const contractType = item.querySelector('.badge.rounded-pill').textContent.toLowerCase();
+                        const description = item.querySelector('.card-text').textContent.toLowerCase();
+                        
+                        if (title.includes(searchTerm) || location.includes(searchTerm) || 
+                            contractType.includes(searchTerm) || description.includes(searchTerm)) {
+                            item.style.display = '';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                });
+            }
+            
+            // Animation des cartes au survol
+            const statCards = document.querySelectorAll('.stats-card');
+            statCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-10px)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(-5px)';
+                });
+            });
+        });
+    </script>
+{% endblock %} 

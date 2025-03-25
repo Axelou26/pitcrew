@@ -1,0 +1,84 @@
+{% set dashboardLinks = [
+    {
+        'route': 'app_dashboard',
+        'icon': 'fas fa-home',
+        'label': 'Tableau de bord'
+    },
+    {
+        'route': 'app_profile_index',
+        'icon': 'fas fa-user',
+        'label': 'Mon profil'
+    }
+] %}
+
+{% if is_granted('ROLE_RECRUTEUR') %}
+    {% set dashboardLinks = dashboardLinks|merge([
+        {
+            'route': 'app_job_offer_index',
+            'icon': 'fas fa-briefcase',
+            'label': 'Mes offres d\'emploi'
+        },
+        {
+            'route': 'app_job_application_recruiter',
+            'icon': 'fas fa-users',
+            'label': 'Candidatures reçues'
+        },
+        {
+            'route': 'app_subscription_manage',
+            'icon': 'fas fa-credit-card',
+            'label': 'Mon abonnement'
+        }
+    ]) %}
+{% endif %}
+
+{% if is_granted('ROLE_POSTULANT') %}
+    {% set dashboardLinks = dashboardLinks|merge([
+        {
+            'route': 'app_job_application_index',
+            'icon': 'fas fa-paper-plane',
+            'label': 'Mes candidatures'
+        },
+        {
+            'route': 'app_favorite_index',
+            'icon': 'fas fa-bookmark',
+            'label': 'Mes favoris'
+        }
+    ]) %}
+{% endif %}
+
+{% set dashboardLinks = dashboardLinks|merge([
+    {
+        'route': 'app_notification_index',
+        'icon': 'fas fa-bell',
+        'label': 'Notifications'
+    },
+    {
+        'route': 'app_message_index',
+        'icon': 'fas fa-envelope',
+        'label': 'Messages'
+    },
+    {
+        'route': 'app_post_index',
+        'icon': 'fas fa-newspaper',
+        'label': 'Publications'
+    }
+]) %}
+
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Mon espace</h5>
+    </div>
+    <div class="list-group list-group-flush">
+        {% for link in dashboardLinks %}
+            <a href="{{ path(link.route) }}" class="list-group-item list-group-item-action {% if active is defined and active == link.route|split('_')[1] %}active{% endif %}">
+                <i class="{{ link.icon }} me-2"></i> {{ link.label }}
+            </a>
+        {% endfor %}
+        
+        {% if is_granted('ROLE_ADMIN') %}
+            <a href="{{ path('admin_dashboard_index') }}" class="list-group-item list-group-item-action text-primary">
+                <i class="fas fa-cog me-2"></i> Administration
+            </a>
+        {% endif %}
+    </div>
+</div> 

@@ -1,0 +1,98 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Support - PitCrew{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-3">
+            {% include 'recruiter/menu.html.twig' %}
+        </div>
+        
+        <div class="col-md-9">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Support</h4>
+                    <a href="{{ path('app_support_new') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i> Nouvelle demande
+                    </a>
+                </div>
+                
+                <div class="card-body">
+                    {% if hasPrioritySupport %}
+                        <div class="alert alert-info mb-4">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i class="bi bi-star-fill fs-3 text-info"></i>
+                                </div>
+                                <div>
+                                    <h5 class="alert-heading">Support prioritaire activé</h5>
+                                    <p class="mb-0">En tant qu'abonné Business, vos demandes sont traitées en priorité par notre équipe de support.</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if tickets is empty %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-ticket-detailed display-1 text-muted mb-3"></i>
+                            <h5 class="text-muted">Aucune demande de support</h5>
+                            <p class="text-muted mb-4">Vous n'avez pas encore créé de demande de support.</p>
+                            <a href="{{ path('app_support_new') }}" class="btn btn-primary">
+                                Créer ma première demande
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Sujet</th>
+                                        <th>Statut</th>
+                                        <th>Priorité</th>
+                                        <th>Date de création</th>
+                                        <th>Dernière mise à jour</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ticket in tickets %}
+                                        <tr>
+                                            <td>#{{ ticket.id }}</td>
+                                            <td>{{ ticket.subject }}</td>
+                                            <td>
+                                                <span class="badge text-bg-{{ ticket.statusClass }}">
+                                                    {{ ticket.statusLabel }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="badge text-bg-{{ ticket.priorityClass }}">
+                                                    {{ ticket.priorityLabel }}
+                                                </span>
+                                            </td>
+                                            <td>{{ ticket.createdAt|date('d/m/Y H:i') }}</td>
+                                            <td>
+                                                {% if ticket.updatedAt %}
+                                                    {{ ticket.updatedAt|date('d/m/Y H:i') }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{{ path('app_support_show', {'id': ticket.id}) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

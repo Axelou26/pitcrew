@@ -1,0 +1,822 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Accueil{% endblock %}
+
+{% block body %}
+   
+    <!-- Posts Section -->
+    <section class="py-4">
+        <div class="container">
+            <div class="row">
+                <!-- Main Content -->
+                <div class="col-lg-8 mb-4">
+                    {% if app.user %}
+                        <!-- Create Post Card -->
+                        <div class="card shadow-sm hover-shadow-md mb-4 rounded-4 border-0">
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center gap-3">
+                                    <a href="{{ path('app_user_profile', {'id': app.user.id}) }}" class="flex-shrink-0">
+                                        {% if app.user.profilePicture %}
+                                            <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}" 
+                                                 class="rounded-circle border"
+                                                 alt="{{ app.user.fullName }}"
+                                                 style="width: 48px; height: 48px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center border"
+                                                 style="width: 48px; height: 48px;">
+                                                <i class="bi bi-person text-muted"></i>
+                                            </div>
+                                        {% endif %}
+                                    </a>
+                                    <div class="flex-grow-1">
+                                        <a href="{{ path('app_post_new') }}" class="form-control form-control-lg text-start text-muted py-3 bg-light border-0 rounded-pill" style="height: auto;">
+                                            Quoi de neuf, {{ app.user.firstName }} ?
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Filter Bar -->
+                        <div class="d-flex align-items-center mb-4 bg-white p-3 rounded-4 shadow-sm border-0">
+                            <div class="dropdown">
+                                <button class="btn btn-light rounded-pill dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-funnel me-2"></i>Trier par
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item active" href="#"><i class="bi bi-clock me-2"></i>Les plus récents</a></li>
+                                    <li><a class="dropdown-item" href="#"><i class="bi bi-star me-2"></i>Les plus populaires</a></li>
+                                    <li><a class="dropdown-item" href="#"><i class="bi bi-graph-up me-2"></i>Tendances</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="mb-4">
+                            <h2 class="display-6 fw-bold mb-3">Dernières publications</h2>
+                            <p class="text-muted lead">Découvrez les actualités de notre communauté F1</p>
+                        </div>
+                    {% endif %}
+                    
+                    {% if posts is empty %}
+                        <div class="card shadow-sm rounded-4 border-0 p-5 text-center">
+                            <i class="bi bi-newspaper display-1 text-primary opacity-50 mb-4"></i>
+                            <h3 class="h4 fw-bold mb-3">Aucune publication disponible</h3>
+                            <p class="text-muted mb-4">Soyez le premier à partager du contenu avec la communauté</p>
+                            {% if app.user %}
+                                <div class="text-center">
+                                    <a href="{{ path('app_post_new') }}" class="btn btn-primary btn-lg rounded-pill px-5">
+                                        <i class="bi bi-plus-lg me-2"></i>Créer une publication
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        {% for post in posts %}
+                            <div class="card shadow-sm hover-shadow-md mb-4 rounded-4 border-0">
+                                <!-- Post Header -->
+                                <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4">
+                                    <div class="d-flex align-items-center">
+                                        <a href="{{ path('app_user_profile', {'id': post.author.id}) }}" class="me-3">
+                                            {% if post.author.profilePicture %}
+                                                <img src="{{ asset('uploads/profile_pictures/' ~ post.author.profilePicture) }}" 
+                                                     class="rounded-circle border"
+                                                     alt="{{ post.author.fullName }}"
+                                                     style="width: 48px; height: 48px; object-fit: cover;">
+                                            {% else %}
+                                                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center border"
+                                                     style="width: 48px; height: 48px;">
+                                                    <i class="bi bi-person text-muted"></i>
+                                                </div>
+                                            {% endif %}
+                                        </a>
+                                        <div>
+                                            <h6 class="mb-1">
+                                                <a href="{{ path('app_user_profile', {'id': post.author.id}) }}" class="text-dark text-decoration-none fw-bold">
+                                                    {{ post.author.fullName }}
+                                                    {% if post.author.isRecruiter and is_granted('VERIFIED_BADGE', post.author) %}
+                                                        <i class="bi bi-patch-check-fill text-primary ms-1" data-bs-toggle="tooltip" title="Compte vérifié"></i>
+                                                    {% endif %}
+                                                </a>
+                                            </h6>
+                                            <div class="text-muted small d-flex align-items-center">
+                                                {% if post.author.company %}<span class="me-2">{{ post.author.company }}</span>•{% endif %}
+                                                <span class="ms-2">{{ post.createdAt|date('d/m/Y à H:i') }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Post Content -->
+                                <div class="card-body px-4 pt-3">
+                                    {% if post.title %}
+                                        <h5 class="card-title fw-bold mb-3">{{ post.title }}</h5>
+                                    {% endif %}
+                                    <p class="card-text mb-3">
+                                        {{ post.content|striptags|slice(0, 280) }}{% if post.content|length > 280 %}...
+                                            <a href="{{ path('app_post_show', {'id': post.id}) }}" class="text-primary text-decoration-none">voir plus</a>
+                                        {% endif %}
+                                    </p>
+                                    
+                                    {% if post.image %}
+                                        <div class="post-image rounded-4 overflow-hidden mb-3">
+                                            <img src="{{ asset('uploads/posts/' ~ post.image) }}" 
+                                                 class="img-fluid w-100" 
+                                                 alt="{{ post.title }}" 
+                                                 style="max-height: 500px; object-fit: cover;">
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Post Actions -->
+                                    <div class="d-flex align-items-center gap-4 py-2">
+                                        <div class="reaction-container position-relative">
+                                            <button class="btn btn-light rounded-pill px-3 d-flex align-items-center gap-2 btn-like" data-post-id="{{ post.id }}">
+                                                <i class="bi {% if app.user and post.isLikedByUser(app.user) %}
+                                                    {% if post.getUserReaction(app.user) == 'like' %}bi-hand-thumbs-up-fill text-primary{% endif %}
+                                                    {% if post.getUserReaction(app.user) == 'congrats' %}bi-emoji-smile-fill text-warning{% endif %}
+                                                    {% if post.getUserReaction(app.user) == 'interesting' %}bi-lightbulb-fill text-warning{% endif %}
+                                                    {% if post.getUserReaction(app.user) == 'support' %}bi-heart-fill text-danger{% endif %}
+                                                    {% if post.getUserReaction(app.user) == 'encouraging' %}bi-hand-thumbs-up-fill text-success{% endif %}
+                                                    {% else %}bi-hand-thumbs-up{% endif %}"></i>
+                                                <span class="like-count">{{ post.likesCount }}</span>
+                                            </button>
+                                            <div class="reactions-box position-absolute bg-white shadow rounded-pill p-1 d-none">
+                                                <div class="d-flex gap-1">
+                                                    <button class="btn btn-reaction p-1" data-post-id="{{ post.id }}" data-reaction="like" title="J'aime">
+                                                        <i class="bi bi-hand-thumbs-up-fill text-primary fs-5"></i>
+                                                    </button>
+                                                    <button class="btn btn-reaction p-1" data-post-id="{{ post.id }}" data-reaction="congrats" title="Félicitations">
+                                                        <i class="bi bi-emoji-smile-fill text-warning fs-5"></i>
+                                                    </button>
+                                                    <button class="btn btn-reaction p-1" data-post-id="{{ post.id }}" data-reaction="interesting" title="Intéressant">
+                                                        <i class="bi bi-lightbulb-fill text-warning fs-5"></i>
+                                                    </button>
+                                                    <button class="btn btn-reaction p-1" data-post-id="{{ post.id }}" data-reaction="support" title="Soutien">
+                                                        <i class="bi bi-heart-fill text-danger fs-5"></i>
+                                                    </button>
+                                                    <button class="btn btn-reaction p-1" data-post-id="{{ post.id }}" data-reaction="encouraging" title="Encourageant">
+                                                        <i class="bi bi-hand-thumbs-up-fill text-success fs-5"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-light rounded-pill px-3 d-flex align-items-center gap-2 btn-comment" data-post-id="{{ post.id }}">
+                                            <i class="bi bi-chat"></i>
+                                            <span>{{ post.commentsCount }}</span>
+                                        </button>
+                                        <a href="{{ path('app_post_share', {'id': post.id}) }}" class="btn btn-light rounded-pill px-3 d-flex align-items-center gap-2">
+                                            <i class="bi bi-share"></i>
+                                            <span>Partager</span>
+                                        </a>
+                                    </div>
+                                    
+                                    <!-- Comments Section (hidden by default) -->
+                                    <div class="comments-section mt-3 p-3 bg-light rounded-4 d-none" id="comments-section-{{ post.id }}">
+                                        <h6 class="fw-bold mb-3">Commentaires</h6>
+                                        
+                                        <!-- Comments List -->
+                                        <div class="comments-list mb-3" id="comments-list-{{ post.id }}">
+                                            <!-- Comments will be loaded here via AJAX -->
+                                            <div class="text-center">
+                                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                                    <span class="visually-hidden">Chargement...</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Comment Form -->
+                                        {% if app.user %}
+                                            <div class="d-flex gap-2 mt-3">
+                                                <div class="flex-shrink-0">
+                                                    {% if app.user.profilePicture %}
+                                                        <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}" 
+                                                             class="rounded-circle border"
+                                                             alt="{{ app.user.fullName }}"
+                                                             style="width: 32px; height: 32px; object-fit: cover;">
+                                                    {% else %}
+                                                        <div class="bg-white rounded-circle d-flex align-items-center justify-content-center border"
+                                                             style="width: 32px; height: 32px;">
+                                                            <i class="bi bi-person text-muted small"></i>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <form class="comment-form" data-post-id="{{ post.id }}">
+                                                        <div class="input-group">
+                                                            <input type="text" class="form-control form-control-sm rounded-pill-start" 
+                                                                   placeholder="Ajouter un commentaire..." required>
+                                                            <button type="submit" class="btn btn-primary btn-sm rounded-pill-end">
+                                                                <i class="bi bi-send"></i>
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <p class="text-muted small">
+                                                <a href="{{ path('app_login') }}">Connectez-vous</a> pour commenter
+                                            </p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                
+                <!-- Sidebar -->
+                <div class="col-lg-4">
+                    <!-- Profile Card -->
+                    {% if app.user %}
+                        <div class="card shadow-sm rounded-4 border-0 mb-4">
+                            <div class="card-body p-4">
+                                <div class="text-center mb-4">
+                                    {% if app.user.profilePicture %}
+                                        <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}" 
+                                             class="rounded-circle border mb-3"
+                                             alt="{{ app.user.fullName }}"
+                                             style="width: 96px; height: 96px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto border mb-3"
+                                             style="width: 96px; height: 96px;">
+                                            <i class="bi bi-person fs-2 text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                    <h5 class="fw-bold mb-1">{{ app.user.fullName }}</h5>
+                                    <p class="text-muted mb-3">
+                                        {% if app.user.isRecruiter %}
+                                            {{ app.user.company }}
+                                        {% else %}
+                                            {{ app.user.jobTitle|default('') }}
+                                        {% endif %}
+                                    </p>
+                                    
+                                    <a href="{{ path('app_user_profile', {'id': app.user.id}) }}" class="btn btn-primary rounded-pill w-100">
+                                        <i class="bi bi-person-circle me-2"></i>Voir mon profil
+                                    </a>
+                                </div>
+                                
+                                <div class="row g-2 text-center">
+                                    <div class="col-4">
+                                        <div class="p-3 rounded-4 bg-light">
+                                            <h6 class="fw-bold mb-1">{{ app.user.posts|length }}</h6>
+                                            <small class="text-muted">Publications</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="p-3 rounded-4 bg-light">
+                                            <h6 class="fw-bold mb-1">
+                                                {% if app.user.isRecruiter %}
+                                                    0
+                                                {% else %}
+                                                    {{ app.user.friends|default([])|length }}
+                                                {% endif %}
+                                            </h6>
+                                            <small class="text-muted">Amis</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="p-3 rounded-4 bg-light">
+                                            <h6 class="fw-bold mb-1">
+                                                {% if app.user.isRecruiter %}
+                                                    {{ app.user.jobOffers|default([])|length }}
+                                                {% else %}
+                                                    {{ app.user.posts|length }}
+                                                {% endif %}
+                                            </h6>
+                                            <small class="text-muted">
+                                                {% if app.user.isRecruiter %}
+                                                    Offres
+                                                {% else %}
+                                                    Publications
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Suggestions -->
+                    {% if suggestedUsers|length > 0 %}
+                        <div class="card shadow-sm rounded-4 border-0 mb-4">
+                            <div class="card-body p-4">
+                                <h6 class="fw-bold mb-3">Personnes que vous pourriez connaître</h6>
+                                {% for user in suggestedUsers|slice(0, 5) %}
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <a href="{{ path('app_user_profile', {'id': user.id}) }}" class="me-2">
+                                                {% if user.profilePicture %}
+                                                    <img src="{{ asset('uploads/profile_pictures/' ~ user.profilePicture) }}" 
+                                                         class="rounded-circle border"
+                                                         alt="{{ user.fullName }}"
+                                                         style="width: 40px; height: 40px; object-fit: cover;">
+                                                {% else %}
+                                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center border"
+                                                         style="width: 40px; height: 40px;">
+                                                        <i class="bi bi-person text-muted"></i>
+                                                    </div>
+                                                {% endif %}
+                                            </a>
+                                            <div>
+                                                <h6 class="mb-0 fw-semibold">
+                                                    <a href="{{ path('app_user_profile', {'id': user.id}) }}" class="text-dark text-decoration-none">
+                                                        {{ user.fullName }}
+                                                    </a>
+                                                </h6>
+                                                <small class="text-muted">{{ user.jobTitle|default(user.company) }}</small>
+                                            </div>
+                                        </div>
+                                        {% if is_granted('IS_AUTHENTICATED_FULLY') %}
+                                            {% if user.isFriend is defined and user.isFriend %}
+                                                <button class="btn btn-light btn-sm rounded-pill px-3" disabled>
+                                                    <i class="bi bi-person-check me-1"></i>Ami
+                                                </button>
+                                            {% elseif user.hasPendingRequestFrom is defined and user.hasPendingRequestFrom %}
+                                                <button class="btn btn-light btn-sm rounded-pill px-3" disabled>
+                                                    <i class="bi bi-hourglass-split me-1"></i>En attente
+                                                </button>
+                                            {% else %}
+                                                <a href="{{ path('app_friendship_send', {'id': user.id}) }}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                                    <i class="bi bi-person-plus me-1"></i>Ajouter
+                                                </a>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                                {% if suggestedUsers|length > 5 %}
+                                    <a href="{{ path('app_user_suggestions') }}" class="btn btn-light rounded-pill w-100">
+                                        Voir plus
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Trending Hashtags -->
+                    <div class="card shadow-sm rounded-4 border-0 mb-4">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="fw-bold mb-0">Sujets tendance</h6>
+                                <a href="{{ path('app_hashtags_trending') }}" class="text-decoration-none small">
+                                    Voir plus
+                                </a>
+                            </div>
+                            
+                            {% if trendingHashtags is defined and trendingHashtags|length > 0 %}
+                                {% for hashtag in trendingHashtags|slice(0, 5) %}
+                                    <a href="{{ path('app_hashtag_show', {'name': hashtag.name}) }}" class="text-decoration-none">
+                                        <div class="rounded-3 p-3 mb-2 hover-bg-light">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <div class="fw-bold text-primary">#{{ hashtag.name }}</div>
+                                                    <div class="text-muted small">{{ hashtag.usageCount }} publications</div>
+                                                </div>
+                                                <i class="bi bi-hash fs-4 text-muted"></i>
+                                            </div>
+                                        </div>
+                                    </a>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center p-3">
+                                    <i class="bi bi-hash-lg text-muted fs-1 mb-2"></i>
+                                    <p class="text-muted">Aucun hashtag tendance pour le moment</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Stats Section -->
+                    <div class="card shadow-sm rounded-4 border-0 bg-primary text-white">
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold mb-4">PitCrew en chiffres</h6>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <div class="bg-white bg-opacity-10 rounded-4 p-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-circle bg-white p-2 me-3">
+                                                <i class="bi bi-briefcase text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <h3 class="h5 fw-bold mb-0">{{ offers|length }}+</h3>
+                                                <small class="text-white-50">Offres d'emploi</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="bg-white bg-opacity-10 rounded-4 p-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-circle bg-white p-2 me-3">
+                                                <i class="bi bi-building text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <h3 class="h5 fw-bold mb-0">{{ recruiters|length }}+</h3>
+                                                <small class="text-white-50">Entreprises</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="bg-white bg-opacity-10 rounded-4 p-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-circle bg-white p-2 me-3">
+                                                <i class="bi bi-people text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <h3 class="h5 fw-bold mb-0">{{ applicants|length }}+</h3>
+                                                <small class="text-white-50">Candidats</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .hover-shadow-md {
+            transition: box-shadow 0.3s ease;
+        }
+        
+        .hover-shadow-md:hover {
+            box-shadow: 0 .5rem 1rem rgba(0,0,0,.1)!important;
+        }
+        
+        .hover-primary:hover {
+            color: var(--bs-primary);
+            background-color: rgba(var(--bs-primary-rgb), 0.1);
+        }
+        
+        .hover-success:hover {
+            color: var(--bs-success);
+            background-color: rgba(var(--bs-success-rgb), 0.1);
+        }
+        
+        .hover-danger:hover {
+            color: var(--bs-danger);
+            background-color: rgba(var(--bs-danger-rgb), 0.1);
+        }
+        
+        .btn-light {
+            background-color: var(--bs-light);
+            border-color: var(--bs-light);
+        }
+        
+        .bg-light {
+            background-color: var(--bs-light)!important;
+        }
+        
+        /* Styles pour les réactions */
+        .reaction-container {
+            position: relative;
+        }
+        
+        .reactions-box {
+            position: absolute;
+            bottom: 50px;
+            left: 0;
+            z-index: 100;
+            transition: all 0.2s ease;
+            transform-origin: bottom left;
+            padding: 8px !important;
+        }
+        
+        .btn-reaction {
+            transition: transform 0.3s ease;
+            background: transparent;
+            border: none;
+            padding: 10px !important;
+            margin: 0 3px;
+        }
+        
+        .btn-reaction i {
+            font-size: 1.4rem !important;
+        }
+        
+        .btn-reaction:hover {
+            transform: scale(1.3);
+            background: transparent;
+        }
+        
+        .btn-reaction:focus, .btn-reaction:active {
+            box-shadow: none;
+            outline: none;
+            background: transparent;
+        }
+        
+        .reaction-text {
+            font-size: 0.8rem;
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .btn-reaction:hover .reaction-text {
+            opacity: 1;
+        }
+        
+        /* Style pour les hashtags tendance */
+        .hover-bg-light {
+            transition: background-color 0.2s ease;
+        }
+        
+        .hover-bg-light:hover {
+            background-color: var(--bs-light);
+        }
+    </style>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Gestion des boites de réactions
+            document.querySelectorAll('.reaction-container').forEach(container => {
+                const likeButton = container.querySelector('.btn-like');
+                const reactionsBox = container.querySelector('.reactions-box');
+                
+                // Afficher/masquer le menu de réactions au survol/clic
+                if (window.innerWidth > 768) { // Survol pour desktop
+                    let hideTimeout;
+                    
+                    container.addEventListener('mouseenter', () => {
+                        clearTimeout(hideTimeout);
+                        reactionsBox.classList.remove('d-none');
+                    });
+                    
+                    container.addEventListener('mouseleave', () => {
+                        // Ajouter un délai avant de masquer le menu de réactions
+                        hideTimeout = setTimeout(() => {
+                            // Vérifier si la souris n'est pas revenue entre-temps
+                            if (!container.matches(':hover')) {
+                                reactionsBox.classList.add('d-none');
+                            }
+                        }, 1500); // 1,5 secondes de délai
+                    });
+                    
+                    // Garder le menu visible pendant l'interaction
+                    reactionsBox.addEventListener('mouseenter', () => {
+                        clearTimeout(hideTimeout);
+                    });
+                } else { // Clic pour mobile
+                    // Remplacer le clic sur le bouton J'aime par un clic pour ouvrir le menu de réactions
+                    likeButton.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // Cacher tous les autres menus de réactions d'abord
+                        document.querySelectorAll('.reactions-box').forEach(box => {
+                            if (box !== reactionsBox) {
+                                box.classList.add('d-none');
+                            }
+                        });
+                        
+                        // Basculer la visibilité du menu de réactions
+                        if (reactionsBox.classList.contains('d-none')) {
+                            reactionsBox.classList.remove('d-none');
+                            
+                            // Fermer quand on clique ailleurs
+                            setTimeout(() => {
+                                document.addEventListener('click', function closeReactions(event) {
+                                    if (!container.contains(event.target)) {
+                                        reactionsBox.classList.add('d-none');
+                                        document.removeEventListener('click', closeReactions);
+                                    }
+                                });
+                            }, 100);
+                        } else {
+                            reactionsBox.classList.add('d-none');
+                        }
+                    });
+                }
+                
+                // Gestion des clics sur les réactions
+                container.querySelectorAll('.btn-reaction').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const postId = this.getAttribute('data-post-id');
+                        const reaction = this.getAttribute('data-reaction');
+                        const likeButton = container.querySelector('.btn-like');
+                        const likeIcon = likeButton.querySelector('i');
+                        const likeCount = likeButton.querySelector('.like-count');
+                        
+                        // Appeler l'API avec le type de réaction
+                        fetch(`/post/${postId}/like?type=${reaction}`, {
+                            method: 'POST',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            credentials: 'same-origin'
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Mettre à jour l'icône selon la réaction
+                                likeIcon.className = 'bi';
+                                if (data.liked) {
+                                    switch(reaction) {
+                                        case 'like':
+                                            likeIcon.classList.add('bi-hand-thumbs-up-fill', 'text-primary');
+                                            break;
+                                        case 'congrats':
+                                            likeIcon.classList.add('bi-emoji-smile-fill', 'text-warning');
+                                            break;
+                                        case 'interesting':
+                                            likeIcon.classList.add('bi-lightbulb-fill', 'text-warning');
+                                            break;
+                                        case 'support':
+                                            likeIcon.classList.add('bi-heart-fill', 'text-danger');
+                                            break;
+                                        case 'encouraging':
+                                            likeIcon.classList.add('bi-hand-thumbs-up-fill', 'text-success');
+                                            break;
+                                        default:
+                                            likeIcon.classList.add('bi-hand-thumbs-up-fill', 'text-primary');
+                                    }
+                                } else {
+                                    likeIcon.classList.add('bi-heart');
+                                }
+                                
+                                // Mettre à jour le compteur
+                                likeCount.textContent = data.likesCount;
+                                
+                                // Masquer la boîte de réactions
+                                reactionsBox.classList.add('d-none');
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                    });
+                });
+            });
+            
+            // Like functionality simplifiée (juste pour le click direct sur le bouton J'aime)
+            document.querySelectorAll('.btn-like').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    // Sur mobile, on ne fait rien car le clic ouvre le menu de réactions
+                    if (window.innerWidth <= 768) return;
+                    
+                    const postId = this.getAttribute('data-post-id');
+                    const likeIcon = this.querySelector('i');
+                    const likeCount = this.querySelector('.like-count');
+                    
+                    fetch('/post/' + postId + '/like', {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'same-origin'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (data.liked) {
+                                likeIcon.className = 'bi bi-hand-thumbs-up-fill text-primary';
+                            } else {
+                                likeIcon.className = 'bi bi-hand-thumbs-up';
+                            }
+                            likeCount.textContent = data.likesCount;
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                });
+            });
+            
+            // Comment section toggle
+            document.querySelectorAll('.btn-comment').forEach(button => {
+                button.addEventListener('click', function() {
+                    const postId = this.getAttribute('data-post-id');
+                    const commentsSection = document.getElementById('comments-section-' + postId);
+                    
+                    if (commentsSection.classList.contains('d-none')) {
+                        // Show comments section
+                        commentsSection.classList.remove('d-none');
+                        
+                        // Load comments
+                        loadComments(postId);
+                    } else {
+                        // Hide comments section
+                        commentsSection.classList.add('d-none');
+                    }
+                });
+            });
+            
+            // Load comments via AJAX
+            function loadComments(postId) {
+                const commentsList = document.getElementById('comments-list-' + postId);
+                
+                fetch('/post/' + postId + '/comments', {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Clear loading spinner
+                        commentsList.innerHTML = '';
+                        
+                        if (data.comments.length === 0) {
+                            commentsList.innerHTML = '<p class="text-muted small">Aucun commentaire pour le moment.</p>';
+                            return;
+                        }
+                        
+                        // Render comments
+                        data.comments.forEach(comment => {
+                            const commentElement = document.createElement('div');
+                            commentElement.className = 'comment d-flex gap-2 mb-2';
+                            
+                            let profileImg = '';
+                            if (comment.authorProfilePicture) {
+                                profileImg = `<img src="/uploads/profile_pictures/${comment.authorProfilePicture}" 
+                                              class="rounded-circle border" 
+                                              alt="${comment.authorName}" 
+                                              style="width: 32px; height: 32px; object-fit: cover;">`;
+                            } else {
+                                profileImg = `<div class="bg-white rounded-circle d-flex align-items-center justify-content-center border"
+                                              style="width: 32px; height: 32px;">
+                                                <i class="bi bi-person text-muted small"></i>
+                                             </div>`;
+                            }
+                            
+                            commentElement.innerHTML = `
+                                <div class="flex-shrink-0">
+                                    ${profileImg}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="bg-white p-2 rounded-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <a href="/user/${comment.authorId}" class="fw-semibold text-decoration-none text-dark small">
+                                                ${comment.authorName}
+                                            </a>
+                                            <small class="text-muted">${comment.createdAt}</small>
+                                        </div>
+                                        <p class="mb-0 small">${comment.content}</p>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            commentsList.appendChild(commentElement);
+                        });
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+            
+            // Comment form submission
+            document.querySelectorAll('.comment-form').forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const postId = this.getAttribute('data-post-id');
+                    const input = this.querySelector('input');
+                    const content = input.value.trim();
+                    
+                    if (content === '') return;
+                    
+                    fetch('/post/' + postId + '/comment/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({ content: content }),
+                        credentials: 'same-origin'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Clear input
+                            input.value = '';
+                            
+                            // Reload comments
+                            loadComments(postId);
+                            
+                            // Update comment count
+                            const commentCountEl = document.querySelector(`.btn-comment[data-post-id="${postId}"] span`);
+                            commentCountEl.textContent = data.commentsCount;
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                });
+            });
+        });
+    </script>
+{% endblock %} 

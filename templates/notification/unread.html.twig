@@ -1,0 +1,50 @@
+{% extends 'notification/index.html.twig' %}
+
+{% block title %}Notifications non lues{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Filtres</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{{ path('app_notification_index') }}" class="list-group-item list-group-item-action {% if app.request.get('_route') == 'app_notification_index' %}active{% endif %}">
+                        <i class="bi bi-bell me-2"></i> Toutes les notifications
+                        <span class="badge bg-secondary float-end">{{ app.user.notifications|length }}</span>
+                    </a>
+                    <a href="{{ path('app_notification_unread') }}" class="list-group-item list-group-item-action {% if app.request.get('_route') == 'app_notification_unread' %}active{% endif %}">
+                        <i class="bi bi-envelope me-2"></i> Non lues
+                        <span class="badge bg-primary float-end">{{ notifications|length }}</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">Notifications non lues</h2>
+                {% if notifications|length > 0 %}
+                    <button class="btn btn-primary mark-all-as-read">
+                        <i class="bi bi-check-all me-1"></i> Tout marquer comme lu
+                    </button>
+                {% endif %}
+            </div>
+            
+            <div id="notifications-container">
+                {% if notifications is empty %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-bell-slash me-2"></i> Vous n'avez aucune notification non lue.
+                    </div>
+                {% else %}
+                    {% for notification in notifications %}
+                        {% include 'notification/_notification.html.twig' with {'notification': notification} %}
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

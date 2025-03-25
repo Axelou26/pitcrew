@@ -1,0 +1,11 @@
+{{ form_start(form) }}
+    {{ form_widget(form) }}
+    <div class="d-flex justify-content-between mt-3">
+        <button class="btn btn-primary" type="submit">
+            <i class="fas fa-save"></i> {{ button_label|default('Enregistrer') }}
+        </button>
+        <a href="{{ cancel_path }}" class="btn btn-secondary">
+            <i class="fas fa-times"></i> Annuler
+        </a>
+    </div>
+{{ form_end(form) }} 

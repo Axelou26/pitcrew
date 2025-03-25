@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reçu de paiement</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #e10600;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #777;
+        }
+        .button {
+            display: inline-block;
+            background-color: #e10600;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .invoice {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .invoice-header {
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .invoice-details {
+            margin-bottom: 20px;
+        }
+        .invoice-details p {
+            margin: 5px 0;
+        }
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .invoice-table th, .invoice-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .invoice-table th {
+            background-color: #f2f2f2;
+        }
+        .invoice-total {
+            text-align: right;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #e10600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Reçu de paiement</h1>
+        </div>
+        <div class="content">
+            <p>Bonjour {{ user.firstName }},</p>
+            
+            <p>Nous vous remercions pour votre paiement. Voici le reçu de votre abonnement <span class="highlight">{{ subscription.subscription.name }}</span>.</p>
+            
+            <div class="invoice">
+                <div class="invoice-header">
+                    <h2>Facture #{{ subscription.id }}</h2>
+                    <p>Date : {{ subscription.startDate|date('d/m/Y') }}</p>
+                </div>
+                
+                <div class="invoice-details">
+                    <p><strong>Client :</strong> {{ user.fullName }}</p>
+                    <p><strong>Email :</strong> {{ user.email }}</p>
+                    {% if user.company %}<p><strong>Entreprise :</strong> {{ user.company }}</p>{% endif %}
+                </div>
+                
+                <table class="invoice-table">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Période</th>
+                            <th>Prix</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Abonnement {{ subscription.subscription.name }}</td>
+                            <td>{{ subscription.startDate|date('d/m/Y') }} - {{ subscription.endDate|date('d/m/Y') }}</td>
+                            <td>{{ subscription.subscription.price }}€</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="invoice-total">
+                    <p>Total : {{ subscription.subscription.price }}€</p>
+                </div>
+            </div>
+            
+            <p>Vous pouvez télécharger votre facture complète en cliquant sur le bouton ci-dessous :</p>
+            
+            <p style="text-align: center;">
+                <a href="{{ invoiceUrl }}" class="button">Télécharger ma facture</a>
+            </p>
+            
+            <p>Nous vous remercions pour votre confiance et restons à votre disposition pour toute question.</p>
+            
+            <p>Cordialement,<br>L'équipe PitCrew</p>
+        </div>
+        <div class="footer">
+            <p>© {{ "now"|date("Y") }} PitCrew. Tous droits réservés.</p>
+            <p>Si vous avez des questions, contactez-nous à <a href="mailto:contact@pitcrew.fr">contact@pitcrew.fr</a></p>
+        </div>
+    </div>
+</body>
+</html> 

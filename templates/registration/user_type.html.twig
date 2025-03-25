@@ -1,0 +1,164 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Inscription - Type de compte{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .user-type-card {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            background-color: white;
+        }
+        
+        .user-type-header {
+            padding: 3rem 0;
+            background: linear-gradient(135deg, #e31c25 0%, #9c0e14 100%);
+            margin-bottom: 2rem;
+            color: white;
+            text-align: center;
+        }
+        
+        .user-type-option {
+            border: 2px solid #f1f1f1;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .user-type-option:hover {
+            border-color: #e31c25;
+            background-color: rgba(227, 28, 37, 0.05);
+        }
+        
+        .user-type-option.selected {
+            border-color: #e31c25;
+            background-color: rgba(227, 28, 37, 0.05);
+        }
+        
+        .user-type-option label {
+            cursor: pointer;
+            display: block;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .user-type-option p {
+            margin-bottom: 0;
+            color: #666;
+        }
+        
+        .btn-continue {
+            background: linear-gradient(135deg, #e31c25 0%, #9c0e14 100%);
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-continue:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="user-type-header">
+        <div class="container">
+            <h1>Rejoignez PitCrew</h1>
+            <p class="lead">Choisissez le type de compte qui vous correspond</p>
+        </div>
+    </div>
+
+    <div class="container my-5">
+        <div class="user-type-card">
+            {{ form_start(userTypeForm) }}
+            <div class="mb-4">
+                {{ form_label(userTypeForm.userType, null, {'label_attr': {'class': 'form-label fs-4 mb-3'}}) }}
+                
+                <div class="user-type-options">
+                    {% for choice in userTypeForm.userType %}
+                        <div class="user-type-option" data-value="{{ choice.vars.value }}">
+                            <div class="d-flex align-items-start">
+                                <div class="form-check" style="margin-right: 1rem;">
+                                    {{ form_widget(choice, {'attr': {'class': 'form-check-input user-type-radio'}}) }}
+                                </div>
+                                <div>
+                                    <label for="{{ choice.vars.id }}" class="mb-2">
+                                        {% if choice.vars.value == 'ROLE_POSTULANT' %}
+                                            <i class="fas fa-search me-2"></i>
+                                        {% else %}
+                                            <i class="fas fa-building me-2"></i>
+                                        {% endif %}
+                                        {{ choice.vars.label }}
+                                    </label>
+                                    <p>
+                                        {% if choice.vars.value == 'ROLE_POSTULANT' %}
+                                            Créez votre profil pour postuler aux offres et être visible par les recruteurs du monde du sport automobil.
+                                        {% else %}
+                                            Publiez des offres d'emploi et accédez à notre base de talents spécialisés dans le domaine sport automobil.
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                {{ form_errors(userTypeForm.userType) }}
+            </div>
+            
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-continue">Continuer <i class="fas fa-arrow-right ms-2"></i></button>
+            </div>
+            {{ form_end(userTypeForm) }}
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const options = document.querySelectorAll('.user-type-option');
+            const radios = document.querySelectorAll('.user-type-radio');
+            
+            // Marquer l'option sélectionnée
+            function updateSelectedOption() {
+                options.forEach(option => {
+                    option.classList.remove('selected');
+                });
+                
+                radios.forEach(radio => {
+                    if (radio.checked) {
+                        const option = radio.closest('.user-type-option');
+                        if (option) {
+                            option.classList.add('selected');
+                        }
+                    }
+                });
+            }
+            
+            // Ajouter les écouteurs d'événements
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    const radio = this.querySelector('input[type="radio"]');
+                    radio.checked = true;
+                    updateSelectedOption();
+                });
+            });
+            
+            // Initialiser
+            updateSelectedOption();
+        });
+    </script>
+{% endblock %} 

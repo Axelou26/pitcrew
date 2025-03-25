@@ -1,0 +1,155 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes candidatures{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    {% if app.user.profilePicture %}
+                        <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}" 
+                             alt="{{ app.user.fullName }}"
+                             class="rounded-circle mb-3"
+                             style="width: 100px; height: 100px; object-fit: cover;">
+                    {% else %}
+                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                             style="width: 100px; height: 100px;">
+                            <i class="bi bi-person display-4 text-muted"></i>
+                        </div>
+                    {% endif %}
+                    <h5 class="card-title">{{ app.user.fullName }}</h5>
+                    {% if app.user.company %}
+                        <p class="card-text text-muted">{{ app.user.company }}</p>
+                    {% endif %}
+                    <a href="{{ path('app_profile_edit') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-pencil me-1"></i> Modifier le profil
+                    </a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title h6">Navigation</h5>
+                    <div class="list-group list-group-flush">
+                        <a href="{{ path('app_dashboard') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-speedometer2 me-2"></i> Tableau de bord
+                        </a>
+                        <a href="{{ path('app_dashboard_posts') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-file-text me-2"></i> Mes posts
+                        </a>
+                        <a href="{{ path('app_message_index') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-chat-dots me-2"></i> Messages
+                        </a>
+                        {% if is_granted('ROLE_RECRUTEUR') %}
+                            <a href="{{ path('app_dashboard_offers') }}" class="list-group-item list-group-item-action">
+                                <i class="bi bi-briefcase me-2"></i> Mes offres
+                            </a>
+                        {% endif %}
+                        <a href="{{ path('app_dashboard_applications') }}" class="list-group-item list-group-item-action active">
+                            <i class="bi bi-send me-2"></i> Candidatures
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        {% if is_granted('ROLE_RECRUTEUR') %}
+                            Candidatures reçues
+                        {% else %}
+                            Mes candidatures
+                        {% endif %}
+                    </h5>
+                    {% if not is_granted('ROLE_RECRUTEUR') %}
+                        <a href="{{ path('app_job_offer_index') }}" class="btn btn-primary">
+                            <i class="bi bi-search me-1"></i> Chercher des offres
+                        </a>
+                    {% endif %}
+                </div>
+                {% if applications is empty %}
+                    <div class="card-body text-center py-5">
+                        {% if is_granted('ROLE_RECRUTEUR') %}
+                            <i class="bi bi-person-lines-fill display-1 text-muted mb-3"></i>
+                            <h6 class="text-muted">Aucune candidature reçue pour le moment</h6>
+                            <p class="text-muted">Les candidatures pour vos offres d'emploi apparaîtront ici.</p>
+                        {% else %}
+                            <i class="bi bi-send display-1 text-muted mb-3"></i>
+                            <h6 class="text-muted">Vous n'avez pas encore postulé à une offre</h6>
+                            <a href="{{ path('app_job_offer_index') }}" class="btn btn-primary mt-3">
+                                <i class="bi bi-search me-1"></i> Voir les offres
+                            </a>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    {% if is_granted('ROLE_RECRUTEUR') %}
+                                        <th>Candidat</th>
+                                        <th>Offre</th>
+                                    {% else %}
+                                        <th>Offre</th>
+                                        <th>Entreprise</th>
+                                    {% endif %}
+                                    <th>Date</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for application in applications %}
+                                    <tr>
+                                        {% if is_granted('ROLE_RECRUTEUR') %}
+                                            <td>{{ application.applicant.fullName }}</td>
+                                            <td>{{ application.jobOffer.title }}</td>
+                                        {% else %}
+                                            <td>{{ application.jobOffer.title }}</td>
+                                            <td>{{ application.jobOffer.recruiter.company }}</td>
+                                        {% endif %}
+                                        <td>{{ application.createdAt|date('d/m/Y') }}</td>
+                                        <td>
+                                            {% if application.status == 'pending' %}
+                                                <span class="badge bg-warning">En attente</span>
+                                            {% elseif application.status == 'accepted' %}
+                                                <span class="badge bg-success">Acceptée</span>
+                                            {% elseif application.status == 'rejected' %}
+                                                <span class="badge bg-danger">Refusée</span>
+                                            {% elseif application.status == 'interview' %}
+                                                <span class="badge bg-info">Entretien</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ path('app_job_application_show', {'id': application.id}) }}" class="btn btn-outline-primary">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                {% if is_granted('ROLE_RECRUTEUR') %}
+                                                    <a href="{{ path('app_message_start', {'id': application.applicant.id}) }}" class="btn btn-outline-secondary">
+                                                        <i class="bi bi-chat-dots"></i>
+                                                    </a>
+                                                {% else %}
+                                                    <a href="{{ path('app_message_start', {'id': application.jobOffer.recruiter.id}) }}" class="btn btn-outline-secondary">
+                                                        <i class="bi bi-chat-dots"></i>
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

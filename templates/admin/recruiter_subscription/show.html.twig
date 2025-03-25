@@ -1,0 +1,127 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Détails de l'abonnement recruteur{% endblock %}
+
+{% block content_title %}Détails de l'abonnement recruteur{% endblock %}
+
+{% block page_actions %}
+    <div class="btn-group" role="group">
+        <a href="{{ path('admin_recruiter_subscription_index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Retour à la liste
+        </a>
+        <a href="{{ path('admin_recruiter_subscription_edit', {'id': recruiter_subscription.id}) }}" class="btn btn-warning">
+            <i class="fas fa-edit"></i> Modifier
+        </a>
+        <form method="post" action="{{ path('admin_recruiter_subscription_delete', {'id': recruiter_subscription.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet abonnement recruteur ?');" style="display: inline-block;">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ recruiter_subscription.id) }}">
+            <button class="btn btn-danger">
+                <i class="fas fa-trash"></i> Supprimer
+            </button>
+        </form>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Informations de l'abonnement</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <th>ID</th>
+                                <td>{{ recruiter_subscription.id }}</td>
+                            </tr>
+                            <tr>
+                                <th>Recruteur</th>
+                                <td>
+                                    {% if recruiter_subscription.recruiter %}
+                                        {% if recruiter_subscription.recruiter.email is defined %}
+                                            {{ recruiter_subscription.recruiter.email }}
+                                        {% elseif recruiter_subscription.recruiter.name is defined %}
+                                            {{ recruiter_subscription.recruiter.name }}
+                                        {% else %}
+                                            ID: {{ recruiter_subscription.recruiter.id }}
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">Non défini</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Abonnement</th>
+                                <td>
+                                    {% if recruiter_subscription.subscription %}
+                                        <a href="{{ path('admin_subscription_show', {'id': recruiter_subscription.subscription.id}) }}">
+                                            {{ recruiter_subscription.subscription.name }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">Non défini</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Date de début</th>
+                                <td>{{ recruiter_subscription.startDate ? recruiter_subscription.startDate|date('d/m/Y H:i') : 'Non définie' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Date de fin</th>
+                                <td>{{ recruiter_subscription.endDate ? recruiter_subscription.endDate|date('d/m/Y H:i') : 'Non définie' }}</td>
+                            </tr>
+                            <tr>
+                                <th>ID d'abonnement Stripe</th>
+                                <td>{{ recruiter_subscription.stripeSubscriptionId ?? 'Non défini' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Statut</th>
+                                <td>
+                                    {% if recruiter_subscription.isActive %}
+                                        <span class="badge bg-success">Actif</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactif</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Annulé</th>
+                                <td>
+                                    {% if recruiter_subscription.cancelled %}
+                                        <span class="badge bg-warning">Oui</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Non</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Renouvellement automatique</th>
+                                <td>
+                                    {% if recruiter_subscription.autoRenew %}
+                                        <span class="badge bg-info">Oui</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Non</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">Zone de danger</h5>
+                </div>
+                <div class="card-body">
+                    {{ include('admin/_delete_form.html.twig', {
+                        form: delete_form
+                    }) }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %} 

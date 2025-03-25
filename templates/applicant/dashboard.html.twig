@@ -1,0 +1,136 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Tableau de bord Postulant - PITCREW{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                Mon tableau de bord
+            </h2>
+        </div>
+        <div class="mt-4 flex md:mt-0 md:ml-4">
+            <a href="{{ path('app_applicant_job_offers') }}"
+               class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Rechercher des offres
+            </a>
+        </div>
+    </div>
+
+    <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- Statistiques -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900">Mes statistiques</h3>
+            <dl class="mt-5 grid grid-cols-1 gap-5">
+                <div class="bg-gray-50 px-4 py-5 sm:p-6 rounded-lg">
+                    <dt class="text-sm font-medium text-gray-500">Candidatures en cours</dt>
+                    <dd class="mt-1 text-3xl font-semibold text-blue-600">
+                        {{ applications|filter(a => a.status == 'pending')|length }}
+                    </dd>
+                </div>
+                <div class="bg-gray-50 px-4 py-5 sm:p-6 rounded-lg">
+                    <dt class="text-sm font-medium text-gray-500">Offres favorites</dt>
+                    <dd class="mt-1 text-3xl font-semibold text-blue-600">{{ favoriteOffers|length }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <!-- Dernières candidatures -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-medium text-gray-900">Mes candidatures récentes</h3>
+                <a href="{{ path('app_applicant_applications') }}" class="text-sm text-blue-600 hover:text-blue-500">
+                    Voir tout
+                </a>
+            </div>
+            {% if applications is empty %}
+                <p class="mt-4 text-sm text-gray-500">Aucune candidature pour le moment.</p>
+            {% else %}
+                <div class="mt-4 space-y-4">
+                    {% for application in applications|slice(0, 3) %}
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="text-base font-medium text-gray-900">{{ application.jobOffer.title }}</h4>
+                            <p class="mt-1 text-sm text-gray-500">{{ application.jobOffer.location }}</p>
+                            <div class="mt-2">
+                                {% if application.status == 'pending' %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                        En attente
+                                    </span>
+                                {% elseif application.status == 'accepted' %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        Acceptée
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        Refusée
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Offres favorites -->
+        <div class="bg-white shadow rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900">Mes offres favorites</h3>
+            {% if favoriteOffers is empty %}
+                <p class="mt-4 text-sm text-gray-500">Aucune offre favorite pour le moment.</p>
+            {% else %}
+                <div class="mt-4 space-y-4">
+                    {% for offer in favoriteOffers|slice(0, 3) %}
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="text-base font-medium text-gray-900">{{ offer.title }}</h4>
+                            <p class="mt-1 text-sm text-gray-500">{{ offer.location }} - {{ offer.contractType }}</p>
+                            <div class="mt-2">
+                                <a href="{{ path('app_applicant_job_offer_show', {id: offer.id}) }}"
+                                   class="text-sm text-blue-600 hover:text-blue-500">
+                                    Voir l'offre
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Dernières offres -->
+    <div class="mt-8">
+        <div class="bg-white shadow rounded-lg p-6">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-medium text-gray-900">Dernières offres publiées</h3>
+                <a href="{{ path('app_applicant_job_offers') }}" class="text-sm text-blue-600 hover:text-blue-500">
+                    Voir toutes les offres
+                </a>
+            </div>
+            {% if latestOffers is empty %}
+                <p class="mt-4 text-sm text-gray-500">Aucune offre disponible pour le moment.</p>
+            {% else %}
+                <div class="mt-4 grid gap-6 lg:grid-cols-2">
+                    {% for offer in latestOffers %}
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <h4 class="text-base font-medium text-gray-900">{{ offer.title }}</h4>
+                            <p class="mt-1 text-sm text-gray-500">{{ offer.location }} - {{ offer.contractType }}</p>
+                            {% if offer.salary %}
+                                <p class="mt-1 text-sm text-gray-500">{{ offer.salary|number_format(0, ',', ' ') }} €/an</p>
+                            {% endif %}
+                            <div class="mt-4 flex justify-between items-center">
+                                <a href="{{ path('app_applicant_job_offer_show', {id: offer.id}) }}"
+                                   class="text-sm text-blue-600 hover:text-blue-500">
+                                    Voir l'offre
+                                </a>
+                                <span class="text-sm text-gray-500">
+                                    Publiée le {{ offer.createdAt|date('d/m/Y') }}
+                                </span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

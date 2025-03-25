@@ -1,0 +1,149 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mon Profil - {{ user.fullName }}{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    {% if user.profilePicture %}
+                        <img src="{{ asset('uploads/profile_pictures/' ~ user.profilePicture) }}" 
+                             alt="Photo de profil" 
+                             class="rounded-circle mb-3"
+                             style="width: 150px; height: 150px; object-fit: cover;">
+                    {% else %}
+                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                             style="width: 150px; height: 150px;">
+                            <i class="bi bi-person display-4"></i>
+                        </div>
+                    {% endif %}
+                    <h4>{{ user.fullName }}</h4>
+                    {% if user.isRecruiter %}
+                        <p class="text-muted">{{ user.company }}</p>
+                        <span class="badge bg-primary">Recruteur</span>
+                    {% else %}
+                        <p class="text-muted">{{ user.jobTitle|default('Titre non renseigné') }}</p>
+                        <span class="badge bg-success">Postulant</span>
+                    {% endif %}
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{{ path('app_profile_edit') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-pencil-square me-2"></i> Modifier mon profil
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <!-- Bio Section -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">{% if user.isRecruiter %}À propos de l'entreprise{% else %}À propos de moi{% endif %}</h5>
+                    <p class="card-text">{{ user.bio|default('Aucune description renseignée.')|nl2br }}</p>
+                </div>
+            </div>
+
+            {% if user.isPostulant %}
+                <!-- Experience Section -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Expérience professionnelle</h5>
+                        <p class="card-text">{{ user.experience|default('Aucune expérience renseignée.')|nl2br }}</p>
+                    </div>
+                </div>
+
+                <!-- Education Section -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Formation</h5>
+                        <p class="card-text">{{ user.education|default('Aucune formation renseignée.')|nl2br }}</p>
+                    </div>
+                </div>
+
+                <!-- Skills Section -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Compétences</h5>
+                        {% if user.skills is empty %}
+                            <p class="card-text">Aucune compétence renseignée.</p>
+                        {% else %}
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for skill in user.skills %}
+                                    <span class="badge bg-secondary">{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Posts Section -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title">Mes publications</h5>
+                            <a href="{{ path('app_post_new') }}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-plus-lg me-2"></i> Nouvelle publication
+                            </a>
+                        </div>
+                        {% if user.posts is empty %}
+                            <p class="card-text">Aucune publication pour le moment.</p>
+                        {% else %}
+                            <div class="list-group">
+                                {% for post in user.posts %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="mb-1">{{ post.content|striptags|slice(0, 100) }}{% if post.content|length > 100 %}...{% endif %}</h6>
+                                                <small class="text-muted">Publié le {{ post.createdAt|date('d/m/Y à H:i') }}</small>
+                                            </div>
+                                            <a href="{{ path('app_post_show', {'id': post.id}) }}" class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                
+            {% endif %}
+
+            {% if user.isRecruiter %}
+                <!-- Job Offers Section -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0">Mes offres d'emploi</h5>
+                            <a href="{{ path('app_job_offer_new') }}" class="btn btn-primary">
+                                <i class="bi bi-plus-lg me-2"></i> Publier une offre
+                            </a>
+                        </div>
+                        {% if user.jobOffers is empty %}
+                            <p class="card-text">Aucune offre d'emploi publiée.</p>
+                        {% else %}
+                            <div class="list-group">
+                                {% for offer in user.jobOffers %}
+                                    <a href="{{ path('app_job_offer_show', {'id': offer.id}) }}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">{{ offer.title }}</h6>
+                                            <small class="text-muted">{{ offer.createdAt|ago }}</small>
+                                        </div>
+                                        <p class="mb-1">{{ offer.location }} - {{ offer.contractType }}</p>
+                                        <small class="text-muted">{{ offer.applications|length }} candidature(s)</small>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

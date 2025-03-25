@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmation d'annulation d'abonnement</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #e10600;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #777;
+        }
+        .button {
+            display: inline-block;
+            background-color: #e10600;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .subscription-details {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .subscription-details p {
+            margin: 5px 0;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #e10600;
+        }
+        .info {
+            background-color: #e7f3fe;
+            border-left: 4px solid #2196F3;
+            padding: 10px 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Confirmation d'annulation</h1>
+        </div>
+        <div class="content">
+            <p>Bonjour {{ user.firstName }},</p>
+            
+            <p>Nous confirmons l'annulation de votre abonnement <span class="highlight">{{ subscription.subscription.name }}</span>.</p>
+            
+            <div class="subscription-details">
+                <p><strong>Abonnement :</strong> {{ subscription.subscription.name }}</p>
+                <p><strong>Prix :</strong> {% if subscription.subscription.price > 0 %}{{ subscription.subscription.price }}€ / mois{% else %}Gratuit{% endif %}</p>
+                <p><strong>Date de fin :</strong> {{ subscription.endDate|date('d/m/Y') }}</p>
+            </div>
+            
+            <div class="info">
+                <p><strong>Information :</strong> Vous pouvez continuer à utiliser votre abonnement jusqu'à sa date d'expiration. Après cette date, vous perdrez l'accès aux fonctionnalités premium.</p>
+            </div>
+            
+            <p>Nous espérons vous revoir bientôt ! Si vous souhaitez souscrire à un nouvel abonnement, vous pouvez consulter nos offres :</p>
+            
+            <p style="text-align: center;">
+                <a href="{{ plansUrl }}" class="button">Voir les abonnements</a>
+            </p>
+            
+            <p>Si vous avez des questions ou si vous souhaitez nous faire part de vos commentaires, n'hésitez pas à nous contacter.</p>
+            
+            <p>Cordialement,<br>L'équipe PitCrew</p>
+        </div>
+        <div class="footer">
+            <p>© {{ "now"|date("Y") }} PitCrew. Tous droits réservés.</p>
+            <p>Si vous avez des questions, contactez-nous à <a href="mailto:contact@pitcrew.fr">contact@pitcrew.fr</a></p>
+        </div>
+    </div>
+</body>
+</html> 

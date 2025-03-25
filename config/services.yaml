@@ -1,0 +1,35 @@
+parameters:
+    cv_directory: '%kernel.project_dir%/public/uploads/cv'
+    posts_directory: '%kernel.project_dir%/public/uploads/posts'
+    resumes_directory: '%kernel.project_dir%/public/uploads/resumes'
+    documents_directory: '%kernel.project_dir%/public/uploads/documents'
+    profile_pictures_directory: '%kernel.project_dir%/public/uploads/profile_pictures'
+    cover_letters_directory: '%kernel.project_dir%/public/uploads/cover_letters'
+    stripe_public_key: '%env(STRIPE_PUBLIC_KEY)%'
+    stripe_secret_key: '%env(STRIPE_SECRET_KEY)%'
+    stripe_webhook_secret: '%env(STRIPE_WEBHOOK_SECRET)%'
+    stripe_offline_mode: '%env(bool:STRIPE_OFFLINE_MODE)%'
+    logos_directory: '%kernel.project_dir%/public/uploads/logos'
+    job_images_directory: '%kernel.project_dir%/public/uploads/job_images'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        bind:
+            $stripePublicKey: '%stripe_public_key%'
+            $stripeSecretKey: '%stripe_secret_key%'
+            $stripeWebhookSecret: '%stripe_webhook_secret%'
+            $stripeOfflineMode: '%stripe_offline_mode%'
+            $appEnv: '%env(APP_ENV)%'
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+
+    App\Service\FileUploader:
+        arguments:
+            $targetDirectory: '%cv_directory%' 

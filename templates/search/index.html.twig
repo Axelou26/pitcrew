@@ -1,0 +1,113 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Recherche d'utilisateurs{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="mb-0">Recherche d'utilisateurs</h1>
+            <p class="text-muted">Trouvez des personnes à ajouter à votre réseau</p>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-8 mx-auto">
+            <form action="{{ path('app_search') }}" method="get" class="d-flex">
+                <input type="text" name="q" value="{{ query }}" class="form-control form-control-lg me-2" placeholder="Rechercher par nom, prénom, entreprise...">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-2"></i>Rechercher
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    {% if query %}
+        <div class="row">
+            {% if users is empty %}
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-search display-1 text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucun résultat trouvé pour "{{ query }}"</h5>
+                    <p class="text-muted">Essayez avec d'autres termes de recherche.</p>
+                </div>
+            {% else %}
+                <div class="col-12 mb-4">
+                    <h2 class="h4">{{ users|length }} résultat(s) pour "{{ query }}"</h2>
+                </div>
+                
+                {% for user in users %}
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    {% if user.profilePicture %}
+                                        <img src="{{ asset('uploads/profile_pictures/' ~ user.profilePicture) }}" 
+                                             class="rounded-circle me-3"
+                                             alt="{{ user.fullName }}"
+                                             style="width: 64px; height: 64px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-3"
+                                             style="width: 64px; height: 64px;">
+                                            <i class="bi bi-person fs-3 text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div>
+                                        <h5 class="mb-1">{{ user.fullName }}</h5>
+                                        <p class="text-muted mb-0">
+                                            {% if user.isRecruiter %}
+                                                {{ user.company }}
+                                                <span class="badge bg-primary ms-2">Recruteur</span>
+                                            {% else %}
+                                                {{ user.jobTitle|default('') }}
+                                                <span class="badge bg-success ms-2">Postulant</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between">
+                                    <a href="{{ path('app_user_profile', {'id': user.id}) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-person me-1"></i> Profil
+                                    </a>
+                                    
+                                    {% if user.id != app.user.id %}
+                                        {% if user.isFriend %}
+                                            <span class="btn btn-sm btn-success disabled">
+                                                <i class="bi bi-check-circle me-1"></i> Ami
+                                            </span>
+                                        {% elseif user.hasPendingRequestFrom %}
+                                            <span class="btn btn-sm btn-warning disabled">
+                                                <i class="bi bi-clock me-1"></i> Demande envoyée
+                                            </span>
+                                        {% elseif user.hasPendingRequestTo %}
+                                            <div class="btn-group">
+                                                <a href="{{ path('app_friendship_accept', {'id': user.pendingRequestId}) }}" class="btn btn-sm btn-success">
+                                                    <i class="bi bi-check-lg me-1"></i> Accepter
+                                                </a>
+                                                <a href="{{ path('app_friendship_decline', {'id': user.pendingRequestId}) }}" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-x-lg me-1"></i> Refuser
+                                                </a>
+                                            </div>
+                                        {% else %}
+                                            <a href="{{ path('app_friendship_send', {'id': user.id}) }}" class="btn btn-sm btn-outline-success">
+                                                <i class="bi bi-person-plus me-1"></i> Ajouter
+                                            </a>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="col-12 text-center py-5">
+            <i class="bi bi-people display-1 text-muted mb-3"></i>
+            <h5 class="text-muted">Recherchez des personnes à ajouter à votre réseau</h5>
+            <p class="text-muted">Utilisez la barre de recherche ci-dessus pour trouver des personnes par nom, prénom ou entreprise.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

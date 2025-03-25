@@ -1,0 +1,9 @@
+easy_admin:
+    design:
+        form_theme:
+            - '@EasyAdmin/symfony-form-themes/bootstrap_5_layout.html.twig'
+    formats:
+        datetime: 'd/m/Y H:i'
+        date: 'd/m/Y'
+        time: 'H:i'
+        number: '%.2f' 

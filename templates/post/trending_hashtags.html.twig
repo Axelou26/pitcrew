@@ -1,0 +1,71 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hashtags tendance{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .hashtag-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .hashtag-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        .hashtag-count {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .hashtag-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="mb-4">Hashtags tendance</h1>
+            <p class="text-muted">Découvrez les sujets populaires sur PitCrew</p>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        {% if hashtags is empty %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i> Aucun hashtag tendance pour le moment.
+                </div>
+            </div>
+        {% else %}
+            {% for hashtag in hashtags %}
+                <div class="col-md-4">
+                    <div class="card hashtag-card h-100">
+                        <div class="card-body">
+                            <a href="{{ path('app_hashtag_show', {'name': hashtag.name}) }}" class="text-decoration-none">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="hashtag-name">{{ hashtag.formattedName }}</span>
+                                    <span class="badge bg-primary hashtag-count">{{ hashtag.usageCount }}</span>
+                                </div>
+                                <p class="text-muted mb-0">
+                                    {% if hashtag.lastUsedAt %}
+                                        Dernière utilisation {{ hashtag.lastUsedAt|ago }}
+                                    {% endif %}
+                                </p>
+                            </a>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <a href="{{ path('app_hashtag_show', {'name': hashtag.name}) }}" class="btn btn-sm btn-outline-primary w-100">
+                                <i class="bi bi-eye me-1"></i> Voir les publications
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

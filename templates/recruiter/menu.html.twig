@@ -1,0 +1,90 @@
+<!-- Menu de navigation pour les recruteurs -->
+<div class="list-group mb-4">
+    <a href="{{ path('app_recruiter_dashboard') }}" class="list-group-item list-group-item-action {% if app.request.get('_route') == 'app_recruiter_dashboard' %}active{% endif %}">
+        <i class="bi bi-grid-1x2-fill me-2"></i> Tableau de bord
+    </a>
+    
+    <a href="{{ path('app_job_offer_index') }}" class="list-group-item list-group-item-action {% if app.request.get('_route') starts with 'app_job_offer' %}active{% endif %}">
+        <i class="bi bi-briefcase-fill me-2"></i> Mes offres d'emploi
+    </a>
+    
+    {% if is_granted('POST_JOB_OFFER') %}
+        <a href="{{ path('app_job_offer_new') }}" class="list-group-item list-group-item-action {% if app.request.get('_route') == 'app_job_offer_new' %}active{% endif %}">
+            <i class="bi bi-plus-circle me-2"></i> Publier une offre
+        </a>
+    {% endif %}
+    
+    {% if is_granted('FULL_CV_ACCESS') %}
+        <a href="{{ path('app_recruiter_candidates') }}" class="list-group-item list-group-item-action {% if app.request.get('_route') == 'app_recruiter_candidates' %}active{% endif %}">
+            <i class="bi bi-people-fill me-2"></i> Recherche de candidats
+            <span class="badge bg-primary rounded-pill ms-1">Premium</span>
+        </a>
+    {% endif %}
+    
+    {% if is_granted('ADVANCED_CANDIDATE_SEARCH') %}
+        <a href="{{ path('app_recruiter_advanced_search') }}" class="list-group-item list-group-item-action {% if app.request.get('_route') == 'app_recruiter_advanced_search' %}active{% endif %}">
+            <i class="bi bi-search me-2"></i> Recherche avancée
+            <span class="badge bg-info rounded-pill ms-1">Business</span>
+        </a>
+    {% endif %}
+    
+    {% if is_granted('AUTOMATIC_RECOMMENDATIONS') %}
+        <a href="{{ path('app_recruiter_recommendations') }}" class="list-group-item list-group-item-action {% if app.request.get('_route') == 'app_recruiter_recommendations' %}active{% endif %}">
+            <i class="bi bi-magic me-2"></i> Recommandations
+            <span class="badge bg-info rounded-pill ms-1">Business</span>
+        </a>
+    {% endif %}
+    
+    {% if is_granted('BASIC_STATISTICS') %}
+        <a href="{{ path('app_recruiter_statistics') }}" class="list-group-item list-group-item-action {% if app.request.get('_route') == 'app_recruiter_statistics' %}active{% endif %}">
+            <i class="bi bi-bar-chart-fill me-2"></i> Statistiques
+            <span class="badge bg-primary rounded-pill ms-1">Premium+</span>
+        </a>
+    {% endif %}
+    
+    <a href="{{ path('app_messages_index') }}" class="list-group-item list-group-item-action {% if app.request.get('_route') starts with 'app_messages' %}active{% endif %}">
+        <i class="bi bi-chat-dots-fill me-2"></i> Messages
+        {% if is_granted('UNLIMITED_MESSAGING') %}
+            <span class="badge bg-primary rounded-pill ms-1">Illimité</span>
+        {% else %}
+            <span class="badge bg-secondary rounded-pill ms-1">Limité</span>
+        {% endif %}
+    </a>
+    
+    <a href="{{ path('app_support_index') }}" class="list-group-item list-group-item-action {% if app.request.get('_route') starts with 'app_support' %}active{% endif %}">
+        <i class="bi bi-headset me-2"></i> Support
+        {% if is_granted('PRIORITY_SUPPORT') %}
+            <span class="badge bg-info rounded-pill ms-1">Prioritaire</span>
+        {% endif %}
+    </a>
+</div>
+
+<!-- Promotion pour mise à niveau -->
+{% if not is_granted('DETAILED_STATISTICS') %}
+    <div class="card mb-4 border-warning">
+        <div class="card-body">
+            <h5 class="card-title"><i class="bi bi-stars text-warning me-2"></i>Passez à l'offre supérieure</h5>
+            <p class="card-text">Débloquez toutes les fonctionnalités premium pour optimiser votre recrutement.</p>
+            <a href="{{ path('app_subscription_plans') }}" class="btn btn-warning">Voir les offres</a>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Information sur l'abonnement actuel -->
+{% if activeSubscription is defined and activeSubscription %}
+    <div class="card mb-4 border-info">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Votre abonnement</h5>
+        </div>
+        <div class="card-body">
+            <h6 class="mb-2">{{ activeSubscription.subscription.name }}</h6>
+            <p class="mb-1 small">Expire le: {{ activeSubscription.endDate|date('d/m/Y') }}</p>
+            
+            {% if activeSubscription.remainingJobOffers is not null %}
+                <p class="mb-1 small">Offres restantes: {{ activeSubscription.remainingJobOffers }}</p>
+            {% endif %}
+            
+            <a href="{{ path('app_subscription_manage') }}" class="btn btn-sm btn-outline-info mt-2">Gérer</a>
+        </div>
+    </div>
+{% endif %} 

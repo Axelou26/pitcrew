@@ -1,0 +1,154 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes posts{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    {% if app.user.profilePicture %}
+                        <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}" 
+                             alt="{{ app.user.fullName }}"
+                             class="rounded-circle mb-3"
+                             style="width: 100px; height: 100px; object-fit: cover;">
+                    {% else %}
+                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                             style="width: 100px; height: 100px;">
+                            <i class="bi bi-person display-4 text-muted"></i>
+                        </div>
+                    {% endif %}
+                    <h5 class="card-title">{{ app.user.fullName }}</h5>
+                    {% if app.user.company %}
+                        <p class="card-text text-muted">{{ app.user.company }}</p>
+                    {% endif %}
+                    <a href="{{ path('app_profile_edit') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-pencil me-1"></i> Modifier le profil
+                    </a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title h6">Navigation</h5>
+                    <div class="list-group list-group-flush">
+                        <a href="{{ path('app_dashboard') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-speedometer2 me-2"></i> Tableau de bord
+                        </a>
+                        <a href="{{ path('app_dashboard_posts') }}" class="list-group-item list-group-item-action active">
+                            <i class="bi bi-file-text me-2"></i> Mes posts
+                        </a>
+                        <a href="{{ path('app_message_index') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-chat-dots me-2"></i> Messages
+                        </a>
+                        {% if is_granted('ROLE_RECRUTEUR') %}
+                            <a href="{{ path('app_dashboard_offers') }}" class="list-group-item list-group-item-action">
+                                <i class="bi bi-briefcase me-2"></i> Mes offres
+                            </a>
+                        {% endif %}
+                        <a href="{{ path('app_dashboard_applications') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-send me-2"></i> Candidatures
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Mes posts</h5>
+                    <a href="{{ path('app_post_new') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-lg me-1"></i> Nouveau post
+                    </a>
+                </div>
+                {% if posts is empty %}
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-file-text display-1 text-muted mb-3"></i>
+                        <h6 class="text-muted">Vous n'avez pas encore créé de post</h6>
+                        <a href="{{ path('app_post_new') }}" class="btn btn-primary mt-3">
+                            <i class="bi bi-plus-lg me-1"></i> Créer un post
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Titre</th>
+                                    <th>Date</th>
+                                    <th>J'aimes</th>
+                                    <th>Commentaires</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for post in posts %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ path('app_post_show', {'id': post.id}) }}" class="text-decoration-none">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h6 class="mb-1">{{ post.title }}</h6>
+                                                    <small class="text-muted">{{ post.createdAt|date('d/m/Y') }}</small>
+                                                </div>
+                                                <p class="mb-1">
+                                                    {% if post.content|length > 150 %}
+                                                        {{ post.content|slice(0, 150) }}...
+                                                    {% else %}
+                                                        {{ post.content }}
+                                                    {% endif %}
+                                                </p>
+                                            </a>
+                                        </td>
+                                        <td>{{ post.createdAt|date('d/m/Y') }}</td>
+                                        <td>{{ post.likesCount }}</td>
+                                        <td>{{ post.commentsCount }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ path('app_post_show', {'id': post.id}) }}" class="btn btn-outline-primary">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a href="{{ path('app_post_edit', {'id': post.id}) }}" class="btn btn-outline-secondary">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ post.id }}">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    
+                                    <!-- Modal de confirmation de suppression -->
+                                    <div class="modal fade" id="deleteModal{{ post.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ post.id }}" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="deleteModalLabel{{ post.id }}">Confirmer la suppression</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    Êtes-vous sûr de vouloir supprimer le post "{{ post.title }}" ? Cette action est irréversible.
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                    <form method="post" action="{{ path('app_post_delete', {'id': post.id}) }}">
+                                                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ post.id) }}">
+                                                        <button type="submit" class="btn btn-danger">Supprimer</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

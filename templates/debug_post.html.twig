@@ -1,0 +1,33 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Debug Post{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <h1>Debug Post</h1>
+    
+    {% for post in posts %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5>Post ID: {{ post.id }}</h5>
+                <p>Titre: {{ post.title }}</p>
+                <p>Auteur: {{ post.author.fullName }}</p>
+                
+                <h6>Debug likes</h6>
+                <p>Type: {{ post.likes|length }} (count: {{ post.likesCount }})</p>
+                
+                <h6>Debug comments</h6>
+                <p>Type: {{ post.comments|length }} (count: {{ post.commentsCount }})</p>
+                
+                <h6>Debug shares</h6>
+                <p>Type: {{ post.shares|length }} (count: {{ post.sharesCount }})</p>
+                
+                {% if app.user %}
+                    <h6>Like status</h6>
+                    <p>isLikedByUser: {% if post.isLikedByUser(app.user) %}Oui{% else %}Non{% endif %}</p>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %} 

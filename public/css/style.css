@@ -1,0 +1,66 @@
+body {
+    background-color: #f3f2ef;
+}
+
+.navbar {
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.nav-link {
+    color: #666666 !important;
+}
+
+.nav-link:hover {
+    color: #000000 !important;
+}
+
+.nav-link.active {
+    color: #000000 !important;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.15);
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 0 0 1px rgba(0,0,0,.15), 0 4px 6px rgba(0,0,0,.05);
+}
+
+.profile-card {
+    background-color: white;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.btn-primary {
+    background-color: #0a66c2;
+    border-color: #0a66c2;
+}
+
+.btn-primary:hover {
+    background-color: #004182;
+    border-color: #004182;
+}
+
+.btn-outline-primary {
+    color: #0a66c2;
+    border-color: #0a66c2;
+}
+
+.btn-outline-primary:hover {
+    background-color: rgba(10,102,194,0.1);
+    color: #0a66c2;
+    border-color: #0a66c2;
+}
+
+.input-group-text {
+    background-color: transparent;
+    border-right: none;
+}
+
+.form-control:focus {
+    box-shadow: none;
+    border-color: #ced4da;
+} 

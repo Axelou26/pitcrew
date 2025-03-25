@@ -1,0 +1,223 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Choisissez votre abonnement{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+    .test-mode-banner {
+        background-color: #ff9800;
+        color: white;
+        text-align: center;
+        padding: 0.5rem;
+        margin-bottom: 1rem;
+        border-radius: 4px;
+    }
+    
+    .offline-mode-banner {
+        background-color: #673ab7;
+        color: white;
+        text-align: center;
+        padding: 0.5rem;
+        margin-bottom: 1rem;
+        border-radius: 4px;
+    }
+    
+    .test-card-info {
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #ff9800;
+    }
+    
+    .test-card {
+        font-family: monospace;
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .pricing-card {
+        transition: all 0.3s;
+        border: 1px solid #dee2e6;
+    }
+    
+    .pricing-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+    
+    .pricing-card-highlighted {
+        transform: scale(1.05);
+        border: 2px solid #007bff;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        z-index: 1;
+    }
+    
+    .pricing-card-highlighted:hover {
+        transform: translateY(-5px) scale(1.05);
+    }
+    
+    .pricing-card .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .pricing-card-highlighted .card-header {
+        background-color: #007bff;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // En mode hors ligne, pas besoin d'initialiser Stripe
+        {% if not is_offline_mode|default(false) %}
+            const stripe = Stripe('{{ stripe_public_key }}');
+            
+            {% if stripe_public_key starts with 'pk_test_' %}
+                console.log('Stripe en mode test');
+                
+                // Copier les informations de carte de test dans le presse-papier
+                const copyButtons = document.querySelectorAll('.copy-test-card');
+                copyButtons.forEach(button => {
+                    button.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const testCard = this.getAttribute('data-card');
+                        navigator.clipboard.writeText(testCard)
+                            .then(() => {
+                                this.textContent = 'Copié !';
+                                setTimeout(() => {
+                                    this.textContent = 'Copier';
+                                }, 2000);
+                            });
+                    });
+                });
+            {% endif %}
+        {% else %}
+            console.log('Stripe en mode hors ligne - paiements simulés');
+        {% endif %}
+    });
+</script>
+{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-sm mb-5">
+                <div class="card-body p-4">
+                    <h1 class="card-title text-center mb-4">Choisissez votre abonnement</h1>
+                    
+                    {% if is_offline_mode|default(false) %}
+                        <div class="offline-mode-banner mb-4">
+                            <i class="bi bi-wifi-off me-2"></i>
+                            <strong>Mode Hors Ligne activé</strong> - Les paiements sont simulés. Aucune connexion à Stripe n'est nécessaire.
+                        </div>
+                    {% elseif is_test_mode|default(false) %}
+                        <div class="test-mode-banner mb-4">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Mode Test activé</strong> - Aucun paiement réel ne sera effectué.
+                        </div>
+                        
+                        <div class="test-card-info mb-4">
+                            <h5><i class="bi bi-credit-card me-2"></i> Cartes de test pour Stripe</h5>
+                            <p>Utilisez ces cartes pour tester différents scénarios de paiement :</p>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="test-card">
+                                        4242 4242 4242 4242 <button class="btn btn-sm btn-outline-secondary float-end copy-test-card" data-card="4242424242424242">Copier</button>
+                                        <div class="small text-muted">Paiement réussi</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="test-card">
+                                        4000 0000 0000 0002 <button class="btn btn-sm btn-outline-secondary float-end copy-test-card" data-card="4000000000000002">Copier</button>
+                                        <div class="small text-muted">Paiement refusé</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="test-card">
+                                        4000 0027 6000 3184 <button class="btn btn-sm btn-outline-secondary float-end copy-test-card" data-card="4000002760003184">Copier</button>
+                                        <div class="small text-muted">Authentification 3D Secure</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <p class="small text-muted mt-2">
+                                Pour toutes les cartes de test : utilisez n'importe quelle date future pour l'expiration, n'importe quel code CVC à 3 chiffres et n'importe quel code postal.
+                            </p>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Important :</strong> En tant que recruteur, vous devez choisir un abonnement pour finaliser votre inscription.
+                    </div>
+                    
+                    {% if subscriptions is empty %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Aucun abonnement n'est disponible actuellement. Veuillez contacter l'administrateur.
+                        </div>
+                    {% else %}
+                        <div class="row pricing-row mb-4">
+                            {% for subscription in subscriptions %}
+                                <div class="col-md-4 mb-4">
+                                    <div class="card h-100 pricing-card {% if subscription.name == 'Premium' %}pricing-card-highlighted{% endif %}">
+                                        <div class="card-header text-center py-3">
+                                            <h5 class="my-0 font-weight-bold">{{ subscription.name }}</h5>
+                                        </div>
+                                        <div class="card-body d-flex flex-column">
+                                            <h1 class="card-title pricing-card-title text-center mb-3">
+                                                {% if subscription.price == 0 %}
+                                                    Gratuit
+                                                {% else %}
+                                                    {{ subscription.price }}€ <small class="text-muted">/ {{ (subscription.duration / 30)|round }} mois</small>
+                                                {% endif %}
+                                            </h1>
+                                            
+                                            <ul class="list-unstyled mt-3 mb-4">
+                                                {% for feature in subscription.features %}
+                                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> {{ feature }}</li>
+                                                {% endfor %}
+                                                
+                                                {% if subscription.maxJobOffers %}
+                                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> {{ subscription.maxJobOffers }} offres d'emploi</li>
+                                                {% endif %}
+                                            </ul>
+                                            
+                                            <form action="{{ path('app_register_subscription') }}" method="post" class="mt-auto">
+                                                <input type="hidden" name="subscription_id" value="{{ subscription.id }}">
+                                                <button type="submit" class="btn btn-lg btn-block {% if subscription.name == 'Premium' %}btn-primary{% else %}btn-outline-primary{% endif %} w-100">
+                                                    {% if is_offline_mode|default(false) %}
+                                                        <i class="bi bi-lightning-fill me-1"></i> Choisir (simulation)
+                                                    {% else %}
+                                                        Choisir
+                                                    {% endif %}
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <p class="text-muted">Vous pourrez changer d'abonnement à tout moment depuis votre espace personnel.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

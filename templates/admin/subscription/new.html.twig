@@ -1,0 +1,26 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Nouveau plan d'abonnement{% endblock %}
+
+{% block content_title %}Ajouter un plan d'abonnement{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('admin_subscription_index') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Retour à la liste
+    </a>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Informations du plan</h5>
+                </div>
+                <div class="card-body">
+                    {{ include('admin/_form.html.twig') }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %} 

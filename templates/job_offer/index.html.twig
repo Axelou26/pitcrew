@@ -1,0 +1,515 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Offres d'emploi{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        :root {
+            --card-border-radius: 16px;
+            --input-border-radius: 10px;
+            --transition-speed: 0.3s;
+        }
+        
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-color) 20%, var(--secondary-color) 100%);
+            padding: 3rem 0;
+            margin-bottom: 2.5rem;
+            border-radius: 0 0 30px 30px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .page-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            border-radius: 50%;
+            z-index: 1;
+        }
+        
+        .filter-card {
+            border: none;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+            border-radius: 15px;
+            background: linear-gradient(to right bottom, #ffffff, #fafafa);
+            margin-bottom: 2rem;
+        }
+
+        .filter-card .form-control,
+        .filter-card .form-select {
+            border: 1px solid #e5e5e5;
+            padding: 12px 15px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            box-shadow: none;
+            transition: all 0.3s ease;
+        }
+
+        .filter-card .form-control:focus,
+        .filter-card .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(225, 6, 0, 0.1);
+        }
+
+        .filter-card .input-group-text {
+            background-color: #f8f9fa;
+            border: 1px solid #e5e5e5;
+            border-radius: 10px;
+            padding: 0 15px;
+        }
+
+        .filter-card .btn {
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .filter-card .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), #ff1a1a);
+            border: none;
+        }
+
+        .filter-card .btn-outline-secondary {
+            border: 1px solid #e5e5e5;
+            color: #666;
+        }
+
+        .filter-card .btn-outline-secondary:hover {
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .search-input-group {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .search-input-group .form-control {
+            border-right: none;
+        }
+
+        .search-input-group .btn {
+            border-radius: 0 10px 10px 0;
+            padding: 12px 25px;
+        }
+
+        .filter-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .active-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .filter-tag {
+            background-color: rgba(225, 6, 0, 0.1);
+            color: var(--primary-color);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-tag i {
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+        }
+
+        .filter-tag i:hover {
+            opacity: 1;
+        }
+        
+        /* Style des cartes d'offre à la Welcome to the Jungle */
+        .job-card {
+            border: none;
+            border-radius: var(--card-border-radius);
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .job-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .company-logo-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .company-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .company-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .company-logo-default {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #aaa;
+        }
+        
+        .job-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .job-meta-item {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.3rem 0.7rem;
+            background-color: #f8f9fa;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #555;
+        }
+        
+        .job-meta-item i {
+            margin-right: 0.3rem;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        
+        .badge-contract {
+            background-color: rgba(13, 110, 253, 0.1);
+            color: #0d6efd;
+        }
+        
+        .badge-remote {
+            background-color: rgba(25, 135, 84, 0.1);
+            color: #198754;
+        }
+        
+        .badge-salary {
+            background-color: rgba(233, 174, 44, 0.1);
+            color: #e9ae2c;
+        }
+        
+        .job-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+            color: #333;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .job-company {
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .job-location {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #777;
+            margin-bottom: 0.5rem;
+        }
+        
+        .job-location i {
+            margin-right: 0.4rem;
+            color: #999;
+        }
+        
+        .job-timestamp {
+            font-size: 0.8rem;
+            color: #999;
+            margin-top: auto;
+        }
+        
+        .empty-state-icon {
+            color: var(--light-text);
+            opacity: 0.5;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <!-- En-tête avec dégradé -->
+    <div class="page-header mb-4">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-4 fw-bold mb-2">Offres d'emploi</h1>
+                    <p class="lead mb-0">Trouvez votre prochain poste dans le monde de la Formule 1</p>
+                </div>
+                {% if is_granted('ROLE_RECRUTEUR') %}
+                    <div class="col-md-4 text-md-end">
+                        <a href="{{ path('app_job_offer_new') }}" class="btn btn-light btn-lg">
+                            <i class="bi bi-plus-circle me-2"></i>Publier une offre
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Zone de filtres améliorée -->
+        <div class="card filter-card">
+            <div class="card-body p-4">
+                <form method="GET" action="{{ path('app_job_offer_index') }}">
+                    <div class="row g-4">
+                        <!-- Barre de recherche principale -->
+                        <div class="col-12">
+                            <div class="filter-label">Rechercher une offre</div>
+                            <div class="input-group search-input-group">
+                                <input type="text" name="q" class="form-control" placeholder="Titre, description, compétences..." value="{{ query }}">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="bi bi-search me-2"></i>Rechercher
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Filtres -->
+                        <div class="col-md-4">
+                            <div class="filter-label">
+                                <i class="bi bi-briefcase me-2"></i>Type de contrat
+                            </div>
+                            <select name="contractType" class="form-select">
+                                <option value="">Tous les types</option>
+                                {% for type in contractTypes %}
+                                    <option value="{{ type }}" {% if filters.contractType == type %}selected{% endif %}>{{ type }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="filter-label">
+                                <i class="bi bi-geo-alt me-2"></i>Localisation
+                            </div>
+                            <select name="location" class="form-select">
+                                <option value="">Toutes les localisations</option>
+                                {% for location in locations %}
+                                    <option value="{{ location }}" {% if filters.location == location %}selected{% endif %}>{{ location }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="filter-label">
+                                <i class="bi bi-currency-euro me-2"></i>Salaire minimum
+                            </div>
+                            <div class="input-group">
+                                <input type="number" name="minSalary" class="form-control" placeholder="Ex: 35000" value="{{ filters.minSalary }}">
+                                <span class="input-group-text">€/an</span>
+                            </div>
+                        </div>
+
+                        <!-- Boutons d'action -->
+                        <div class="col-12 d-flex gap-2 justify-content-end mt-4">
+                            {% if query or filters.contractType or filters.location or filters.minSalary %}
+                                <a href="{{ path('app_job_offer_index') }}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle me-2"></i>Réinitialiser
+                                </a>
+                            {% endif %}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-funnel me-2"></i>Appliquer les filtres
+                            </button>
+                        </div>
+
+                        <!-- Filtres actifs -->
+                        {% if query or filters.contractType or filters.location or filters.minSalary %}
+                            <div class="col-12">
+                                <div class="active-filters">
+                                    {% if query %}
+                                        <span class="filter-tag">
+                                            <i class="bi bi-search"></i>
+                                            {{ query }}
+                                        </span>
+                                    {% endif %}
+                                    {% if filters.contractType %}
+                                        <span class="filter-tag">
+                                            <i class="bi bi-briefcase"></i>
+                                            {{ filters.contractType }}
+                                        </span>
+                                    {% endif %}
+                                    {% if filters.location %}
+                                        <span class="filter-tag">
+                                            <i class="bi bi-geo-alt"></i>
+                                            {{ filters.location }}
+                                        </span>
+                                    {% endif %}
+                                    {% if filters.minSalary %}
+                                        <span class="filter-tag">
+                                            <i class="bi bi-currency-euro"></i>
+                                            Min. {{ filters.minSalary }}€
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Liste des offres style Welcome to the Jungle -->
+        <div class="row">
+            {% if offers is empty %}
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-briefcase display-1 text-muted mb-3"></i>
+                    <h3 class="h4 text-muted">Aucune offre disponible</h3>
+                    <p class="text-muted">Aucune offre ne correspond à vos critères de recherche.</p>
+                </div>
+            {% else %}
+                {% for offer in offers %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="job-card h-100 p-3">
+                            <!-- Logos d'entreprise répétés (style WTTJ) -->
+                            <div class="d-flex mb-3">
+                                {% for i in 1..3 %}
+                                    <div class="{% if not loop.first %}ms-n3{% endif %}">
+                                        {% if offer.logoUrl %}
+                                            <div class="company-logo border">
+                                                <img src="{{ asset('uploads/logos/' ~ offer.logoUrl) }}" alt="{{ offer.company }}">
+                                            </div>
+                                        {% else %}
+                                            <div class="company-logo-default">
+                                                <i class="bi bi-building"></i>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- Nom de l'entreprise -->
+                            <div class="job-company">{{ offer.company }}</div>
+                            
+                            <!-- Titre du poste -->
+                            <h3 class="job-title">{{ offer.title }}</h3>
+                            
+                            <!-- Localisation -->
+                            <div class="job-location">
+                                <i class="bi bi-geo-alt"></i>
+                                {{ offer.location }}
+                            </div>
+                            
+                            <!-- Métadonnées (type de contrat, télétravail, etc.) -->
+                            <div class="job-meta">
+                                <span class="job-meta-item badge-contract">{{ offer.contractType }}</span>
+                                
+                                {% if offer.isRemote %}
+                                    <span class="job-meta-item badge-remote">
+                                        <i class="bi bi-house"></i> Télétravail
+                                    </span>
+                                {% endif %}
+                                
+                                {% if offer.salary %}
+                                    <span class="job-meta-item badge-salary">
+                                        <i class="bi bi-currency-euro"></i> {{ offer.salary|number_format(0, ',', ' ') }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Date -->
+                            <div class="job-timestamp mt-2">
+                                <i class="bi bi-clock me-1"></i>
+                                {{ offer.createdAt|date('d/m/Y') }}
+                            </div>
+                            
+                            <!-- Lien vers l'offre complète -->
+                            <a href="{{ path('app_job_offer_show', {'id': offer.id}) }}" class="stretched-link" aria-label="Voir l'offre {{ offer.title }}"></a>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const offersList = document.getElementById('offers-list');
+            let searchTimeout;
+
+            // Fonction pour mettre à jour les résultats
+            function updateResults() {
+                const formData = new FormData(form);
+                const searchParams = new URLSearchParams();
+                formData.forEach((value, key) => searchParams.append(key, value));
+
+                fetch(`${form.action}?${searchParams.toString()}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.text())
+                .then(html => {
+                    offersList.innerHTML = html;
+                });
+            }
+
+            // Écouteurs d'événements pour la recherche en temps réel
+            form.querySelectorAll('input, select').forEach(input => {
+                input.addEventListener('input', () => {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(updateResults, 300);
+                });
+            });
+            
+            // Gestion des filtres actifs
+            document.querySelectorAll('.filter-badge .close').forEach(closeBtn => {
+                closeBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const filterName = this.dataset.filter;
+                    const input = form.querySelector(`[name="${filterName}"]`);
+                    if (input) {
+                        input.value = '';
+                        form.submit();
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %} 

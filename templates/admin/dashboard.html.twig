@@ -1,0 +1,57 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Tableau de bord - Administration{% endblock %}
+
+{% block content_title %}
+    <h1>Tableau de bord</h1>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Utilisateurs</h5>
+                </div>
+                <div class="card-body">
+                    <h1 class="display-4 text-center">{{ usersCount|default('0') }}</h1>
+                    <p class="card-text text-center">
+                        <a href="{{ path('admin_user_index') }}" class="btn btn-primary">
+                            <i class="fas fa-users me-1"></i> Gérer les utilisateurs
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Offres d'emploi</h5>
+                </div>
+                <div class="card-body">
+                    <h1 class="display-4 text-center">{{ jobOffersCount|default('0') }}</h1>
+                    <p class="card-text text-center">
+                        <a href="{{ path('admin_job_offer_index') }}" class="btn btn-primary">
+                            <i class="fas fa-briefcase me-1"></i> Gérer les offres
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Abonnements actifs</h5>
+                </div>
+                <div class="card-body">
+                    <h1 class="display-4 text-center">{{ activeSubscriptionsCount|default('0') }}</h1>
+                    <p class="card-text text-center">
+                        <a href="{{ path('admin_subscription_index') }}" class="btn btn-primary">
+                            <i class="fas fa-credit-card me-1"></i> Gérer les abonnements
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %} 

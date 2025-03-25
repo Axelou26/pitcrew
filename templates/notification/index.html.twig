@@ -1,0 +1,261 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes notifications{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .notification-item {
+            transition: all 0.3s ease;
+        }
+        
+        .notification-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .notification-item.unread {
+            border-left: 4px solid var(--primary-color);
+            background-color: rgba(225, 6, 0, 0.05);
+        }
+        
+        .notification-item .notification-time {
+            font-size: 0.8rem;
+            color: var(--light-text);
+        }
+        
+        .notification-item .notification-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .notification-item .notification-message {
+            color: var(--dark-text);
+            margin-bottom: 0;
+        }
+        
+        .notification-item .notification-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+        }
+        
+        .notification-item .notification-icon.info {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: var(--info-color);
+        }
+        
+        .notification-item .notification-icon.success {
+            background-color: rgba(39, 174, 96, 0.1);
+            color: var(--success-color);
+        }
+        
+        .notification-item .notification-icon.warning {
+            background-color: rgba(243, 156, 18, 0.1);
+            color: var(--warning-color);
+        }
+        
+        .notification-item .notification-icon.danger {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .notification-item .notification-icon.application {
+            background-color: rgba(225, 6, 0, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .notification-item .notification-icon .badge {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .notification-item.info .notification-icon .badge {
+            background-color: var(--info-color);
+        }
+        
+        .notification-item.success .notification-icon .badge {
+            background-color: var(--success-color);
+        }
+        
+        .notification-item.warning .notification-icon .badge {
+            background-color: var(--warning-color);
+        }
+        
+        .notification-item.danger .notification-icon .badge {
+            background-color: var(--danger-color);
+        }
+        
+        .notification-item.application .notification-icon .badge {
+            background-color: var(--primary-color);
+        }
+        
+        .notification-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .notification-actions {
+                flex-direction: column;
+                align-items: flex-start;
+                margin-top: 1rem;
+            }
+            
+            .notification-actions .btn {
+                width: 100%;
+                margin-left: 0 !important;
+                margin-top: 0.5rem;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h1 class="h4 mb-0">Mes notifications</h1>
+                    <form action="{{ path('app_notification_mark_all_as_read') }}" method="post" class="mark-all-read-form">
+                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-check-all me-1"></i> Tout marquer comme lu
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="list-group list-group-flush">
+                    {% if notifications is empty %}
+                        <div class="list-group-item text-center py-5">
+                            <i class="bi bi-bell-slash display-4 text-muted mb-3"></i>
+                            <h5 class="text-muted">Aucune notification</h5>
+                            <p class="text-muted mb-0">Vous n'avez pas encore reçu de notifications.</p>
+                        </div>
+                    {% else %}
+                        {% for notification in notifications %}
+                            <div class="list-group-item notification-item {{ not notification.isRead ? 'unread' : '' }}" 
+                                 data-notification-id="{{ notification.id }}">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0 me-3">
+                                        {% if notification.type == 'friend_request' %}
+                                            <i class="bi bi-person-plus fs-4 text-primary"></i>
+                                        {% elseif notification.type == 'message' %}
+                                            <i class="bi bi-chat-dots fs-4 text-info"></i>
+                                        {% elseif notification.type == 'job_application' %}
+                                            <i class="bi bi-briefcase fs-4 text-success"></i>
+                                        {% elseif notification.type == 'job_offer' %}
+                                            <i class="bi bi-file-earmark-text fs-4 text-warning"></i>
+                                        {% else %}
+                                            <i class="bi bi-bell fs-4 text-secondary"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <h5 class="mb-0">{{ notification.title }}</h5>
+                                            <small class="text-muted">{{ notification.createdAt|date('d/m/Y H:i') }}</small>
+                                        </div>
+                                        <p class="mb-2">{{ notification.message }}</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <a href="{{ notification.targetUrl }}" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-box-arrow-up-right me-1"></i> Voir
+                                            </a>
+                                            {% if not notification.isRead %}
+                                                <form action="{{ path('app_notification_mark_as_read', {'id': notification.id}) }}" method="post" class="mark-as-read-form">
+                                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                                        <i class="bi bi-check me-1"></i> Marquer comme lu
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Gestion du formulaire "Marquer comme lu"
+            document.querySelectorAll('.mark-as-read-form').forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    fetch(this.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Trouver l'élément parent (notification-item)
+                            const notificationItem = this.closest('.notification-item');
+                            
+                            // Supprimer la classe 'unread'
+                            notificationItem.classList.remove('unread');
+                            
+                            // Supprimer le bouton "Marquer comme lu"
+                            this.remove();
+                        }
+                    })
+                    .catch(error => console.error('Erreur:', error));
+                });
+            });
+            
+            // Gestion du formulaire "Tout marquer comme lu"
+            const markAllReadForm = document.querySelector('.mark-all-read-form');
+            if (markAllReadForm) {
+                markAllReadForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    fetch(this.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Supprimer la classe 'unread' de toutes les notifications
+                            document.querySelectorAll('.notification-item.unread').forEach(item => {
+                                item.classList.remove('unread');
+                            });
+                            
+                            // Supprimer tous les boutons "Marquer comme lu"
+                            document.querySelectorAll('.mark-as-read-form').forEach(form => {
+                                form.remove();
+                            });
+                            
+                            // Mettre à jour le badge de notification dans le menu
+                            const notificationBadge = document.getElementById('notification-badge');
+                            if (notificationBadge) {
+                                notificationBadge.classList.add('d-none');
+                            }
+                        }
+                    })
+                    .catch(error => console.error('Erreur:', error));
+                });
+            }
+        });
+    </script>
+{% endblock %} 

@@ -1,0 +1,227 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ user.fullName }} - Profil{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Profil utilisateur -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    {% if user.profilePicture %}
+                        <img src="{{ asset('uploads/profile_pictures/' ~ user.profilePicture) }}" 
+                             alt="{{ user.fullName }}" 
+                             class="rounded-circle mb-3"
+                             style="width: 150px; height: 150px; object-fit: cover;">
+                    {% else %}
+                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                             style="width: 150px; height: 150px;">
+                            <i class="bi bi-person display-4"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <h3 class="card-title">
+                        {{ user.fullName }}
+                        {% if is_granted('VERIFIED_BADGE', user) %}
+                            <span class="verified-badge ms-1" title="Entreprise vérifiée">
+                                <i class="bi bi-patch-check-fill text-info"></i>
+                            </span>
+                        {% endif %}
+                    </h3>
+                    
+                    {% if user.isRecruiter %}
+                        <p class="text-muted">
+                            {{ user.company }}
+                            {% if is_granted('VERIFIED_BADGE', user) %}
+                                <span class="badge bg-info text-white">Entreprise vérifiée</span>
+                            {% endif %}
+                        </p>
+                        <span class="badge bg-primary mb-3">Recruteur</span>
+                    {% else %}
+                        <p class="text-muted">{{ user.jobTitle|default('') }}</p>
+                        <span class="badge bg-success mb-3">Postulant</span>
+                    {% endif %}
+                    
+                    {% if app.user and app.user != user %}
+                        <div class="d-grid gap-2">
+                            <!-- Boutons d'amitié -->
+                            {% if friendshipInfo.isFriend %}
+                                <a href="{{ path('app_friendship_remove', {'id': user.id}) }}" class="btn btn-outline-danger">
+                                    <i class="bi bi-person-dash me-2"></i>Retirer des amis
+                                </a>
+                            {% elseif friendshipInfo.hasPendingRequestFrom %}
+                                <button class="btn btn-outline-secondary" disabled>
+                                    <i class="bi bi-hourglass-split me-2"></i>Demande envoyée
+                                </button>
+                            {% elseif friendshipInfo.hasPendingRequestTo %}
+                                <div class="btn-group w-100 mb-2">
+                                    <a href="{{ path('app_friendship_accept', {'id': friendshipInfo.pendingRequestId}) }}" class="btn btn-success">
+                                        <i class="bi bi-check-lg me-2"></i>Accepter
+                                    </a>
+                                    <a href="{{ path('app_friendship_decline', {'id': friendshipInfo.pendingRequestId}) }}" class="btn btn-outline-danger">
+                                        <i class="bi bi-x-lg me-2"></i>Refuser
+                                    </a>
+                                </div>
+                            {% else %}
+                                <a href="{{ path('app_friendship_send', {'id': user.id}) }}" class="btn btn-primary">
+                                    <i class="bi bi-person-plus me-2"></i>Ajouter en ami
+                                </a>
+                            {% endif %}
+                            
+                            <!-- Bouton de mise en favoris pour les recruteurs -->
+                            {% if is_granted('ROLE_RECRUTEUR') and not user.isRecruiter %}
+                                {% set isFavorite = app.user.hasCandidateInFavorites(user) %}
+                                <button type="button" 
+                                        class="btn btn-outline-{{ isFavorite ? 'danger' : 'secondary' }} favorite-toggle mt-2"
+                                        data-url="{{ path('app_favorites_toggle_candidate', {'id': user.id}) }}"
+                                        title="{{ isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris' }}">
+                                    <i class="bi bi-star{{ isFavorite ? '-fill' : '' }} me-1"></i>
+                                    {{ isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris' }}
+                                </button>
+                            {% endif %}
+                            
+                            <!-- Bouton Message -->
+                            <a href="{{ path('app_message_start', {'id': user.id}) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-chat-dots me-2"></i>Message
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="card-footer bg-white">
+                    <div class="row text-center">
+                        <div class="col-12">
+                            <h5 class="mb-0">{{ postsCount }}</h5>
+                            <small class="text-muted">Publications</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bio -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">À propos</h5>
+                    <p class="card-text">{{ user.bio|default('Aucune information disponible.')|nl2br }}</p>
+                </div>
+            </div>
+            
+            {% if is_granted('VERIFIED_BADGE', user) %}
+            <!-- Badge d'entreprise vérifiée (uniquement pour abonnement Business) -->
+            <div class="card mb-4 border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-patch-check-fill me-2"></i>Entreprise vérifiée
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Cette entreprise est un partenaire de confiance vérifié par PitCrew.
+                    </p>
+                    <div class="text-center">
+                        <span class="badge bg-info text-white">Abonnement Business</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Publications -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Publications de {{ user.firstName }}</h5>
+                </div>
+                
+                {% if posts is empty %}
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-file-earmark-text display-1 text-muted mb-3"></i>
+                        <h5 class="text-muted">Aucune publication</h5>
+                        <p class="text-muted">Cet utilisateur n'a pas encore publié de contenu.</p>
+                    </div>
+                {% else %}
+                    <div class="list-group list-group-flush">
+                        {% for post in posts %}
+                            <div class="list-group-item p-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h5 class="mb-0">{{ post.title }}</h5>
+                                    <small class="text-muted">{{ post.createdAt|date('d/m/Y H:i') }}</small>
+                                </div>
+                                
+                                <p class="mb-3">
+                                    {% if post.content|length > 200 %}
+                                        {{ post.content|striptags|slice(0, 200) }}...
+                                    {% else %}
+                                        {{ post.content|striptags }}
+                                    {% endif %}
+                                </p>
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="me-3">
+                                            <i class="bi bi-heart"></i> {{ post.likesCount }}
+                                        </span>
+                                        <span>
+                                            <i class="bi bi-chat"></i> {{ post.commentsCount }}
+                                        </span>
+                                    </div>
+                                    
+                                    <a href="{{ path('app_post_show', {'id': post.id}) }}" class="btn btn-sm btn-outline-primary">
+                                        Lire la suite
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Gestionnaire pour le bouton de favoris
+            const favoriteToggle = document.querySelector('.favorite-toggle');
+            if (favoriteToggle) {
+                favoriteToggle.addEventListener('click', function() {
+                    const url = this.getAttribute('data-url');
+                    const button = this;
+                    
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Mise à jour de l'interface
+                            if (data.isFavorite) {
+                                button.classList.remove('btn-outline-secondary');
+                                button.classList.add('btn-outline-danger');
+                                button.querySelector('i').classList.remove('bi-star');
+                                button.querySelector('i').classList.add('bi-star-fill');
+                                button.innerHTML = button.innerHTML.replace('Ajouter aux favoris', 'Retirer des favoris');
+                                button.title = 'Retirer des favoris';
+                            } else {
+                                button.classList.remove('btn-outline-danger');
+                                button.classList.add('btn-outline-secondary');
+                                button.querySelector('i').classList.remove('bi-star-fill');
+                                button.querySelector('i').classList.add('bi-star');
+                                button.innerHTML = button.innerHTML.replace('Retirer des favoris', 'Ajouter aux favoris');
+                                button.title = 'Ajouter aux favoris';
+                            }
+                        }
+                    })
+                    .catch(error => console.error('Erreur:', error));
+                });
+            }
+        });
+    </script>
+{% endblock %} 

@@ -1,0 +1,125 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Détails de l'offre d'emploi{% endblock %}
+
+{% block content_title %}Détails de l'offre d'emploi{% endblock %}
+
+{% block page_actions %}
+    <div class="btn-group" role="group">
+        <a href="{{ path('admin_job_offer_index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Retour à la liste
+        </a>
+        <a href="{{ path('admin_job_offer_edit', {'id': job_offer.id}) }}" class="btn btn-warning">
+            <i class="fas fa-edit"></i> Modifier
+        </a>
+        <form method="post" action="{{ path('admin_job_offer_delete', {'id': job_offer.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette offre ?');" style="display: inline-block;">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ job_offer.id) }}">
+            <button class="btn btn-danger">
+                <i class="fas fa-trash"></i> Supprimer
+            </button>
+        </form>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title">Informations générales</h5>
+                </div>
+                <div class="card-body">
+                    <h3>{{ job_offer.title }}</h3>
+                    <p class="lead">{{ job_offer.company }} - {{ job_offer.location }}</p>
+                    
+                    <div class="mb-3">
+                        {% if job_offer.isActive %}
+                            <span class="badge bg-success">Actif</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inactif</span>
+                        {% endif %}
+                        
+                        {% if job_offer.isPromoted %}
+                            <span class="badge bg-warning">Mise en avant</span>
+                        {% endif %}
+                        
+                        {% if job_offer.isRemote %}
+                            <span class="badge bg-info">Télétravail</span>
+                        {% endif %}
+                        
+                        <span class="badge bg-primary">{{ job_offer.contractType }}</span>
+                    </div>
+                    
+                    <table class="table">
+                        <tbody>
+                            <tr>
+                                <th>ID</th>
+                                <td>{{ job_offer.id }}</td>
+                            </tr>
+                            <tr>
+                                <th>Salaire</th>
+                                <td>{{ job_offer.salary ? job_offer.salary|format_currency('EUR') : 'Non spécifié' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Date d'expiration</th>
+                                <td>{{ job_offer.expiresAt ? job_offer.expiresAt|date('d/m/Y') : 'Non spécifiée' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Email de contact</th>
+                                <td>{{ job_offer.contactEmail ?? 'Non spécifié' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Téléphone de contact</th>
+                                <td>{{ job_offer.contactPhone ?? 'Non spécifié' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Recruteur</th>
+                                <td>
+                                    {% if job_offer.recruiter %}
+                                        {% if job_offer.recruiter.email is defined %}
+                                            {{ job_offer.recruiter.email }}
+                                        {% elseif job_offer.recruiter.name is defined %}
+                                            {{ job_offer.recruiter.name }}
+                                        {% else %}
+                                            ID: {{ job_offer.recruiter.id }}
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">Non défini</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Description</h5>
+                </div>
+                <div class="card-body">
+                    {{ job_offer.description|nl2br }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title">Compétences requises</h5>
+                </div>
+                <div class="card-body">
+                    {% if job_offer.requiredSkills|length > 0 %}
+                        <ul class="list-group">
+                            {% for skill in job_offer.requiredSkills %}
+                                <li class="list-group-item">{{ skill }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">Aucune compétence spécifiée</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %} 

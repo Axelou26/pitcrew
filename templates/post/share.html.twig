@@ -1,0 +1,71 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Partager une publication{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Partager cette publication</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4 p-3 bg-light rounded">
+                        <div class="d-flex mb-2">
+                            {% if post.author.profilePicture %}
+                                <img src="{{ asset('uploads/profile_pictures/' ~ post.author.profilePicture) }}" 
+                                     class="rounded-circle me-2"
+                                     alt="{{ post.author.fullName }}"
+                                     style="width: 40px; height: 40px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-white rounded-circle d-flex align-items-center justify-content-center me-2 border"
+                                     style="width: 40px; height: 40px;">
+                                    <i class="bi bi-person text-muted"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <div class="d-flex align-items-center">
+                                    <h6 class="mb-0">{{ post.author.fullName }}</h6>
+                                    <small class="text-muted ms-2">{{ post.createdAt|date('d/m/Y à H:i') }}</small>
+                                </div>
+                                <div class="mt-2">
+                                    {% if post.title %}
+                                        <h5>{{ post.title }}</h5>
+                                    {% endif %}
+                                    <p class="mb-2">{{ post.content|slice(0, 150) }}{% if post.content|length > 150 %}...{% endif %}</p>
+                                    {% if post.image %}
+                                        <div class="mt-2">
+                                            <img src="{{ asset('uploads/posts/' ~ post.image) }}" 
+                                                 class="img-fluid rounded" 
+                                                 alt="Image du post"
+                                                 style="max-height: 200px;">
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {{ form_start(form) }}
+                        <div class="mb-3">
+                            {{ form_label(form.comment) }}
+                            {{ form_widget(form.comment, {'attr': {'rows': 3, 'class': 'form-control', 'placeholder': 'Ajoutez un commentaire à votre partage...'}}) }}
+                            {{ form_errors(form.comment) }}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ path('app_post_show', {'id': post.id}) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-share me-1"></i> Partager
+                            </button>
+                        </div>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

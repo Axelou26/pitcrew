@@ -1,0 +1,63 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes candidatures{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <h1 class="h3 mb-4">Mes candidatures</h1>
+
+    {% if applications is empty %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            Vous n'avez pas encore postulé à des offres d'emploi.
+            <a href="{{ path('app_job_offer_index') }}" class="alert-link">Découvrez nos offres</a>
+        </div>
+    {% else %}
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            {% for application in applications %}
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">
+                                    <a href="{{ path('app_job_offer_show', {'id': application.jobOffer.id}) }}" class="text-decoration-none">
+                                        {{ application.jobOffer.title }}
+                                    </a>
+                                </h5>
+                                {% if application.status == 'pending' %}
+                                    <span class="badge bg-warning text-dark">En attente</span>
+                                {% elseif application.status == 'accepted' %}
+                                    <span class="badge bg-success">Acceptée</span>
+                                {% elseif application.status == 'rejected' %}
+                                    <span class="badge bg-danger">Refusée</span>
+                                {% endif %}
+                            </div>
+
+                            <h6 class="card-subtitle mb-2 text-muted">{{ application.jobOffer.recruiter.company }}</h6>
+
+                            <div class="d-flex gap-2 mb-3">
+                                <span class="badge bg-primary">{{ application.jobOffer.contractType }}</span>
+                                <span class="badge bg-secondary">{{ application.jobOffer.location }}</span>
+                            </div>
+
+                            <div class="mb-3">
+                                <small class="text-muted">
+                                    <i class="bi bi-clock me-1"></i>
+                                    Candidature envoyée {{ application.createdAt|ago }}
+                                </small>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <a href="{{ path('app_job_application_show', {'id': application.id}) }}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-eye me-1"></i> Voir ma candidature
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

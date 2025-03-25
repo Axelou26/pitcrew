@@ -1,0 +1,116 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Tableau de bord Recruteur - PITCREW{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                Tableau de bord
+            </h2>
+        </div>
+        <div class="mt-4 flex md:mt-0 md:ml-4">
+            <a href="{{ path('app_recruiter_job_offer_new') }}"
+               class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Publier une offre
+            </a>
+        </div>
+    </div>
+
+    <div class="mt-8">
+        <div class="md:grid md:grid-cols-3 md:gap-6">
+            <!-- Statistiques -->
+            <div class="md:col-span-1">
+                <div class="bg-white shadow rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900">Statistiques</h3>
+                    <dl class="mt-5 grid grid-cols-1 gap-5">
+                        <div class="bg-gray-50 px-4 py-5 sm:p-6 rounded-lg">
+                            <dt class="text-sm font-medium text-gray-500">Offres actives</dt>
+                            <dd class="mt-1 text-3xl font-semibold text-blue-600">{{ activeOffers|length }}</dd>
+                        </div>
+                        <div class="bg-gray-50 px-4 py-5 sm:p-6 rounded-lg">
+                            <dt class="text-sm font-medium text-gray-500">Offres expirées</dt>
+                            <dd class="mt-1 text-3xl font-semibold text-gray-600">{{ expiredOffers|length }}</dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Liste des offres -->
+            <div class="mt-5 md:mt-0 md:col-span-2">
+                <div class="bg-white shadow rounded-lg">
+                    <div class="p-6">
+                        <h3 class="text-lg font-medium text-gray-900">Offres actives</h3>
+                        {% if activeOffers is empty %}
+                            <p class="mt-4 text-sm text-gray-500">Aucune offre active pour le moment.</p>
+                        {% else %}
+                            <div class="mt-4 space-y-4">
+                                {% for offer in activeOffers %}
+                                    <div class="bg-gray-50 rounded-lg p-4">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h4 class="text-lg font-medium text-gray-900">{{ offer.title }}</h4>
+                                                <p class="mt-1 text-sm text-gray-500">{{ offer.location }} - {{ offer.contractType }}</p>
+                                            </div>
+                                            <div class="flex space-x-2">
+                                                <a href="{{ path('app_recruiter_job_offer_edit', {id: offer.id}) }}"
+                                                   class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                                    Modifier
+                                                </a>
+                                                <a href="{{ path('app_recruiter_job_offer_toggle', {id: offer.id}) }}"
+                                                   class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                                    Désactiver
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <p class="text-sm text-gray-500">{{ offer.description|slice(0, 150) }}...</p>
+                                        </div>
+                                        {% if offer.applications is not empty %}
+                                            <div class="mt-2">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                    {{ offer.applications|length }} candidature(s)
+                                                </span>
+                                                <a href="{{ path('app_job_application_recruiter') }}" class="ml-2 text-sm text-blue-600 hover:text-blue-800">
+                                                    Voir les candidatures
+                                                </a>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if expiredOffers is not empty %}
+                    <div class="mt-6 bg-white shadow rounded-lg">
+                        <div class="p-6">
+                            <h3 class="text-lg font-medium text-gray-900">Offres expirées</h3>
+                            <div class="mt-4 space-y-4">
+                                {% for offer in expiredOffers %}
+                                    <div class="bg-gray-50 rounded-lg p-4">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <h4 class="text-lg font-medium text-gray-500">{{ offer.title }}</h4>
+                                                <p class="mt-1 text-sm text-gray-500">{{ offer.location }} - {{ offer.contractType }}</p>
+                                            </div>
+                                            <div class="flex space-x-2">
+                                                <a href="{{ path('app_recruiter_job_offer_toggle', {id: offer.id}) }}"
+                                                   class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                                    Réactiver
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

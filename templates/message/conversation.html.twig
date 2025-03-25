@@ -1,0 +1,211 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Conversation avec {{ conversation.getOtherParticipant(app.user).fullName }}{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="h5 mb-0">Conversations</h3>
+                </div>
+                <div class="list-group list-group-flush" id="conversations-list">
+                    {% if conversations is empty %}
+                        <div class="list-group-item text-center text-muted py-4">
+                            <i class="bi bi-chat-dots display-4 mb-2"></i>
+                            <p class="mb-0">Aucune conversation pour le moment</p>
+                        </div>
+                    {% else %}
+                        {% for conv in conversations %}
+                            {% set otherParticipant = conv.getOtherParticipant(app.user) %}
+                            <a href="{{ path('app_message_conversation', {'id': conv.id}) }}" 
+                               class="list-group-item list-group-item-action {% if conv.id == conversation.id %}active{% endif %} {% if conv.hasUnreadMessages(app.user) and conv.id != conversation.id %}fw-bold{% endif %}">
+                                <div class="d-flex align-items-center">
+                                    {% if otherParticipant.profilePicture %}
+                                        <img src="{{ asset('uploads/profile_pictures/' ~ otherParticipant.profilePicture) }}" 
+                                             alt="{{ otherParticipant.fullName }}"
+                                             class="rounded-circle me-2"
+                                             style="width: 48px; height: 48px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-2"
+                                             style="width: 48px; height: 48px;">
+                                            <i class="bi bi-person text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div class="flex-grow-1 min-width-0">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <h6 class="mb-0 text-truncate">{{ otherParticipant.fullName }}</h6>
+                                            <small class="text-muted ms-2">{{ conv.lastMessageAt|ago }}</small>
+                                        </div>
+                                        {% if conv.lastMessage %}
+                                            <p class="mb-0 text-muted text-truncate">
+                                                {% if conv.lastMessage.sender == app.user %}
+                                                    <i class="bi bi-reply me-1"></i>
+                                                {% endif %}
+                                                {{ conv.lastMessage.content }}
+                                            </p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    {% set otherParticipant = conversation.getOtherParticipant(app.user) %}
+                    <div class="d-flex align-items-center">
+                        {% if otherParticipant.profilePicture %}
+                            <img src="{{ asset('uploads/profile_pictures/' ~ otherParticipant.profilePicture) }}" 
+                                 alt="{{ otherParticipant.fullName }}"
+                                 class="rounded-circle me-2"
+                                 style="width: 40px; height: 40px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-2"
+                                 style="width: 40px; height: 40px;">
+                                <i class="bi bi-person text-muted"></i>
+                            </div>
+                        {% endif %}
+                        <div>
+                            <h4 class="h5 mb-0">{{ otherParticipant.fullName }}</h4>
+                            {% if otherParticipant.company %}
+                                <small class="text-muted">{{ otherParticipant.company }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    <div class="chat-messages p-4" id="chat-messages" style="height: 400px; overflow-y: auto;">
+                        {% for message in conversation.messages %}
+                            <div class="message mb-3 {% if message.sender == app.user %}text-end{% endif %}">
+                                <div class="d-inline-block">
+                                    <div class="message-content p-3 rounded {% if message.sender == app.user %}bg-primary text-white{% else %}bg-light{% endif %}">
+                                        {{ message.content|nl2br }}
+                                    </div>
+                                    <div class="message-meta mt-1">
+                                        <small class="text-muted">
+                                            {{ message.createdAt|date('H:i') }}
+                                            {% if message.sender == app.user %}
+                                                • {% if message.isRead() %}Lu{% else %}Envoyé{% endif %}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="chat-input border-top p-3">
+                        <form id="message-form" class="d-flex gap-2">
+                            <textarea class="form-control" 
+                                      rows="1" 
+                                      placeholder="Écrivez votre message..."
+                                      style="resize: none;"
+                                      required></textarea>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const messagesContainer = document.getElementById('chat-messages');
+            const messageForm = document.getElementById('message-form');
+            const messageInput = messageForm.querySelector('textarea');
+
+            // Faire défiler jusqu'au dernier message
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            // Gérer l'envoi de messages
+            messageForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const content = messageInput.value.trim();
+                if (!content) return;
+
+                fetch('{{ path('app_message_send', {'id': conversation.id}) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'content=' + encodeURIComponent(content)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+
+                    // Ajouter le message à la conversation
+                    const messageHtml = `
+                        <div class="message mb-3 text-end">
+                            <div class="d-inline-block">
+                                <div class="message-content p-3 rounded bg-primary text-white">
+                                    ${data.content.replace(/\n/g, '<br>')}
+                                </div>
+                                <div class="message-meta mt-1">
+                                    <small class="text-muted">
+                                        ${new Date(data.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                        • Envoyé
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    messagesContainer.insertAdjacentHTML('beforeend', messageHtml);
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    messageInput.value = '';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Une erreur est survenue lors de l\'envoi du message.');
+                });
+            });
+
+            // Ajuster automatiquement la hauteur du textarea
+            messageInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+
+            // Envoyer avec Entrée (Shift+Entrée pour nouvelle ligne)
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    messageForm.dispatchEvent(new Event('submit'));
+                }
+            });
+
+            // Rafraîchir les messages toutes les 5 secondes
+            setInterval(function() {
+                fetch(window.location.href)
+                    .then(response => response.text())
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const newMessages = doc.getElementById('chat-messages');
+                        
+                        if (newMessages.innerHTML !== messagesContainer.innerHTML) {
+                            messagesContainer.innerHTML = newMessages.innerHTML;
+                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        }
+                    });
+            }, 5000);
+        });
+    </script>
+{% endblock %} 

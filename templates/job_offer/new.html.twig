@@ -1,0 +1,688 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Publier une offre d'emploi{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        :root {
+            --card-border-radius: 16px;
+            --input-border-radius: 10px;
+            --transition-speed: 0.3s;
+        }
+        
+        .job-form-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-color) 20%, var(--secondary-color) 100%);
+            padding: 3rem 0;
+            margin-bottom: 3rem;
+            border-radius: 0 0 30px 30px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .page-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            border-radius: 50%;
+            z-index: 1;
+        }
+        
+        .page-title {
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        
+        .form-card {
+            border: none;
+            border-radius: var(--card-border-radius);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+            transition: all var(--transition-speed);
+            overflow: hidden;
+        }
+        
+        .form-card:hover {
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-section-title {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .form-section-title:after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -10px;
+            height: 4px;
+            width: 40px;
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+        
+        .form-control, .form-select {
+            padding: 0.8rem 1.2rem;
+            border-radius: var(--input-border-radius);
+            border: 1px solid #e6e6e6;
+            font-size: 1rem;
+            transition: all var(--transition-speed);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(var(--primary-color-rgb), 0.15);
+        }
+        
+        .form-control-lg {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            margin-bottom: 0.7rem;
+            color: #333;
+            font-size: 1rem;
+        }
+        
+        .form-hint {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 0.5rem;
+            transition: all var(--transition-speed);
+        }
+        
+        .collection-item {
+            position: relative;
+            padding: 1rem 1.2rem;
+            margin-bottom: 0.7rem;
+            background-color: white;
+            border-radius: var(--input-border-radius);
+            border: 1px solid #e6e6e6;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            transition: all var(--transition-speed);
+            display: flex;
+            align-items: center;
+        }
+        
+        .collection-item:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+        }
+        
+        .collection-item .remove-item {
+            margin-left: auto;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all var(--transition-speed);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background-color: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+        }
+        
+        .collection-item .remove-item:hover {
+            opacity: 1;
+            background-color: rgba(220, 53, 69, 0.2);
+            transform: scale(1.1);
+        }
+        
+        .collection-item input {
+            flex-grow: 1;
+            margin-right: 0.75rem;
+        }
+        
+        .skills-collection {
+            background-color: #f9fafc;
+            border-radius: var(--input-border-radius);
+            transition: all var(--transition-speed);
+            min-height: 120px;
+            border: 1px dashed #ccd4e0;
+        }
+        
+        .skills-collection:focus-within {
+            box-shadow: 0 0 0 4px rgba(var(--primary-color-rgb), 0.1);
+            border-color: var(--primary-color);
+        }
+        
+        .btn {
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 0.7rem 1.5rem;
+            transition: all var(--transition-speed);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #ff4b45 100%);
+            border: none;
+            box-shadow: 0 4px 15px rgba(var(--primary-color-rgb), 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 18px rgba(var(--primary-color-rgb), 0.35);
+        }
+        
+        .btn-outline-secondary {
+            border: 1px solid #dee2e6;
+            color: #495057;
+        }
+        
+        .btn-outline-secondary:hover {
+            background-color: #f8f9fa;
+            color: #212529;
+            border-color: #c1c9d0;
+            transform: translateY(-2px);
+        }
+        
+        .btn-add-skill {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: #212529;
+            font-weight: 600;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(230, 179, 37, 0.2);
+            transition: all var(--transition-speed);
+            display: flex;
+            align-items: center;
+        }
+        
+        .btn-add-skill:hover {
+            background-color: #e6b325;
+            border-color: #e6b325;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(230, 179, 37, 0.3);
+        }
+        
+        .btn-add-skill i {
+            font-size: 1.1rem;
+            margin-right: 0.4rem;
+        }
+        
+        .tips-card {
+            border-left: 5px solid var(--accent-color);
+            border-radius: var(--card-border-radius);
+            background-color: #FFFDF7;
+            margin-top: 3rem;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            transition: all var(--transition-speed);
+        }
+        
+        .tips-card:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transform: translateY(-3px);
+        }
+        
+        .tips-icon {
+            color: var(--accent-color);
+            font-size: 1.3rem;
+        }
+        
+        .tips-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .tips-list li {
+            position: relative;
+            padding-left: 1.8rem;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+        
+        .tips-list li:before {
+            content: '✓';
+            color: var(--accent-color);
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .breadcrumb-item a {
+            opacity: 0.85;
+            transition: opacity var(--transition-speed);
+            text-decoration: none;
+        }
+        
+        .breadcrumb-item a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+        
+        .ck-editor__editable {
+            min-height: 250px !important;
+            border-radius: 0 0 var(--input-border-radius) var(--input-border-radius) !important;
+        }
+        
+        .ck.ck-toolbar {
+            border-radius: var(--input-border-radius) var(--input-border-radius) 0 0 !important;
+        }
+        
+        .file-upload-container {
+            position: relative;
+            padding: 2rem;
+            border: 2px dashed #dee2e6;
+            border-radius: var(--input-border-radius);
+            background-color: #f8f9fa;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            transition: all var(--transition-speed);
+            cursor: pointer;
+        }
+        
+        .file-upload-container:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(var(--primary-color-rgb), 0.03);
+        }
+        
+        .file-upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        
+        .file-preview {
+            max-width: 100%;
+            max-height: 200px;
+            margin-top: 1rem;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .file-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .section-divider {
+            display: flex;
+            align-items: center;
+            margin: 2.5rem 0;
+        }
+        
+        .section-divider .line {
+            flex-grow: 1;
+            height: 1px;
+            background-color: #e9ecef;
+        }
+        
+        .section-divider .text {
+            padding: 0 1rem;
+            font-weight: 600;
+            color: #6c757d;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .page-header {
+                padding: 2rem 0;
+                margin-bottom: 2rem;
+                text-align: center;
+            }
+            
+            .breadcrumb {
+                justify-content: center !important;
+                margin-top: 1rem;
+            }
+            
+            .form-card {
+                padding: 1rem;
+            }
+            
+            .btn-primary {
+                width: 100%;
+                margin-top: 1rem;
+            }
+            
+            .btn-outline-secondary {
+                width: 100%;
+            }
+            
+            .d-flex.justify-content-between {
+                flex-direction: column;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-7">
+                <h1 class="page-title text-white mb-2">Publier une offre d'emploi</h1>
+                <p class="lead mb-0 text-white-75">Attirez les meilleurs talents pour votre équipe</p>
+            </div>
+            <div class="col-md-5">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb justify-content-md-end mb-0">
+                        <li class="breadcrumb-item"><a href="{{ path('app_home') }}" class="text-white">Accueil</a></li>
+                        <li class="breadcrumb-item"><a href="{{ path('app_job_offer_index') }}" class="text-white">Offres d'emploi</a></li>
+                        <li class="breadcrumb-item active text-white-50" aria-current="page">Publier une offre</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <div class="job-form-container">
+        <div class="form-card card">
+            <div class="card-body p-4 p-lg-5">
+                <h2 class="form-section-title">Détails de l'offre</h2>
+                <p class="text-muted mb-4">Renseignez les informations pour attirer les candidats qualifiés</p>
+
+                {{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate'}}) }}
+                    <div class="mb-4">
+                        {{ form_label(form.title, 'Titre du poste') }}
+                        {{ form_widget(form.title, {'attr': {'class': 'form-control form-control-lg', 'placeholder': 'Ex: Ingénieur Aérodynamique F1'}}) }}
+                        {{ form_errors(form.title) }}
+                        <div class="form-hint">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Choisissez un titre précis et attractif pour attirer les bons candidats
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form_label(form.company, 'Nom de l\'entreprise') }}
+                        {{ form_widget(form.company, {'attr': {'class': 'form-control', 'placeholder': 'Ex: Mercedes F1 Team'}}) }}
+                        {{ form_errors(form.company) }}
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-4 mb-md-0">
+                            <label class="form-label">Logo de l'entreprise</label>
+                            <div class="file-upload-container" id="logoUploadContainer">
+                                <i class="bi bi-building file-upload-icon" id="logoIcon"></i>
+                                <h5 class="mb-2">Ajouter un logo</h5>
+                                <p class="text-muted mb-0">Formats acceptés: JPG, PNG ou SVG (max 2 Mo)</p>
+                                <img id="logoPreview" src="#" class="file-preview">
+                                {{ form_widget(form.logoFile, {'attr': {'class': 'file-input', 'accept': 'image/jpeg,image/png,image/svg+xml'}}) }}
+                            </div>
+                            {{ form_errors(form.logoFile) }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Image de couverture</label>
+                            <div class="file-upload-container" id="imageUploadContainer">
+                                <i class="bi bi-image file-upload-icon" id="imageIcon"></i>
+                                <h5 class="mb-2">Ajouter une image</h5>
+                                <p class="text-muted mb-0">Formats acceptés: JPG ou PNG (max 5 Mo)</p>
+                                <img id="imagePreview" src="#" class="file-preview">
+                                {{ form_widget(form.imageFile, {'attr': {'class': 'file-input', 'accept': 'image/jpeg,image/png'}}) }}
+                            </div>
+                            {{ form_errors(form.imageFile) }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            {{ form_label(form.contractType, 'Type de contrat') }}
+                            {{ form_widget(form.contractType) }}
+                            {{ form_errors(form.contractType) }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form_label(form.location, 'Lieu') }}
+                            {{ form_widget(form.location, {'attr': {'placeholder': 'Ex: Paris, France'}}) }}
+                            {{ form_errors(form.location) }}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            {{ form_widget(form.isRemote, {'attr': {'class': 'form-check-input'}}) }}
+                            {{ form_label(form.isRemote, 'Télétravail possible', {'label_attr': {'class': 'form-check-label'}}) }}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form_label(form.description, 'Description du poste') }}
+                        {{ form_widget(form.description) }}
+                        {{ form_errors(form.description) }}
+                        <div class="form-hint">
+                            <i class="bi bi-pencil-square me-1"></i>
+                            Décrivez les responsabilités, les qualifications requises et les avantages du poste
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            {{ form_label(form.salary, 'Salaire annuel (€)') }}
+                            {{ form_widget(form.salary, {'attr': {'placeholder': 'Ex: 45000'}}) }}
+                            {{ form_errors(form.salary) }}
+                            <div class="form-hint">
+                                <i class="bi bi-currency-euro me-1"></i>
+                                Laissez vide si vous préférez ne pas préciser
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            {{ form_label(form.expiresAt, 'Date d\'expiration') }}
+                            {{ form_widget(form.expiresAt) }}
+                            {{ form_errors(form.expiresAt) }}
+                            <div class="form-hint">
+                                <i class="bi bi-calendar me-1"></i>
+                                Date à laquelle l'offre ne sera plus visible
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            {{ form_label(form.contactEmail, 'Email de contact') }}
+                            {{ form_widget(form.contactEmail, {'attr': {'placeholder': 'Ex: recrutement@team.com'}}) }}
+                            {{ form_errors(form.contactEmail) }}
+                        </div>
+                    </div>
+
+                    <div class="section-divider">
+                        <div class="line"></div>
+                        <div class="text">Compétences requises</div>
+                        <div class="line"></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            {{ form_label(form.requiredSkills, 'Quelles compétences recherchez-vous ?', {'label_attr': {'class': 'mb-0'}}) }}
+                            <button type="button" class="btn btn-sm btn-add-skill" id="add-skill">
+                                <i class="bi bi-plus-lg"></i> Ajouter une compétence
+                            </button>
+                        </div>
+                        <div class="skills-collection p-3" 
+                             data-prototype="{{ form_widget(form.requiredSkills.vars.prototype)|e('html_attr') }}">
+                            {% if form.requiredSkills|length > 0 %}
+                                {% for skill in form.requiredSkills %}
+                                    <div class="collection-item">
+                                        {{ form_widget(skill, {'attr': {'class': 'form-control', 'placeholder': 'Ex: Aérodynamique, CAO, Analyse de données'}}) }}
+                                        <span class="remove-item">
+                                            <i class="bi bi-x"></i>
+                                        </span>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-lightbulb text-warning display-6 mb-3"></i>
+                                    <p class="mb-0">Ajoutez les compétences requises pour ce poste</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        {{ form_errors(form.requiredSkills) }}
+                        <div class="form-hint">
+                            <i class="bi bi-stars me-1"></i>
+                            Listez les compétences techniques et personnelles nécessaires pour le poste
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ path('app_job_offer_index') }}" class="btn btn-outline-secondary px-4">
+                            <i class="bi bi-arrow-left me-2"></i> Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary px-5">
+                            <i class="bi bi-check-lg me-2"></i> Publier l'offre
+                        </button>
+                    </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+        
+        <div class="tips-card card">
+            <div class="card-body p-4">
+                <h3 class="h5 mb-3 d-flex align-items-center">
+                    <i class="bi bi-lightbulb me-2 tips-icon"></i> 
+                    Conseils pour une offre efficace
+                </h3>
+                <ul class="tips-list mb-0">
+                    <li>Soyez précis sur les responsabilités et les attentes du poste</li>
+                    <li>Ajoutez un logo et une image attrayante pour augmenter la visibilité</li>
+                    <li>Mettez en avant la culture et les valeurs de votre entreprise</li>
+                    <li>Précisez les avantages et les opportunités d'évolution</li>
+                    <li>Utilisez des mots-clés pertinents pour améliorer la visibilité de votre offre</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var collectionHolder = document.querySelector('.skills-collection');
+            var addButton = document.querySelector('#add-skill');
+            
+            // Prévisualisation des images
+            function handleFilePreview(input, previewId, iconId) {
+                input.addEventListener('change', function() {
+                    var preview = document.getElementById(previewId);
+                    var icon = document.getElementById(iconId);
+                    
+                    if (input.files && input.files[0]) {
+                        var reader = new FileReader();
+                        
+                        reader.onload = function(e) {
+                            preview.src = e.target.result;
+                            preview.style.display = 'block';
+                            icon.style.display = 'none';
+                        }
+                        
+                        reader.readAsDataURL(input.files[0]);
+                    }
+                });
+            }
+            
+            handleFilePreview(document.querySelector('#{{ form.logoFile.vars.id }}'), 'logoPreview', 'logoIcon');
+            handleFilePreview(document.querySelector('#{{ form.imageFile.vars.id }}'), 'imagePreview', 'imageIcon');
+            
+            // Animation d'entrée sur les éléments du formulaire
+            document.querySelectorAll('.form-card, .tips-card').forEach(function(el, index) {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                
+                setTimeout(function() {
+                    el.style.transition = 'all 0.5s ease';
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, 100 + (index * 100));
+            });
+            
+            // Vérifier s'il y a des compétences existantes
+            function checkEmptyCollection() {
+                if (collectionHolder.children.length === 0 || 
+                    (collectionHolder.children.length === 1 && collectionHolder.children[0].classList.contains('text-center'))) {
+                    collectionHolder.innerHTML = '';
+                }
+            }
+
+            // Ajouter une nouvelle compétence
+            addButton.addEventListener('click', function() {
+                checkEmptyCollection();
+                
+                var prototype = collectionHolder.dataset.prototype;
+                var index = collectionHolder.querySelectorAll('.collection-item').length;
+                var newForm = prototype.replace(/__name__/g, index);
+                
+                var div = document.createElement('div');
+                div.classList.add('collection-item');
+                div.style.opacity = '0';
+                div.style.transform = 'translateY(10px)';
+                div.innerHTML = newForm + '<span class="remove-item"><i class="bi bi-x"></i></span>';
+                
+                // Ajouter des attributs au champ
+                var input = div.querySelector('input');
+                if (input) {
+                    input.classList.add('form-control');
+                    input.setAttribute('placeholder', 'Ex: Aérodynamique, CAO, Analyse de données');
+                }
+                
+                collectionHolder.appendChild(div);
+                
+                // Animation d'entrée
+                setTimeout(function() {
+                    div.style.transition = 'all 0.3s ease';
+                    div.style.opacity = '1';
+                    div.style.transform = 'translateY(0)';
+                }, 10);
+
+                // Ajouter l'événement de suppression au nouveau bouton
+                addRemoveButton(div);
+                
+                // Focus sur le nouveau champ
+                div.querySelector('input').focus();
+            });
+
+            // Ajouter les événements de suppression aux boutons existants
+            document.querySelectorAll('.collection-item').forEach(function(item) {
+                addRemoveButton(item);
+            });
+
+            function addRemoveButton(item) {
+                item.querySelector('.remove-item').addEventListener('click', function() {
+                    // Animation de sortie
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateX(20px)';
+                    
+                    setTimeout(function() {
+                        item.remove();
+                        
+                        // Vérifier si la collection est vide après suppression
+                        if (collectionHolder.querySelectorAll('.collection-item').length === 0) {
+                            collectionHolder.innerHTML = `
+                                <div class="text-center py-4">
+                                    <i class="bi bi-lightbulb text-warning display-6 mb-3"></i>
+                                    <p class="mb-0">Ajoutez les compétences requises pour ce poste</p>
+                                </div>
+                            `;
+                        }
+                    }, 300);
+                });
+            }
+        });
+    </script>
+{% endblock %} 

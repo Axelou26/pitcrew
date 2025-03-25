@@ -1,0 +1,26 @@
+{# Template partiel pour afficher une notification dans le dropdown #}
+<a href="{{ notification.targetUrl }}" 
+   class="dropdown-item notification-item {{ not notification.isRead ? 'unread' : '' }}"
+   data-notification-id="{{ notification.id }}"
+   data-mark-as-read-url="{{ path('app_notification_mark_as_read', {'id': notification.id}) }}">
+    <div class="d-flex align-items-center">
+        <div class="flex-shrink-0 me-2">
+            {% if notification.type == 'friend_request' %}
+                <i class="bi bi-person-plus text-primary"></i>
+            {% elseif notification.type == 'message' %}
+                <i class="bi bi-chat-dots text-info"></i>
+            {% elseif notification.type == 'job_application' %}
+                <i class="bi bi-briefcase text-success"></i>
+            {% elseif notification.type == 'job_offer' %}
+                <i class="bi bi-file-earmark-text text-warning"></i>
+            {% else %}
+                <i class="bi bi-bell text-secondary"></i>
+            {% endif %}
+        </div>
+        <div class="flex-grow-1">
+            <div class="notification-title">{{ notification.title }}</div>
+            <div class="notification-message">{{ notification.message|length > 50 ? notification.message|slice(0, 50) ~ '...' : notification.message }}</div>
+            <div class="notification-time">{{ notification.createdAt|date('d/m/Y H:i') }}</div>
+        </div>
+    </div>
+</a> 

@@ -1,0 +1,58 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Répondre à un commentaire{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Répondre à un commentaire</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4 p-3 bg-light rounded">
+                        <div class="d-flex mb-2">
+                            {% if parentComment.author.profilePicture %}
+                                <img src="{{ asset('uploads/profile_pictures/' ~ parentComment.author.profilePicture) }}" 
+                                     class="rounded-circle me-2"
+                                     alt="{{ parentComment.author.fullName }}"
+                                     style="width: 40px; height: 40px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-white rounded-circle d-flex align-items-center justify-content-center me-2 border"
+                                     style="width: 40px; height: 40px;">
+                                    <i class="bi bi-person text-muted"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <div class="d-flex align-items-center">
+                                    <h6 class="mb-0">{{ parentComment.author.fullName }}</h6>
+                                    <small class="text-muted ms-2">{{ parentComment.createdAt|date('d/m/Y à H:i') }}</small>
+                                </div>
+                                <p class="mb-0 mt-1">{{ parentComment.content|nl2br }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {{ form_start(form) }}
+                        <div class="mb-3">
+                            {{ form_label(form.content) }}
+                            {{ form_widget(form.content, {'attr': {'rows': 3, 'class': 'form-control', 'placeholder': 'Écrivez votre réponse...'}}) }}
+                            {{ form_errors(form.content) }}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ path('app_post_show', {'id': parentComment.post.id}) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send me-1"></i> Publier
+                            </button>
+                        </div>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

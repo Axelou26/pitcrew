@@ -1,0 +1,233 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}#{{ hashtag.name }} - Posts{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .hashtag-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+        }
+        .trending-hashtag {
+            transition: all 0.2s;
+        }
+        .trending-hashtag:hover {
+            transform: translateY(-2px);
+        }
+        .reaction-icon {
+            display: inline-block;
+            margin-right: -5px;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="hashtag-header">
+    <div class="container">
+        <h1 class="display-4 fw-bold">{{ hashtag.formattedName }}</h1>
+        <p class="lead">{{ hashtag.usageCount }} publication{% if hashtag.usageCount > 1 %}s{% endif %}</p>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="row">
+        <!-- Posts avec le hashtag -->
+        <div class="col-md-8">
+            {% if posts is empty %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i> Aucune publication avec ce hashtag pour le moment.
+                </div>
+            {% else %}
+                {% for post in posts %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-white py-3">
+                            <div class="d-flex">
+                                <a href="{{ path('app_user_profile', {'id': post.author.id}) }}" class="me-2">
+                                    {% if post.author.profilePicture %}
+                                        <img src="{{ asset('uploads/profile_pictures/' ~ post.author.profilePicture) }}" 
+                                             class="rounded-circle border"
+                                             alt="{{ post.author.fullName }}"
+                                             style="width: 48px; height: 48px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center border"
+                                             style="width: 48px; height: 48px;">
+                                            <i class="bi bi-person text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                </a>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center">
+                                        <a href="{{ path('app_user_profile', {'id': post.author.id}) }}" class="text-decoration-none text-dark">
+                                            <h6 class="mb-0 fw-bold">{{ post.author.fullName }}</h6>
+                                        </a>
+                                    </div>
+                                    <div class="text-muted small">
+                                        {% if post.author.company %}{{ post.author.company }} • {% endif %}
+                                        {{ post.createdAt|date('d/m/Y à H:i') }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-body">
+                            {% if post.title %}
+                                <h5 class="card-title fw-bold mb-2">{{ post.title }}</h5>
+                            {% endif %}
+                            
+                            {% set content = post.content %}
+                            
+                            {# Traitement des mentions #}
+                            {% set contentWithMentions = content %}
+                            {% for mention in post.extractMentions %}
+                                {% set contentWithMentions = contentWithMentions|replace({
+                                    '@' ~ mention: '<a href="' ~ path('app_user_profile', {'id': mention}) ~ '" class="mention">@' ~ mention ~ '</a>'
+                                }) %}
+                            {% endfor %}
+                            
+                            {# Traitement des hashtags #}
+                            {% set contentWithHashtags = contentWithMentions %}
+                            {% for hashtag in post.extractHashtags %}
+                                {% set contentWithHashtags = contentWithHashtags|replace({
+                                    '#' ~ hashtag: '<a href="' ~ path('app_hashtag_show', {'name': hashtag}) ~ '" class="hashtag fw-bold">
+                                        #' ~ hashtag ~ '</a>'
+                                }) %}
+                            {% endfor %}
+                            
+                            <p class="card-text mb-3">
+                                {{ contentWithHashtags|raw }}
+                            </p>
+                            
+                            {% if post.image %}
+                                <div class="post-image mb-3">
+                                    <img src="{{ asset('uploads/posts/' ~ post.image) }}" 
+                                         class="img-fluid rounded-3" 
+                                         alt="{{ post.title }}" 
+                                         style="width: 100%; max-height: 500px; object-fit: cover;">
+                                </div>
+                            {% endif %}
+                            
+                            <!-- Post Stats -->
+                            <div class="d-flex align-items-center text-muted small mb-2">
+                                <div class="me-auto">
+                                    {% set totalReactions = post.likesCount %}
+                                    {% if totalReactions > 0 %}
+                                        <div class="d-flex align-items-center">
+                                            <div class="reaction-icons">
+                                                {% set displayedReactions = 0 %}
+                                                {% for reactionType, count in post.reactionCounts %}
+                                                    {% if count > 0 and displayedReactions < 3 %}
+                                                        <span class="reaction-icon" title="{{ ('reactions.' ~ reactionType)|trans }}">
+                                                            {% if reactionType == 'like' %}👍{% endif %}
+                                                            {% if reactionType == 'congrats' %}👏{% endif %}
+                                                            {% if reactionType == 'interesting' %}💡{% endif %}
+                                                            {% if reactionType == 'support' %}❤️{% endif %}
+                                                            {% if reactionType == 'encouraging' %}💪{% endif %}
+                                                        </span>
+                                                        {% set displayedReactions = displayedReactions + 1 %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                            <span class="ms-1">{{ totalReactions }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                {% if post.commentsCount > 0 %}
+                                    <span>{{ post.commentsCount }} commentaire{% if post.commentsCount > 1 %}s{% endif %}</span>
+                                {% endif %}
+                                {% if post.sharesCount > 0 %}
+                                    <span class="ms-2">{{ post.sharesCount }} partage{% if post.sharesCount > 1 %}s{% endif %}</span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Post Actions -->
+                            <div class="d-flex border-top pt-2">
+                                <div class="dropdown flex-fill">
+                                    <button class="btn btn-light w-100 dropdown-toggle" type="button" id="reactionDropdown{{ post.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                        {% if app.user and post.getUserReactionType(app.user) %}
+                                            {% set userReaction = post.getUserReactionType(app.user) %}
+                                            <span class="reaction-active">
+                                                {% if userReaction == 'like' %}👍 J'aime{% endif %}
+                                                {% if userReaction == 'congrats' %}👏 Félicitations{% endif %}
+                                                {% if userReaction == 'interesting' %}💡 Intéressant{% endif %}
+                                                {% if userReaction == 'support' %}❤️ Soutien{% endif %}
+                                                {% if userReaction == 'encouraging' %}💪 Encourageant{% endif %}
+                                            </span>
+                                        {% else %}
+                                            <i class="bi bi-hand-thumbs-up me-1"></i> J'aime
+                                        {% endif %}
+                                    </button>
+                                    <ul class="dropdown-menu reaction-menu" aria-labelledby="reactionDropdown{{ post.id }}">
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center" href="{{ path('app_post_like', {'id': post.id, 'type': 'like'}) }}">
+                                                <span class="reaction-emoji me-2">👍</span> J'aime
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center" href="{{ path('app_post_like', {'id': post.id, 'type': 'congrats'}) }}">
+                                                <span class="reaction-emoji me-2">👏</span> Félicitations
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center" href="{{ path('app_post_like', {'id': post.id, 'type': 'interesting'}) }}">
+                                                <span class="reaction-emoji me-2">💡</span> Intéressant
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center" href="{{ path('app_post_like', {'id': post.id, 'type': 'support'}) }}">
+                                                <span class="reaction-emoji me-2">❤️</span> Soutien
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center" href="{{ path('app_post_like', {'id': post.id, 'type': 'encouraging'}) }}">
+                                                <span class="reaction-emoji me-2">💪</span> Encourageant
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <a href="{{ path('app_post_show', {'id': post.id}) }}#comments" class="btn btn-light flex-fill me-1 rounded-2">
+                                    <i class="bi bi-chat-text me-1"></i> Commenter
+                                </a>
+                                <a href="{{ path('app_post_share', {'id': post.id}) }}" class="btn btn-light flex-fill rounded-2">
+                                    <i class="bi bi-share me-1"></i> Partager
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            {% if trendingHashtags is not empty %}
+                <div class="card mb-4 sticky-top" style="top: 80px;">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Hashtags tendance</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            {% for trendingHashtag in trendingHashtags %}
+                                <li class="list-group-item">
+                                    <a href="{{ path('app_hashtag_show', {'name': trendingHashtag.name}) }}" 
+                                       class="d-flex justify-content-between align-items-center trending-hashtag text-decoration-none">
+                                        <span class="fw-bold text-primary">{{ trendingHashtag.formattedName }}</span>
+                                        <span class="badge bg-light text-dark">{{ trendingHashtag.usageCount }}</span>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="card-footer bg-white text-center">
+                        <a href="{{ path('app_hashtags_trending') }}" class="text-decoration-none">
+                            Voir tous les hashtags
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

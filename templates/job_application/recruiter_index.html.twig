@@ -1,0 +1,250 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Candidatures reçues{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .application-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        
+        .application-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .application-card.status-pending {
+            border-left-color: var(--warning-color);
+        }
+        
+        .application-card.status-accepted {
+            border-left-color: var(--success-color);
+        }
+        
+        .application-card.status-rejected {
+            border-left-color: var(--danger-color);
+        }
+        
+        .application-card.status-interview {
+            border-left-color: var(--info-color);
+        }
+        
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+        }
+        
+        .status-badge.pending {
+            background-color: rgba(243, 156, 18, 0.1);
+            color: var(--warning-color);
+        }
+        
+        .status-badge.accepted {
+            background-color: rgba(39, 174, 96, 0.1);
+            color: var(--success-color);
+        }
+        
+        .status-badge.rejected {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .status-badge.interview {
+            background-color: rgba(52, 152, 219, 0.1);
+            color: var(--info-color);
+        }
+        
+        .application-meta {
+            font-size: 0.9rem;
+            color: var(--light-text);
+        }
+        
+        .application-meta i {
+            width: 20px;
+            text-align: center;
+            margin-right: 0.5rem;
+            color: var(--primary-color);
+        }
+        
+        .filters-section {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="page-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="h2 mb-0">Candidatures reçues</h1>
+                <p class="lead mb-0">Gérez les candidatures pour vos offres d'emploi</p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <a href="{{ path('app_recruiter_dashboard') }}" class="btn btn-light">
+                    <i class="bi bi-arrow-left me-2"></i> Retour au tableau de bord
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="row">
+        <!-- Filtres -->
+        <div class="col-lg-3">
+            <div class="filters-section p-4 mb-4">
+                <h5 class="mb-3">Filtres</h5>
+                <div class="mb-3">
+                    <label class="form-label">Statut</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="pending" id="filter-pending" checked>
+                        <label class="form-check-label" for="filter-pending">
+                            En attente
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="accepted" id="filter-accepted" checked>
+                        <label class="form-check-label" for="filter-accepted">
+                            Acceptées
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="rejected" id="filter-rejected" checked>
+                        <label class="form-check-label" for="filter-rejected">
+                            Refusées
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="interview" id="filter-interview" checked>
+                        <label class="form-check-label" for="filter-interview">
+                            Entretien
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Liste des candidatures -->
+        <div class="col-lg-9">
+            {% if applications is empty %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i> Vous n'avez reçu aucune candidature pour le moment.
+                </div>
+            {% else %}
+                <div class="applications-list">
+                    {% for application in applications %}
+                        <div class="application-card card mb-3 status-{{ application.status }}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h5 class="card-title mb-1">
+                                            {{ application.applicant.fullName }}
+                                        </h5>
+                                        <p class="text-muted mb-0">
+                                            Pour l'offre : {{ application.jobOffer.title }}
+                                        </p>
+                                    </div>
+                                    <span class="status-badge {{ application.status }}">
+                                        {% if application.status == 'pending' %}
+                                            En attente
+                                        {% elseif application.status == 'accepted' %}
+                                            Acceptée
+                                        {% elseif application.status == 'rejected' %}
+                                            Refusée
+                                        {% elseif application.status == 'interview' %}
+                                            Entretien
+                                        {% endif %}
+                                    </span>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <div class="application-meta mb-2">
+                                            <i class="bi bi-calendar"></i>
+                                            Candidature reçue le {{ application.createdAt|date('d/m/Y') }}
+                                        </div>
+                                        {% if application.applicant.jobTitle %}
+                                            <div class="application-meta mb-2">
+                                                <i class="bi bi-briefcase"></i>
+                                                {{ application.applicant.jobTitle }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        {% if application.applicant.email %}
+                                            <div class="application-meta mb-2">
+                                                <i class="bi bi-envelope"></i>
+                                                {{ application.applicant.email }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="d-flex gap-2">
+                                    <a href="{{ path('app_job_application_show', {'id': application.id}) }}" class="btn btn-primary">
+                                        <i class="bi bi-eye me-1"></i> Voir les détails
+                                    </a>
+                                    {% if application.status == 'pending' %}
+                                        <form action="{{ path('app_job_application_status', {'id': application.id}) }}" method="POST" class="d-inline">
+                                            <input type="hidden" name="status" value="accepted">
+                                            <button type="submit" class="btn btn-success">
+                                                <i class="bi bi-check-lg me-1"></i> Accepter
+                                            </button>
+                                        </form>
+                                        <form action="{{ path('app_job_application_status', {'id': application.id}) }}" method="POST" class="d-inline">
+                                            <input type="hidden" name="status" value="interview">
+                                            <button type="submit" class="btn btn-info text-white">
+                                                <i class="bi bi-calendar-event me-1"></i> Planifier un entretien
+                                            </button>
+                                        </form>
+                                        <form action="{{ path('app_job_application_status', {'id': application.id}) }}" method="POST" class="d-inline">
+                                            <input type="hidden" name="status" value="rejected">
+                                            <button type="submit" class="btn btn-danger">
+                                                <i class="bi bi-x-lg me-1"></i> Refuser
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Gestion des filtres
+            const filterCheckboxes = document.querySelectorAll('.form-check-input');
+            const applicationCards = document.querySelectorAll('.application-card');
+            
+            filterCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const selectedStatuses = Array.from(filterCheckboxes)
+                        .filter(cb => cb.checked)
+                        .map(cb => cb.value);
+                    
+                    applicationCards.forEach(card => {
+                        const status = card.classList.toString().match(/status-(\w+)/)[1];
+                        if (selectedStatuses.includes(status)) {
+                            card.style.display = '';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+{% endblock %} 

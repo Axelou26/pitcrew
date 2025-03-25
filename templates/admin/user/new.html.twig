@@ -1,0 +1,29 @@
+{% extends 'admin/layout.html.twig' %}
+
+{% block title %}Nouvel utilisateur{% endblock %}
+
+{% block content_title %}Ajouter un utilisateur{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('admin_user_index') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Retour à la liste
+    </a>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Informations de l'utilisateur</h5>
+                </div>
+                <div class="card-body">
+                    {{ include('admin/_form.html.twig', {
+                        'form': form,
+                        'cancel_path': path('admin_user_index')
+                    }) }}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %} 
