@@ -46,6 +46,7 @@ class FriendshipRepository extends ServiceEntityRepository
             ->setParameter('user1', $user1)
             ->setParameter('user2', $user2)
             ->setParameter('status', Friendship::STATUS_ACCEPTED)
+            ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
     }
@@ -125,5 +126,14 @@ class FriendshipRepository extends ServiceEntityRepository
         }
         
         return $friends;
+    }
+
+    /**
+     * Vérifie si deux utilisateurs sont amis
+     */
+    public function areFriends(User $user1, User $user2): bool
+    {
+        $friendship = $this->findAcceptedBetweenUsers($user1, $user2);
+        return $friendship !== null;
     }
 } 

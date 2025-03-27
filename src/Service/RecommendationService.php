@@ -41,11 +41,14 @@ class RecommendationService
         // 2. Posts des amis
         $friendsPosts = $this->getFriendsPosts($user);
         
-        // 3. Posts recommandés basés sur les intérêts et l'historique
+        // 3. Partages de l'utilisateur et de ses amis
+        $shares = $this->getRelevantShares($user);
+        
+        // 4. Posts recommandés basés sur les intérêts et l'historique
         $recommendedPosts = $this->getPersonalizedRecommendations($user, $limit);
         
-        // Fusionner les trois ensembles de posts, en évitant les doublons
-        $allPosts = array_merge($userPosts, $friendsPosts, $recommendedPosts);
+        // Fusionner les ensembles de posts, en évitant les doublons
+        $allPosts = array_merge($userPosts, $friendsPosts, $shares, $recommendedPosts);
         
         // Supprimer les doublons en utilisant l'ID du post comme clé
         $uniquePosts = [];
@@ -67,9 +70,17 @@ class RecommendationService
      */
     private function getUserPosts(User $user): array
     {
-        return $this->postRepository->findBy([
-            'author' => $user
-        ], ['createdAt' => 'DESC']);
+        $qb = $this->entityManager->createQueryBuilder();
+        $qb->select('p, a, s')
+           ->from('App\Entity\Post', 'p')
+           ->leftJoin('p.author', 'a')
+           ->leftJoin('p.shares', 's')
+           ->leftJoin('s.user', 'su')
+           ->where('p.author = :userId')
+           ->setParameter('userId', $user->getId())
+           ->orderBy('p.createdAt', 'DESC');
+        
+        return $qb->getQuery()->getResult();
     }
 
     /**
@@ -102,10 +113,18 @@ class RecommendationService
             return [];
         }
         
-        // Récupérer les posts des amis
-        return $this->postRepository->findBy([
-            'author' => $friendIds
-        ], ['createdAt' => 'DESC']);
+        // Récupérer les posts des amis avec les relations chargées
+        $qb = $this->entityManager->createQueryBuilder();
+        $qb->select('p, a, s')
+           ->from('App\Entity\Post', 'p')
+           ->leftJoin('p.author', 'a')
+           ->leftJoin('p.shares', 's')
+           ->leftJoin('s.user', 'su')
+           ->where('p.author IN (:friendIds)')
+           ->setParameter('friendIds', $friendIds)
+           ->orderBy('p.createdAt', 'DESC');
+        
+        return $qb->getQuery()->getResult();
     }
 
     /**
@@ -129,10 +148,12 @@ class RecommendationService
         try {
             // Construire une requête DQL personnalisée pour trouver des posts intéressants
             $qb = $this->entityManager->createQueryBuilder();
-            $qb->select('p, RAND() as HIDDEN rand')
+            $qb->select('p, a, s, su, RAND() as HIDDEN rand')
                ->from('App\Entity\Post', 'p')
                ->leftJoin('p.author', 'a')
                ->leftJoin('p.hashtags', 'h')
+               ->leftJoin('p.shares', 's')
+               ->leftJoin('s.user', 'su')
                ->where('p.author != :userId') // Exclure les posts de l'utilisateur (déjà inclus séparément)
                ->setParameter('userId', $user->getId());
             
@@ -284,5 +305,54 @@ class RecommendationService
     {
         // Utiliser la méthode du repository pour obtenir les suggestions
         return $this->userRepository->findSuggestedUsers($user, $limit);
+    }
+
+    /**
+     * Récupère les posts partagés par l'utilisateur et ses amis
+     */
+    private function getRelevantShares(User $user): array
+    {
+        // Récupérer les demandes d'amitié acceptées où l'utilisateur est le demandeur
+        $sentFriendships = $user->getSentFriendRequests()->filter(function($friendship) {
+            return $friendship->getStatus() === Friendship::STATUS_ACCEPTED;
+        });
+        
+        // Récupérer les demandes d'amitié acceptées où l'utilisateur est le destinataire
+        $receivedFriendships = $user->getReceivedFriendRequests()->filter(function($friendship) {
+            return $friendship->getStatus() === Friendship::STATUS_ACCEPTED;
+        });
+        
+        // Ajouter le user lui-même
+        $allUserIds = [$user->getId()];
+        
+        // Ajouter les amis à la liste
+        foreach ($sentFriendships as $friendship) {
+            $allUserIds[] = $friendship->getAddressee()->getId();
+        }
+        
+        foreach ($receivedFriendships as $friendship) {
+            $allUserIds[] = $friendship->getRequester()->getId();
+        }
+        
+        if (empty($allUserIds)) {
+            return [];
+        }
+        
+        try {
+            // Récupérer les posts qui ont été partagés avec toutes les relations nécessaires
+            $qb = $this->entityManager->createQueryBuilder();
+            $qb->select('DISTINCT p, a, s, su')
+               ->from('App\Entity\Post', 'p')
+               ->innerJoin('p.shares', 's')
+               ->innerJoin('s.user', 'su')
+               ->leftJoin('p.author', 'a')
+               ->where('s.user IN (:userIds)')
+               ->setParameter('userIds', $allUserIds)
+               ->orderBy('s.createdAt', 'DESC');
+            
+            return $qb->getQuery()->getResult();
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 } 

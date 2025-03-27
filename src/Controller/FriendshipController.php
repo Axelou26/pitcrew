@@ -33,9 +33,19 @@ class FriendshipController extends AbstractController
     }
     
     #[Route('/send/{id}', name: 'app_friendship_send')]
-    public function send(User $addressee, Request $request, EntityManagerInterface $entityManager, FriendshipRepository $friendshipRepository): Response
+    public function send($id, Request $request, EntityManagerInterface $entityManager, FriendshipRepository $friendshipRepository): Response
     {
         $requester = $this->getUser();
+        
+        // Récupérer l'utilisateur destinataire par son ID
+        $userRepository = $entityManager->getRepository(User::class);
+        $addressee = $userRepository->find($id);
+        
+        // Vérifier si l'utilisateur existe
+        if (!$addressee) {
+            $this->addFlash('error', 'L\'utilisateur n\'existe pas.');
+            return $this->redirect($request->headers->get('referer', $this->generateUrl('app_home')));
+        }
         
         // Vérifier que l'utilisateur n'essaie pas de s'envoyer une demande à lui-même
         if ($requester === $addressee) {
@@ -101,7 +111,7 @@ class FriendshipController extends AbstractController
         // Vérifier que l'utilisateur actuel est bien le destinataire de la demande
         if ($friendship->getAddressee() !== $this->getUser()) {
             $this->addFlash('error', 'Vous n\'êtes pas autorisé à effectuer cette action.');
-            return $this->redirectToRoute('app_friendship_requests');
+            return $this->redirect($request->headers->get('referer', $this->generateUrl('app_friendship_requests')));
         }
 
         $friendship->decline();
@@ -129,9 +139,19 @@ class FriendshipController extends AbstractController
     }
     
     #[Route('/remove/{id}', name: 'app_friendship_remove')]
-    public function remove(User $friend, Request $request, EntityManagerInterface $entityManager, FriendshipRepository $friendshipRepository): Response
+    public function remove($id, Request $request, EntityManagerInterface $entityManager, FriendshipRepository $friendshipRepository): Response
     {
         $user = $this->getUser();
+        
+        // Récupérer l'utilisateur ami par son ID
+        $userRepository = $entityManager->getRepository(User::class);
+        $friend = $userRepository->find($id);
+        
+        // Vérifier si l'utilisateur existe
+        if (!$friend) {
+            $this->addFlash('error', 'L\'utilisateur n\'existe pas.');
+            return $this->redirect($request->headers->get('referer', $this->generateUrl('app_friendship_requests')));
+        }
         
         // Vérifier s'il existe une amitié entre ces utilisateurs
         $friendship = $friendshipRepository->findBetweenUsers($user, $friend);

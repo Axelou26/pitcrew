@@ -14,8 +14,17 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class UserController extends AbstractController
 {
     #[Route('/{id}/profile', name: 'app_user_profile')]
-    public function profile(User $user, EntityManagerInterface $entityManager): Response
+    public function profile($id, EntityManagerInterface $entityManager): Response
     {
+        // Récupérer l'utilisateur par son ID
+        $userRepository = $entityManager->getRepository(User::class);
+        $user = $userRepository->find($id);
+        
+        // Vérifier si l'utilisateur existe
+        if (!$user) {
+            throw $this->createNotFoundException('L\'utilisateur n\'existe pas.');
+        }
+        
         $currentUser = $this->getUser();
         
         // Récupérer les posts de l'utilisateur
@@ -60,5 +69,32 @@ class UserController extends AbstractController
             'postsCount' => $postsCount,
             'friendshipInfo' => $friendshipInfo
         ]);
+    }
+
+    #[Route('/search', name: 'app_user_search', methods: ['GET'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function searchUsers(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $query = $request->query->get('q', '');
+        $userRepository = $entityManager->getRepository(User::class);
+        
+        if (strlen($query) < 2) {
+            return $this->json(['users' => []]);
+        }
+        
+        $users = $userRepository->searchUsers($query, $this->getUser());
+        
+        $results = [];
+        foreach ($users as $user) {
+            $results[] = [
+                'id' => $user->getId(),
+                'fullName' => $user->getFullName(),
+                'username' => $user->getUsername() ?? $user->getId(),
+                'profilePicture' => $user->getProfilePicture(),
+                'isFriend' => $user->isFriend
+            ];
+        }
+        
+        return $this->json(['users' => $results]);
     }
 } 

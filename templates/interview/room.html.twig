@@ -1,0 +1,294 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Salle d'entretien : {{ interview.title }}{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+    body, html {
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+    }
+    .meeting-container {
+        position: relative;
+        height: calc(100vh - 70px);
+        width: 100%;
+        background-color: #f8f9fa;
+        display: flex;
+        flex-direction: column;
+    }
+    #meetingContainer {
+        flex-grow: 1;
+        width: 100%;
+        background-color: #1a1a1a;
+    }
+    .controls-bar {
+        display: flex;
+        justify-content: center;
+        padding: 10px;
+        gap: 10px;
+        background-color: #343a40;
+    }
+    .control-button {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: none;
+        background-color: #495057;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .control-button:hover {
+        background-color: #6c757d;
+    }
+    .control-button.leave {
+        background-color: #dc3545;
+    }
+    .control-button.leave:hover {
+        background-color: #bd2130;
+    }
+    .meeting-info {
+        padding: 10px 15px;
+        background-color: #343a40;
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .meeting-time {
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .loading-screen {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        background-color: #1a1a1a;
+        color: white;
+    }
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 1s ease-in-out infinite;
+        margin-bottom: 20px;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="meeting-container">
+    <div class="meeting-info">
+        <div>
+            <h1 class="h5 m-0">{{ interview.title }}</h1>
+            <small>{{ is_granted('ROLE_RECRUTEUR') ? 'Candidat' : 'Recruteur' }}: {{ is_granted('ROLE_RECRUTEUR') ? interview.applicant.fullName : interview.recruiter.fullName }}</small>
+        </div>
+        <div class="meeting-time">
+            <i class="fas fa-clock"></i>
+            <span id="meetingTime">00:00:00</span>
+        </div>
+    </div>
+    
+    <div id="meetingContainer">
+        <div class="loading-screen">
+            <div class="spinner"></div>
+            <p>Chargement de la salle d'entretien...</p>
+            <p>Veuillez autoriser l'accès à votre caméra et microphone</p>
+        </div>
+    </div>
+    
+    <div class="controls-bar">
+        <button id="toggleAudio" class="control-button" title="Activer/Désactiver le micro">
+            <i class="fas fa-microphone"></i>
+        </button>
+        <button id="toggleVideo" class="control-button" title="Activer/Désactiver la caméra">
+            <i class="fas fa-video"></i>
+        </button>
+        <button id="toggleScreenShare" class="control-button" title="Partager votre écran">
+            <i class="fas fa-desktop"></i>
+        </button>
+        <button id="toggleChat" class="control-button" title="Ouvrir/Fermer le chat">
+            <i class="fas fa-comments"></i>
+        </button>
+        <button id="leaveRoom" class="control-button leave" title="Quitter la salle">
+            <i class="fas fa-phone-slash"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script src="https://meet.jit.si/external_api.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Configuration Jitsi
+        const clientConfig = {{ clientConfig|raw }};
+        
+        // Variables pour suivre l'état des contrôles
+        let isAudioMuted = false;
+        let isVideoMuted = false;
+        let isScreenSharing = false;
+        let isChatOpen = false;
+        
+        // Compteur de temps
+        let startTime = new Date().getTime();
+        let timerInterval;
+        
+        // Initialiser l'API Jitsi
+        const domain = 'meet.jit.si';
+        const options = {
+            roomName: clientConfig.roomName,
+            width: '100%',
+            height: '100%',
+            parentNode: document.querySelector('#meetingContainer'),
+            configOverwrite: {
+                prejoinPageEnabled: false,
+                startWithAudioMuted: clientConfig.startWithAudioMuted,
+                startWithVideoMuted: clientConfig.startWithVideoMuted,
+                disableDeepLinking: true
+            },
+            interfaceConfigOverwrite: {
+                TOOLBAR_BUTTONS: [],
+                HIDE_INVITE_MORE_HEADER: true,
+                DISABLE_JOIN_LEAVE_NOTIFICATIONS: true,
+                DEFAULT_REMOTE_DISPLAY_NAME: 'Participant',
+                DEFAULT_LOCAL_DISPLAY_NAME: clientConfig.userDisplayName,
+            },
+            userInfo: {
+                displayName: clientConfig.userDisplayName,
+                email: clientConfig.userEmail
+            }
+        };
+        
+        // Supprimer l'écran de chargement quand la visioconférence est prête
+        const loadingScreen = document.querySelector('.loading-screen');
+        
+        // Initialiser l'API Jitsi
+        try {
+            const api = new JitsiMeetExternalAPI(domain, options);
+            
+            // Cacher l'écran de chargement quand prêt
+            api.addEventListener('videoConferenceJoined', () => {
+                loadingScreen.style.display = 'none';
+                startTimer();
+            });
+            
+            // Gérer les contrôles
+            document.getElementById('toggleAudio').addEventListener('click', function() {
+                isAudioMuted = !isAudioMuted;
+                api.executeCommand('toggleAudio');
+                this.querySelector('i').className = isAudioMuted ? 'fas fa-microphone-slash' : 'fas fa-microphone';
+            });
+            
+            document.getElementById('toggleVideo').addEventListener('click', function() {
+                isVideoMuted = !isVideoMuted;
+                api.executeCommand('toggleVideo');
+                this.querySelector('i').className = isVideoMuted ? 'fas fa-video-slash' : 'fas fa-video';
+            });
+            
+            document.getElementById('toggleScreenShare').addEventListener('click', function() {
+                if (!isScreenSharing) {
+                    api.executeCommand('toggleShareScreen');
+                } else {
+                    api.executeCommand('toggleShareScreen');
+                }
+                isScreenSharing = !isScreenSharing;
+                this.querySelector('i').className = isScreenSharing ? 'fas fa-stop' : 'fas fa-desktop';
+            });
+            
+            document.getElementById('toggleChat').addEventListener('click', function() {
+                isChatOpen = !isChatOpen;
+                api.executeCommand('toggleChat');
+                this.querySelector('i').className = isChatOpen ? 'fas fa-times' : 'fas fa-comments';
+            });
+            
+            document.getElementById('leaveRoom').addEventListener('click', function() {
+                if (confirm('Êtes-vous sûr de vouloir quitter la salle d\'entretien?')) {
+                    api.executeCommand('hangup');
+                    stopTimer();
+                    window.location.href = "{{ path('app_interview_show', {'id': interview.id}) }}";
+                }
+            });
+            
+            // Gestion des événements Jitsi
+            api.addEventListener('audioMuteStatusChanged', function(status) {
+                isAudioMuted = status.muted;
+                document.getElementById('toggleAudio').querySelector('i').className = 
+                    isAudioMuted ? 'fas fa-microphone-slash' : 'fas fa-microphone';
+            });
+            
+            api.addEventListener('videoMuteStatusChanged', function(status) {
+                isVideoMuted = status.muted;
+                document.getElementById('toggleVideo').querySelector('i').className = 
+                    isVideoMuted ? 'fas fa-video-slash' : 'fas fa-video';
+            });
+            
+            api.addEventListener('screenSharingStatusChanged', function(status) {
+                isScreenSharing = status.on;
+                document.getElementById('toggleScreenShare').querySelector('i').className = 
+                    isScreenSharing ? 'fas fa-stop' : 'fas fa-desktop';
+            });
+            
+            // Si le participant quitte ou est déconnecté
+            api.addEventListener('videoConferenceLeft', function() {
+                stopTimer();
+                window.location.href = "{{ path('app_interview_show', {'id': interview.id}) }}";
+            });
+            
+        } catch (error) {
+            console.error('Erreur lors de l\'initialisation de Jitsi:', error);
+            loadingScreen.innerHTML = `
+                <div class="text-center">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <h2>Impossible de charger la salle d'entretien</h2>
+                    <p>${error.message || 'Veuillez vérifier votre connexion ou réessayer ultérieurement.'}</p>
+                    <a href="{{ path('app_interview_show', {'id': interview.id}) }}" class="btn btn-primary mt-3">
+                        Retour aux détails de l'entretien
+                    </a>
+                </div>
+            `;
+        }
+        
+        // Fonctions pour le chronomètre
+        function startTimer() {
+            startTime = new Date().getTime();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+        
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
+        
+        function updateTimer() {
+            const now = new Date().getTime();
+            const elapsed = now - startTime;
+            
+            const hours = Math.floor(elapsed / (1000 * 60 * 60));
+            const minutes = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((elapsed % (1000 * 60)) / 1000);
+            
+            document.getElementById('meetingTime').textContent = 
+                `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+        }
+        
+        function pad(num) {
+            return num.toString().padStart(2, '0');
+        }
+    });
+</script>
+{% endblock %} 

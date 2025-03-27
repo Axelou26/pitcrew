@@ -14,6 +14,11 @@
         </a>
     {% endif %}
     
+    <a href="{{ path('app_matching_dashboard_recruiter') }}" class="list-group-item list-group-item-action {% if app.request.get('_route') starts with 'app_matching' %}active{% endif %}">
+        <i class="bi bi-graph-up me-2"></i> Matching Candidats
+        <span class="badge bg-success rounded-pill ms-1">Nouveau</span>
+    </a>
+    
     {% if is_granted('FULL_CV_ACCESS') %}
         <a href="{{ path('app_recruiter_candidates') }}" class="list-group-item list-group-item-action {% if app.request.get('_route') == 'app_recruiter_candidates' %}active{% endif %}">
             <i class="bi bi-people-fill me-2"></i> Recherche de candidats

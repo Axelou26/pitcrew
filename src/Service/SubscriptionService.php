@@ -136,14 +136,22 @@ class SubscriptionService
         
         $subscriptionName = strtolower($subscription->getSubscription()->getName());
         
-        // Vérifier si la fonctionnalité est disponible pour le niveau d'abonnement
-        if ($subscriptionName === 'premium') {
-            return in_array($feature, array_merge($featuresByLevel['basic'], $featuresByLevel['premium']));
-        } elseif ($subscriptionName === 'business') {
-            return in_array($feature, array_merge($featuresByLevel['basic'], $featuresByLevel['premium'], $featuresByLevel['business']));
-        } else {
-            return in_array($feature, $featuresByLevel['basic']);
+        // Créer les tableaux de fonctionnalités disponibles par niveau en incluant les niveaux inférieurs
+        $availableFeatures = [];
+        
+        if ($subscriptionName === 'basic' || $subscriptionName === 'premium' || $subscriptionName === 'business') {
+            $availableFeatures = array_merge($availableFeatures, $featuresByLevel['basic']);
         }
+        
+        if ($subscriptionName === 'premium' || $subscriptionName === 'business') {
+            $availableFeatures = array_merge($availableFeatures, $featuresByLevel['premium']);
+        }
+        
+        if ($subscriptionName === 'business') {
+            $availableFeatures = array_merge($availableFeatures, $featuresByLevel['business']);
+        }
+        
+        return in_array($feature, $availableFeatures);
     }
 
     /**

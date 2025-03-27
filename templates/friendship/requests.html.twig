@@ -42,34 +42,34 @@
     <div class="card shadow-sm rounded-4 border-0 mb-4">
         <div class="card-body p-2">
             <ul class="nav nav-pills nav-fill">
-                <li class="nav-item">
+        <li class="nav-item">
                     <a class="nav-link active rounded-pill" id="friends-tab" data-bs-toggle="pill" href="#friends" role="tab">
                         <i class="bi bi-people-fill me-2"></i>Amis
                         <span class="badge bg-primary rounded-pill ms-1">{{ friends|length }}</span>
-                    </a>
-                </li>
-                <li class="nav-item">
+            </a>
+        </li>
+        <li class="nav-item">
                     <a class="nav-link rounded-pill" id="requests-tab" data-bs-toggle="pill" href="#requests" role="tab">
                         <i class="bi bi-envelope me-2"></i>Reçues
-                        {% if pendingRequests|length > 0 %}
+                {% if pendingRequests|length > 0 %}
                             <span class="badge bg-danger rounded-pill ms-1">{{ pendingRequests|length }}</span>
-                        {% endif %}
-                    </a>
-                </li>
-                <li class="nav-item">
+                {% endif %}
+            </a>
+        </li>
+        <li class="nav-item">
                     <a class="nav-link rounded-pill" id="sent-tab" data-bs-toggle="pill" href="#sent" role="tab">
                         <i class="bi bi-send me-2"></i>Envoyées
-                        {% if sentRequests|length > 0 %}
+                {% if sentRequests|length > 0 %}
                             <span class="badge bg-secondary rounded-pill ms-1">{{ sentRequests|length }}</span>
-                        {% endif %}
-                    </a>
-                </li>
+                {% endif %}
+            </a>
+        </li>
                 <li class="nav-item">
                     <a href="{{ path('app_search') }}" class="nav-link rounded-pill">
                         <i class="bi bi-search me-2"></i>Rechercher
-                    </a>
-                </li>
-            </ul>
+            </a>
+        </li>
+    </ul>
         </div>
     </div>
     
@@ -84,8 +84,8 @@
                     <p class="text-muted mb-4">Commencez à vous connecter avec d'autres professionnels de l'industrie du sport automobile</p>
                     <div class="d-flex justify-content-center">
                         <a href="{{ path('app_search') }}" class="btn btn-primary btn-lg rounded-pill px-5">
-                            <i class="bi bi-search me-2"></i>Rechercher des personnes
-                        </a>
+                        <i class="bi bi-search me-2"></i>Rechercher des personnes
+                    </a>
                     </div>
                 </div>
             {% else %}
@@ -108,14 +108,14 @@
                                         {% endif %}
                                         <h5 class="fw-bold mb-1">{{ friend.fullName }}</h5>
                                         <p class="text-muted mb-3">
-                                            {% if friend.isRecruiter %}
-                                                {{ friend.company }}
+                                                {% if friend.isRecruiter %}
+                                                    {{ friend.company }}
                                                 <span class="badge rounded-pill bg-primary ms-1">Recruteur</span>
-                                            {% else %}
-                                                {{ friend.jobTitle|default('') }}
+                                                {% else %}
+                                                    {{ friend.jobTitle|default('') }}
                                                 <span class="badge rounded-pill bg-success ms-1">Candidat</span>
-                                            {% endif %}
-                                        </p>
+                                                {% endif %}
+                                            </p>
                                     </div>
                                     <div class="d-flex flex-column gap-2">
                                         <a href="{{ path('app_user_profile', {'id': friend.id}) }}" class="btn btn-light rounded-pill">
@@ -167,20 +167,20 @@
                 <div class="card shadow-sm rounded-4 border-0">
                     <div class="card-body p-4">
                         <h5 class="fw-bold mb-4"><i class="bi bi-envelope-fill me-2"></i>Demandes d'amitié reçues</h5>
-                        {% for request in pendingRequests %}
+                    {% for request in pendingRequests %}
                             <div class="d-flex align-items-center p-3 {% if not loop.last %}border-bottom{% endif %}">
                                 <div class="flex-shrink-0">
-                                    {% if request.requester.profilePicture %}
-                                        <img src="{{ asset('uploads/profile_pictures/' ~ request.requester.profilePicture) }}" 
+                                {% if request.requester.profilePicture %}
+                                    <img src="{{ asset('uploads/profile_pictures/' ~ request.requester.profilePicture) }}" 
                                              class="rounded-circle border"
-                                             alt="{{ request.requester.fullName }}"
+                                         alt="{{ request.requester.fullName }}"
                                              style="width: 60px; height: 60px; object-fit: cover;">
-                                    {% else %}
+                                {% else %}
                                         <div class="bg-light rounded-circle d-flex align-items-center justify-content-center border"
                                              style="width: 60px; height: 60px;">
                                             <i class="bi bi-person fs-3 text-muted"></i>
-                                        </div>
-                                    {% endif %}
+                                    </div>
+                                {% endif %}
                                 </div>
                                 <div class="flex-grow-1 ms-3">
                                     <h5 class="mb-1">
@@ -213,7 +213,7 @@
                                 </div>
                             </div>
                         {% endfor %}
-                    </div>
+                        </div>
                 </div>
             {% endif %}
         </div>
@@ -227,28 +227,28 @@
                     <p class="text-muted mb-4">Vous n'avez pas de demandes d'amitié en attente de réponse.</p>
                     <div class="d-flex justify-content-center">
                         <a href="{{ path('app_search') }}" class="btn btn-primary btn-lg rounded-pill px-5">
-                            <i class="bi bi-search me-2"></i>Rechercher des personnes
-                        </a>
+                        <i class="bi bi-search me-2"></i>Rechercher des personnes
+                    </a>
                     </div>
                 </div>
             {% else %}
                 <div class="card shadow-sm rounded-4 border-0">
                     <div class="card-body p-4">
                         <h5 class="fw-bold mb-4"><i class="bi bi-send-fill me-2"></i>Demandes d'amitié envoyées</h5>
-                        {% for request in sentRequests %}
+                    {% for request in sentRequests %}
                             <div class="d-flex align-items-center p-3 {% if not loop.last %}border-bottom{% endif %}">
                                 <div class="flex-shrink-0">
-                                    {% if request.addressee.profilePicture %}
-                                        <img src="{{ asset('uploads/profile_pictures/' ~ request.addressee.profilePicture) }}" 
+                                {% if request.addressee.profilePicture %}
+                                    <img src="{{ asset('uploads/profile_pictures/' ~ request.addressee.profilePicture) }}" 
                                              class="rounded-circle border"
-                                             alt="{{ request.addressee.fullName }}"
+                                         alt="{{ request.addressee.fullName }}"
                                              style="width: 60px; height: 60px; object-fit: cover;">
-                                    {% else %}
+                                {% else %}
                                         <div class="bg-light rounded-circle d-flex align-items-center justify-content-center border"
                                              style="width: 60px; height: 60px;">
                                             <i class="bi bi-person fs-3 text-muted"></i>
-                                        </div>
-                                    {% endif %}
+                                    </div>
+                                {% endif %}
                                 </div>
                                 <div class="flex-grow-1 ms-3">
                                     <h5 class="mb-1">
@@ -272,10 +272,10 @@
                                 <div class="ms-auto">
                                     <a href="{{ path('app_friendship_cancel', {'id': request.id}) }}" class="btn btn-outline-secondary rounded-pill">
                                         <i class="bi bi-x-circle me-md-1"></i><span class="d-none d-md-inline">Annuler</span>
-                                    </a>
-                                </div>
+                                </a>
                             </div>
-                        {% endfor %}
+                        </div>
+                    {% endfor %}
                     </div>
                 </div>
             {% endif %}

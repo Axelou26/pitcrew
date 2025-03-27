@@ -1,0 +1,117 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Entretien non disponible{% endblock %}
+
+{% block body %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow text-center">
+                <div class="card-body p-5">
+                    <div class="mb-4">
+                        <i class="fas fa-calendar-times fa-4x text-warning"></i>
+                    </div>
+                    
+                    <h1 class="h3 mb-3">Salle d'entretien non disponible</h1>
+                    
+                    {% if interview.scheduledAt > date() %}
+                        <p class="lead">
+                            Cet entretien n'est pas encore disponible.
+                        </p>
+                        <p>
+                            La salle sera accessible 15 minutes avant l'heure prévue, le {{ interview.scheduledAt|date('d/m/Y à H:i') }}.
+                        </p>
+                        
+                        <p class="mb-4">
+                            Temps restant avant l'ouverture de la salle : 
+                            <span id="countdown" class="fw-bold text-primary"></span>
+                        </p>
+                    {% else %}
+                        <p class="lead">
+                            La période d'accès à cet entretien est terminée.
+                        </p>
+                        <p>
+                            Les salles d'entretien sont accessibles jusqu'à une heure après l'heure de début planifiée.
+                        </p>
+                    {% endif %}
+                    
+                    <div class="mt-4">
+                        <a href="{{ path('app_interview_show', {'id': interview.id}) }}" class="btn btn-primary me-2">
+                            <i class="fas fa-info-circle"></i> Détails de l'entretien
+                        </a>
+                        <a href="{{ path('app_interviews_index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-list"></i> Mes entretiens
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+    {% if interview.scheduledAt > date() %}
+    document.addEventListener('DOMContentLoaded', function() {
+        // Définir la date cible (15 minutes avant l'entretien)
+        const scheduledTime = new Date("{{ interview.scheduledAt|date('Y-m-d H:i:s') }}");
+        const accessTime = new Date(scheduledTime.getTime() - (15 * 60 * 1000));
+        
+        // Mettre à jour le compte à rebours chaque seconde
+        const countdownElement = document.getElementById('countdown');
+        
+        function updateCountdown() {
+            const now = new Date();
+            const diff = accessTime - now;
+            
+            if (diff <= 0) {
+                // Accès maintenant disponible
+                countdownElement.textContent = "Disponible maintenant!";
+                countdownElement.className = "fw-bold text-success";
+                
+                // Ajouter un bouton pour rafraîchir la page
+                const refreshButton = document.createElement('button');
+                refreshButton.className = 'btn btn-success mt-3';
+                refreshButton.innerHTML = '<i class="fas fa-sync"></i> Rafraîchir la page';
+                refreshButton.onclick = function() {
+                    window.location.reload();
+                };
+                
+                const buttonContainer = countdownElement.parentElement;
+                buttonContainer.appendChild(document.createElement('br'));
+                buttonContainer.appendChild(refreshButton);
+                
+                clearInterval(intervalId);
+                return;
+            }
+            
+            // Calculer heures, minutes, secondes
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            // Formater le résultat
+            let formattedTime = '';
+            
+            if (hours > 0) {
+                formattedTime += `${hours} heure${hours > 1 ? 's' : ''} `;
+            }
+            
+            if (minutes > 0 || hours > 0) {
+                formattedTime += `${minutes} minute${minutes > 1 ? 's' : ''} `;
+            }
+            
+            formattedTime += `${seconds} seconde${seconds > 1 ? 's' : ''}`;
+            
+            countdownElement.textContent = formattedTime;
+        }
+        
+        // Mettre à jour immédiatement puis toutes les secondes
+        updateCountdown();
+        const intervalId = setInterval(updateCountdown, 1000);
+    });
+    {% endif %}
+</script>
+{% endblock %} 

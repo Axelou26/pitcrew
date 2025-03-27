@@ -17,7 +17,7 @@ class PostShareType extends AbstractType
                 'label' => 'Ajouter un commentaire (optionnel)',
                 'required' => false,
                 'attr' => [
-                    'placeholder' => 'Ajoutez un commentaire à votre partage...',
+                    'placeholder' => 'Ajoutez un commentaire à votre republication...',
                     'rows' => 3,
                     'class' => 'form-control'
                 ]

@@ -371,29 +371,22 @@ class PostController extends AbstractController
         EntityManagerInterface $entityManager,
         NotificationService $notificationService
     ): Response {
+        // Création automatique du partage
         $share = new PostShare();
         $share->setUser($this->getUser());
         $share->setPost($post);
         
-        $form = $this->createForm(PostShareType::class, $share);
-        $form->handleRequest($request);
+        $entityManager->persist($share);
+        $post->updateSharesCounter(); // Mettre à jour le compteur
+        $entityManager->flush();
         
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($share);
-            $post->updateSharesCounter(); // Mettre à jour le compteur
-            $entityManager->flush();
-            
-            // Envoyer une notification
-            $notificationService->notifyPostShare($share);
-            
-            $this->addFlash('success', 'Publication partagée avec succès !');
-            return $this->redirectToRoute('app_home');
-        }
+        // Envoyer une notification
+        $notificationService->notifyPostShare($share);
         
-        return $this->render('post/share.html.twig', [
-            'post' => $post,
-            'form' => $form->createView(),
-        ]);
+        $this->addFlash('success', 'Publication republiée avec succès !');
+        
+        // Rediriger vers la page d'accueil pour voir le partage dans le fil d'actualité
+        return $this->redirectToRoute('app_home');
     }
     
     #[Route('/post/comment/{id}/reply', name: 'app_post_comment_reply', methods: ['GET', 'POST'])]
@@ -532,7 +525,7 @@ class PostController extends AbstractController
         $entityManager->persist($comment);
         $post->updateCommentsCounter();
         $entityManager->flush();
-        
+
         // Envoyer une notification
         $notificationService->notifyPostComment($comment);
         
@@ -544,5 +537,87 @@ class PostController extends AbstractController
             'content' => $comment->getContent(),
             'createdAt' => $comment->getCreatedAt()->format('d/m/Y à H:i')
         ]);
+    }
+
+    /**
+     * @Route("/quick-create", name="app_post_quick_create", methods={"POST"})
+     */
+    public function quickCreate(Request $request, EntityManagerInterface $entityManager, SluggerInterface $slugger): Response
+    {
+        try {
+            $post = new Post();
+            $post->setAuthor($this->getUser());
+            $post->setTitle($request->request->get('title'));
+            $post->setContent($request->request->get('content'));
+            
+            // Gérer l'image si présente
+            if ($request->files->has('imageFile') && $request->files->get('imageFile')) {
+                $imageFile = $request->files->get('imageFile');
+                
+                if ($imageFile->isValid()) {
+                    $originalFilename = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
+                    $safeFilename = $slugger->slug($originalFilename);
+                    $newFilename = $safeFilename.'-'.uniqid().'.'.$imageFile->guessExtension();
+                    
+                    try {
+                        $imageFile->move(
+                            $this->getParameter('post_images_directory'),
+                            $newFilename
+                        );
+                        
+                        // Définir à la fois image et imageName
+                        $post->setImage($newFilename);
+                        $post->setImageName($newFilename);
+                    } catch (FileException $e) {
+                        return $this->json([
+                            'success' => false,
+                            'error' => 'Erreur lors de l\'upload de l\'image: ' . $e->getMessage()
+                        ]);
+                    }
+                } else {
+                    return $this->json([
+                        'success' => false,
+                        'error' => 'Image non valide'
+                    ]);
+                }
+            }
+            
+            // Traiter les mentions (utilisateurs mentionnés)
+            $mentions = [];
+            preg_match_all('/@(\w+)/', $post->getContent(), $matches);
+            if (!empty($matches[1])) {
+                // Trouver les utilisateurs mentionnés
+                $userRepo = $entityManager->getRepository(User::class);
+                foreach ($matches[1] as $username) {
+                    $user = $userRepo->findOneBy(['username' => $username]);
+                    if ($user) {
+                        $mentions[] = $user->getId();
+                    }
+                }
+            }
+            $post->setMentions($mentions);
+            
+            // Traiter les hashtags
+            $hashtags = [];
+            preg_match_all('/#(\w+)/', $post->getContent(), $matches);
+            if (!empty($matches[1])) {
+                $hashtags = $matches[1];
+            }
+            $post->setHashtags($hashtags);
+            
+            $entityManager->persist($post);
+            $entityManager->flush();
+            
+            return $this->json([
+                'success' => true,
+                'postId' => $post->getId(),
+                'redirect' => $this->generateUrl('app_home')
+            ]);
+        } catch (\Exception $e) {
+            return $this->json([
+                'success' => false,
+                'error' => 'Une erreur est survenue lors de la publication: ' . $e->getMessage()
+            ]);
+        }
     }
 } 

@@ -1,6 +1,7 @@
 parameters:
     cv_directory: '%kernel.project_dir%/public/uploads/cv'
     posts_directory: '%kernel.project_dir%/public/uploads/posts'
+    post_images_directory: '%kernel.project_dir%/public/uploads/posts'
     resumes_directory: '%kernel.project_dir%/public/uploads/resumes'
     documents_directory: '%kernel.project_dir%/public/uploads/documents'
     profile_pictures_directory: '%kernel.project_dir%/public/uploads/profile_pictures'

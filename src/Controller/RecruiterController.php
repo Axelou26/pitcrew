@@ -29,13 +29,15 @@ class RecruiterController extends AbstractController
     ): Response {
         $recruiter = $this->getUser();
         $activeOffers = $jobOfferRepository->findBy(['recruiter' => $recruiter, 'isActive' => true]);
-        $recentApplications = $jobApplicationRepository->findRecentByRecruiter($recruiter, 5);
+        $expiredOffers = $jobOfferRepository->findBy(['recruiter' => $recruiter, 'isActive' => false]);
+        $recentApplications = $jobApplicationRepository->findRecentApplicationsForRecruiter($recruiter, 5);
         
         // Récupérer l'abonnement actif
         $activeSubscription = $subscriptionService->getActiveSubscription($recruiter);
         
         return $this->render('recruiter/dashboard.html.twig', [
             'activeOffers' => $activeOffers,
+            'expiredOffers' => $expiredOffers,
             'recentApplications' => $recentApplications,
             'activeSubscription' => $activeSubscription
         ]);

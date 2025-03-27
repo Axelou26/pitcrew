@@ -264,6 +264,12 @@
                     
                     {% if app.user %}
                         <li class="nav-item">
+                            <a class="nav-link {% if app.request.get('_route') starts with 'app_interviews' %}active{% endif %}" href="{{ path('app_interviews_index') }}">
+                                <i class="bi bi-camera-video me-1"></i> Entretiens
+                            </a>
+                        </li>
+                        
+                        <li class="nav-item">
                             <a class="nav-link {% if app.request.get('_route') starts with 'app_message' %}active{% endif %}" href="{{ path('app_message_index') }}">
                                 <i class="bi bi-chat-dots me-1"></i> Messages
                             </a>
@@ -339,12 +345,18 @@
                                         <i class="bi bi-briefcase me-2"></i>Mes offres
                                     </a></li>
                                     <li><a class="dropdown-item" href="{{ path('app_job_application_recruiter') }}">Candidatures reçues</a></li>
+                                    <li><a class="dropdown-item" href="{{ path('app_interviews_index') }}">
+                                        <i class="bi bi-camera-video me-2"></i>Mes entretiens
+                                    </a></li>
                                     <li><a class="dropdown-item" href="{{ path('app_subscription_manage') }}">
                                         <i class="bi bi-star-fill me-2"></i>Mon abonnement
                                     </a></li>
                                 {% endif %}
                                 {% if app.user.isApplicant %}
                                     <li><a class="dropdown-item" href="{{ path('app_job_application_index') }}">Mes candidatures</a></li>
+                                    <li><a class="dropdown-item" href="{{ path('app_interviews_index') }}">
+                                        <i class="bi bi-camera-video me-2"></i>Mes entretiens
+                                    </a></li>
                                 {% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{{ path('app_logout') }}">Déconnexion</a></li>

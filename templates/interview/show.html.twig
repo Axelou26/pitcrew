@@ -1,0 +1,143 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Détails de l'entretien{% endblock %}
+
+{% block body %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h1 class="h3 mb-0 text-primary">Détails de l'entretien</h1>
+                    <a href="{{ path('app_interviews_index') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-arrow-left"></i> Retour
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% for label, messages in app.flashes %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <h5 class="font-weight-bold">Titre</h5>
+                                <p>{{ interview.title }}</p>
+                            </div>
+
+                            <div class="mb-4">
+                                <h5 class="font-weight-bold">Date et heure</h5>
+                                <p>{{ interview.scheduledAt|date('d/m/Y à H:i') }}</p>
+                            </div>
+
+                            <div class="mb-4">
+                                <h5 class="font-weight-bold">Statut</h5>
+                                <p>
+                                    {% if interview.isScheduled %}
+                                        <span class="badge bg-primary">Planifié</span>
+                                    {% elseif interview.isActive %}
+                                        <span class="badge bg-success">En cours</span>
+                                    {% elseif interview.isCompleted %}
+                                        <span class="badge bg-success">Terminé</span>
+                                    {% elseif interview.isCancelled %}
+                                        <span class="badge bg-danger">Annulé</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ interview.status }}</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+
+                            {% if interview.endedAt %}
+                            <div class="mb-4">
+                                <h5 class="font-weight-bold">Terminé le</h5>
+                                <p>{{ interview.endedAt|date('d/m/Y à H:i') }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            {% if is_granted('ROLE_RECRUTEUR') %}
+                            <div class="mb-4">
+                                <h5 class="font-weight-bold">Candidat</h5>
+                                <p>{{ interview.applicant.fullName }}</p>
+                                <p><i class="fas fa-envelope"></i> {{ interview.applicant.email }}</p>
+                            </div>
+                            {% else %}
+                            <div class="mb-4">
+                                <h5 class="font-weight-bold">Recruteur</h5>
+                                <p>{{ interview.recruiter.fullName }}</p>
+                                <p><i class="fas fa-envelope"></i> {{ interview.recruiter.email }}</p>
+                            </div>
+                            {% endif %}
+
+                            {% if interview.jobOffer %}
+                            <div class="mb-4">
+                                <h5 class="font-weight-bold">Offre d'emploi</h5>
+                                <p>
+                                    <a href="{{ path('app_job_offer_show', {'id': interview.jobOffer.id}) }}">
+                                        {{ interview.jobOffer.title }}
+                                    </a>
+                                </p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if interview.notes %}
+                    <div class="mb-4">
+                        <h5 class="font-weight-bold">Notes / Instructions</h5>
+                        <div class="p-3 bg-light rounded">
+                            {{ interview.notes|nl2br }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-grid gap-2 mt-4">
+                        {% if canJoin and not interview.isCancelled %}
+                            <a href="{{ interview.meetingUrl }}" class="btn btn-success btn-lg">
+                                <i class="fas fa-video"></i> Rejoindre la salle d'entretien
+                            </a>
+                            <p class="text-center text-muted small mt-2">
+                                La salle est accessible 15 minutes avant l'heure prévue et jusqu'à 1 heure après.
+                            </p>
+                        {% elseif not interview.isCancelled and not interview.isCompleted %}
+                            <div class="alert alert-info">
+                                {% if interview.scheduledAt > date() %}
+                                    <i class="fas fa-info-circle"></i> La salle d'entretien sera accessible 15 minutes avant l'heure prévue.
+                                {% else %}
+                                    <i class="fas fa-info-circle"></i> La salle d'entretien n'est plus accessible. L'entretien a déjà eu lieu.
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                        {% if interview.isScheduled and not interview.isCancelled %}
+                            <div class="d-flex justify-content-between">
+                                <form action="{{ path('app_interview_cancel', {'id': interview.id}) }}" method="post" onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cet entretien?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ interview.id) }}">
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="fas fa-times"></i> Annuler l'entretien
+                                    </button>
+                                </form>
+
+                                {% if is_granted('ROLE_RECRUTEUR') and interview.recruiter == app.user and canJoin %}
+                                    <form action="{{ path('app_interview_end', {'id': interview.id}) }}" method="post">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('end' ~ interview.id) }}">
+                                        <button type="submit" class="btn btn-warning">
+                                            <i class="fas fa-check"></i> Terminer l'entretien
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

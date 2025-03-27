@@ -99,13 +99,23 @@ class FavoriteController extends AbstractController
     #[Route('/candidate/{id}/toggle', name: 'app_favorites_toggle_candidate')]
     #[IsGranted('ROLE_RECRUTEUR')]
     public function toggleCandidateFavorite(
-        User $candidate, 
+        $id, 
         FavoriteRepository $favoriteRepository,
         EntityManagerInterface $entityManager,
         Request $request
     ): Response {
         /** @var User $user */
         $user = $this->getUser();
+        
+        // Récupérer le candidat par son ID
+        $userRepository = $entityManager->getRepository(User::class);
+        $candidate = $userRepository->find($id);
+        
+        // Vérifier si l'utilisateur existe
+        if (!$candidate) {
+            $this->addFlash('error', 'Le candidat n\'existe pas.');
+            return $this->redirect($request->headers->get('referer', $this->generateUrl('app_favorites_index')));
+        }
         
         // Vérifier que le candidat n'est pas un recruteur
         if ($candidate->isRecruiter()) {

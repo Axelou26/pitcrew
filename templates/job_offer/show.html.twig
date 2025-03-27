@@ -352,12 +352,12 @@
                                 <a href="{{ path('app_job_application_new', {'id': offer.id}) }}" class="btn btn-primary">
                                     <i class="bi bi-send me-2"></i> Postuler
                                 </a>
-                                <a href="#" class="btn btn-outline-primary">
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#contactModal">
                                     <i class="bi bi-chat-dots me-2"></i> Contacter le recruteur
-                                </a>
-                                <button class="btn btn-outline-secondary">
-                                    <i class="bi bi-bookmark me-2"></i> Sauvegarder
                                 </button>
+                                <a href="{{ path('app_favorites_toggle_job_offer', {'id': offer.id}) }}" class="btn btn-outline-secondary favorite-toggle" data-url="{{ path('app_favorites_toggle_job_offer', {'id': offer.id}) }}">
+                                    <i class="bi {% if is_favorite is defined and is_favorite %}bi-bookmark-fill text-primary{% else %}bi-bookmark{% endif %} me-2"></i> Sauvegarder
+                                </a>
                             </div>
                         {% endif %}
                     </div>
@@ -373,6 +373,9 @@
                             <div class="d-grid gap-3">
                                 <a href="{{ path('app_job_offer_edit', {'id': offer.id}) }}" class="btn btn-primary">
                                     <i class="bi bi-pencil me-2"></i> Modifier l'offre
+                                </a>
+                                <a href="{{ path('app_interviews_for_job', {'id': offer.id}) }}" class="btn btn-info text-white">
+                                    <i class="bi bi-camera-video me-2"></i> Gérer les entretiens
                                 </a>
                                 {% if offer.isActive %}
                                     <a href="#" class="btn btn-warning">
@@ -408,6 +411,34 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Contact Recruteur -->
+<div class="modal fade" id="contactModal" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="contactModalLabel">Contacter {{ offer.recruiter.fullName }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <form id="contactForm">
+                    <div class="mb-3">
+                        <label for="contactSubject" class="form-label">Sujet</label>
+                        <input type="text" class="form-control" id="contactSubject" value="Concernant votre offre : {{ offer.title }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="contactMessage" class="form-label">Message</label>
+                        <textarea class="form-control" id="contactMessage" rows="5" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="sendContactBtn">Envoyer</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block javascripts %}
@@ -417,7 +448,8 @@
             // Gestionnaire pour les boutons de favoris
             const favoriteToggle = document.querySelector('.favorite-toggle');
             if (favoriteToggle) {
-                favoriteToggle.addEventListener('click', function() {
+                favoriteToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
                     const url = this.getAttribute('data-url');
                     const button = this;
                     
@@ -432,23 +464,39 @@
                         if (data.success) {
                             // Mise à jour de l'interface
                             if (data.isFavorite) {
-                                button.classList.remove('btn-outline-secondary');
-                                button.classList.add('btn-outline-danger');
-                                button.querySelector('i').classList.remove('bi-star');
-                                button.querySelector('i').classList.add('bi-star-fill');
-                                button.innerHTML = button.innerHTML.replace('Ajouter aux favoris', 'Retirer des favoris');
-                                button.title = 'Retirer des favoris';
+                                button.querySelector('i').className = 'bi bi-bookmark-fill text-primary me-2';
                             } else {
-                                button.classList.remove('btn-outline-danger');
-                                button.classList.add('btn-outline-secondary');
-                                button.querySelector('i').classList.remove('bi-star-fill');
-                                button.querySelector('i').classList.add('bi-star');
-                                button.innerHTML = button.innerHTML.replace('Retirer des favoris', 'Ajouter aux favoris');
-                                button.title = 'Ajouter aux favoris';
+                                button.querySelector('i').className = 'bi bi-bookmark me-2';
                             }
+                            // Afficher un message de confirmation
+                            alert(data.message);
                         }
                     })
                     .catch(error => console.error('Erreur:', error));
+                });
+            }
+            
+            // Gestionnaire pour l'envoi de message au recruteur
+            const sendContactBtn = document.getElementById('sendContactBtn');
+            if (sendContactBtn) {
+                sendContactBtn.addEventListener('click', function() {
+                    const subject = document.getElementById('contactSubject').value;
+                    const message = document.getElementById('contactMessage').value;
+                    
+                    if (!subject || !message) {
+                        alert('Veuillez remplir tous les champs');
+                        return;
+                    }
+                    
+                    // Simulation d'envoi de message (à remplacer par un vrai appel API)
+                    alert('Votre message a été envoyé au recruteur.');
+                    
+                    // Fermer la modale
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('contactModal'));
+                    modal.hide();
+                    
+                    // Réinitialiser le formulaire
+                    document.getElementById('contactForm').reset();
                 });
             }
         });

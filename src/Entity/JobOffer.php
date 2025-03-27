@@ -77,6 +77,9 @@ class JobOffer
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $image = null;
 
+    #[ORM\OneToMany(mappedBy: 'jobOffer', targetEntity: Interview::class)]
+    private Collection $interviews;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -86,6 +89,7 @@ class JobOffer
         $this->isPromoted = false;
         $this->logoUrl = null;
         $this->image = null;
+        $this->interviews = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -306,6 +310,36 @@ class JobOffer
     public function setImage(?string $image): static
     {
         $this->image = $image;
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Interview>
+     */
+    public function getInterviews(): Collection
+    {
+        return $this->interviews;
+    }
+
+    public function addInterview(Interview $interview): self
+    {
+        if (!$this->interviews->contains($interview)) {
+            $this->interviews->add($interview);
+            $interview->setJobOffer($this);
+        }
+
+        return $this;
+    }
+
+    public function removeInterview(Interview $interview): self
+    {
+        if ($this->interviews->removeElement($interview)) {
+            // set the owning side to null (unless already changed)
+            if ($interview->getJobOffer() === $this) {
+                $interview->setJobOffer(null);
+            }
+        }
+
         return $this;
     }
 } 

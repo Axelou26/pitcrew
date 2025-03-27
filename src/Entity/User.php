@@ -80,6 +80,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $education = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $city = null;
+
     #[ORM\OneToMany(mappedBy: 'author', targetEntity: Post::class, orphanRemoval: true)]
     private Collection $posts;
 
@@ -113,6 +116,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'recruiter', targetEntity: RecruiterSubscription::class, orphanRemoval: true)]
     private Collection $subscriptions;
 
+    #[ORM\OneToMany(mappedBy: 'recruiter', targetEntity: Interview::class)]
+    private Collection $interviewsAsRecruiter;
+
+    #[ORM\OneToMany(mappedBy: 'applicant', targetEntity: Interview::class)]
+    private Collection $interviewsAsApplicant;
+
     // Propriétés dynamiques pour les relations d'amitié (non persistées)
     public $isFriend = false;
     public $hasPendingRequestFrom = false;
@@ -136,6 +145,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->postLikes = new ArrayCollection();
         $this->postComments = new ArrayCollection();
         $this->postShares = new ArrayCollection();
+        $this->interviewsAsRecruiter = new ArrayCollection();
+        $this->interviewsAsApplicant = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -486,6 +497,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->education = $education;
         return $this;
     }
+
+    public function getCity(): ?string
+    {
+        return $this->city;
+    }
+
+    public function setCity(?string $city): static
+    {
+        $this->city = $city;
+        return $this;
+    }
     
     /**
      * @return Collection<int, Friendship>
@@ -810,5 +832,65 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
         
         return false;
+    }
+
+    /**
+     * @return Collection<int, Interview>
+     */
+    public function getInterviewsAsRecruiter(): Collection
+    {
+        return $this->interviewsAsRecruiter;
+    }
+
+    public function addInterviewAsRecruiter(Interview $interview): self
+    {
+        if (!$this->interviewsAsRecruiter->contains($interview)) {
+            $this->interviewsAsRecruiter->add($interview);
+            $interview->setRecruiter($this);
+        }
+
+        return $this;
+    }
+
+    public function removeInterviewAsRecruiter(Interview $interview): self
+    {
+        if ($this->interviewsAsRecruiter->removeElement($interview)) {
+            // set the owning side to null (unless already changed)
+            if ($interview->getRecruiter() === $this) {
+                $interview->setRecruiter(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Interview>
+     */
+    public function getInterviewsAsApplicant(): Collection
+    {
+        return $this->interviewsAsApplicant;
+    }
+
+    public function addInterviewAsApplicant(Interview $interview): self
+    {
+        if (!$this->interviewsAsApplicant->contains($interview)) {
+            $this->interviewsAsApplicant->add($interview);
+            $interview->setApplicant($this);
+        }
+
+        return $this;
+    }
+
+    public function removeInterviewAsApplicant(Interview $interview): self
+    {
+        if ($this->interviewsAsApplicant->removeElement($interview)) {
+            // set the owning side to null (unless already changed)
+            if ($interview->getApplicant() === $this) {
+                $interview->setApplicant(null);
+            }
+        }
+
+        return $this;
     }
 }

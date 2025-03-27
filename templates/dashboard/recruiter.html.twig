@@ -1,267 +1,245 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Tableau de bord recruteur{% endblock %}
+{% block title %}Tableau de bord Recruteur - PITCREW{% endblock %}
 
 {% block body %}
-<div class="container py-5">
-    <div class="row g-4">
+<div class="container-fluid py-5">
+    <div class="row">
         <!-- Sidebar -->
         <div class="col-lg-3">
-            <!-- Profile Card -->
-            <div class="card shadow-sm rounded-4 border-0 hover-shadow-md mb-4">
-                <div class="card-body p-4 text-center">
-                    {% if app.user.profilePicture %}
-                        <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}" 
-                             alt="{{ app.user.fullName }}"
-                             class="rounded-circle border mb-3"
-                             style="width: 120px; height: 120px; object-fit: cover;">
-                    {% else %}
-                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto border mb-3"
-                             style="width: 120px; height: 120px;">
-                            <i class="bi bi-person-fill fs-1 text-primary opacity-50"></i>
-                        </div>
-                    {% endif %}
-                    <h4 class="fw-bold mb-1">{{ app.user.fullName }}</h4>
-                    {% if app.user.company %}
-                        <p class="text-muted mb-3">{{ app.user.company }}</p>
-                    {% endif %}
-                    <a href="{{ path('app_profile_edit') }}" class="btn btn-primary rounded-pill w-100">
-                        <i class="bi bi-pencil me-2"></i>Modifier mon profil
-                    </a>
-                </div>
-            </div>
-
-            <!-- Navigation Menu -->
-            <div class="card shadow-sm rounded-4 border-0 p-1">
-                <div class="list-group list-group-flush rounded-4">
-                    <a href="{{ path('app_dashboard') }}" class="list-group-item list-group-item-action rounded-pill py-3 px-4 active border-0 mb-1">
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-grid-1x2-fill fs-5 me-3"></i> 
-                            <span class="fw-medium">Tableau de bord</span>
-                        </div>
-                    </a>
-                    <a href="{{ path('app_dashboard_offers') }}" class="list-group-item list-group-item-action rounded-pill py-3 px-4 border-0 mb-1">
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-briefcase-fill fs-5 me-3"></i> 
-                            <span class="fw-medium">Mes offres d'emploi</span>
-                            <span class="badge bg-primary rounded-pill ms-auto">{{ offers|length }}</span>
-                        </div>
-                    </a>
-                    <a href="{{ path('app_dashboard_applications') }}" class="list-group-item list-group-item-action rounded-pill py-3 px-4 border-0 mb-1">
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-file-earmark-text-fill fs-5 me-3"></i> 
-                            <span class="fw-medium">Candidatures reçues</span>
-                            <span class="badge bg-primary rounded-pill ms-auto">{{ applications|length }}</span>
-                        </div>
-                    </a>
-                    <a href="{{ path('app_dashboard_posts') }}" class="list-group-item list-group-item-action rounded-pill py-3 px-4 border-0 mb-1">
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-file-post-fill fs-5 me-3"></i> 
-                            <span class="fw-medium">Mes publications</span>
-                        </div>
-                    </a>
-                    <a href="{{ path('app_subscription_manage') }}" class="list-group-item list-group-item-action rounded-pill py-3 px-4 border-0">
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-credit-card-fill fs-5 me-3"></i> 
-                            <span class="fw-medium">Mon abonnement</span>
-                        </div>
-                    </a>
-                </div>
-            </div>
+            {% include 'components/dashboard_sidebar.html.twig' with {'active': 'dashboard'} %}
         </div>
         
         <!-- Main Content -->
         <div class="col-lg-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0">Tableau de bord Recruteur</h1>
+                <a href="{{ path('app_recruiter_job_offer_new') }}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle me-2"></i>Publier une offre
+                </a>
+            </div>
+            
             <!-- Stats Cards -->
             <div class="row g-4 mb-4">
                 <div class="col-md-4">
-                    <div class="card shadow-sm hover-shadow-md rounded-4 border-0 h-100">
-                        <div class="card-body p-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
-                                    <i class="bi bi-briefcase-fill text-primary fs-4"></i>
+                                    <i class="fas fa-briefcase text-primary fs-4"></i>
                                 </div>
                                 <div>
-                                    <h5 class="fw-bold mb-0">Offres</h5>
+                                    <h5 class="fw-bold mb-0">Offres actives</h5>
                                     <p class="text-muted mb-0">Publiées</p>
                                 </div>
                             </div>
-                            <h2 class="display-5 fw-bold mb-0 text-primary">{{ offers|length }}</h2>
-                            <a href="{{ path('app_dashboard_offers') }}" class="text-decoration-none stretched-link">
+                            <h2 class="display-5 fw-bold mb-0 text-primary">{{ activeOffers|length }}</h2>
+                            <a href="{{ path('app_job_offer_index') }}" class="text-decoration-none">
                                 <div class="mt-3 text-primary">
-                                    <span>Voir le détail</span>
-                                    <i class="bi bi-arrow-right ms-1"></i>
+                                    <span>Gérer mes offres</span>
+                                    <i class="fas fa-arrow-right ms-1"></i>
                                 </div>
                             </a>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card shadow-sm hover-shadow-md rounded-4 border-0 h-100">
-                        <div class="card-body p-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
-                                    <i class="bi bi-person-workspace text-success fs-4"></i>
+                                    <i class="fas fa-users text-success fs-4"></i>
                                 </div>
                                 <div>
                                     <h5 class="fw-bold mb-0">Candidatures</h5>
                                     <p class="text-muted mb-0">Reçues</p>
                                 </div>
                             </div>
-                            <h2 class="display-5 fw-bold mb-0 text-success">{{ applications|length }}</h2>
-                            <a href="{{ path('app_dashboard_applications') }}" class="text-decoration-none stretched-link">
+                            <h2 class="display-5 fw-bold mb-0 text-success">{{ totalApplications ?? 0 }}</h2>
+                            <a href="{{ path('app_job_application_recruiter') }}" class="text-decoration-none">
                                 <div class="mt-3 text-success">
-                                    <span>Voir le détail</span>
-                                    <i class="bi bi-arrow-right ms-1"></i>
+                                    <span>Voir les candidatures</span>
+                                    <i class="fas fa-arrow-right ms-1"></i>
                                 </div>
                             </a>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card shadow-sm hover-shadow-md rounded-4 border-0 h-100">
-                        <div class="card-body p-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
-                                    <i class="bi bi-calendar-check-fill text-info fs-4"></i>
+                                    <i class="fas fa-chart-line text-info fs-4"></i>
                                 </div>
                                 <div>
-                                    <h5 class="fw-bold mb-0">Entretiens</h5>
-                                    <p class="text-muted mb-0">Planifiés</p>
+                                    <h5 class="fw-bold mb-0">Matching</h5>
+                                    <p class="text-muted mb-0">Candidats</p>
                                 </div>
                             </div>
-                            <h2 class="display-5 fw-bold mb-0 text-info">0</h2>
-                            <a href="{{ path('app_dashboard_applications') }}" class="text-decoration-none stretched-link">
+                            <h2 class="display-5 fw-bold mb-0 text-info">
+                                <i class="fas fa-bolt"></i>
+                            </h2>
+                            <a href="{{ path('app_matching_dashboard_recruiter') }}" class="text-decoration-none">
                                 <div class="mt-3 text-info">
-                                    <span>Voir le détail</span>
-                                    <i class="bi bi-arrow-right ms-1"></i>
+                                    <span>Trouver des candidats</span>
+                                    <i class="fas fa-arrow-right ms-1"></i>
                                 </div>
                             </a>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Recent Job Offers -->
-            <div class="card shadow-sm rounded-4 border-0 mb-4">
-                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center p-4">
-                    <h5 class="fw-bold mb-0"><i class="bi bi-briefcase-fill me-2 text-primary"></i>Offres d'emploi récentes</h5>
-                    <a href="{{ path('app_job_offer_new') }}" class="btn btn-primary rounded-pill px-4">
-                        <i class="bi bi-plus-lg me-2"></i>Nouvelle offre
+            
+            <!-- Upcoming Interviews Section -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-alt text-warning me-2"></i>
+                        Entretiens à venir
+                    </h5>
+                    <a href="{{ path('app_interviews_index') }}" class="btn btn-sm btn-outline-warning">
+                        Voir tout <i class="fas fa-arrow-right ms-1"></i>
                     </a>
                 </div>
-                <div class="card-body p-0">
-                    {% if offers is empty %}
-                        <div class="text-center p-5">
-                            <i class="bi bi-briefcase display-1 text-primary opacity-50 mb-3"></i>
-                            <h3 class="fw-bold mb-3">Aucune offre publiée</h3>
-                            <p class="text-muted mb-4">Vous n'avez pas encore publié d'offre d'emploi.</p>
-                            <a href="{{ path('app_job_offer_new') }}" class="btn btn-primary btn-lg rounded-pill px-5">
-                                <i class="bi bi-plus-lg me-2"></i>Publier une offre
-                            </a>
-                        </div>
-                    {% else %}
+                <div class="card-body">
+                    {% if upcomingInterviews is defined and upcomingInterviews is not empty %}
                         <div class="table-responsive">
                             <table class="table table-hover mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th class="px-4">Titre</th>
-                                        <th>Type</th>
-                                        <th>Lieu</th>
-                                        <th>Publié le</th>
-                                        <th>Candidatures</th>
-                                        <th class="px-4">Actions</th>
+                                        <th>Candidat</th>
+                                        <th>Date</th>
+                                        <th>Offre</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for offer in offers|slice(0, 5) %}
-                                        <tr class="align-middle">
-                                            <td class="px-4">
-                                                <a href="{{ path('app_job_offer_show', {id: offer.id}) }}" class="text-decoration-none fw-medium text-dark">
-                                                    {{ offer.title }}
-                                                </a>
-                                            </td>
-                                            <td>{{ offer.contractType }}</td>
-                                            <td>{{ offer.location }}</td>
-                                            <td>{{ offer.createdAt|date('d/m/Y') }}</td>
+                                    {% for interview in upcomingInterviews|slice(0, 3) %}
+                                        <tr>
+                                            <td>{{ interview.applicant.fullName }}</td>
+                                            <td>{{ interview.scheduledAt|date('d/m/Y H:i') }}</td>
                                             <td>
-                                                <span class="badge bg-primary rounded-pill">
-                                                    {{ offer.applications.count }}
-                                                </span>
+                                                {% if interview.jobOffer %}
+                                                    {{ interview.jobOffer.title }}
+                                                {% else %}
+                                                    <span class="text-muted">Non spécifié</span>
+                                                {% endif %}
                                             </td>
-                                            <td class="px-4">
-                                                <div class="d-flex gap-2">
-                                                    <a href="{{ path('app_job_offer_show', {id: offer.id}) }}" class="btn btn-sm btn-light rounded-pill">
-                                                        <i class="bi bi-eye"></i> Voir
-                                                    </a>
-                                                    <a href="{{ path('app_job_offer_edit', {id: offer.id}) }}" class="btn btn-sm btn-outline-primary rounded-pill">
-                                                        <i class="bi bi-pencil"></i> Modifier
-                                                    </a>
-                                                </div>
+                                            <td>
+                                                <a href="{{ path('app_interview_direct_join', {id: interview.id}) }}" class="btn btn-sm btn-warning">
+                                                    <i class="fas fa-video me-1"></i> Rejoindre
+                                                </a>
                                             </td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
-                        {% if offers|length > 5 %}
-                            <div class="text-center p-3">
-                                <a href="{{ path('app_dashboard_offers') }}" class="btn btn-light rounded-pill">
-                                    <i class="bi bi-eye me-2"></i>Voir toutes les offres
+                    {% else %}
+                        <div class="text-center py-4">
+                            <div class="mb-3">
+                                <i class="fas fa-calendar-times fa-4x text-muted opacity-50"></i>
+                            </div>
+                            <h5>Aucun entretien planifié</h5>
+                            <p class="text-muted mb-4">Vous n'avez pas d'entretiens à venir.</p>
+                            <a href="{{ path('app_interview_new') }}" class="btn btn-warning">
+                                <i class="fas fa-plus-circle me-2"></i>Planifier un entretien
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Matching Candidats Section -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line text-info me-2"></i>
+                        Matching Candidats
+                    </h5>
+                    <a href="{{ path('app_matching_dashboard_recruiter') }}" class="btn btn-sm btn-outline-info">
+                        Voir tout <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if activeOffers is empty %}
+                        <div class="text-center py-4">
+                            <div class="mb-3">
+                                <i class="fas fa-users-slash fa-4x text-muted opacity-50"></i>
+                            </div>
+                            <h5>Aucune offre active</h5>
+                            <p class="text-muted mb-4">Publiez des offres d'emploi pour voir les candidats recommandés.</p>
+                            <a href="{{ path('app_recruiter_job_offer_new') }}" class="btn btn-primary">
+                                <i class="fas fa-plus-circle me-2"></i>Publier une offre
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="row">
+                            {% for offer in activeOffers|slice(0, 2) %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border shadow-sm h-100">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">{{ offer.title }}</h6>
+                                            <small class="text-muted">{{ offer.company }}</small>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="text-muted small mb-3">Notre algorithme de matching trouve les candidats les plus compatibles avec votre offre.</p>
+                                            <div class="d-grid gap-2">
+                                                <a href="{{ path('app_matching_suggestions_job_offer', {'id': offer.id}) }}" class="btn btn-info btn-sm">
+                                                    <i class="fas fa-users me-2"></i>Voir les candidats compatibles
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        {% if activeOffers|length > 2 %}
+                            <div class="text-center mt-3">
+                                <a href="{{ path('app_matching_dashboard_recruiter') }}" class="btn btn-outline-info">
+                                    Voir toutes mes offres <i class="fas fa-arrow-right ms-1"></i>
                                 </a>
                             </div>
                         {% endif %}
                     {% endif %}
                 </div>
             </div>
-
-            <!-- Recent Applications -->
-            <div class="card shadow-sm rounded-4 border-0">
-                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center p-4">
-                    <h5 class="fw-bold mb-0"><i class="bi bi-file-earmark-text-fill me-2 text-success"></i>Candidatures récentes</h5>
+            
+            <!-- Job Applications -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users text-success me-2"></i>
+                        Dernières candidatures
+                    </h5>
+                    <a href="{{ path('app_job_application_recruiter') }}" class="btn btn-sm btn-outline-success">
+                        Voir tout <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
                 </div>
                 <div class="card-body p-0">
-                    {% if applications is empty %}
-                        <div class="text-center p-5">
-                            <i class="bi bi-file-earmark-text display-1 text-success opacity-50 mb-3"></i>
-                            <h3 class="fw-bold mb-3">Aucune candidature reçue</h3>
-                            <p class="text-muted mb-0">Vous n'avez pas encore reçu de candidatures.</p>
-                        </div>
-                    {% else %}
+                    {% if recentApplications is defined and recentApplications is not empty %}
                         <div class="table-responsive">
                             <table class="table table-hover mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th class="px-4">Candidat</th>
+                                        <th>Candidat</th>
                                         <th>Offre</th>
                                         <th>Date</th>
                                         <th>Statut</th>
-                                        <th class="px-4">Actions</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for application in applications|slice(0, 5) %}
-                                        <tr class="align-middle">
-                                            <td class="px-4">
-                                                <div class="d-flex align-items-center">
-                                                    {% if application.applicant.profilePicture %}
-                                                        <img src="{{ asset('uploads/profile_pictures/' ~ application.applicant.profilePicture) }}" 
-                                                            class="rounded-circle border me-3" 
-                                                            style="width: 40px; height: 40px; object-fit: cover;">
-                                                    {% else %}
-                                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center border me-3" 
-                                                            style="width: 40px; height: 40px;">
-                                                            <i class="bi bi-person text-muted"></i>
-                                                        </div>
-                                                    {% endif %}
-                                                    <span class="fw-medium">{{ application.applicant.fullName }}</span>
-                                                </div>
-                                            </td>
+                                    {% for application in recentApplications %}
+                                        <tr>
+                                            <td>{{ application.applicant.fullName }}</td>
                                             <td>{{ application.jobOffer.title }}</td>
                                             <td>{{ application.createdAt|date('d/m/Y') }}</td>
                                             <td>
                                                 {% if application.status == 'pending' %}
-                                                    <span class="badge bg-warning text-dark">En attente</span>
+                                                    <span class="badge bg-warning">En attente</span>
                                                 {% elseif application.status == 'reviewed' %}
                                                     <span class="badge bg-info">En cours d'analyse</span>
                                                 {% elseif application.status == 'interview' %}
@@ -272,9 +250,9 @@
                                                     <span class="badge bg-danger">Refusée</span>
                                                 {% endif %}
                                             </td>
-                                            <td class="px-4">
-                                                <a href="{{ path('app_job_application_show', {id: application.id}) }}" class="btn btn-sm btn-light rounded-pill">
-                                                    <i class="bi bi-eye me-1"></i> Voir la candidature
+                                            <td>
+                                                <a href="{{ path('app_job_application_show', {id: application.id}) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
                                                 </a>
                                             </td>
                                         </tr>
@@ -282,13 +260,14 @@
                                 </tbody>
                             </table>
                         </div>
-                        {% if applications|length > 5 %}
-                            <div class="text-center p-3">
-                                <a href="{{ path('app_dashboard_applications') }}" class="btn btn-light rounded-pill">
-                                    <i class="bi bi-eye me-2"></i>Voir toutes les candidatures
-                                </a>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <div class="mb-3">
+                                <i class="fas fa-inbox fa-4x text-muted opacity-50"></i>
                             </div>
-                        {% endif %}
+                            <h5>Aucune candidature</h5>
+                            <p class="text-muted">Vous n'avez pas encore reçu de candidatures.</p>
+                        </div>
                     {% endif %}
                 </div>
             </div>

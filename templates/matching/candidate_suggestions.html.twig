@@ -1,0 +1,350 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Offres d'emploi recommandées pour vous{% endblock %}
+
+{% block body %}
+<div class="container my-5">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ path('app_matching_dashboard_candidate') }}">Tableau de bord</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Offres recommandées</li>
+                </ol>
+            </nav>
+            
+            <h1 class="mb-4">Offres d'emploi recommandées pour vous</h1>
+            <p class="lead mb-5">
+                Notre algorithme avancé a analysé votre profil pour vous suggérer les offres d'emploi les plus compatibles avec vos compétences et votre expérience.
+            </p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-lg h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Filtres</h2>
+                    
+                    <div class="mb-3">
+                        <label for="scoreFilter" class="form-label d-flex justify-content-between">
+                            <span>Score minimum</span>
+                            <span class="badge bg-primary" id="scoreFilterValue">50%</span>
+                        </label>
+                        <input type="range" class="form-range" min="0" max="100" step="5" value="50" id="scoreFilter">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Type de contrat</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="" id="filterCDI" checked>
+                            <label class="form-check-label" for="filterCDI">
+                                CDI
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="" id="filterCDD" checked>
+                            <label class="form-check-label" for="filterCDD">
+                                CDD
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="" id="filterStage" checked>
+                            <label class="form-check-label" for="filterStage">
+                                Stage
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="" id="filterAlternance" checked>
+                            <label class="form-check-label" for="filterAlternance">
+                                Alternance
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Localisation</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="" id="filterRemote" checked>
+                            <label class="form-check-label" for="filterRemote">
+                                Télétravail
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="" id="filterOnSite" checked>
+                            <label class="form-check-label" for="filterOnSite">
+                                Sur site
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button class="btn btn-primary w-100" id="applyFilters">
+                            <i class="fas fa-filter me-2"></i> Appliquer les filtres
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm rounded-lg">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="h5 mb-0">{{ suggestedOffers|length }} offre(s) d'emploi compatible(s)</h2>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-sort me-1"></i> Trier par
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="sortDropdown">
+                                <li><a class="dropdown-item active" href="#">Score de compatibilité</a></li>
+                                <li><a class="dropdown-item" href="#">Date de publication</a></li>
+                                <li><a class="dropdown-item" href="#">Entreprise</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if suggestedOffers is empty %}
+                        <div class="p-4 text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-briefcase fa-3x text-muted"></i>
+                            </div>
+                            <h3 class="h5">Aucune offre compatible</h3>
+                            <p class="text-muted">Aucune offre d'emploi ne correspond actuellement à votre profil.</p>
+                            <div class="mt-3">
+                                <a href="{{ path('app_applicant_edit_skills') }}" class="btn btn-primary">
+                                    <i class="fas fa-edit me-2"></i> Compléter mon profil
+                                </a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="list-group list-group-flush">
+                            {% for suggestion in suggestedOffers %}
+                                <div class="list-group-item p-4 job-offer-item" data-score="{{ suggestion.score }}">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <div class="d-flex">
+                                                {% if suggestion.jobOffer.logoUrl %}
+                                                    <div class="me-3">
+                                                        <img src="{{ suggestion.jobOffer.logoUrl }}" alt="{{ suggestion.jobOffer.company }}" class="rounded" width="70" height="70" style="object-fit: contain;">
+                                                    </div>
+                                                {% endif %}
+                                                <div>
+                                                    <h3 class="h5 mb-1">{{ suggestion.jobOffer.title }}</h3>
+                                                    <p class="text-muted mb-2">
+                                                        <i class="fas fa-building me-1"></i> {{ suggestion.jobOffer.company }} &middot;
+                                                        <i class="fas fa-map-marker-alt me-1"></i> {{ suggestion.jobOffer.location }}
+                                                        {% if suggestion.jobOffer.isRemote %}
+                                                            <span class="badge bg-success ms-1">Remote</span>
+                                                        {% endif %}
+                                                    </p>
+                                                    
+                                                    <div class="mb-2">
+                                                        <span class="badge bg-primary me-1">{{ suggestion.jobOffer.contractType }}</span>
+                                                        {% if suggestion.jobOffer.salary %}
+                                                            <span class="badge bg-light text-dark">
+                                                                <i class="fas fa-euro-sign me-1"></i> {{ suggestion.jobOffer.salary }} €/an
+                                                            </span>
+                                                        {% endif %}
+                                                    </div>
+                                                    
+                                                    <div class="mb-2">
+                                                        {% set techSkillsReason = null %}
+                                                        {% for reason in suggestion.reasons %}
+                                                            {% if reason.category == 'Compétences techniques' %}
+                                                                {% set techSkillsReason = reason %}
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                        
+                                                        {% if techSkillsReason and techSkillsReason.matches|length > 0 %}
+                                                            <div class="small text-muted mb-1">Compétences correspondantes:</div>
+                                                            {% for skill in techSkillsReason.matches|slice(0, 5) %}
+                                                                <span class="badge bg-success me-1 mb-1">{{ skill }}</span>
+                                                            {% endfor %}
+                                                            {% if techSkillsReason.matches|length > 5 %}
+                                                                <span class="badge bg-light text-dark">+{{ techSkillsReason.matches|length - 5 }}</span>
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                                            <div class="d-flex flex-column align-items-end">
+                                                <div class="mb-3 w-100" style="max-width: 150px;">
+                                                    <div class="d-flex justify-content-between mb-1 small">
+                                                        <span>Compatibilité</span>
+                                                        <span class="fw-bold">{{ suggestion.score }}%</span>
+                                                    </div>
+                                                    <div class="progress" style="height: 8px;">
+                                                        <div class="progress-bar {{ suggestion.score >= 75 ? 'bg-success' : (suggestion.score >= 50 ? 'bg-primary' : 'bg-warning') }}" role="progressbar" style="width: {{ suggestion.score }}%" aria-valuenow="{{ suggestion.score }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="btn-group">
+                                                    <a href="{{ path('app_job_offer_show', {'id': suggestion.jobOffer.id}) }}" class="btn btn-sm btn-primary">
+                                                        <i class="fas fa-eye"></i> Voir
+                                                    </a>
+                                                    <a href="{{ path('app_job_application_new', {'jobOffer': suggestion.jobOffer.id}) }}" class="btn btn-sm btn-success">
+                                                        <i class="fas fa-paper-plane"></i> Postuler
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#details-{{ suggestion.jobOffer.id }}" aria-expanded="false">
+                                                        <i class="fas fa-info-circle"></i> Détails
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="collapse mt-4" id="details-{{ suggestion.jobOffer.id }}">
+                                        <div class="card card-body border-0 bg-light">
+                                            <h4 class="h6 mb-3">Pourquoi cette offre correspond à votre profil</h4>
+                                            <div class="row">
+                                                {% for reason in suggestion.reasons %}
+                                                    <div class="col-md-6 mb-3">
+                                                        <div class="card h-100 border-0 shadow-sm">
+                                                            <div class="card-body">
+                                                                <h6 class="card-title">{{ reason.category }}</h6>
+                                                                
+                                                                {% if reason.category == 'Compétences techniques' and reason.matches is defined %}
+                                                                    <div class="mt-2">
+                                                                        <div class="d-flex justify-content-between">
+                                                                            <span>Score: {{ reason.score }}/{{ reason.maxScore }}</span>
+                                                                            <span>{{ (reason.score / reason.maxScore * 100)|round }}%</span>
+                                                                        </div>
+                                                                        <div class="progress mt-1 mb-3" style="height: 5px;">
+                                                                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (reason.score / reason.maxScore * 100)|round }}%"></div>
+                                                                        </div>
+                                                                        {% if reason.matches|length > 0 %}
+                                                                            <p class="mb-2">Compétences correspondantes :</p>
+                                                                            <div>
+                                                                                {% for skill in reason.matches %}
+                                                                                    <span class="badge bg-success me-1 mb-1">{{ skill }}</span>
+                                                                                {% endfor %}
+                                                                            </div>
+                                                                        {% else %}
+                                                                            <p class="text-muted">Aucune compétence technique correspondante</p>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                {% elseif reason.category == 'Expérience professionnelle' and reason.details is defined %}
+                                                                    <div class="mt-2">
+                                                                        <div class="d-flex justify-content-between">
+                                                                            <span>Score: {{ reason.score }}/{{ reason.maxScore }}</span>
+                                                                            <span>{{ (reason.score / reason.maxScore * 100)|round }}%</span>
+                                                                        </div>
+                                                                        <div class="progress mt-1 mb-3" style="height: 5px;">
+                                                                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (reason.score / reason.maxScore * 100)|round }}%"></div>
+                                                                        </div>
+                                                                        <ul class="list-unstyled mb-0">
+                                                                            {% for detail in reason.details %}
+                                                                                <li><i class="fas fa-check-circle text-success me-2"></i> {{ detail }}</li>
+                                                                            {% else %}
+                                                                                <li class="text-muted">Aucune expérience pertinente</li>
+                                                                            {% endfor %}
+                                                                        </ul>
+                                                                    </div>
+                                                                {% elseif reason.category == 'Soft skills' and reason.matches is defined %}
+                                                                    <div class="mt-2">
+                                                                        <div class="d-flex justify-content-between">
+                                                                            <span>Score: {{ reason.score }}/{{ reason.maxScore }}</span>
+                                                                            <span>{{ (reason.score / reason.maxScore * 100)|round }}%</span>
+                                                                        </div>
+                                                                        <div class="progress mt-1 mb-3" style="height: 5px;">
+                                                                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (reason.score / reason.maxScore * 100)|round }}%"></div>
+                                                                        </div>
+                                                                        {% if reason.matches|length > 0 %}
+                                                                            <p class="mb-2">Soft skills correspondantes :</p>
+                                                                            <div>
+                                                                                {% for skill in reason.matches %}
+                                                                                    <span class="badge bg-info me-1 mb-1">{{ skill }}</span>
+                                                                                {% endfor %}
+                                                                            </div>
+                                                                        {% else %}
+                                                                            <p class="text-muted">Aucune soft skill correspondante</p>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                {% elseif reason.category == 'Localisation' and reason.details is defined %}
+                                                                    <div class="mt-2">
+                                                                        <div class="d-flex justify-content-between">
+                                                                            <span>Score: {{ reason.score }}/{{ reason.maxScore }}</span>
+                                                                            <span>{{ (reason.score / reason.maxScore * 100)|round }}%</span>
+                                                                        </div>
+                                                                        <div class="progress mt-1 mb-3" style="height: 5px;">
+                                                                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (reason.score / reason.maxScore * 100)|round }}%"></div>
+                                                                        </div>
+                                                                        <ul class="list-unstyled mb-0">
+                                                                            {% for detail in reason.details %}
+                                                                                <li><i class="fas fa-map-marker-alt text-primary me-2"></i> {{ detail }}</li>
+                                                                            {% else %}
+                                                                                <li class="text-muted">Aucune information de localisation</li>
+                                                                            {% endfor %}
+                                                                        </ul>
+                                                                    </div>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                            
+                                            <div class="mt-3">
+                                                <h5 class="h6 mb-3">Description du poste:</h5>
+                                                <div class="bg-white p-3 rounded">
+                                                    <p class="mb-0">{{ suggestion.jobOffer.description|nl2br }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block javascripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Score filter slider
+        const scoreFilter = document.getElementById('scoreFilter');
+        const scoreFilterValue = document.getElementById('scoreFilterValue');
+        
+        if (scoreFilter && scoreFilterValue) {
+            scoreFilter.addEventListener('input', function() {
+                scoreFilterValue.textContent = this.value + '%';
+            });
+        }
+        
+        // Apply filters button
+        const applyFiltersBtn = document.getElementById('applyFilters');
+        
+        if (applyFiltersBtn) {
+            applyFiltersBtn.addEventListener('click', function() {
+                const minScore = parseInt(scoreFilter.value);
+                const jobOfferItems = document.querySelectorAll('.job-offer-item');
+                
+                jobOfferItems.forEach(function(item) {
+                    const score = parseInt(item.dataset.score);
+                    
+                    if (score >= minScore) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+                
+                // Count visible job offers
+                const visibleOffers = document.querySelectorAll('.job-offer-item[style=""]').length;
+                document.querySelector('.card-header h2').textContent = visibleOffers + ' offre(s) d\'emploi compatible(s)';
+            });
+        }
+    });
+</script>
+{% endblock %}
+
+{% endblock %} 

@@ -14,7 +14,7 @@
                         <!-- Create Post Card -->
                         <div class="card shadow-sm hover-shadow-md mb-4 rounded-4 border-0">
                             <div class="card-body p-4">
-                                <div class="d-flex align-items-center gap-3">
+                                <div class="d-flex align-items-center gap-3 mb-3">
                                     <a href="{{ path('app_user_profile', {'id': app.user.id}) }}" class="flex-shrink-0">
                                         {% if app.user.profilePicture %}
                                             <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}" 
@@ -28,10 +28,34 @@
                                             </div>
                                         {% endif %}
                                     </a>
-                                    <div class="flex-grow-1">
-                                        <a href="{{ path('app_post_new') }}" class="form-control form-control-lg text-start text-muted py-3 bg-light border-0 rounded-pill" style="height: auto;">
-                                            Quoi de neuf, {{ app.user.firstName }} ?
-                                        </a>
+                                    <div class="flex-grow-1 position-relative">
+                                        <input type="text" id="quick-post-content" class="form-control form-control-lg text-start py-3 bg-light border-0 rounded-pill mention-input" 
+                                               placeholder="Quoi de neuf, {{ app.user.firstName }} ?" style="height: auto;">
+                                        <div id="mention-suggestions" class="mention-suggestions dropdown-menu"></div>
+                                    </div>
+                                </div>
+                                
+                                <div id="quick-post-form" class="d-none">
+                                    <div class="mb-3">
+                                        <input type="text" id="quick-post-title" class="form-control" placeholder="Titre (optionnel)">
+                                    </div>
+                                    <div class="mb-3">
+                                        <textarea id="quick-post-full-content" class="form-control mention-input" rows="3" placeholder="Contenu de votre publication..."></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <div class="input-group">
+                                            <input type="file" id="quick-post-image" class="form-control" accept="image/*">
+                                            <label class="input-group-text" for="quick-post-image">Image</label>
+                                        </div>
+                                        <small class="form-text text-muted">Formats acceptés : JPEG, PNG, GIF. Taille maximale : 5 Mo.</small>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <button type="button" id="quick-post-cancel" class="btn btn-outline-secondary">
+                                            <i class="bi bi-x me-1"></i> Annuler
+                                        </button>
+                                        <button type="button" id="quick-post-submit" class="btn btn-primary">
+                                            <i class="bi bi-send me-1"></i> Publier
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -72,12 +96,31 @@
                         </div>
                     {% else %}
                         {% for post in posts %}
-                            <div class="card shadow-sm hover-shadow-md mb-4 rounded-4 border-0">
+                            {% set isSharedPost = false %}
+                            {% set sharingUser = null %}
+                            {% set originalPost = post %}
+                            
+                            {% if post.shares|length > 0 %}
+                                {% for share in post.shares %}
+                                    {% if sharingUser is null and share.createdAt > post.createdAt %}
+                                        {% set isSharedPost = true %}
+                                        {% set sharingUser = share.user %}
+                                        {% set shareComment = share.comment %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                            
+                            <div class="card border-0 shadow-sm rounded-3 mb-3">
                                 <!-- Post Header -->
-                                <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4">
-                                    <div class="d-flex align-items-center">
-                                        <a href="{{ path('app_user_profile', {'id': post.author.id}) }}" class="me-3">
-                                            {% if post.author.profilePicture %}
+                                <div class="card-header bg-white border-0 pt-3 pb-0">
+                                    <div class="d-flex">
+                                        <a href="{{ path('app_user_profile', {'id': isSharedPost ? sharingUser.id : post.author.id}) }}" class="me-2">
+                                            {% if isSharedPost and sharingUser.profilePicture %}
+                                                <img src="{{ asset('uploads/profile_pictures/' ~ sharingUser.profilePicture) }}" 
+                                                     class="rounded-circle border"
+                                                     alt="{{ sharingUser.fullName }}"
+                                                     style="width: 48px; height: 48px; object-fit: cover;">
+                                            {% elseif post.author.profilePicture %}
                                                 <img src="{{ asset('uploads/profile_pictures/' ~ post.author.profilePicture) }}" 
                                                      class="rounded-circle border"
                                                      alt="{{ post.author.fullName }}"
@@ -89,42 +132,161 @@
                                                 </div>
                                             {% endif %}
                                         </a>
-                                        <div>
-                                            <h6 class="mb-1">
-                                                <a href="{{ path('app_user_profile', {'id': post.author.id}) }}" class="text-dark text-decoration-none fw-bold">
-                                                    {{ post.author.fullName }}
-                                                    {% if post.author.isRecruiter and is_granted('VERIFIED_BADGE', post.author) %}
-                                                        <i class="bi bi-patch-check-fill text-primary ms-1" data-bs-toggle="tooltip" title="Compte vérifié"></i>
-                                                    {% endif %}
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center">
+                                                <a href="{{ path('app_user_profile', {'id': isSharedPost ? sharingUser.id : post.author.id}) }}" class="text-decoration-none text-dark">
+                                                    <h6 class="mb-0 fw-bold">{{ isSharedPost ? sharingUser.fullName : post.author.fullName }}</h6>
                                                 </a>
-                                            </h6>
-                                            <div class="text-muted small d-flex align-items-center">
-                                                {% if post.author.company %}<span class="me-2">{{ post.author.company }}</span>•{% endif %}
-                                                <span class="ms-2">{{ post.createdAt|date('d/m/Y à H:i') }}</span>
+                                                {% if isSharedPost %}
+                                                    <span class="text-muted ms-2">a republié ceci</span>
+                                                {% endif %}
+                                                <div class="dropdown ms-auto">
+                                                    <button class="btn btn-sm btn-light rounded-circle" type="button" data-bs-toggle="dropdown">
+                                                        <i class="bi bi-three-dots"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end">
+                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-bookmark me-2"></i>Enregistrer</a></li>
+                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-link-45deg me-2"></i>Copier le lien</a></li>
+                                                        {% if post.author == app.user %}
+                                                            <li><a class="dropdown-item" href="{{ path('app_post_edit', {'id': post.id}) }}"><i class="bi bi-pencil me-2"></i>Modifier</a></li>
+                                                        {% endif %}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                            <div class="text-muted small">
+                                                {% if isSharedPost and sharingUser.company %}
+                                                    {{ sharingUser.company }} • 
+                                                {% elseif post.author.company %}
+                                                    {{ post.author.company }} • 
+                                                {% endif %}
+                                                {{ isSharedPost ? 'Republié le ' : '' }}{{ post.createdAt|date('d/m/Y à H:i') }}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <!-- Post Content -->
-                                <div class="card-body px-4 pt-3">
-                                    {% if post.title %}
-                                        <h5 class="card-title fw-bold mb-3">{{ post.title }}</h5>
+                                <div class="card-body pt-2">
+                                    {% if isSharedPost and shareComment is defined and shareComment %}
+                                        <p class="card-text mb-3">{{ shareComment }}</p>
                                     {% endif %}
+                                    
+                                    {% if isSharedPost %}
+                                        <div class="border rounded p-3 mb-3">
+                                            <div class="d-flex mb-2">
+                                                <a href="{{ path('app_user_profile', {'id': post.author.id}) }}" class="me-2">
+                                                    {% if post.author.profilePicture %}
+                                                        <img src="{{ asset('uploads/profile_pictures/' ~ post.author.profilePicture) }}" 
+                                                             class="rounded-circle border"
+                                                             alt="{{ post.author.fullName }}"
+                                                             style="width: 32px; height: 32px; object-fit: cover;">
+                                                    {% else %}
+                                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center border"
+                                                             style="width: 32px; height: 32px;">
+                                                            <i class="bi bi-person text-muted small"></i>
+                                                        </div>
+                                                    {% endif %}
+                                                </a>
+                                                <div>
+                                                    <div class="d-flex align-items-center">
+                                                        <a href="{{ path('app_user_profile', {'id': post.author.id}) }}" class="text-decoration-none text-dark">
+                                                            <h6 class="mb-0 fw-bold">{{ post.author.fullName }}</h6>
+                                                        </a>
+                                                    </div>
+                                                    <div class="text-muted small">
+                                                        {% if post.author.company %}{{ post.author.company }} • {% endif %}
+                                                        {{ post.createdAt|date('d/m/Y à H:i') }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                    {% endif %}
+                                    
+                                    {% if post.title %}
+                                        <h5 class="card-title fw-bold mb-2">{{ post.title }}</h5>
+                                    {% endif %}
+                                    
+                                    {% set content = post.content %}
+                                    
+                                    {# Traitement des mentions #}
+                                    {% set contentWithMentions = content %}
+                                    {% for mention in post.extractMentions %}
+                                        {% set mentionKey = '@' ~ mention %}
+                                        {% set mentionLink = '<a href="' ~ path('app_user_profile', {'id': mention}) ~ '" class="mention">@' ~ mention ~ '</a>' %}
+                                        {% set contentWithMentions = contentWithMentions|replace({(mentionKey): mentionLink}) %}
+                                    {% endfor %}
+                                    
+                                    {# Traitement des hashtags #}
+                                    {% set contentWithHashtags = contentWithMentions %}
+                                    {% for hashtag in post.extractHashtags %}
+                                        {% set hashtagKey = '#' ~ hashtag %}
+                                        {% set hashtagLink = '<a href="' ~ path('app_hashtag_show', {'name': hashtag}) ~ '" class="hashtag">#' ~ hashtag ~ '</a>' %}
+                                        {% set contentWithHashtags = contentWithHashtags|replace({(hashtagKey): hashtagLink}) %}
+                                    {% endfor %}
+                                    
                                     <p class="card-text mb-3">
-                                        {{ post.content|striptags|slice(0, 280) }}{% if post.content|length > 280 %}...
-                                            <a href="{{ path('app_post_show', {'id': post.id}) }}" class="text-primary text-decoration-none">voir plus</a>
+                                        {% if contentWithHashtags|length > 280 %}
+                                            {{ contentWithHashtags|slice(0, 280)|raw }}...
+                                            <a href="{{ path('app_post_show', {'id': post.id}) }}" class="text-decoration-none">voir plus</a>
+                                        {% else %}
+                                            {{ contentWithHashtags|raw }}
                                         {% endif %}
                                     </p>
                                     
-                                    {% if post.image %}
-                                        <div class="post-image rounded-4 overflow-hidden mb-3">
-                                            <img src="{{ asset('uploads/posts/' ~ post.image) }}" 
-                                                 class="img-fluid w-100" 
-                                                 alt="{{ post.title }}" 
-                                                 style="max-height: 500px; object-fit: cover;">
+                                    {% if post.hashtags.count > 0 %}
+                                        <div class="hashtags-container mb-3">
+                                            {% for hashtag in post.hashtags %}
+                                                <a href="{{ path('app_hashtag_show', {'name': hashtag.name}) }}" class="badge bg-light text-dark text-decoration-none">
+                                                    {{ hashtag.formattedName }}
+                                                </a>
+                                            {% endfor %}
                                         </div>
                                     {% endif %}
+                                    
+                                    {% if post.image %}
+                                        <div class="post-image mb-3">
+                                            <img src="{{ asset('uploads/posts/' ~ post.image) }}" 
+                                                 class="img-fluid rounded-3" 
+                                                 alt="{{ post.title }}" 
+                                                 style="width: 100%; max-height: 500px; object-fit: cover;">
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {% if isSharedPost %}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Post Stats -->
+                                    <div class="d-flex align-items-center text-muted small mb-2">
+                                        <div class="me-auto">
+                                            {% set totalReactions = post.likesCount %}
+                                            {% if totalReactions > 0 %}
+                                                <div class="d-flex align-items-center">
+                                                    <div class="reaction-icons">
+                                                        {% set displayedReactions = 0 %}
+                                                        {% for reactionType, count in post.reactionCounts %}
+                                                            {% if count > 0 and displayedReactions < 3 %}
+                                                                <span class="reaction-icon" title="{{ ('reactions.' ~ reactionType)|trans }}">
+                                                                    {% if reactionType == 'like' %}👍{% endif %}
+                                                                    {% if reactionType == 'congrats' %}👏{% endif %}
+                                                                    {% if reactionType == 'interesting' %}💡{% endif %}
+                                                                    {% if reactionType == 'support' %}❤️{% endif %}
+                                                                    {% if reactionType == 'encouraging' %}💪{% endif %}
+                                                                </span>
+                                                                {% set displayedReactions = displayedReactions + 1 %}
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </div>
+                                                    <span class="ms-1">{{ totalReactions }}</span>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        {% if post.commentsCount > 0 %}
+                                            <span>{{ post.commentsCount }} commentaire{% if post.commentsCount > 1 %}s{% endif %}</span>
+                                        {% endif %}
+                                        {% if post.sharesCount > 0 %}
+                                            <span class="ms-2">{{ post.sharesCount }} republication{% if post.sharesCount > 1 %}s{% endif %}</span>
+                                        {% endif %}
+                                    </div>
                                     
                                     <!-- Post Actions -->
                                     <div class="d-flex align-items-center gap-4 py-2">
@@ -165,7 +327,7 @@
                                         </button>
                                         <a href="{{ path('app_post_share', {'id': post.id}) }}" class="btn btn-light rounded-pill px-3 d-flex align-items-center gap-2">
                                             <i class="bi bi-share"></i>
-                                            <span>Partager</span>
+                                            <span>Republier</span>
                                         </a>
                                     </div>
                                     
@@ -206,7 +368,7 @@
                                                                    placeholder="Ajouter un commentaire..." required>
                                                             <button type="submit" class="btn btn-primary btn-sm rounded-pill-end">
                                                                 <i class="bi bi-send"></i>
-                                                            </button>
+                                        </button>
                                                         </div>
                                                     </form>
                                                 </div>
@@ -243,13 +405,13 @@
                                     {% endif %}
                                     <h5 class="fw-bold mb-1">{{ app.user.fullName }}</h5>
                                     <p class="text-muted mb-3">
-                                        {% if app.user.isRecruiter %}
-                                            {{ app.user.company }}
-                                        {% else %}
-                                            {{ app.user.jobTitle|default('') }}
-                                        {% endif %}
-                                    </p>
-                                    
+                                    {% if app.user.isRecruiter %}
+                                        {{ app.user.company }}
+                                    {% else %}
+                                        {{ app.user.jobTitle|default('') }}
+                                    {% endif %}
+                                </p>
+                                
                                     <a href="{{ path('app_user_profile', {'id': app.user.id}) }}" class="btn btn-primary rounded-pill w-100">
                                         <i class="bi bi-person-circle me-2"></i>Voir mon profil
                                     </a>
@@ -304,20 +466,20 @@
                                 <h6 class="fw-bold mb-3">Personnes que vous pourriez connaître</h6>
                                 {% for user in suggestedUsers|slice(0, 5) %}
                                     <div class="d-flex align-items-center justify-content-between mb-3">
-                                        <div class="d-flex align-items-center">
+                                            <div class="d-flex align-items-center">
                                             <a href="{{ path('app_user_profile', {'id': user.id}) }}" class="me-2">
                                                 {% if user.profilePicture %}
                                                     <img src="{{ asset('uploads/profile_pictures/' ~ user.profilePicture) }}" 
-                                                         class="rounded-circle border"
+                                                             class="rounded-circle border"
                                                          alt="{{ user.fullName }}"
-                                                         style="width: 40px; height: 40px; object-fit: cover;">
-                                                {% else %}
-                                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center border"
-                                                         style="width: 40px; height: 40px;">
-                                                        <i class="bi bi-person text-muted"></i>
-                                                    </div>
-                                                {% endif %}
-                                            </a>
+                                                             style="width: 40px; height: 40px; object-fit: cover;">
+                                                    {% else %}
+                                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center border"
+                                                             style="width: 40px; height: 40px;">
+                                                            <i class="bi bi-person text-muted"></i>
+                                                        </div>
+                                                    {% endif %}
+                                                </a>
                                             <div>
                                                 <h6 class="mb-0 fw-semibold">
                                                     <a href="{{ path('app_user_profile', {'id': user.id}) }}" class="text-dark text-decoration-none">
@@ -325,33 +487,33 @@
                                                     </a>
                                                 </h6>
                                                 <small class="text-muted">{{ user.jobTitle|default(user.company) }}</small>
-                                            </div>
-                                        </div>
-                                        {% if is_granted('IS_AUTHENTICATED_FULLY') %}
+                                                    </div>
+                                                </div>
+                                                {% if is_granted('IS_AUTHENTICATED_FULLY') %}
                                             {% if user.isFriend is defined and user.isFriend %}
                                                 <button class="btn btn-light btn-sm rounded-pill px-3" disabled>
                                                     <i class="bi bi-person-check me-1"></i>Ami
-                                                </button>
+                                                        </button>
                                             {% elseif user.hasPendingRequestFrom is defined and user.hasPendingRequestFrom %}
                                                 <button class="btn btn-light btn-sm rounded-pill px-3" disabled>
                                                     <i class="bi bi-hourglass-split me-1"></i>En attente
-                                                </button>
-                                            {% else %}
+                                                        </button>
+                                                    {% else %}
                                                 <a href="{{ path('app_friendship_send', {'id': user.id}) }}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
                                                     <i class="bi bi-person-plus me-1"></i>Ajouter
-                                                </a>
-                                            {% endif %}
-                                        {% endif %}
-                                    </div>
-                                {% endfor %}
+                                                        </a>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
+                                    {% endfor %}
                                 {% if suggestedUsers|length > 5 %}
                                     <a href="{{ path('app_user_suggestions') }}" class="btn btn-light rounded-pill w-100">
                                         Voir plus
                                     </a>
                                 {% endif %}
                             </div>
-                        </div>
-                    {% endif %}
+                                </div>
+                            {% endif %}
                     
                     <!-- Trending Hashtags -->
                     <div class="card shadow-sm rounded-4 border-0 mb-4">
@@ -381,12 +543,12 @@
                                 <div class="text-center p-3">
                                     <i class="bi bi-hash-lg text-muted fs-1 mb-2"></i>
                                     <p class="text-muted">Aucun hashtag tendance pour le moment</p>
-                                </div>
-                            {% endif %}
                         </div>
-                    </div>
-                    
-                    <!-- Stats Section -->
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Stats Section -->
                     <div class="card shadow-sm rounded-4 border-0 bg-primary text-white">
                         <div class="card-body p-4">
                             <h6 class="fw-bold mb-4">PitCrew en chiffres</h6>
@@ -416,21 +578,21 @@
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                </div>
                                 <div class="col-12">
                                     <div class="bg-white bg-opacity-10 rounded-4 p-3">
                                         <div class="d-flex align-items-center">
                                             <div class="rounded-circle bg-white p-2 me-3">
                                                 <i class="bi bi-people text-primary"></i>
-                                            </div>
+                        </div>
                                             <div>
                                                 <h3 class="h5 fw-bold mb-0">{{ applicants|length }}+</h3>
                                                 <small class="text-white-50">Candidats</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    </div>
+                </div>
+                        </div>
+                    </div>
+                </div>
                         </div>
                     </div>
                 </div>
@@ -540,6 +702,53 @@
         .hover-bg-light:hover {
             background-color: var(--bs-light);
         }
+        
+        .mention-suggestions {
+            position: absolute;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1050;
+            display: none;
+        }
+        
+        .mention-suggestions.show {
+            display: block;
+        }
+        
+        .mention-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            cursor: pointer;
+            background-color: white;
+        }
+        
+        .mention-item:hover, .mention-item.active {
+            background-color: #f8f9fa;
+        }
+        
+        .mention-item img, .mention-item .avatar-placeholder {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .mention-item .avatar-placeholder {
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .mention {
+            color: #0d6efd;
+            font-weight: 500;
+        }
+        
+        .hashtag {
+            color: #0d6efd;
+        }
     </style>
 {% endblock %}
 
@@ -547,157 +756,263 @@
     {{ parent() }}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Gestion des boites de réactions
-            document.querySelectorAll('.reaction-container').forEach(container => {
-                const likeButton = container.querySelector('.btn-like');
-                const reactionsBox = container.querySelector('.reactions-box');
-                
-                // Afficher/masquer le menu de réactions au survol/clic
-                if (window.innerWidth > 768) { // Survol pour desktop
-                    let hideTimeout;
-                    
-                    container.addEventListener('mouseenter', () => {
-                        clearTimeout(hideTimeout);
-                        reactionsBox.classList.remove('d-none');
-                    });
-                    
-                    container.addEventListener('mouseleave', () => {
-                        // Ajouter un délai avant de masquer le menu de réactions
-                        hideTimeout = setTimeout(() => {
-                            // Vérifier si la souris n'est pas revenue entre-temps
-                            if (!container.matches(':hover')) {
-                                reactionsBox.classList.add('d-none');
-                            }
-                        }, 1500); // 1,5 secondes de délai
-                    });
-                    
-                    // Garder le menu visible pendant l'interaction
-                    reactionsBox.addEventListener('mouseenter', () => {
-                        clearTimeout(hideTimeout);
-                    });
-                } else { // Clic pour mobile
-                    // Remplacer le clic sur le bouton J'aime par un clic pour ouvrir le menu de réactions
-                    likeButton.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        
-                        // Cacher tous les autres menus de réactions d'abord
-                        document.querySelectorAll('.reactions-box').forEach(box => {
-                            if (box !== reactionsBox) {
-                                box.classList.add('d-none');
-                            }
-                        });
-                        
-                        // Basculer la visibilité du menu de réactions
-                        if (reactionsBox.classList.contains('d-none')) {
-                            reactionsBox.classList.remove('d-none');
-                            
-                            // Fermer quand on clique ailleurs
-                            setTimeout(() => {
-                                document.addEventListener('click', function closeReactions(event) {
-                                    if (!container.contains(event.target)) {
-                                        reactionsBox.classList.add('d-none');
-                                        document.removeEventListener('click', closeReactions);
-                                    }
-                                });
-                            }, 100);
-                        } else {
-                            reactionsBox.classList.add('d-none');
-                        }
-                    });
-                }
-                
-                // Gestion des clics sur les réactions
-                container.querySelectorAll('.btn-reaction').forEach(button => {
-                    button.addEventListener('click', function() {
-                        const postId = this.getAttribute('data-post-id');
-                        const reaction = this.getAttribute('data-reaction');
-                        const likeButton = container.querySelector('.btn-like');
-                        const likeIcon = likeButton.querySelector('i');
-                        const likeCount = likeButton.querySelector('.like-count');
-                        
-                        // Appeler l'API avec le type de réaction
-                        fetch(`/post/${postId}/like?type=${reaction}`, {
-                            method: 'POST',
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            credentials: 'same-origin'
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                // Mettre à jour l'icône selon la réaction
-                                likeIcon.className = 'bi';
-                                if (data.liked) {
-                                    switch(reaction) {
-                                        case 'like':
-                                            likeIcon.classList.add('bi-hand-thumbs-up-fill', 'text-primary');
-                                            break;
-                                        case 'congrats':
-                                            likeIcon.classList.add('bi-emoji-smile-fill', 'text-warning');
-                                            break;
-                                        case 'interesting':
-                                            likeIcon.classList.add('bi-lightbulb-fill', 'text-warning');
-                                            break;
-                                        case 'support':
-                                            likeIcon.classList.add('bi-heart-fill', 'text-danger');
-                                            break;
-                                        case 'encouraging':
-                                            likeIcon.classList.add('bi-hand-thumbs-up-fill', 'text-success');
-                                            break;
-                                        default:
-                                            likeIcon.classList.add('bi-hand-thumbs-up-fill', 'text-primary');
-                                    }
-                                } else {
-                                    likeIcon.classList.add('bi-heart');
-                                }
-                                
-                                // Mettre à jour le compteur
-                                likeCount.textContent = data.likesCount;
-                                
-                                // Masquer la boîte de réactions
-                                reactionsBox.classList.add('d-none');
-                            }
-                        })
-                        .catch(error => console.error('Error:', error));
-                    });
-                });
-            });
+            // Gestion de la création rapide de post
+            const quickPostContent = document.getElementById('quick-post-content');
+            const quickPostForm = document.getElementById('quick-post-form');
+            const quickPostTitle = document.getElementById('quick-post-title');
+            const quickPostFullContent = document.getElementById('quick-post-full-content');
+            const quickPostCancel = document.getElementById('quick-post-cancel');
+            const quickPostSubmit = document.getElementById('quick-post-submit');
+            const quickPostImage = document.getElementById('quick-post-image');
             
-            // Like functionality simplifiée (juste pour le click direct sur le bouton J'aime)
-            document.querySelectorAll('.btn-like').forEach(button => {
-                button.addEventListener('click', function(e) {
-                    // Sur mobile, on ne fait rien car le clic ouvre le menu de réactions
-                    if (window.innerWidth <= 768) return;
+            if (quickPostContent) {
+                quickPostContent.addEventListener('focus', function() {
+                    quickPostForm.classList.remove('d-none');
+                    quickPostFullContent.focus();
+                    quickPostFullContent.value = quickPostContent.value;
+                });
+                
+                quickPostCancel.addEventListener('click', function() {
+                    quickPostForm.classList.add('d-none');
+                    quickPostContent.value = '';
+                    quickPostTitle.value = '';
+                    quickPostFullContent.value = '';
+                    quickPostImage.value = '';
+                });
+                
+                quickPostSubmit.addEventListener('click', function() {
+                    const formData = new FormData();
+                    formData.append('title', quickPostTitle.value);
+                    formData.append('content', quickPostFullContent.value);
                     
-                    const postId = this.getAttribute('data-post-id');
-                    const likeIcon = this.querySelector('i');
-                    const likeCount = this.querySelector('.like-count');
+                    if (quickPostImage.files.length > 0) {
+                        formData.append('imageFile', quickPostImage.files[0]);
+                    }
                     
-                    fetch('/post/' + postId + '/like', {
+                    // Désactiver le bouton et montrer un indicateur de chargement
+                    quickPostSubmit.disabled = true;
+                    quickPostSubmit.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Publication en cours...';
+                    
+                    fetch('/post/quick-create', {
                         method: 'POST',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        credentials: 'same-origin'
+                        body: formData
                     })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            if (data.liked) {
-                                likeIcon.className = 'bi bi-hand-thumbs-up-fill text-primary';
-                            } else {
-                                likeIcon.className = 'bi bi-hand-thumbs-up';
-                            }
-                            likeCount.textContent = data.likesCount;
+                            // Rediriger vers la page d'accueil ou recharger pour voir le nouveau post
+                            window.location.reload();
+                        } else {
+                            // Afficher l'erreur
+                            alert(data.error || 'Une erreur est survenue lors de la publication. Veuillez réessayer.');
+                            // Réactiver le bouton
+                            quickPostSubmit.disabled = false;
+                            quickPostSubmit.innerHTML = '<i class="bi bi-send me-1"></i> Publier';
                         }
                     })
-                    .catch(error => console.error('Error:', error));
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        // Réactiver le bouton et afficher un message d'erreur
+                        quickPostSubmit.disabled = false;
+                        quickPostSubmit.innerHTML = '<i class="bi bi-send me-1"></i> Publier';
+                        alert('Une erreur est survenue lors de la publication. Veuillez réessayer.');
+                    });
                 });
-            });
+            }
             
-            // Comment section toggle
+            // Fonctionnalité d'autocomplétion des mentions
+            const mentionInputs = document.querySelectorAll('.mention-input');
+            const mentionSuggestions = document.getElementById('mention-suggestions');
+            
+            if (mentionInputs.length > 0 && mentionSuggestions) {
+                let currentMentionInput = null;
+                let mentionPos = -1;
+                let mentionText = '';
+                let atPos = -1;
+                let isMentioning = false;
+                
+                // Fonction pour détecter la position du curseur
+                function getCaretPosition(element) {
+                    return element.selectionStart;
+                }
+                
+                // Fonction pour extraire le texte de la mention en cours
+                function extractMentionText(text, cursorPos) {
+                    const beforeCursor = text.substring(0, cursorPos);
+                    const atIndex = beforeCursor.lastIndexOf('@');
+                    
+                    if (atIndex !== -1) {
+                        const afterAt = beforeCursor.substring(atIndex + 1);
+                        // Vérifier qu'il n'y a pas d'espace dans le texte après @
+                        if (!/\s/.test(afterAt)) {
+                            return {
+                                text: afterAt,
+                                startPos: atIndex
+                            };
+                        }
+                    }
+                    
+                    return null;
+                }
+                
+                // Fonction pour insérer la mention à la position du curseur
+                function insertMention(username, userId, fullName) {
+                    const initialText = currentMentionInput.value;
+                    const cursorPos = getCaretPosition(currentMentionInput);
+                    const mention = `@${username} `;
+                    
+                    const newText = initialText.substring(0, atPos) + mention + initialText.substring(cursorPos);
+                    currentMentionInput.value = newText;
+                    
+                    // Placer le curseur après la mention insérée
+                    currentMentionInput.selectionStart = atPos + mention.length;
+                    currentMentionInput.selectionEnd = atPos + mention.length;
+                    currentMentionInput.focus();
+                    
+                    // Masquer les suggestions
+                    hideSuggestions();
+                }
+                
+                // Fonction pour rechercher des utilisateurs
+                function searchUsers(query) {
+                    if (query.length < 2) {
+                        hideSuggestions();
+                        return;
+                    }
+                    
+                    fetch(`/user/search?q=${encodeURIComponent(query)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            renderSuggestions(data.users);
+                        })
+                        .catch(error => {
+                            console.error('Erreur lors de la recherche d\'utilisateurs:', error);
+                            hideSuggestions();
+                        });
+                }
+                
+                // Fonction pour afficher les suggestions
+                function renderSuggestions(users) {
+                    if (!users || users.length === 0) {
+                        hideSuggestions();
+                        return;
+                    }
+                    
+                    // Positionner les suggestions sous l'input actuel
+                    if (currentMentionInput) {
+                        const inputRect = currentMentionInput.getBoundingClientRect();
+                        mentionSuggestions.style.top = `${inputRect.bottom}px`;
+                        mentionSuggestions.style.left = `${inputRect.left}px`;
+                        mentionSuggestions.style.width = `${inputRect.width}px`;
+                    }
+                    
+                    // Vider et afficher la liste des suggestions
+                    mentionSuggestions.innerHTML = '';
+                    mentionSuggestions.classList.add('show');
+                    
+                    users.forEach(user => {
+                        const item = document.createElement('div');
+                        item.className = 'mention-item';
+                        
+                        let avatarHtml = '';
+                        if (user.profilePicture) {
+                            avatarHtml = `<img src="/uploads/profile_pictures/${user.profilePicture}" alt="${user.fullName}">`;
+                        } else {
+                            avatarHtml = `<div class="avatar-placeholder"><i class="bi bi-person-circle"></i></div>`;
+                        }
+                        
+                        item.innerHTML = `
+                            ${avatarHtml}
+                            <div>
+                                <div>${user.fullName}</div>
+                                <small class="text-muted">@${user.username}</small>
+                            </div>
+                        `;
+                        
+                        item.addEventListener('click', function() {
+                            insertMention(user.username, user.id, user.fullName);
+                        });
+                        
+                        mentionSuggestions.appendChild(item);
+                    });
+                }
+                
+                // Fonction pour masquer les suggestions
+                function hideSuggestions() {
+                    mentionSuggestions.classList.remove('show');
+                    mentionSuggestions.innerHTML = '';
+                    isMentioning = false;
+                }
+                
+                // Ajout des gestionnaires d'événements à tous les inputs
+                mentionInputs.forEach(input => {
+                    input.addEventListener('input', function(e) {
+                        currentMentionInput = input;
+                        const cursorPos = getCaretPosition(input);
+                        const mentionData = extractMentionText(input.value, cursorPos);
+                        
+                        if (mentionData) {
+                            mentionText = mentionData.text;
+                            atPos = mentionData.startPos;
+                            isMentioning = true;
+                            searchUsers(mentionText);
+                        } else {
+                            hideSuggestions();
+                        }
+                    });
+                    
+                    input.addEventListener('keydown', function(e) {
+                        // Si la liste des suggestions est affichée
+                        if (mentionSuggestions.classList.contains('show')) {
+                            currentMentionInput = input;
+                            const items = mentionSuggestions.querySelectorAll('.mention-item');
+                            
+                            if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                mentionPos = (mentionPos + 1) % items.length;
+                                highlightItem(items, mentionPos);
+                            } else if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                mentionPos = (mentionPos - 1 + items.length) % items.length;
+                                highlightItem(items, mentionPos);
+                            } else if (e.key === 'Enter' && mentionPos >= 0) {
+                                e.preventDefault();
+                                items[mentionPos].click();
+                            } else if (e.key === 'Escape') {
+                                e.preventDefault();
+                                hideSuggestions();
+                            }
+                        }
+                    });
+                });
+                
+                // Fonction pour mettre en surbrillance un élément
+                function highlightItem(items, pos) {
+                    items.forEach((item, index) => {
+                        if (index === pos) {
+                            item.classList.add('active');
+                            } else {
+                            item.classList.remove('active');
+                        }
+                    });
+                }
+                
+                // Masquer les suggestions lorsque l'utilisateur clique en dehors
+                document.addEventListener('click', function(e) {
+                    let isClickInside = false;
+                    mentionInputs.forEach(input => {
+                        if (input.contains(e.target)) {
+                            isClickInside = true;
+                        }
+                    });
+                    
+                    if (!mentionSuggestions.contains(e.target) && !isClickInside) {
+                        hideSuggestions();
+                    }
+                });
+            }
+            
+            // Gestion des commentaires
             document.querySelectorAll('.btn-comment').forEach(button => {
                 button.addEventListener('click', function() {
                     const postId = this.getAttribute('data-post-id');
@@ -715,6 +1030,35 @@
                     }
                 });
             });
+            
+            // Fonction pour mettre à jour les statistiques du post
+            function updatePostStats(postId, type, count) {
+                // Mettre à jour le compteur dans la section des statistiques du post
+                const postCard = document.querySelector(`.btn-like[data-post-id="${postId}"]`).closest('.card');
+                
+                if (type === 'likes') {
+                    // Si le compteur est à 0, masquer complètement l'élément
+                    const reactionStats = postCard.querySelector('.reaction-icons');
+                    if (reactionStats) {
+                        const container = reactionStats.closest('.d-flex');
+                        if (parseInt(count) === 0) {
+                            container.style.display = 'none';
+                        } else {
+                            container.style.display = '';
+                            const countElement = container.querySelector('span.ms-1');
+                            if (countElement) {
+                                countElement.textContent = count;
+                            }
+                        }
+                    }
+                } else if (type === 'comments') {
+                    // Mettre à jour le compteur de commentaires dans les statistiques
+                    const commentStats = postCard.querySelector('.text-muted.small.mb-2 span:nth-child(2)');
+                    if (commentStats) {
+                        commentStats.textContent = count + ' commentaire' + (count > 1 ? 's' : '');
+                    }
+                }
+            }
             
             // Load comments via AJAX
             function loadComments(postId) {
@@ -811,7 +1155,12 @@
                             
                             // Update comment count
                             const commentCountEl = document.querySelector(`.btn-comment[data-post-id="${postId}"] span`);
+                            if (commentCountEl) {
                             commentCountEl.textContent = data.commentsCount;
+                            }
+                            
+                            // Mettre à jour le compteur dans les statistiques
+                            updatePostStats(postId, 'comments', data.commentsCount);
                         }
                     })
                     .catch(error => console.error('Error:', error));

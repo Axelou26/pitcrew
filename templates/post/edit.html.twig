@@ -21,9 +21,13 @@
                         </div>
                         <div class="mb-3">
                             {{ form_label(form.content) }}
-                            {{ form_widget(form.content) }}
-                            <div class="invalid-feedback">
-                                {{ form_errors(form.content) }}
+                            <div class="position-relative">
+                                {{ form_widget(form.content, {'attr': {'class': 'form-control mention-input'}}) }}
+                                <div class="invalid-feedback">
+                                    {{ form_errors(form.content) }}
+                                </div>
+                                <div id="mention-suggestions" class="mention-suggestions dropdown-menu"></div>
+                                <small class="text-muted d-block mt-1">Astuce : Utilisez @ pour mentionner un utilisateur et # pour ajouter un hashtag</small>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -84,4 +88,231 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .mention-suggestions {
+            position: absolute;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1050;
+            display: none;
+        }
+        
+        .mention-suggestions.show {
+            display: block;
+        }
+        
+        .mention-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            cursor: pointer;
+        }
+        
+        .mention-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .mention-item img, .mention-item .avatar-placeholder {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .mention-item .avatar-placeholder {
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .mention {
+            color: #0d6efd;
+            font-weight: 500;
+        }
+    </style>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mentionInput = document.querySelector('.mention-input');
+            const mentionSuggestions = document.getElementById('mention-suggestions');
+            
+            if (!mentionInput || !mentionSuggestions) return;
+            
+            let mentionPos = -1;
+            let mentionText = '';
+            let atPos = -1;
+            let isMentioning = false;
+            
+            // Fonction pour détecter la position du curseur
+            function getCaretPosition(element) {
+                return element.selectionStart;
+            }
+            
+            // Fonction pour extraire le texte de la mention en cours
+            function extractMentionText(text, cursorPos) {
+                const beforeCursor = text.substring(0, cursorPos);
+                const atIndex = beforeCursor.lastIndexOf('@');
+                
+                if (atIndex !== -1) {
+                    const afterAt = beforeCursor.substring(atIndex + 1);
+                    // Vérifier qu'il n'y a pas d'espace dans le texte après @
+                    if (!/\s/.test(afterAt)) {
+                        return {
+                            text: afterAt,
+                            startPos: atIndex
+                        };
+                    }
+                }
+                
+                return null;
+            }
+            
+            // Fonction pour insérer la mention à la position du curseur
+            function insertMention(username, userId, fullName) {
+                const initialText = mentionInput.value;
+                const cursorPos = getCaretPosition(mentionInput);
+                const mention = `@${username} `;
+                
+                const newText = initialText.substring(0, atPos) + mention + initialText.substring(cursorPos);
+                mentionInput.value = newText;
+                
+                // Placer le curseur après la mention insérée
+                mentionInput.selectionStart = atPos + mention.length;
+                mentionInput.selectionEnd = atPos + mention.length;
+                mentionInput.focus();
+                
+                // Masquer les suggestions
+                hideSuggestions();
+            }
+            
+            // Fonction pour rechercher des utilisateurs
+            function searchUsers(query) {
+                if (query.length < 2) {
+                    hideSuggestions();
+                    return;
+                }
+                
+                fetch(`/user/search?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        renderSuggestions(data.users);
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors de la recherche d\'utilisateurs:', error);
+                        hideSuggestions();
+                    });
+            }
+            
+            // Fonction pour afficher les suggestions
+            function renderSuggestions(users) {
+                if (!users || users.length === 0) {
+                    hideSuggestions();
+                    return;
+                }
+                
+                // Vider et afficher la liste des suggestions
+                mentionSuggestions.innerHTML = '';
+                mentionSuggestions.classList.add('show');
+                
+                users.forEach(user => {
+                    const item = document.createElement('div');
+                    item.className = 'mention-item';
+                    
+                    let avatarHtml = '';
+                    if (user.profilePicture) {
+                        avatarHtml = `<img src="/uploads/profile_pictures/${user.profilePicture}" alt="${user.fullName}">`;
+                    } else {
+                        avatarHtml = `<div class="avatar-placeholder"><i class="bi bi-person-circle"></i></div>`;
+                    }
+                    
+                    item.innerHTML = `
+                        ${avatarHtml}
+                        <div>
+                            <div>${user.fullName}</div>
+                            <small class="text-muted">@${user.username}</small>
+                        </div>
+                    `;
+                    
+                    item.addEventListener('click', function() {
+                        insertMention(user.username, user.id, user.fullName);
+                    });
+                    
+                    mentionSuggestions.appendChild(item);
+                });
+            }
+            
+            // Fonction pour masquer les suggestions
+            function hideSuggestions() {
+                mentionSuggestions.classList.remove('show');
+                mentionSuggestions.innerHTML = '';
+                isMentioning = false;
+            }
+            
+            // Gestionnaire d'événement pour l'input
+            mentionInput.addEventListener('input', function(e) {
+                const cursorPos = getCaretPosition(mentionInput);
+                const mentionData = extractMentionText(mentionInput.value, cursorPos);
+                
+                if (mentionData) {
+                    mentionText = mentionData.text;
+                    atPos = mentionData.startPos;
+                    isMentioning = true;
+                    searchUsers(mentionText);
+                } else {
+                    hideSuggestions();
+                }
+            });
+            
+            // Gestionnaire d'événement pour le clavier
+            mentionInput.addEventListener('keydown', function(e) {
+                // Si la liste des suggestions est affichée
+                if (mentionSuggestions.classList.contains('show')) {
+                    const items = mentionSuggestions.querySelectorAll('.mention-item');
+                    
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        mentionPos = (mentionPos + 1) % items.length;
+                        highlightItem(items, mentionPos);
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        mentionPos = (mentionPos - 1 + items.length) % items.length;
+                        highlightItem(items, mentionPos);
+                    } else if (e.key === 'Enter' && mentionPos >= 0) {
+                        e.preventDefault();
+                        items[mentionPos].click();
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        hideSuggestions();
+                    }
+                }
+            });
+            
+            // Fonction pour mettre en surbrillance un élément
+            function highlightItem(items, pos) {
+                items.forEach((item, index) => {
+                    if (index === pos) {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                });
+            }
+            
+            // Masquer les suggestions lorsque l'utilisateur clique en dehors
+            document.addEventListener('click', function(e) {
+                if (!mentionSuggestions.contains(e.target) && e.target !== mentionInput) {
+                    hideSuggestions();
+                }
+            });
+        });
+    </script>
 {% endblock %} 

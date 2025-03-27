@@ -14,7 +14,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/applicant')]
-#[IsGranted('ROLE_APPLICANT')]
+#[IsGranted('ROLE_POSTULANT')]
 class ApplicantController extends AbstractController
 {
     #[Route('/dashboard', name: 'app_applicant_dashboard')]
@@ -49,12 +49,16 @@ class ApplicantController extends AbstractController
     {
         $filters = [
             'location' => $request->query->get('location'),
-            'contractType' => $request->query->get('contractType'),
-            'search' => $request->query->get('search')
+            'contractType' => $request->query->get('contractType')
         ];
+        
+        $search = $request->query->get('search');
 
         $jobOffers = $entityManager->getRepository(JobOffer::class)
-            ->findByFilters($filters);
+            ->searchOffers($search, $filters);
+
+        // Ajout du search dans les filtres pour le template
+        $filters['search'] = $search;
 
         return $this->render('applicant/job_offers.html.twig', [
             'jobOffers' => $jobOffers,
@@ -148,5 +152,43 @@ class ApplicantController extends AbstractController
         return $this->render('applicant/applications.html.twig', [
             'applications' => $applications
         ]);
+    }
+    
+    /**
+     * Permet à un candidat de modifier ses compétences (techniques et soft skills)
+     */
+    #[Route('/edit-skills', name: 'app_applicant_edit_skills')]
+    public function editSkills(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $applicant = $this->getUser();
+        
+        // Temporaire: redirection vers le dashboard pour le moment
+        // En attendant l'implémentation complète du formulaire d'édition des compétences
+        $this->addFlash('info', 'La fonctionnalité d\'édition des compétences sera bientôt disponible.');
+        return $this->redirectToRoute('app_applicant_dashboard');
+        
+        // Formulaire et logique à implémenter dans une prochaine version
+        // return $this->render('applicant/edit_skills.html.twig', [
+        //     'applicant' => $applicant
+        // ]);
+    }
+    
+    /**
+     * Permet à un candidat de modifier son expérience professionnelle
+     */
+    #[Route('/edit-experience', name: 'app_applicant_edit_experience')]
+    public function editExperience(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $applicant = $this->getUser();
+        
+        // Temporaire: redirection vers le dashboard pour le moment
+        // En attendant l'implémentation complète du formulaire d'édition de l'expérience
+        $this->addFlash('info', 'La fonctionnalité d\'édition de l\'expérience sera bientôt disponible.');
+        return $this->redirectToRoute('app_applicant_dashboard');
+        
+        // Formulaire et logique à implémenter dans une prochaine version
+        // return $this->render('applicant/edit_experience.html.twig', [
+        //     'applicant' => $applicant
+        // ]);
     }
 } 

@@ -36,7 +36,7 @@ class Applicant extends User
     {
         parent::__construct();
         $this->favoriteOffers = new ArrayCollection();
-        $this->setRoles(['ROLE_APPLICANT']);
+        $this->setRoles(['ROLE_POSTULANT']);
         $this->educationHistory = [];
         $this->workExperience = [];
     }

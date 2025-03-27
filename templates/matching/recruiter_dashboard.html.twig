@@ -1,0 +1,359 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Tableau de bord de matching - Recruteur{% endblock %}
+
+{% block body %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">Tableau de bord de matching - Recruteur</h1>
+            <p class="lead mb-5">
+                Découvrez les candidats les plus compatibles avec vos offres d'emploi grâce à notre algorithme de matching avancé.
+            </p>
+        </div>
+    </div>
+
+    {% if jobOffers is empty %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i> Vous n'avez pas encore publié d'offres d'emploi. Créez une offre pour commencer à recevoir des suggestions de candidats.
+            <div class="mt-3">
+                <a href="{{ path('app_job_offer_new') }}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle"></i> Créer une offre d'emploi
+                </a>
+            </div>
+        </div>
+    {% else %}
+        <div class="row">
+            <div class="col-12">
+                <div class="accordion" id="jobOffersAccordion">
+                    {% for jobOffer in jobOffers %}
+                        <div class="accordion-item mb-4 border-0 shadow-sm rounded-lg overflow-hidden">
+                            <h2 class="accordion-header" id="heading{{ jobOffer.id }}">
+                                <button class="accordion-button {{ loop.first ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ jobOffer.id }}" aria-expanded="{{ loop.first ? 'true' : 'false' }}" aria-controls="collapse{{ jobOffer.id }}">
+                                    <div class="d-flex align-items-center w-100">
+                                        {% if jobOffer.logoUrl %}
+                                            <div class="me-3">
+                                                <img src="{{ jobOffer.logoUrl }}" alt="{{ jobOffer.company }}" class="job-logo" width="50">
+                                            </div>
+                                        {% endif %}
+                                        <div class="flex-grow-1">
+                                            <div class="fw-bold">{{ jobOffer.title }}</div>
+                                            <div class="text-muted small">
+                                                <i class="fas fa-building"></i> {{ jobOffer.company }} &middot;
+                                                <i class="fas fa-map-marker-alt"></i> {{ jobOffer.location }}
+                                                {% if jobOffer.isRemote %}
+                                                    <span class="badge bg-success ms-2">Remote</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% if offerSuggestions[jobOffer.id] is defined and offerSuggestions[jobOffer.id]|length > 0 %}
+                                            <div class="badge bg-primary rounded-pill ms-auto me-3">
+                                                {{ offerSuggestions[jobOffer.id]|length }} candidat(s) compatible(s)
+                                            </div>
+                                        {% else %}
+                                            <div class="badge bg-secondary rounded-pill ms-auto me-3">
+                                                Aucun candidat compatible
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </button>
+                            </h2>
+                            <div id="collapse{{ jobOffer.id }}" class="accordion-collapse collapse {{ loop.first ? 'show' : '' }}" aria-labelledby="heading{{ jobOffer.id }}" data-bs-parent="#jobOffersAccordion">
+                                <div class="accordion-body">
+                                    <div class="mb-4">
+                                        <h3 class="h5 mb-3">Candidats suggérés pour cette offre</h3>
+                                        
+                                        {% if offerSuggestions[jobOffer.id] is defined and offerSuggestions[jobOffer.id]|length > 0 %}
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead class="bg-light">
+                                                        <tr>
+                                                            <th>Candidat</th>
+                                                            <th>Compétences clés</th>
+                                                            <th>Expérience</th>
+                                                            <th>Compatibilité</th>
+                                                            <th>Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for suggestion in offerSuggestions[jobOffer.id] %}
+                                                            <tr>
+                                                                <td>
+                                                                    <div class="d-flex align-items-center">
+                                                                        {% if suggestion.applicant.profilePicture %}
+                                                                            <div class="me-3">
+                                                                                <img src="{{ asset('uploads/profile_pictures/' ~ suggestion.applicant.profilePicture) }}" alt="{{ suggestion.applicant.firstName }}" class="rounded-circle" width="40" height="40">
+                                                                            </div>
+                                                                        {% else %}
+                                                                            <div class="me-3">
+                                                                                <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                                                    <i class="fas fa-user"></i>
+                                                                                </div>
+                                                                            </div>
+                                                                        {% endif %}
+                                                                        <div>
+                                                                            <div class="fw-bold">{{ suggestion.applicant.firstName }} {{ suggestion.applicant.lastName }}</div>
+                                                                            <div class="text-muted small">{{ suggestion.applicant.email }}</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    {% set techSkillsReason = null %}
+                                                                    {% for reason in suggestion.reasons %}
+                                                                        {% if reason.category == 'Compétences techniques' %}
+                                                                            {% set techSkillsReason = reason %}
+                                                                        {% endif %}
+                                                                    {% endfor %}
+                                                                    
+                                                                    {% if techSkillsReason and techSkillsReason.matches|length > 0 %}
+                                                                        <div>
+                                                                            {% for skill in techSkillsReason.matches|slice(0, 3) %}
+                                                                                <span class="badge bg-success me-1 mb-1">{{ skill }}</span>
+                                                                            {% endfor %}
+                                                                            {% if techSkillsReason.matches|length > 3 %}
+                                                                                <span class="badge bg-light text-dark">+{{ techSkillsReason.matches|length - 3 }}</span>
+                                                                            {% endif %}
+                                                                        </div>
+                                                                    {% else %}
+                                                                        <span class="text-muted">Aucune compétence correspondante</span>
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td>
+                                                                    {% set experienceReason = null %}
+                                                                    {% for reason in suggestion.reasons %}
+                                                                        {% if reason.category == 'Expérience professionnelle' %}
+                                                                            {% set experienceReason = reason %}
+                                                                        {% endif %}
+                                                                    {% endfor %}
+                                                                    
+                                                                    {% if experienceReason and experienceReason.details|length > 0 %}
+                                                                        <div class="small">
+                                                                            {{ experienceReason.details|first }}
+                                                                            {% if experienceReason.details|length > 1 %}
+                                                                                <span class="text-muted">(+{{ experienceReason.details|length - 1 }})</span>
+                                                                            {% endif %}
+                                                                        </div>
+                                                                    {% else %}
+                                                                        <span class="text-muted">Expérience limitée</span>
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td>
+                                                                    <div class="d-flex align-items-center">
+                                                                        <div class="progress flex-grow-1" style="height: 8px;">
+                                                                            <div 
+                                                                                class="progress-bar {{ suggestion.score >= 75 ? 'bg-success' : (suggestion.score >= 50 ? 'bg-primary' : 'bg-warning') }}" 
+                                                                                role="progressbar" 
+                                                                                style="width: {{ suggestion.score }}%;" 
+                                                                                aria-valuenow="{{ suggestion.score }}" 
+                                                                                aria-valuemin="0" 
+                                                                                aria-valuemax="100">
+                                                                            </div>
+                                                                        </div>
+                                                                        <span class="ms-2 fw-bold">{{ suggestion.score }}%</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <div class="btn-group">
+                                                                        <a href="{{ path('app_recruiter_candidate_profile', {'id': suggestion.applicant.id}) }}" class="btn btn-sm btn-primary">
+                                                                            <i class="fas fa-eye"></i> Profil
+                                                                        </a>
+                                                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#detailsModal{{ jobOffer.id }}_{{ suggestion.applicant.id }}">
+                                                                            <i class="fas fa-info-circle"></i> Détails
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                            
+                                                            <!-- Modal for detailed matching info -->
+                                                            <div class="modal fade" id="detailsModal{{ jobOffer.id }}_{{ suggestion.applicant.id }}" tabindex="-1" aria-labelledby="detailsModalLabel{{ jobOffer.id }}_{{ suggestion.applicant.id }}" aria-hidden="true">
+                                                                <div class="modal-dialog modal-lg">
+                                                                    <div class="modal-content">
+                                                                        <div class="modal-header">
+                                                                            <h5 class="modal-title" id="detailsModalLabel{{ jobOffer.id }}_{{ suggestion.applicant.id }}">
+                                                                                Détails de compatibilité
+                                                                            </h5>
+                                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                        </div>
+                                                                        <div class="modal-body">
+                                                                            <div class="d-flex align-items-center mb-4">
+                                                                                {% if suggestion.applicant.profilePicture %}
+                                                                                    <div class="me-3">
+                                                                                        <img src="{{ asset('uploads/profile_pictures/' ~ suggestion.applicant.profilePicture) }}" alt="{{ suggestion.applicant.firstName }}" class="rounded-circle" width="60" height="60">
+                                                                                    </div>
+                                                                                {% else %}
+                                                                                    <div class="me-3">
+                                                                                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                                                                            <i class="fas fa-user fa-lg"></i>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                {% endif %}
+                                                                                <div>
+                                                                                    <h4 class="mb-0">{{ suggestion.applicant.firstName }} {{ suggestion.applicant.lastName }}</h4>
+                                                                                    <p class="text-muted mb-0">{{ suggestion.applicant.email }}</p>
+                                                                                </div>
+                                                                                <div class="ms-auto">
+                                                                                    <div class="d-flex align-items-center">
+                                                                                        <div class="h1 mb-0 me-2">{{ suggestion.score }}%</div>
+                                                                                        <div class="text-{{ suggestion.score >= 75 ? 'success' : (suggestion.score >= 50 ? 'primary' : 'warning') }}">
+                                                                                            <i class="fas fa-circle"></i>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div class="text-muted">Score de compatibilité</div>
+                                                                                </div>
+                                                                            </div>
+                                                                            
+                                                                            <div class="row">
+                                                                                {% for reason in suggestion.reasons %}
+                                                                                    <div class="col-md-6 mb-4">
+                                                                                        <div class="card h-100 border-0 shadow-sm">
+                                                                                            <div class="card-body">
+                                                                                                <h5 class="card-title">{{ reason.category }}</h5>
+                                                                                                
+                                                                                                {% if reason.category == 'Compétences techniques' and reason.matches is defined %}
+                                                                                                    <div class="mt-3">
+                                                                                                        <div class="d-flex justify-content-between">
+                                                                                                            <span>Score: {{ reason.score }}/{{ reason.maxScore }}</span>
+                                                                                                            <span>{{ (reason.score / reason.maxScore * 100)|round }}%</span>
+                                                                                                        </div>
+                                                                                                        <div class="progress mt-1 mb-3" style="height: 5px;">
+                                                                                                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (reason.score / reason.maxScore * 100)|round }}%"></div>
+                                                                                                        </div>
+                                                                                                        {% if reason.matches|length > 0 %}
+                                                                                                            <p class="mb-2">Compétences correspondantes :</p>
+                                                                                                            <div>
+                                                                                                                {% for skill in reason.matches %}
+                                                                                                                    <span class="badge bg-success me-1 mb-1">{{ skill }}</span>
+                                                                                                                {% endfor %}
+                                                                                                            </div>
+                                                                                                        {% else %}
+                                                                                                            <p class="text-muted">Aucune compétence technique correspondante</p>
+                                                                                                        {% endif %}
+                                                                                                    </div>
+                                                                                                {% elseif reason.category == 'Expérience professionnelle' and reason.details is defined %}
+                                                                                                    <div class="mt-3">
+                                                                                                        <div class="d-flex justify-content-between">
+                                                                                                            <span>Score: {{ reason.score }}/{{ reason.maxScore }}</span>
+                                                                                                            <span>{{ (reason.score / reason.maxScore * 100)|round }}%</span>
+                                                                                                        </div>
+                                                                                                        <div class="progress mt-1 mb-3" style="height: 5px;">
+                                                                                                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (reason.score / reason.maxScore * 100)|round }}%"></div>
+                                                                                                        </div>
+                                                                                                        <ul class="list-unstyled mb-0">
+                                                                                                            {% for detail in reason.details %}
+                                                                                                                <li><i class="fas fa-check-circle text-success me-2"></i> {{ detail }}</li>
+                                                                                                            {% else %}
+                                                                                                                <li class="text-muted">Aucune expérience pertinente</li>
+                                                                                                            {% endfor %}
+                                                                                                        </ul>
+                                                                                                    </div>
+                                                                                                {% elseif reason.category == 'Soft skills' and reason.matches is defined %}
+                                                                                                    <div class="mt-3">
+                                                                                                        <div class="d-flex justify-content-between">
+                                                                                                            <span>Score: {{ reason.score }}/{{ reason.maxScore }}</span>
+                                                                                                            <span>{{ (reason.score / reason.maxScore * 100)|round }}%</span>
+                                                                                                        </div>
+                                                                                                        <div class="progress mt-1 mb-3" style="height: 5px;">
+                                                                                                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (reason.score / reason.maxScore * 100)|round }}%"></div>
+                                                                                                        </div>
+                                                                                                        {% if reason.matches|length > 0 %}
+                                                                                                            <p class="mb-2">Soft skills correspondantes :</p>
+                                                                                                            <div>
+                                                                                                                {% for skill in reason.matches %}
+                                                                                                                    <span class="badge bg-info me-1 mb-1">{{ skill }}</span>
+                                                                                                                {% endfor %}
+                                                                                                            </div>
+                                                                                                        {% else %}
+                                                                                                            <p class="text-muted">Aucune soft skill correspondante</p>
+                                                                                                        {% endif %}
+                                                                                                    </div>
+                                                                                                {% elseif reason.category == 'Localisation' and reason.details is defined %}
+                                                                                                    <div class="mt-3">
+                                                                                                        <div class="d-flex justify-content-between">
+                                                                                                            <span>Score: {{ reason.score }}/{{ reason.maxScore }}</span>
+                                                                                                            <span>{{ (reason.score / reason.maxScore * 100)|round }}%</span>
+                                                                                                        </div>
+                                                                                                        <div class="progress mt-1 mb-3" style="height: 5px;">
+                                                                                                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (reason.score / reason.maxScore * 100)|round }}%"></div>
+                                                                                                        </div>
+                                                                                                        <ul class="list-unstyled mb-0">
+                                                                                                            {% for detail in reason.details %}
+                                                                                                                <li><i class="fas fa-map-marker-alt text-primary me-2"></i> {{ detail }}</li>
+                                                                                                            {% else %}
+                                                                                                                <li class="text-muted">Aucune information de localisation</li>
+                                                                                                            {% endfor %}
+                                                                                                        </ul>
+                                                                                                    </div>
+                                                                                                {% endif %}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                {% endfor %}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="modal-footer">
+                                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                                                                            <a href="{{ path('app_recruiter_candidate_profile', {'id': suggestion.applicant.id}) }}" class="btn btn-primary">
+                                                                                <i class="fas fa-user"></i> Voir le profil complet
+                                                                            </a>
+                                                                            <a href="{{ path('app_message_start', {'id': suggestion.applicant.id}) }}" class="btn btn-success">
+                                                                                <i class="fas fa-envelope"></i> Contacter
+                                                                            </a>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            
+                                            <div class="text-center mt-3">
+                                                <a href="{{ path('app_matching_suggestions_job_offer', {'id': jobOffer.id}) }}" class="btn btn-outline-primary">
+                                                    <i class="fas fa-users"></i> Voir tous les candidats compatibles
+                                                </a>
+                                            </div>
+                                        {% else %}
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i> Aucun candidat compatible n'a été trouvé pour cette offre.
+                                            </div>
+                                            <div class="card border-0 shadow-sm mt-3">
+                                                <div class="card-body">
+                                                    <h5 class="card-title">Améliorez votre offre d'emploi</h5>
+                                                    <p class="card-text">Voici quelques conseils pour augmenter les chances de matching :</p>
+                                                    <ul class="list-group list-group-flush">
+                                                        <li class="list-group-item bg-transparent">
+                                                            <i class="fas fa-check-circle text-success me-2"></i> Ajoutez plus de compétences requises pertinentes
+                                                        </li>
+                                                        <li class="list-group-item bg-transparent">
+                                                            <i class="fas fa-check-circle text-success me-2"></i> Détaillez davantage la description du poste
+                                                        </li>
+                                                        <li class="list-group-item bg-transparent">
+                                                            <i class="fas fa-check-circle text-success me-2"></i> Considérez l'option de travail à distance si possible
+                                                        </li>
+                                                    </ul>
+                                                    <div class="mt-3">
+                                                        <a href="{{ path('app_job_offer_edit', {'id': jobOffer.id}) }}" class="btn btn-primary">
+                                                            <i class="fas fa-edit"></i> Modifier l'offre
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="mt-4 text-center">
+                    <a href="{{ path('app_job_offer_new') }}" class="btn btn-lg btn-success">
+                        <i class="fas fa-plus-circle"></i> Publier une nouvelle offre
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %} 

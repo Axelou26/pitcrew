@@ -47,6 +47,10 @@ class PostRepository extends ServiceEntityRepository
     public function findRecentPosts(int $limit = 10): array
     {
         return $this->createQueryBuilder('p')
+            ->leftJoin('p.author', 'author')
+            ->leftJoin('p.shares', 'shares')
+            ->addSelect('author')
+            ->addSelect('shares')
             ->orderBy('p.createdAt', 'DESC')
             ->setMaxResults($limit)
             ->getQuery()

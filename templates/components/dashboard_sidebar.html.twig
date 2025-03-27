@@ -24,6 +24,20 @@
             'label': 'Candidatures reçues'
         },
         {
+            'route': 'app_interviews_index',
+            'icon': 'fas fa-calendar-alt',
+            'label': 'Planning d\'entretiens'
+        },
+        {
+            'route': 'app_matching_dashboard_recruiter',
+            'icon': 'fas fa-chart-line',
+            'label': 'Matching candidats',
+            'badge': {
+                'text': 'Nouveau',
+                'class': 'bg-success'
+            }
+        },
+        {
             'route': 'app_subscription_manage',
             'icon': 'fas fa-credit-card',
             'label': 'Mon abonnement'
@@ -39,9 +53,23 @@
             'label': 'Mes candidatures'
         },
         {
+            'route': 'app_interviews_index',
+            'icon': 'fas fa-calendar-alt',
+            'label': 'Mes entretiens'
+        },
+        {
             'route': 'app_favorite_index',
             'icon': 'fas fa-bookmark',
             'label': 'Mes favoris'
+        },
+        {
+            'route': 'app_matching_dashboard_candidate',
+            'icon': 'fas fa-chart-pie',
+            'label': 'Offres recommandées',
+            'badge': {
+                'text': 'IA',
+                'class': 'bg-primary'
+            }
         }
     ]) %}
 {% endif %}
@@ -72,6 +100,9 @@
         {% for link in dashboardLinks %}
             <a href="{{ path(link.route) }}" class="list-group-item list-group-item-action {% if active is defined and active == link.route|split('_')[1] %}active{% endif %}">
                 <i class="{{ link.icon }} me-2"></i> {{ link.label }}
+                {% if link.badge is defined %}
+                    <span class="badge {{ link.badge.class }} ms-auto">{{ link.badge.text }}</span>
+                {% endif %}
             </a>
         {% endfor %}
         

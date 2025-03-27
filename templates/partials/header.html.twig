@@ -1,0 +1,41 @@
+{% if app.user %}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ path('app_dashboard') }}">
+            <i class="fas fa-chart-line"></i> Tableau de bord
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ path('app_job_offers') }}">
+            <i class="fas fa-briefcase"></i> Offres d'emploi
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ path('app_profiles') }}">
+            <i class="fas fa-users"></i> Profils
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ path('app_interviews_index') }}">
+            <i class="fas fa-video"></i> Entretiens
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ path('app_messages') }}">
+            <i class="fas fa-envelope"></i> Messages
+            {% if app.user.unreadMessages > 0 %}
+                <span class="badge bg-danger">{{ app.user.unreadMessages }}</span>
+            {% endif %}
+        </a>
+    </li>
+{% else %}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ path('app_job_offers') }}">
+            <i class="fas fa-briefcase"></i> Offres d'emploi
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{{ path('app_about') }}">
+            <i class="fas fa-info-circle"></i> À propos
+        </a>
+    </li>
+{% endif %} 

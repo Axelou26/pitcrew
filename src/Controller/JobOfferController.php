@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\JobOffer;
 use App\Form\JobOfferType;
 use App\Repository\JobOfferRepository;
+use App\Repository\FavoriteRepository;
 use App\Service\SubscriptionService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -49,6 +50,14 @@ class JobOfferController extends AbstractController
             'query' => $query,
             'filters' => $filters
         ]);
+    }
+    
+    // Route sans préfixe pour accéder directement aux offres d'emploi
+    #[Route('/job-offers', name: 'app_job_offers', methods: ['GET'])]
+    public function jobOffers(Request $request): Response
+    {
+        // Rediriger vers la route avec préfixe
+        return $this->redirectToRoute('app_job_offer_index', $request->query->all());
     }
 
     #[Route('/new', name: 'app_job_offer_new', methods: ['GET', 'POST'])]
@@ -124,7 +133,7 @@ class JobOfferController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_job_offer_show', methods: ['GET'])]
-    public function show(string $id, JobOfferRepository $jobOfferRepository): Response
+    public function show(string $id, JobOfferRepository $jobOfferRepository, FavoriteRepository $favoriteRepository): Response
     {
         $jobOffer = $jobOfferRepository->find($id);
         
@@ -135,9 +144,16 @@ class JobOfferController extends AbstractController
         // Récupérer les offres similaires
         $similarOffers = $jobOfferRepository->findSimilarOffers($jobOffer, 3);
         
+        // Vérifier si l'offre est dans les favoris de l'utilisateur connecté
+        $isFavorite = false;
+        if ($this->getUser() && !$this->getUser()->isRecruiter()) {
+            $isFavorite = $favoriteRepository->isJobOfferFavorite($this->getUser(), $jobOffer);
+        }
+        
         return $this->render('job_offer/show.html.twig', [
             'offer' => $jobOffer,
-            'similarOffers' => $similarOffers
+            'similarOffers' => $similarOffers,
+            'is_favorite' => $isFavorite
         ]);
     }
 

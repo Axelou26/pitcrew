@@ -1,0 +1,132 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Entretiens pour {{ jobOffer.title }}{% endblock %}
+
+{% block body %}
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-0">Entretiens pour l'offre</h1>
+            <h2 class="h4 text-muted">{{ jobOffer.title }}</h2>
+        </div>
+        <div>
+            <a href="{{ path('app_job_offer_show', {'id': jobOffer.id}) }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Retour à l'offre
+            </a>
+            <a href="{{ path('app_interview_new_job', {'id': jobOffer.id}) }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Planifier un entretien
+            </a>
+        </div>
+    </div>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="card shadow">
+        <div class="card-header py-3">
+            <h3 class="m-0 font-weight-bold text-primary">Tous les entretiens</h3>
+        </div>
+        <div class="card-body">
+            {% if interviews|length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="interviewsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Candidat</th>
+                                <th>Date et heure</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for interview in interviews %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if interview.applicant.profilePicture %}
+                                                <img src="{{ asset('uploads/profile_pictures/' ~ interview.applicant.profilePicture) }}" alt="Avatar" class="rounded-circle me-2" width="32" height="32">
+                                            {% else %}
+                                                <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center text-white" style="width: 32px; height: 32px;">
+                                                    <i class="fas fa-user"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <div>{{ interview.applicant.fullName }}</div>
+                                                <div class="small text-muted">{{ interview.applicant.email }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ interview.scheduledAt|date('d/m/Y à H:i') }}</td>
+                                    <td>
+                                        {% if interview.isScheduled %}
+                                            <span class="badge bg-primary">Planifié</span>
+                                        {% elseif interview.isActive %}
+                                            <span class="badge bg-success">En cours</span>
+                                        {% elseif interview.isCompleted %}
+                                            <span class="badge bg-success">Terminé</span>
+                                        {% elseif interview.isCancelled %}
+                                            <span class="badge bg-danger">Annulé</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ interview.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{{ path('app_interview_show', {'id': interview.id}) }}" class="btn btn-info btn-sm mx-1" title="Voir détails">
+                                            <i class="fas fa-eye"></i> Détails
+                                        </a>
+                                        {% if interview.isScheduled or interview.isActive %}
+                                            <a href="{{ path('app_interview_direct_join', {'id': interview.id}) }}" class="btn btn-success btn-sm mx-1" title="Rejoindre la salle">
+                                                <i class="fas fa-video"></i> Rejoindre
+                                            </a>
+                                        {% endif %}
+                                        <form action="{{ path('app_interview_cancel', {'id': interview.id}) }}" method="post" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cet entretien?');">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ interview.id) }}">
+                                            <button type="submit" class="btn btn-danger btn-sm mx-1" title="Annuler l'entretien">
+                                                <i class="fas fa-times"></i> Annuler
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-3">
+                        <i class="fas fa-calendar-times fa-4x text-muted"></i>
+                    </div>
+                    <h3 class="h4 mb-3">Aucun entretien planifié</h3>
+                    <p class="text-muted mb-4">Vous n'avez pas encore planifié d'entretiens pour cette offre d'emploi.</p>
+                    <a href="{{ path('app_interview_new_job', {'id': jobOffer.id}) }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Planifier un entretien
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialisation du tableau avec DataTables
+        if (document.getElementById('interviewsTable')) {
+            $('#interviewsTable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/French.json"
+                },
+                "order": [[1, 'asc']]
+            });
+        }
+    });
+</script>
+{% endblock %} 

@@ -7,8 +7,11 @@
     <div class="row">
         <div class="col-md-4">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="h5 mb-0">Conversations</h3>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#newConversationModal">
+                        <i class="bi bi-plus-lg"></i> Nouvelle conversation
+                    </button>
                 </div>
                 <div class="list-group list-group-flush" id="conversations-list">
                     {% if conversations is empty %}
@@ -60,8 +63,42 @@
                 <div class="card-body text-center text-muted py-5">
                     <i class="bi bi-chat-text display-4 mb-3"></i>
                     <h4>Sélectionnez une conversation</h4>
-                    <p class="mb-0">Ou démarrez une nouvelle conversation depuis le profil d'un utilisateur</p>
+                    <p class="mb-0">Ou démarrez une nouvelle conversation en cliquant sur le bouton "Nouvelle conversation"</p>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nouvelle Conversation -->
+<div class="modal fade" id="newConversationModal" tabindex="-1" aria-labelledby="newConversationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newConversationModalLabel">Nouvelle conversation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <form id="new-conversation-form" action="{{ path('app_message_new_conversation') }}" method="post">
+                    <div class="mb-3">
+                        <label for="recipient" class="form-label">Destinataire</label>
+                        <select class="form-select" id="recipient" name="recipient" required>
+                            <option value="">Sélectionnez un destinataire...</option>
+                            <!-- Les destinataires seront chargés via AJAX -->
+                        </select>
+                        <div class="form-text text-muted">
+                            Seuls vos amis sont disponibles comme destinataires.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Premier message</label>
+                        <textarea class="form-control" id="message" name="message" rows="3" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="submit" form="new-conversation-form" class="btn btn-primary">Envoyer</button>
             </div>
         </div>
     </div>
@@ -71,16 +108,81 @@
 {% block javascripts %}
     {{ parent() }}
     <script>
-        // Rafraîchir la liste des conversations toutes les 30 secondes
-        setInterval(function() {
-            fetch('{{ path('app_message_index') }}')
-                .then(response => response.text())
-                .then(html => {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const newList = doc.getElementById('conversations-list');
-                    document.getElementById('conversations-list').innerHTML = newList.innerHTML;
-                });
-        }, 30000);
+        document.addEventListener('DOMContentLoaded', function() {
+            // Rafraîchir la liste des conversations toutes les 30 secondes
+            setInterval(function() {
+                fetch('{{ path('app_message_index') }}')
+                    .then(response => response.text())
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const newList = doc.getElementById('conversations-list');
+                        document.getElementById('conversations-list').innerHTML = newList.innerHTML;
+                    });
+            }, 30000);
+            
+            // Chargement des destinataires potentiels
+            const recipientSelect = document.getElementById('recipient');
+            if (recipientSelect) {
+                // Ajouter une option de chargement
+                const loadingOption = document.createElement('option');
+                loadingOption.value = "";
+                loadingOption.textContent = "Chargement des contacts...";
+                loadingOption.disabled = true;
+                recipientSelect.appendChild(loadingOption);
+                
+                fetch('{{ path('app_message_get_recipients') }}')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Erreur réseau');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Vider le select
+                        recipientSelect.innerHTML = '';
+                        
+                        // Ajouter l'option par défaut
+                        const defaultOption = document.createElement('option');
+                        defaultOption.value = "";
+                        defaultOption.textContent = "Sélectionnez un destinataire...";
+                        defaultOption.selected = true;
+                        defaultOption.disabled = true;
+                        recipientSelect.appendChild(defaultOption);
+                        
+                        if (data.recipients && data.recipients.length > 0) {
+                            data.recipients.forEach(user => {
+                                const option = document.createElement('option');
+                                option.value = user.id;
+                                option.textContent = user.fullName;
+                                recipientSelect.appendChild(option);
+                            });
+                        } else {
+                            const option = document.createElement('option');
+                            option.value = "";
+                            option.textContent = "Aucun ami disponible";
+                            option.disabled = true;
+                            recipientSelect.appendChild(option);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        recipientSelect.innerHTML = '';
+                        
+                        const defaultOption = document.createElement('option');
+                        defaultOption.value = "";
+                        defaultOption.textContent = "Sélectionnez un destinataire...";
+                        defaultOption.selected = true;
+                        defaultOption.disabled = true;
+                        recipientSelect.appendChild(defaultOption);
+                        
+                        const option = document.createElement('option');
+                        option.value = "";
+                        option.textContent = "Erreur lors du chargement des contacts";
+                        option.disabled = true;
+                        recipientSelect.appendChild(option);
+                    });
+            }
+        });
     </script>
 {% endblock %} 

@@ -1,0 +1,116 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Planifier un entretien{% endblock %}
+
+{% block body %}
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h1 class="h3 mb-0 text-primary">Planifier un entretien</h1>
+                </div>
+                <div class="card-body">
+                    {% for label, messages in app.flashes %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+
+                    {{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate'}}) }}
+                    
+                    <div class="mb-3">
+                        {{ form_label(form.title) }}
+                        {{ form_widget(form.title) }}
+                        <div class="invalid-feedback">
+                            {{ form_errors(form.title) }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.scheduledAt) }}
+                        {{ form_widget(form.scheduledAt) }}
+                        <small class="form-text text-muted">La durée par défaut est d'une heure.</small>
+                        <div class="invalid-feedback">
+                            {{ form_errors(form.scheduledAt) }}
+                        </div>
+                    </div>
+
+                    {% if form.applicant is defined %}
+                    <div class="mb-3">
+                        {{ form_label(form.applicant) }}
+                        {{ form_widget(form.applicant) }}
+                        <div class="invalid-feedback">
+                            {{ form_errors(form.applicant) }}
+                        </div>
+                        <small class="form-text text-muted">Le candidat recevra une notification pour cet entretien.</small>
+                    </div>
+                    {% endif %}
+
+                    {% if form.jobOffer is defined %}
+                    <div class="mb-3">
+                        {{ form_label(form.jobOffer) }}
+                        {{ form_widget(form.jobOffer) }}
+                        <div class="invalid-feedback">
+                            {{ form_errors(form.jobOffer) }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        {{ form_label(form.notes) }}
+                        {{ form_widget(form.notes) }}
+                        <div class="invalid-feedback">
+                            {{ form_errors(form.notes) }}
+                        </div>
+                        <small class="form-text text-muted">Instructions pour le candidat (comment se préparer, documents à apporter, etc.)</small>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ path('app_interviews_index') }}" class="btn btn-outline-secondary me-md-2">Annuler</a>
+                        <button type="submit" class="btn btn-primary">Planifier l'entretien</button>
+                    </div>
+
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Validation du formulaire
+        let forms = document.querySelectorAll('.needs-validation');
+        Array.from(forms).forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+
+        // Désactiver les dates passées dans le sélecteur de date
+        let dateInput = document.querySelector('input[type="datetime-local"]');
+        if (dateInput) {
+            let now = new Date();
+            let year = now.getFullYear();
+            let month = (now.getMonth() + 1).toString().padStart(2, '0');
+            let day = now.getDate().toString().padStart(2, '0');
+            let hours = now.getHours().toString().padStart(2, '0');
+            let minutes = now.getMinutes().toString().padStart(2, '0');
+            
+            let minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+            dateInput.setAttribute('min', minDateTime);
+        }
+    });
+</script>
+{% endblock %} 

@@ -32,7 +32,7 @@ class CreateApplicantCommand extends Command
         $user->setEmail('applicant@example.com');
         $user->setFirstName('Jane');
         $user->setLastName('Smith');
-        $user->setRoles(['ROLE_APPLICANT']);
+        $user->setRoles(['ROLE_POSTULANT']);
         
         $hashedPassword = $this->passwordHasher->hashPassword(
             $user,

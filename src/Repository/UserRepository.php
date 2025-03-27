@@ -149,4 +149,41 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         
         return $users;
     }
+
+    public function findByEmail(string $email): ?User
+    {
+        return $this->createQueryBuilder('u')
+            ->andWhere('u.email = :email')
+            ->setParameter('email', $email)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+    
+    /**
+     * Trouve tous les utilisateurs sauf celui spécifié
+     * Limité aux amis de l'utilisateur
+     */
+    public function findAllExcept(User $user): array
+    {
+        $friendshipRepository = $this->getEntityManager()->getRepository(Friendship::class);
+        $friends = $friendshipRepository->findFriends($user);
+        
+        if (empty($friends)) {
+            return [];
+        }
+        
+        $friendIds = array_map(function($friend) {
+            return $friend->getId();
+        }, $friends);
+        
+        return $this->createQueryBuilder('u')
+            ->andWhere('u.id != :userId')
+            ->andWhere('u.id IN (:friendIds)')
+            ->setParameter('userId', $user->getId())
+            ->setParameter('friendIds', $friendIds)
+            ->orderBy('u.firstName', 'ASC')
+            ->addOrderBy('u.lastName', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 } 
