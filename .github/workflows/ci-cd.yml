@@ -85,10 +85,14 @@ jobs:
           npm install
           npm run build
           
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+          
       - name: Deploy to production
         uses: deployphp/action@v1
         with:
-          private-key: ${{secrets.DEPLOY_SSH_KEY}}
           deployer-version: "7.3.1"
           deployment: production
           dep: deploy 
