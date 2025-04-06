@@ -95,8 +95,8 @@ jobs:
           
       - name: Install Production Dependencies
         run: |
-          composer install --no-dev --optimize-autoloader --no-interaction --no-progress
-          composer dump-env prod
+          APP_ENV=prod composer install --no-dev --optimize-autoloader --no-interaction --no-progress --no-scripts
+          APP_ENV=prod composer dump-env prod
         
       - name: Build assets
         run: |
