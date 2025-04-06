@@ -15,8 +15,8 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: pitcrew_test
+          MYSQL_ROOT_PASSWORD: azerty-26
+          MYSQL_DATABASE: blog_test
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
@@ -28,7 +28,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, mysql
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, mysql, pdo_mysql
           coverage: xdebug
 
       - name: Cache Composer packages
@@ -44,11 +44,15 @@ jobs:
         run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
 
       - name: Create test database
+        env:
+          DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog_test?serverVersion=8.0"
         run: |
           php bin/console --env=test doctrine:database:create --if-not-exists
           php bin/console --env=test doctrine:schema:update --force
-
+          
       - name: Execute tests
+        env:
+          DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog_test?serverVersion=8.0"
         run: |
           php bin/phpunit --coverage-clover coverage.xml
           
