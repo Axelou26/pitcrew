@@ -23,62 +23,43 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use App\Repository\UserRepository;
 use App\Repository\HashtagRepository;
 use App\Service\NotificationService;
+use App\Entity\User;
+use App\Entity\Hashtag;
+use App\Service\ContentProcessorService;
+use App\Service\FileUploader;
+use Psr\Log\LoggerInterface;
 
 class PostController extends AbstractController
 {
+    private $logger;
+    
+    public function __construct(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
+    }
+
     #[Route('/posts', name: 'app_post_index', methods: ['GET'])]
     public function index(
         PostRepository $postRepository, 
         EntityManagerInterface $entityManager
     ): Response
     {
-        $user = $this->getUser();
-        
-        // Récupérer les posts avec pagination
-        $posts = $postRepository->findAllOrderedByDate();
-        
-        // Si l'utilisateur est connecté, récupérer des utilisateurs suggérés
-        $suggestedUsers = [];
-        if ($user) {
-            // Récupérer les utilisateurs suggérés (limités à 5)
-            $userRepository = $entityManager->getRepository(\App\Entity\User::class);
-            $suggestedUsers = $userRepository->findSuggestedUsers($user, 5);
-        }
-        
-        // Récupérer les tendances (tags populaires)
-        $trends = [
-            [
-                'tag' => 'F1',
-                'title' => 'Grand Prix de Monaco 2025',
-                'count' => '1.5K'
-            ],
-            [
-                'tag' => 'Carrière',
-                'title' => 'Les métiers d\'avenir en F1',
-                'count' => '856'
-            ],
-            [
-                'tag' => 'Technologie',
-                'title' => 'Innovations en aérodynamique',
-                'count' => '543'
-            ]
-        ];
-        
-        return $this->render('post/index.html.twig', [
-            'posts' => $posts,
-            'suggestedUsers' => $suggestedUsers,
-            'trends' => $trends
-        ]);
+        // Au lieu d'essayer de rendre un template qui n'existe pas,
+        // rediriger vers la page qui affiche les posts de l'utilisateur connecté
+        return $this->redirectToRoute('app_dashboard_posts');
     }
 
     #[Route('/post/new', name: 'app_post_new', methods: ['GET', 'POST'])]
-    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
     public function new(
         Request $request, 
         EntityManagerInterface $entityManager, 
         SluggerInterface $slugger,
         UserRepository $userRepository,
-        HashtagRepository $hashtagRepository
+        HashtagRepository $hashtagRepository,
+        NotificationService $notificationService,
+        ContentProcessorService $contentProcessor,
+        FileUploader $fileUploader
     ): Response {
         $post = new Post();
         $post->setAuthor($this->getUser());
@@ -90,43 +71,20 @@ class PostController extends AbstractController
             // Gestion de l'image
             $imageFile = $form->get('imageFile')->getData();
             if ($imageFile) {
-                $originalFilename = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $safeFilename = $slugger->slug($originalFilename);
-                $newFilename = $safeFilename.'-'.uniqid().'.'.$imageFile->guessExtension();
-
                 try {
-                    $imageFile->move(
-                        $this->getParameter('posts_directory'),
-                        $newFilename
-                    );
+                    $newFilename = $fileUploader->upload($imageFile, 'posts_directory');
                     $post->setImage($newFilename);
-                } catch (FileException $e) {
-                    $this->addFlash('error', 'Une erreur est survenue lors du téléchargement de l\'image');
+                } catch (\Exception $e) {
+                    $this->addFlash('error', $e->getMessage());
                 }
             }
             
-            // Traitement des hashtags
-            $hashtags = $post->extractHashtags();
-            foreach ($hashtags as $tagName) {
-                $hashtag = $hashtagRepository->findOrCreate($tagName);
-                $post->addHashtag($hashtag);
-            }
-            
-            // Traitement des mentions
-            $mentions = $post->extractMentions();
-            foreach ($mentions as $username) {
-                $user = $userRepository->findOneBy(['username' => $username]);
-                if ($user) {
-                    $post->addMention($user);
-                    
-                    // Ici on pourrait créer une notification pour l'utilisateur mentionné
-                }
-            }
+            // Traitement des hashtags et des mentions
+            $contentProcessor->processPostContent($post);
 
             $entityManager->persist($post);
             $entityManager->flush();
 
-            $this->addFlash('success', 'Votre post a été publié avec succès !');
             return $this->redirectToRoute('app_home');
         }
 
@@ -135,7 +93,7 @@ class PostController extends AbstractController
         ]);
     }
 
-    #[Route('/post/{id}', name: 'app_post_show', methods: ['GET', 'POST'])]
+    #[Route('/post/{id}', name: 'app_post_show', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
     public function show(
         Post $post, 
         Request $request, 
@@ -176,41 +134,46 @@ class PostController extends AbstractController
         ]);
     }
 
-    #[Route('/post/{id}/edit', name: 'app_post_edit', methods: ['GET', 'POST'])]
+    #[Route('/post/{id}/edit', name: 'app_post_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
     #[IsGranted('POST_EDIT', 'post')]
-    public function edit(Request $request, Post $post, EntityManagerInterface $entityManager, SluggerInterface $slugger): Response
-    {
+    public function edit(
+        Request $request, 
+        Post $post, 
+        EntityManagerInterface $entityManager, 
+        SluggerInterface $slugger,
+        UserRepository $userRepository,
+        HashtagRepository $hashtagRepository,
+        NotificationService $notificationService,
+        ContentProcessorService $contentProcessor,
+        FileUploader $fileUploader
+    ): Response {
         $form = $this->createForm(PostType::class, $post);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            // S'assurer que le titre n'est pas null (DB peut ne pas accepter NULL malgré la configuration)
+            if ($post->getTitle() === null) {
+                $post->setTitle('');
+            }
+            
             // Gestion de l'image
             $imageFile = $form->get('imageFile')->getData();
             if ($imageFile) {
-                $originalFilename = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $safeFilename = $slugger->slug($originalFilename);
-                $newFilename = $safeFilename.'-'.uniqid().'.'.$imageFile->guessExtension();
-
                 try {
-                    $imageFile->move(
-                        $this->getParameter('posts_directory'),
-                        $newFilename
+                    $newFilename = $fileUploader->upload(
+                        $imageFile, 
+                        'posts_directory', 
+                        $post->getImage()
                     );
-                    
-                    // Supprimer l'ancienne image si elle existe
-                    if ($post->getImage()) {
-                        $oldImagePath = $this->getParameter('posts_directory').'/'.$post->getImage();
-                        if (file_exists($oldImagePath)) {
-                            unlink($oldImagePath);
-                        }
-                    }
-                    
                     $post->setImage($newFilename);
-                } catch (FileException $e) {
-                    $this->addFlash('error', 'Une erreur est survenue lors du téléchargement de l\'image');
+                } catch (\Exception $e) {
+                    $this->addFlash('error', $e->getMessage());
                 }
             }
-
+            
+            // Traitement des hashtags et des mentions
+            $contentProcessor->processPostContent($post, true);
+            
             $entityManager->flush();
 
             $this->addFlash('success', 'Votre post a été modifié avec succès !');
@@ -223,7 +186,7 @@ class PostController extends AbstractController
         ]);
     }
 
-    #[Route('/post/{id}/delete', name: 'app_post_delete', methods: ['POST'])]
+    #[Route('/post/{id}/delete', name: 'app_post_delete', methods: ['POST'], requirements: ['id' => '\d+'])]
     #[IsGranted('POST_DELETE', 'post')]
     public function delete(Request $request, Post $post, EntityManagerInterface $entityManager): Response
     {
@@ -237,8 +200,16 @@ class PostController extends AbstractController
     }
 
     #[Route('/post/create', name: 'app_post_create', methods: ['POST'])]
-    public function create(Request $request, EntityManagerInterface $entityManager, SluggerInterface $slugger): Response
-    {
+    public function create(
+        Request $request, 
+        EntityManagerInterface $entityManager, 
+        SluggerInterface $slugger,
+        UserRepository $userRepository,
+        HashtagRepository $hashtagRepository,
+        NotificationService $notificationService,
+        ContentProcessorService $contentProcessor,
+        FileUploader $fileUploader
+    ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
 
         $content = $request->request->get('content');
@@ -253,29 +224,25 @@ class PostController extends AbstractController
 
         $imageFile = $request->files->get('image');
         if ($imageFile) {
-            $originalFilename = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
-            $safeFilename = $slugger->slug($originalFilename);
-            $newFilename = $safeFilename.'-'.uniqid().'.'.$imageFile->guessExtension();
-
             try {
-                $imageFile->move(
-                    $this->getParameter('posts_directory'),
-                    $newFilename
-                );
+                $newFilename = $fileUploader->upload($imageFile, 'posts_directory');
                 $post->setImage($newFilename);
-            } catch (FileException $e) {
-                $this->addFlash('error', 'Une erreur est survenue lors du téléchargement de l\'image');
+            } catch (\Exception $e) {
+                $this->addFlash('error', $e->getMessage());
             }
         }
+        
+        // Traitement des hashtags et mentions
+        $contentProcessor->processPostContent($post);
 
         $entityManager->persist($post);
         $entityManager->flush();
 
-        $this->addFlash('success', 'Votre publication a été créée');
+        // Redirection vers la page d'accueil sans message flash
         return $this->redirectToRoute('app_home');
     }
 
-    #[Route('/post/{id}/like', name: 'app_post_like')]
+    #[Route('/post/{id}/like', name: 'app_post_like', requirements: ['id' => '\d+'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function like(
         Post $post, 
@@ -356,14 +323,34 @@ class PostController extends AbstractController
     #[Route('/post/debug', name: 'app_post_debug', methods: ['GET'])]
     public function debug(PostRepository $postRepository): Response
     {
+        // Cette route est désactivée en production
+        if ($this->getParameter('kernel.environment') === 'prod') {
+            throw $this->createNotFoundException('Cette page n\'est disponible qu\'en environnement de développement');
+        }
+        
         $posts = $postRepository->findAllOrderedByDate();
         
-        return $this->render('debug_post.html.twig', [
-            'posts' => $posts,
+        // Retourner directement les données au format JSON pour le débogage
+        $postsData = [];
+        foreach ($posts as $post) {
+            $postsData[] = [
+                'id' => $post->getId(),
+                'title' => $post->getTitle(),
+                'author' => $post->getAuthor()->getFullName(),
+                'likesCount' => $post->getLikesCount(),
+                'commentsCount' => $post->getCommentsCount(),
+                'sharesCount' => $post->getSharesCount()
+            ];
+        }
+        
+        return $this->json([
+            'posts' => $postsData,
+            'count' => count($postsData),
+            'timestamp' => new \DateTime()
         ]);
     }
 
-    #[Route('/post/{id}/share', name: 'app_post_share', methods: ['GET', 'POST'])]
+    #[Route('/post/{id}/share', name: 'app_post_share', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function share(
         Post $post, 
@@ -383,13 +370,11 @@ class PostController extends AbstractController
         // Envoyer une notification
         $notificationService->notifyPostShare($share);
         
-        $this->addFlash('success', 'Publication republiée avec succès !');
-        
         // Rediriger vers la page d'accueil pour voir le partage dans le fil d'actualité
         return $this->redirectToRoute('app_home');
     }
     
-    #[Route('/post/comment/{id}/reply', name: 'app_post_comment_reply', methods: ['GET', 'POST'])]
+    #[Route('/post/comment/{id}/reply', name: 'app_post_comment_reply', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function replyToComment(
         PostComment $parentComment, 
@@ -458,7 +443,7 @@ class PostController extends AbstractController
         ]);
     }
 
-    #[Route('/post/{id}/comments', name: 'app_post_comments', methods: ['GET'])]
+    #[Route('/post/{id}/comments', name: 'app_post_comments', methods: ['GET'], requirements: ['id' => '\d+'])]
     public function getComments(
         Post $post,
         PostCommentRepository $commentRepository,
@@ -494,7 +479,7 @@ class PostController extends AbstractController
         ]);
     }
     
-    #[Route('/post/{id}/comment/add', name: 'app_post_comment_add', methods: ['POST'])]
+    #[Route('/post/{id}/comment/add', name: 'app_post_comment_add', methods: ['POST'], requirements: ['id' => '\d+'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function addComment(
         Post $post,
@@ -539,85 +524,145 @@ class PostController extends AbstractController
         ]);
     }
 
-    /**
-     * @Route("/quick-create", name="app_post_quick_create", methods={"POST"})
-     */
-    public function quickCreate(Request $request, EntityManagerInterface $entityManager, SluggerInterface $slugger): Response
+    #[Route('/post/quick-create', name: 'app_post_quick_create', methods: ['POST'])]
+    #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
+    public function quickCreate(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        SluggerInterface $slugger,
+        HashtagRepository $hashtagRepository,
+        UserRepository $userRepository,
+        NotificationService $notificationService,
+        ContentProcessorService $contentProcessor,
+        FileUploader $fileUploader
+    ): Response
     {
         try {
+            // Journaliser les informations de la requête
+            $this->logger->info('Tentative de création de post rapide', [
+                'request_content' => $request->request->all(),
+                'has_files' => $request->files->count() > 0
+            ]);
+            
+            // Vérifier que la requête contient des données
+            if ($request->request->count() === 0 && $request->files->count() === 0) {
+                throw new \Exception('La requête ne contient aucune donnée');
+            }
+            
+            // Vérifier que le contenu n'est pas vide
+            $content = $request->request->get('content');
+            if (!$content || trim($content) === '') {
+                throw new \Exception('Le contenu du post ne peut pas être vide');
+            }
+            
             $post = new Post();
             $post->setAuthor($this->getUser());
-            $post->setTitle($request->request->get('title'));
-            $post->setContent($request->request->get('content'));
+            
+            // Récupérer le titre s'il existe, ou définir une chaîne vide
+            $title = $request->request->get('title');
+            $post->setTitle($title ? trim($title) : '');
+            
+            $post->setContent(trim($content));
             
             // Gérer l'image si présente
-            if ($request->files->has('imageFile') && $request->files->get('imageFile')) {
-                $imageFile = $request->files->get('imageFile');
+            $imageFile = $request->files->get('imageFile');
+            if ($imageFile) {
+                $this->logger->info('Image détectée', [
+                    'filename' => $imageFile->getClientOriginalName(),
+                    'size' => $imageFile->getSize(),
+                    'mime_type' => $imageFile->getMimeType()
+                ]);
                 
-                if ($imageFile->isValid()) {
-                    $originalFilename = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
-                    $safeFilename = $slugger->slug($originalFilename);
-                    $newFilename = $safeFilename.'-'.uniqid().'.'.$imageFile->guessExtension();
-                    
-                    try {
-                        $imageFile->move(
-                            $this->getParameter('post_images_directory'),
-                            $newFilename
-                        );
-                        
-                        // Définir à la fois image et imageName
-                        $post->setImage($newFilename);
-                        $post->setImageName($newFilename);
-                    } catch (FileException $e) {
-                        return $this->json([
-                            'success' => false,
-                            'error' => 'Erreur lors de l\'upload de l\'image: ' . $e->getMessage()
-                        ]);
-                    }
-                } else {
-                    return $this->json([
-                        'success' => false,
-                        'error' => 'Image non valide'
+                try {
+                    $newFilename = $fileUploader->upload($imageFile, 'posts_directory');
+                    $post->setImage($newFilename);
+                } catch (\Exception $e) {
+                    $this->logger->error('Erreur lors de l\'upload de l\'image', [
+                        'error' => $e->getMessage()
                     ]);
+                    throw new \Exception('Erreur lors de l\'upload de l\'image: ' . $e->getMessage());
                 }
             }
             
-            // Traiter les mentions (utilisateurs mentionnés)
-            $mentions = [];
-            preg_match_all('/@(\w+)/', $post->getContent(), $matches);
-            if (!empty($matches[1])) {
-                // Trouver les utilisateurs mentionnés
-                $userRepo = $entityManager->getRepository(User::class);
-                foreach ($matches[1] as $username) {
-                    $user = $userRepo->findOneBy(['username' => $username]);
-                    if ($user) {
-                        $mentions[] = $user->getId();
-                    }
-                }
+            // IMPORTANT: Persister et flusher avant de traiter le contenu
+            // pour s'assurer que l'ID est généré
+            try {
+                $entityManager->persist($post);
+                $entityManager->flush();
+            } catch (\Exception $e) {
+                $this->logger->error('Erreur lors de la persistance en base de données', [
+                    'error' => $e->getMessage()
+                ]);
+                throw new \Exception('Erreur lors de la persistance en base de données: ' . $e->getMessage());
             }
-            $post->setMentions($mentions);
             
-            // Traiter les hashtags
-            $hashtags = [];
-            preg_match_all('/#(\w+)/', $post->getContent(), $matches);
-            if (!empty($matches[1])) {
-                $hashtags = $matches[1];
+            // Traitement des hashtags et des mentions APRÈS avoir enregistré le post
+            try {
+                $contentProcessor->processPostContent($post);
+                // Deuxième flush pour enregistrer les hashtags et mentions
+                $entityManager->flush();
+            } catch (\Exception $e) {
+                $this->logger->error('Erreur lors du traitement du contenu', [
+                    'error' => $e->getMessage(),
+                    'post_id' => $post->getId()
+                ]);
+                // Ne pas lancer d'exception ici, le post a déjà été créé
+                // On peut continuer avec l'ID existant
             }
-            $post->setHashtags($hashtags);
             
-            $entityManager->persist($post);
-            $entityManager->flush();
+            // Récupérer l'ID après le flush
+            $postId = $post->getId();
+            if (!$postId || !is_numeric($postId) || intval($postId) <= 0) {
+                $this->logger->error('ID du post invalide', [
+                    'post_id' => $postId
+                ]);
+                throw new \Exception('L\'ID du post n\'a pas été généré correctement');
+            }
             
+            // Générer l'URL avec l'ID vérifié
+            $postUrl = $this->generateUrl('app_post_show', ['id' => $postId]);
+            
+            // Générer l'URL de la page d'accueil pour y retourner
+            $homeUrl = $this->generateUrl('app_home');
+            
+            $this->logger->info('Post créé avec succès', [
+                'post_id' => $postId,
+                'post_url' => $postUrl,    // URL du post pour référence
+                'redirect_url' => $homeUrl
+            ]);
+            
+            // Retourner une réponse JSON avec des informations détaillées
             return $this->json([
                 'success' => true,
-                'postId' => $post->getId(),
-                'redirect' => $this->generateUrl('app_home')
+                'postId' => $postId,
+                'postUrl' => $postUrl,    // URL du post pour référence
+                'redirect' => $homeUrl,   // Rediriger vers la page d'accueil
+                'debug_info' => [
+                    'post_id_type' => gettype($postId),
+                    'post_id_value' => $postId,
+                    'route_name' => 'app_home'
+                ]
             ]);
+            
         } catch (\Exception $e) {
+            // Logger l'erreur côté serveur pour une analyse plus approfondie
+            $this->logger->error('Erreur de création de post: ' . $e->getMessage(), [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_content' => $request->request->all(),
+                'has_files' => $request->files->count() > 0,
+                'request_content_type' => $request->headers->get('Content-Type')
+            ]);
+            
             return $this->json([
                 'success' => false,
-                'error' => 'Une erreur est survenue lors de la publication: ' . $e->getMessage()
-            ]);
+                'error' => 'Erreur lors de la création du post: ' . $e->getMessage(),
+                'debug_info' => [
+                    'request_parameters' => $request->request->count(),
+                    'request_files' => $request->files->count(),
+                    'content_type' => $request->headers->get('Content-Type')
+                ]
+            ], 400);
         }
     }
 } 

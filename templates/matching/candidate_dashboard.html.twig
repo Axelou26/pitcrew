@@ -102,10 +102,10 @@
                                                                             <div class="mt-2">
                                                                                 <div class="d-flex justify-content-between">
                                                                                     <span>Score: {{ reason.score }}/{{ reason.maxScore }}</span>
-                                                                                    <span>{{ (reason.score / reason.maxScore * 100)|round }}%</span>
+                                                                                    <span>{{ reason.maxScore > 0 ? ((reason.score / reason.maxScore * 100)|round) : 0 }}%</span>
                                                                                 </div>
                                                                                 <div class="progress mt-1 mb-3" style="height: 5px;">
-                                                                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (reason.score / reason.maxScore * 100)|round }}%"></div>
+                                                                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ reason.maxScore > 0 ? ((reason.score / reason.maxScore * 100)|round) : 0 }}%"></div>
                                                                                 </div>
                                                                                 {% if reason.matches|length > 0 %}
                                                                                     <p class="mb-2">Compétences correspondantes :</p>
@@ -122,10 +122,10 @@
                                                                             <div class="mt-2">
                                                                                 <div class="d-flex justify-content-between">
                                                                                     <span>Score: {{ reason.score }}/{{ reason.maxScore }}</span>
-                                                                                    <span>{{ (reason.score / reason.maxScore * 100)|round }}%</span>
+                                                                                    <span>{{ reason.maxScore > 0 ? ((reason.score / reason.maxScore * 100)|round) : 0 }}%</span>
                                                                                 </div>
                                                                                 <div class="progress mt-1 mb-3" style="height: 5px;">
-                                                                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (reason.score / reason.maxScore * 100)|round }}%"></div>
+                                                                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ reason.maxScore > 0 ? ((reason.score / reason.maxScore * 100)|round) : 0 }}%"></div>
                                                                                 </div>
                                                                                 <ul class="list-unstyled mb-0">
                                                                                     {% for detail in reason.details %}
@@ -139,10 +139,10 @@
                                                                             <div class="mt-2">
                                                                                 <div class="d-flex justify-content-between">
                                                                                     <span>Score: {{ reason.score }}/{{ reason.maxScore }}</span>
-                                                                                    <span>{{ (reason.score / reason.maxScore * 100)|round }}%</span>
+                                                                                    <span>{{ reason.maxScore > 0 ? ((reason.score / reason.maxScore * 100)|round) : 0 }}%</span>
                                                                                 </div>
                                                                                 <div class="progress mt-1 mb-3" style="height: 5px;">
-                                                                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (reason.score / reason.maxScore * 100)|round }}%"></div>
+                                                                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ reason.maxScore > 0 ? ((reason.score / reason.maxScore * 100)|round) : 0 }}%"></div>
                                                                                 </div>
                                                                                 {% if reason.matches|length > 0 %}
                                                                                     <p class="mb-2">Soft skills correspondantes :</p>
@@ -159,10 +159,10 @@
                                                                             <div class="mt-2">
                                                                                 <div class="d-flex justify-content-between">
                                                                                     <span>Score: {{ reason.score }}/{{ reason.maxScore }}</span>
-                                                                                    <span>{{ (reason.score / reason.maxScore * 100)|round }}%</span>
+                                                                                    <span>{{ reason.maxScore > 0 ? ((reason.score / reason.maxScore * 100)|round) : 0 }}%</span>
                                                                                 </div>
                                                                                 <div class="progress mt-1 mb-3" style="height: 5px;">
-                                                                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (reason.score / reason.maxScore * 100)|round }}%"></div>
+                                                                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ reason.maxScore > 0 ? ((reason.score / reason.maxScore * 100)|round) : 0 }}%"></div>
                                                                                 </div>
                                                                                 <ul class="list-unstyled mb-0">
                                                                                     {% for detail in reason.details %}

@@ -3,3 +3,9 @@ controllers:
         path: ../src/Controller/
         namespace: App\Controller
     type: attribute
+
+# Route API pour le comptage des notifications
+api_notification_count:
+    path: /api/notifications/count
+    controller: App\Controller\NotificationController::apiCount
+    methods: [GET]

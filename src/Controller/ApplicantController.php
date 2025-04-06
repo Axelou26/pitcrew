@@ -12,6 +12,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use App\Form\ApplicantSkillsType;
+use App\Form\ApplicantExperienceType;
 
 #[Route('/applicant')]
 #[IsGranted('ROLE_POSTULANT')]
@@ -160,17 +162,19 @@ class ApplicantController extends AbstractController
     #[Route('/edit-skills', name: 'app_applicant_edit_skills')]
     public function editSkills(Request $request, EntityManagerInterface $entityManager): Response
     {
-        $applicant = $this->getUser();
+        $user = $this->getUser();
+        $form = $this->createForm(ApplicantSkillsType::class, $user);
+        $form->handleRequest($request);
         
-        // Temporaire: redirection vers le dashboard pour le moment
-        // En attendant l'implémentation complète du formulaire d'édition des compétences
-        $this->addFlash('info', 'La fonctionnalité d\'édition des compétences sera bientôt disponible.');
-        return $this->redirectToRoute('app_applicant_dashboard');
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entityManager->flush();
+            $this->addFlash('success', 'Vos compétences ont été mises à jour avec succès.');
+            return $this->redirectToRoute('app_profile_index');
+        }
         
-        // Formulaire et logique à implémenter dans une prochaine version
-        // return $this->render('applicant/edit_skills.html.twig', [
-        //     'applicant' => $applicant
-        // ]);
+        return $this->render('applicant/edit_skills.html.twig', [
+            'form' => $form->createView()
+        ]);
     }
     
     /**
@@ -179,16 +183,18 @@ class ApplicantController extends AbstractController
     #[Route('/edit-experience', name: 'app_applicant_edit_experience')]
     public function editExperience(Request $request, EntityManagerInterface $entityManager): Response
     {
-        $applicant = $this->getUser();
+        $user = $this->getUser();
+        $form = $this->createForm(ApplicantExperienceType::class, $user);
+        $form->handleRequest($request);
         
-        // Temporaire: redirection vers le dashboard pour le moment
-        // En attendant l'implémentation complète du formulaire d'édition de l'expérience
-        $this->addFlash('info', 'La fonctionnalité d\'édition de l\'expérience sera bientôt disponible.');
-        return $this->redirectToRoute('app_applicant_dashboard');
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entityManager->flush();
+            $this->addFlash('success', 'Votre expérience a été mise à jour avec succès.');
+            return $this->redirectToRoute('app_profile_index');
+        }
         
-        // Formulaire et logique à implémenter dans une prochaine version
-        // return $this->render('applicant/edit_experience.html.twig', [
-        //     'applicant' => $applicant
-        // ]);
+        return $this->render('applicant/edit_experience.html.twig', [
+            'form' => $form->createView()
+        ]);
     }
 } 

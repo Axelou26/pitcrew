@@ -172,4 +172,35 @@ class MatchingController extends AbstractController
             return $this->redirectToRoute('app_dashboard');
         }
     }
+
+    /**
+     * Affiche les détails de matching pour un candidat spécifique
+     */
+    #[Route('/candidate/{id}/matching-details', name: 'app_matching_candidate_details')]
+    #[IsGranted('ROLE_RECRUTEUR')]
+    public function candidateMatchingDetails(Applicant $applicant, Request $request): Response
+    {
+        $jobOfferId = $request->query->getInt('job_offer');
+        $jobOffer = null;
+        $compatibilityScore = null;
+        
+        // Si une offre d'emploi spécifique est demandée, calculer le score pour cette offre
+        if ($jobOfferId) {
+            $jobOffer = $this->jobOfferRepository->find($jobOfferId);
+            
+            if ($jobOffer) {
+                $compatibilityScore = $this->matchingService->calculateCompatibilityScore($applicant, $jobOffer);
+            }
+        }
+        
+        // Trouver les meilleures offres pour ce candidat
+        $bestOffers = $this->matchingService->findBestJobOffersForCandidate($applicant, 5);
+        
+        return $this->render('matching/candidate_matching_details.html.twig', [
+            'applicant' => $applicant,
+            'jobOffer' => $jobOffer,
+            'compatibilityScore' => $compatibilityScore,
+            'bestOffers' => $bestOffers
+        ]);
+    }
 } 

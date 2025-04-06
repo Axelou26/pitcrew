@@ -3,53 +3,68 @@
 {% block title %}Mes candidatures{% endblock %}
 
 {% block body %}
-<div class="container py-4">
-    <div class="row">
+<div class="container-fluid py-4">
+    <div class="row g-4">
         <!-- Sidebar -->
-        <div class="col-md-3">
-            <div class="card mb-4">
-                <div class="card-body text-center">
+        <div class="col-lg-3 col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center p-4">
                     {% if app.user.profilePicture %}
-                        <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}" 
-                             alt="{{ app.user.fullName }}"
-                             class="rounded-circle mb-3"
-                             style="width: 100px; height: 100px; object-fit: cover;">
+                        <div class="position-relative d-inline-block mb-3">
+                            <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}" 
+                                 alt="{{ app.user.fullName }}"
+                                 class="rounded-circle border border-3 border-white shadow"
+                                 style="width: 120px; height: 120px; object-fit: cover;">
+                            <span class="position-absolute bottom-0 end-0 bg-success rounded-circle p-1 border border-2 border-white" style="width: 20px; height: 20px;"></span>
+                        </div>
                     {% else %}
-                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
-                             style="width: 100px; height: 100px;">
-                            <i class="bi bi-person display-4 text-muted"></i>
+                        <div class="position-relative d-inline-block mb-3">
+                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center border border-3 border-white shadow mx-auto"
+                                 style="width: 120px; height: 120px;">
+                                <i class="bi bi-person-fill display-5 text-secondary"></i>
+                            </div>
+                            <span class="position-absolute bottom-0 end-0 bg-success rounded-circle p-1 border border-2 border-white" style="width: 20px; height: 20px;"></span>
                         </div>
                     {% endif %}
-                    <h5 class="card-title">{{ app.user.fullName }}</h5>
+                    <h5 class="fw-bold mb-1">{{ app.user.fullName }}</h5>
                     {% if app.user.company %}
-                        <p class="card-text text-muted">{{ app.user.company }}</p>
+                        <p class="text-muted mb-3"><i class="bi bi-building me-1"></i>{{ app.user.company }}</p>
                     {% endif %}
-                    <a href="{{ path('app_profile_edit') }}" class="btn btn-outline-primary btn-sm">
+                    <a href="{{ path('app_profile_edit') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
                         <i class="bi bi-pencil me-1"></i> Modifier le profil
                     </a>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title h6">Navigation</h5>
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
                     <div class="list-group list-group-flush">
-                        <a href="{{ path('app_dashboard') }}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-speedometer2 me-2"></i> Tableau de bord
+                        <a href="{{ path('app_dashboard') }}" class="list-group-item list-group-item-action d-flex align-items-center py-3 px-4">
+                            <i class="bi bi-speedometer2 me-3 text-primary fs-5"></i>
+                            <span>Tableau de bord</span>
                         </a>
-                        <a href="{{ path('app_dashboard_posts') }}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-file-text me-2"></i> Mes posts
+                        <a href="{{ path('app_dashboard_posts') }}" class="list-group-item list-group-item-action d-flex align-items-center py-3 px-4">
+                            <i class="bi bi-file-text me-3 text-primary fs-5"></i>
+                            <span>Mes posts</span>
                         </a>
-                        <a href="{{ path('app_message_index') }}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-chat-dots me-2"></i> Messages
+                        <a href="{{ path('app_message_index') }}" class="list-group-item list-group-item-action d-flex align-items-center py-3 px-4">
+                            <i class="bi bi-chat-dots me-3 text-primary fs-5"></i>
+                            <span>Messages</span>
                         </a>
                         {% if is_granted('ROLE_RECRUTEUR') %}
-                            <a href="{{ path('app_dashboard_offers') }}" class="list-group-item list-group-item-action">
-                                <i class="bi bi-briefcase me-2"></i> Mes offres
+                            <a href="{{ path('app_dashboard_offers') }}" class="list-group-item list-group-item-action d-flex align-items-center py-3 px-4">
+                                <i class="bi bi-briefcase me-3 text-primary fs-5"></i>
+                                <span>Mes offres</span>
                             </a>
                         {% endif %}
-                        <a href="{{ path('app_dashboard_applications') }}" class="list-group-item list-group-item-action active">
-                            <i class="bi bi-send me-2"></i> Candidatures
+                        <a href="{{ path('app_dashboard_applications') }}" class="list-group-item list-group-item-action d-flex align-items-center py-3 px-4 active">
+                            <i class="bi bi-send me-3 text-primary fs-5"></i>
+                            <span>Candidatures</span>
+                            <span class="badge bg-primary rounded-pill ms-auto">{{ applications|length }}</span>
+                        </a>
+                        <a href="{{ path('app_interviews_index') }}" class="list-group-item list-group-item-action d-flex align-items-center py-3 px-4">
+                            <i class="bi bi-camera-video me-3 text-primary fs-5"></i>
+                            <span>Entretiens</span>
                         </a>
                     </div>
                 </div>
@@ -57,86 +72,221 @@
         </div>
 
         <!-- Main Content -->
-        <div class="col-md-9">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
+        <div class="col-lg-9 col-md-8">
+            <div class="d-flex justify-content-between align-items-center flex-wrap mb-4">
+                <div>
+                    <h2 class="fw-bold mb-1">
                         {% if is_granted('ROLE_RECRUTEUR') %}
                             Candidatures reçues
                         {% else %}
                             Mes candidatures
                         {% endif %}
-                    </h5>
-                    {% if not is_granted('ROLE_RECRUTEUR') %}
-                        <a href="{{ path('app_job_offer_index') }}" class="btn btn-primary">
-                            <i class="bi bi-search me-1"></i> Chercher des offres
-                        </a>
-                    {% endif %}
+                    </h2>
+                    <p class="text-muted">
+                        {% if is_granted('ROLE_RECRUTEUR') %}
+                            Gérez les candidatures reçues pour vos offres d'emploi
+                        {% else %}
+                            Suivez l'état de vos candidatures aux offres d'emploi
+                        {% endif %}
+                    </p>
+                </div>
+                {% if not is_granted('ROLE_RECRUTEUR') %}
+                    <a href="{{ path('app_job_offer_index') }}" class="btn btn-primary rounded-pill px-4 py-2 d-flex align-items-center">
+                        <i class="bi bi-search me-2"></i> Chercher des offres
+                    </a>
+                {% endif %}
+            </div>
+
+            <!-- Statistiques des candidatures -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="card border-0 bg-primary bg-opacity-10 h-100">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                                <i class="bi bi-file-text text-primary fs-4"></i>
+                            </div>
+                            <div>
+                                <h3 class="fw-bold mb-0">{{ applications|length }}</h3>
+                                <p class="text-muted mb-0">Total des candidatures</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 bg-success bg-opacity-10 h-100">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+                                <i class="bi bi-check-circle text-success fs-4"></i>
+                            </div>
+                            <div>
+                                <h3 class="fw-bold mb-0">{{ applications|filter(a => a.status == 'accepted' or a.status == 'interview')|length }}</h3>
+                                <p class="text-muted mb-0">Candidatures acceptées</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 bg-warning bg-opacity-10 h-100">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+                                <i class="bi bi-hourglass-split text-warning fs-4"></i>
+                            </div>
+                            <div>
+                                <h3 class="fw-bold mb-0">{{ applications|filter(a => a.status == 'pending')|length }}</h3>
+                                <p class="text-muted mb-0">En attente</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="mb-0 fw-bold">
+                                {% if is_granted('ROLE_RECRUTEUR') %}
+                                    Candidatures reçues
+                                {% else %}
+                                    Mes candidatures
+                                {% endif %}
+                            </h5>
+                        </div>
+                        <div class="col-auto">
+                            <div class="input-group">
+                                <span class="input-group-text border-end-0 bg-white">
+                                    <i class="bi bi-search text-muted"></i>
+                                </span>
+                                <input type="text" class="form-control border-start-0" id="searchApplications" placeholder="Rechercher...">
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 {% if applications is empty %}
                     <div class="card-body text-center py-5">
-                        {% if is_granted('ROLE_RECRUTEUR') %}
-                            <i class="bi bi-person-lines-fill display-1 text-muted mb-3"></i>
-                            <h6 class="text-muted">Aucune candidature reçue pour le moment</h6>
-                            <p class="text-muted">Les candidatures pour vos offres d'emploi apparaîtront ici.</p>
-                        {% else %}
-                            <i class="bi bi-send display-1 text-muted mb-3"></i>
-                            <h6 class="text-muted">Vous n'avez pas encore postulé à une offre</h6>
-                            <a href="{{ path('app_job_offer_index') }}" class="btn btn-primary mt-3">
-                                <i class="bi bi-search me-1"></i> Voir les offres
-                            </a>
-                        {% endif %}
+                        <div class="py-5">
+                            <div class="mb-4">
+                                {% if is_granted('ROLE_RECRUTEUR') %}
+                                    <i class="bi bi-person-lines-fill display-1 text-muted"></i>
+                                {% else %}
+                                    <i class="bi bi-send display-1 text-muted"></i>
+                                {% endif %}
+                            </div>
+                            <h5 class="text-muted mb-3">
+                                {% if is_granted('ROLE_RECRUTEUR') %}
+                                    Aucune candidature reçue pour le moment
+                                {% else %}
+                                    Vous n'avez pas encore postulé à une offre
+                                {% endif %}
+                            </h5>
+                            <p class="text-muted mb-4">
+                                {% if is_granted('ROLE_RECRUTEUR') %}
+                                    Les candidatures pour vos offres d'emploi apparaîtront ici
+                                {% else %}
+                                    Découvrez les offres d'emploi disponibles et postulez dès maintenant
+                                {% endif %}
+                            </p>
+                            {% if not is_granted('ROLE_RECRUTEUR') %}
+                                <a href="{{ path('app_job_offer_index') }}" class="btn btn-primary rounded-pill px-4">
+                                    <i class="bi bi-search me-2"></i> Voir les offres
+                                </a>
+                            {% endif %}
+                        </div>
                     </div>
                 {% else %}
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead>
+                        <table class="table table-hover align-middle mb-0" id="applicationsTable">
+                            <thead class="table-light">
                                 <tr>
                                     {% if is_granted('ROLE_RECRUTEUR') %}
-                                        <th>Candidat</th>
-                                        <th>Offre</th>
+                                        <th scope="col" class="fw-medium">Candidat</th>
+                                        <th scope="col" class="fw-medium">Offre</th>
                                     {% else %}
-                                        <th>Offre</th>
-                                        <th>Entreprise</th>
+                                        <th scope="col" class="fw-medium">Offre</th>
+                                        <th scope="col" class="fw-medium">Entreprise</th>
                                     {% endif %}
-                                    <th>Date</th>
-                                    <th>Statut</th>
-                                    <th>Actions</th>
+                                    <th scope="col" class="fw-medium text-center">Date</th>
+                                    <th scope="col" class="fw-medium text-center">Statut</th>
+                                    <th scope="col" class="fw-medium text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for application in applications %}
                                     <tr>
                                         {% if is_granted('ROLE_RECRUTEUR') %}
-                                            <td>{{ application.applicant.fullName }}</td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    {% if application.applicant.profilePicture %}
+                                                        <div class="flex-shrink-0 me-3">
+                                                            <img src="{{ asset('uploads/profile_pictures/' ~ application.applicant.profilePicture) }}" 
+                                                                alt="{{ application.applicant.fullName }}" 
+                                                                class="rounded-circle" 
+                                                                style="width: 40px; height: 40px; object-fit: cover;">
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="flex-shrink-0 me-3">
+                                                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center"
+                                                                style="width: 40px; height: 40px;">
+                                                                <i class="bi bi-person text-secondary"></i>
+                                                            </div>
+                                                        </div>
+                                                    {% endif %}
+                                                    <div>
+                                                        <h6 class="mb-0">{{ application.applicant.fullName }}</h6>
+                                                        <p class="text-muted small mb-0">
+                                                            {{ application.applicant.email }}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </td>
                                             <td>{{ application.jobOffer.title }}</td>
                                         {% else %}
-                                            <td>{{ application.jobOffer.title }}</td>
-                                            <td>{{ application.jobOffer.recruiter.company }}</td>
+                                            <td>
+                                                <h6 class="mb-0">{{ application.jobOffer.title }}</h6>
+                                                <p class="text-muted small mb-0">
+                                                    <span class="badge bg-light text-dark me-1">{{ application.jobOffer.contractType }}</span>
+                                                    <span class="badge bg-light text-dark">{{ application.jobOffer.location }}</span>
+                                                </p>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    {% if application.jobOffer.recruiter.profilePicture %}
+                                                        <div class="flex-shrink-0 me-2">
+                                                            <img src="{{ asset('uploads/profile_pictures/' ~ application.jobOffer.recruiter.profilePicture) }}" 
+                                                                alt="{{ application.jobOffer.recruiter.company }}" 
+                                                                class="rounded-circle" 
+                                                                style="width: 30px; height: 30px; object-fit: cover;">
+                                                        </div>
+                                                    {% endif %}
+                                                    <span>{{ application.jobOffer.recruiter.company }}</span>
+                                                </div>
+                                            </td>
                                         {% endif %}
-                                        <td>{{ application.createdAt|date('d/m/Y') }}</td>
-                                        <td>
+                                        <td class="text-center">
+                                            <span class="badge bg-light text-dark">{{ application.createdAt|date('d/m/Y') }}</span>
+                                        </td>
+                                        <td class="text-center">
                                             {% if application.status == 'pending' %}
-                                                <span class="badge bg-warning">En attente</span>
+                                                <span class="badge bg-warning rounded-pill px-3 py-2">En attente</span>
                                             {% elseif application.status == 'accepted' %}
-                                                <span class="badge bg-success">Acceptée</span>
+                                                <span class="badge bg-success rounded-pill px-3 py-2">Acceptée</span>
                                             {% elseif application.status == 'rejected' %}
-                                                <span class="badge bg-danger">Refusée</span>
+                                                <span class="badge bg-danger rounded-pill px-3 py-2">Refusée</span>
                                             {% elseif application.status == 'interview' %}
-                                                <span class="badge bg-info">Entretien</span>
+                                                <span class="badge bg-info rounded-pill px-3 py-2">Entretien</span>
                                             {% endif %}
                                         </td>
                                         <td>
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="{{ path('app_job_application_show', {'id': application.id}) }}" class="btn btn-outline-primary">
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <a href="{{ path('app_job_application_show', {'id': application.id}) }}" class="btn btn-sm btn-outline-primary rounded-circle" data-bs-toggle="tooltip" title="Voir la candidature">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
                                                 {% if is_granted('ROLE_RECRUTEUR') %}
-                                                    <a href="{{ path('app_message_start', {'id': application.applicant.id}) }}" class="btn btn-outline-secondary">
+                                                    <a href="{{ path('app_message_start', {'id': application.applicant.id}) }}" class="btn btn-sm btn-outline-secondary rounded-circle" data-bs-toggle="tooltip" title="Contacter le candidat">
                                                         <i class="bi bi-chat-dots"></i>
                                                     </a>
                                                 {% else %}
-                                                    <a href="{{ path('app_message_start', {'id': application.jobOffer.recruiter.id}) }}" class="btn btn-outline-secondary">
+                                                    <a href="{{ path('app_message_start', {'id': application.jobOffer.recruiter.id}) }}" class="btn btn-sm btn-outline-secondary rounded-circle" data-bs-toggle="tooltip" title="Contacter le recruteur">
                                                         <i class="bi bi-chat-dots"></i>
                                                     </a>
                                                 {% endif %}
@@ -152,4 +302,36 @@
         </div>
     </div>
 </div>
+
+{% block javascripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialiser les tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+        
+        // Recherche dans le tableau
+        const searchInput = document.getElementById('searchApplications');
+        const applicationsTable = document.getElementById('applicationsTable');
+        
+        if (searchInput && applicationsTable) {
+            searchInput.addEventListener('keyup', function() {
+                const searchValue = this.value.toLowerCase();
+                const rows = applicationsTable.querySelectorAll('tbody tr');
+                
+                rows.forEach(row => {
+                    const rowContent = row.textContent.toLowerCase();
+                    if (rowContent.includes(searchValue)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}
 {% endblock %} 

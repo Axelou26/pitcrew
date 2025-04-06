@@ -46,6 +46,14 @@ class NotificationController extends AbstractController
         return $this->json(['count' => $count]);
     }
 
+    #[Route('/api/notifications/count', name: 'app_api_notification_count', methods: ['GET'])]
+    public function apiCount(NotificationRepository $notificationRepository): JsonResponse
+    {
+        $count = $notificationRepository->countUnreadByUser($this->getUser());
+        
+        return $this->json(['count' => $count]);
+    }
+
     #[Route('/{id}/mark-as-read', name: 'app_notification_mark_as_read', methods: ['POST'])]
     public function markAsRead(Notification $notification, EntityManagerInterface $entityManager, Request $request): Response
     {

@@ -18,8 +18,8 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 )]
 class CreateAdminCommand extends Command
 {
-    private $entityManager;
-    private $passwordHasher;
+    private EntityManagerInterface $entityManager;
+    private UserPasswordHasherInterface $passwordHasher;
 
     public function __construct(
         EntityManagerInterface $entityManager,
@@ -49,37 +49,24 @@ class CreateAdminCommand extends Command
 
         // Vérifier si l'utilisateur existe déjà
         $existingUser = $this->entityManager->getRepository(User::class)->findOneBy(['email' => $email]);
-        
         if ($existingUser) {
-            // Mettre à jour l'utilisateur existant
-            $user = $existingUser;
-            $io->note(sprintf('L\'utilisateur avec l\'email %s existe déjà. Mise à jour des rôles.', $email));
-        } else {
-            // Créer un nouvel utilisateur
-            $user = new User();
-            $user->setEmail($email);
-            $user->setFirstName($firstName);
-            $user->setLastName($lastName);
-            $user->setCreatedAt(new \DateTimeImmutable());
-            $io->note(sprintf('Création d\'un nouvel utilisateur avec l\'email %s', $email));
+            $io->error(sprintf('Un utilisateur avec l\'email "%s" existe déjà.', $email));
+            return Command::FAILURE;
         }
 
-        // Définir le mot de passe
-        $hashedPassword = $this->passwordHasher->hashPassword($user, $password);
-        $user->setPassword($hashedPassword);
+        // Créer l'utilisateur administrateur
+        $user = new User();
+        $user->setEmail($email);
+        $user->setPassword($this->passwordHasher->hashPassword($user, $password));
+        $user->setFirstName($firstName);
+        $user->setLastName($lastName);
+        $user->setRoles(['ROLE_USER', 'ROLE_ADMIN']);
+        $user->setCreatedAt(new \DateTimeImmutable());
 
-        // Ajouter le rôle ROLE_ADMIN
-        $roles = $user->getRoles();
-        if (!in_array('ROLE_ADMIN', $roles)) {
-            $roles[] = 'ROLE_ADMIN';
-            $user->setRoles($roles);
-        }
-
-        // Persister l'utilisateur
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
-        $io->success(sprintf('L\'utilisateur administrateur %s a été créé/mis à jour avec succès.', $email));
+        $io->success(sprintf('Administrateur "%s" créé avec succès !', $email));
 
         return Command::SUCCESS;
     }

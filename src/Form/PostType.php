@@ -20,14 +20,12 @@ class PostType extends AbstractType
         $builder
             ->add('title', TextType::class, [
                 'label' => 'Titre',
+                'required' => false,
                 'attr' => [
-                    'placeholder' => 'Titre de votre post',
+                    'placeholder' => 'Titre de votre post (optionnel)',
                     'class' => 'form-control'
                 ],
                 'constraints' => [
-                    new NotBlank([
-                        'message' => 'Veuillez entrer un titre'
-                    ]),
                     new Length([
                         'min' => 3,
                         'max' => 255,

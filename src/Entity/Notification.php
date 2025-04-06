@@ -9,6 +9,15 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: NotificationRepository::class)]
 class Notification
 {
+    // Types de notifications
+    public const TYPE_INFO = 'info';
+    public const TYPE_MENTION = 'mention';
+    public const TYPE_LIKE = 'like';
+    public const TYPE_COMMENT = 'comment';
+    public const TYPE_SHARE = 'share';
+    public const TYPE_FRIEND_REQUEST = 'friend_request';
+    public const TYPE_APPLICATION = 'application';
+    
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -34,7 +43,16 @@ class Notification
     private ?string $link = null;
 
     #[ORM\Column(length: 50)]
-    private ?string $type = 'info';
+    private ?string $type = self::TYPE_INFO;
+    
+    #[ORM\Column(length: 50, nullable: true)]
+    private ?string $entityType = null;
+    
+    #[ORM\Column(nullable: true)]
+    private ?int $entityId = null;
+    
+    #[ORM\Column(nullable: true)]
+    private ?int $actorId = null;
 
     public function __construct()
     {
@@ -64,7 +82,7 @@ class Notification
         return $this->title;
     }
 
-    public function setTitle(string $title): static
+    public function setTitle(?string $title): static
     {
         $this->title = $title;
 
@@ -121,6 +139,42 @@ class Notification
     {
         $this->type = $type;
 
+        return $this;
+    }
+    
+    public function getEntityType(): ?string
+    {
+        return $this->entityType;
+    }
+    
+    public function setEntityType(?string $entityType): static
+    {
+        $this->entityType = $entityType;
+        
+        return $this;
+    }
+    
+    public function getEntityId(): ?int
+    {
+        return $this->entityId;
+    }
+    
+    public function setEntityId(?int $entityId): static
+    {
+        $this->entityId = $entityId;
+        
+        return $this;
+    }
+    
+    public function getActorId(): ?int
+    {
+        return $this->actorId;
+    }
+    
+    public function setActorId(?int $actorId): static
+    {
+        $this->actorId = $actorId;
+        
         return $this;
     }
 

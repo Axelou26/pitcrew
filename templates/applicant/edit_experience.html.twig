@@ -1,0 +1,268 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier mon expérience professionnelle{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .work-experience-collection {
+            margin-bottom: 20px;
+        }
+        
+        .collection-item {
+            position: relative;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .remove-item {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            color: #dc3545;
+        }
+        
+        .experience-form-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .experience-form-row > div {
+            flex: 1;
+        }
+        
+        .experience-dates {
+            display: flex;
+            gap: 16px;
+        }
+        
+        .experience-dates > div {
+            flex: 1;
+        }
+        
+        .add-item {
+            background-color: #e9ecef;
+            border: 1px dashed #ced4da;
+            border-radius: 8px;
+            padding: 10px 16px;
+            text-align: center;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        .add-item:hover {
+            background-color: #dee2e6;
+        }
+        
+        /* Styles pour la section éducation */
+        .education-history-collection {
+            margin-bottom: 20px;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-3">
+            {% include 'components/dashboard_sidebar.html.twig' with {'active': 'profile'} %}
+        </div>
+        <div class="col-md-9">
+            <div class="card shadow-sm border-0 rounded-lg">
+                <div class="card-header bg-white py-3">
+                    <h1 class="h4 mb-0">Modifier mon expérience professionnelle</h1>
+                </div>
+                <div class="card-body p-4">
+                    {{ form_start(form) }}
+                        <div class="mb-4">
+                            {{ form_label(form.jobTitle, 'Titre de poste actuel') }}
+                            {{ form_widget(form.jobTitle, {'attr': {'class': 'form-control'}}) }}
+                            {{ form_errors(form.jobTitle) }}
+                        </div>
+                        
+                        <!-- Section Expérience professionnelle détaillée -->
+                        <div class="mb-5">
+                            {{ form_label(form.workExperience, 'Expériences professionnelles détaillées', {'label_attr': {'class': 'form-label mb-3'}}) }}
+                            
+                            <div id="work-experience-collection-wrapper" 
+                                 data-prototype="{{ form_widget(form.workExperience.vars.prototype)|e('html_attr') }}"
+                                 data-index="{{ form.workExperience|length }}">
+                                
+                                {% for experienceField in form.workExperience %}
+                                    <div class="collection-item">
+                                        <span class="remove-item"><i class="fas fa-times"></i></span>
+                                        <div class="experience-form-row">
+                                            <div>
+                                                {{ form_label(experienceField.title) }}
+                                                {{ form_widget(experienceField.title, {'attr': {'class': 'form-control'}}) }}
+                                            </div>
+                                            <div>
+                                                {{ form_label(experienceField.company) }}
+                                                {{ form_widget(experienceField.company, {'attr': {'class': 'form-control'}}) }}
+                                            </div>
+                                        </div>
+                                        <div class="experience-form-row">
+                                            <div>
+                                                {{ form_label(experienceField.location) }}
+                                                {{ form_widget(experienceField.location, {'attr': {'class': 'form-control'}}) }}
+                                            </div>
+                                            <div class="experience-dates">
+                                                <div>
+                                                    {{ form_label(experienceField.startDate) }}
+                                                    {{ form_widget(experienceField.startDate, {'attr': {'class': 'form-control'}}) }}
+                                                </div>
+                                                <div>
+                                                    {{ form_label(experienceField.endDate) }}
+                                                    {{ form_widget(experienceField.endDate, {'attr': {'class': 'form-control'}}) }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            {{ form_label(experienceField.description) }}
+                                            {{ form_widget(experienceField.description, {'attr': {'class': 'form-control'}}) }}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="add-item" data-collection="work-experience">
+                                <i class="fas fa-plus me-2"></i> Ajouter une expérience professionnelle
+                            </div>
+                        </div>
+                        
+                        <!-- Section Formations détaillées -->
+                        <div class="mb-5">
+                            {{ form_label(form.educationHistory, 'Formations détaillées', {'label_attr': {'class': 'form-label mb-3'}}) }}
+                            
+                            <div id="education-history-collection-wrapper" 
+                                 data-prototype="{{ form_widget(form.educationHistory.vars.prototype)|e('html_attr') }}"
+                                 data-index="{{ form.educationHistory|length }}">
+                                
+                                {% for educationField in form.educationHistory %}
+                                    <div class="collection-item">
+                                        <span class="remove-item"><i class="fas fa-times"></i></span>
+                                        <div class="experience-form-row">
+                                            <div>
+                                                {{ form_label(educationField.degree) }}
+                                                {{ form_widget(educationField.degree, {'attr': {'class': 'form-control'}}) }}
+                                            </div>
+                                            <div>
+                                                {{ form_label(educationField.institution) }}
+                                                {{ form_widget(educationField.institution, {'attr': {'class': 'form-control'}}) }}
+                                            </div>
+                                        </div>
+                                        <div class="experience-form-row">
+                                            <div>
+                                                {{ form_label(educationField.location) }}
+                                                {{ form_widget(educationField.location, {'attr': {'class': 'form-control'}}) }}
+                                            </div>
+                                            <div class="experience-dates">
+                                                <div>
+                                                    {{ form_label(educationField.startDate) }}
+                                                    {{ form_widget(educationField.startDate, {'attr': {'class': 'form-control'}}) }}
+                                                </div>
+                                                <div>
+                                                    {{ form_label(educationField.endDate) }}
+                                                    {{ form_widget(educationField.endDate, {'attr': {'class': 'form-control'}}) }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            {{ form_label(educationField.description) }}
+                                            {{ form_widget(educationField.description, {'attr': {'class': 'form-control'}}) }}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="add-item" data-collection="education-history">
+                                <i class="fas fa-plus me-2"></i> Ajouter une formation
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            {{ form_label(form.experience, 'Résumé de l\'expérience professionnelle') }}
+                            {{ form_widget(form.experience, {'attr': {'class': 'form-control', 'rows': 6}}) }}
+                            {{ form_errors(form.experience) }}
+                            <div class="form-text">
+                                Décrivez brièvement votre parcours professionnel (ce champ sera bientôt remplacé par les expériences détaillées ci-dessus).
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            {{ form_label(form.education, 'Formation') }}
+                            {{ form_widget(form.education, {'attr': {'class': 'form-control', 'rows': 4}}) }}
+                            {{ form_errors(form.education) }}
+                            <div class="form-text">
+                                Indiquez vos diplômes, formations et certifications.
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ path('app_profile_index') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i> Retour au profil
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i> Enregistrer
+                            </button>
+                        </div>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Gestion des collections pour les expériences professionnelles
+            setupCollectionHandler('work-experience');
+            
+            // Gestion des collections pour les formations
+            setupCollectionHandler('education-history');
+            
+            function setupCollectionHandler(collectionName) {
+                const addButton = document.querySelector(`.add-item[data-collection="${collectionName}"]`);
+                const collectionHolder = document.getElementById(`${collectionName}-collection-wrapper`);
+                
+                // Ajouter un nouvel élément
+                addButton.addEventListener('click', function() {
+                    const prototype = collectionHolder.dataset.prototype;
+                    const index = collectionHolder.dataset.index;
+                    const newForm = prototype.replace(/__name__/g, index);
+                    
+                    collectionHolder.insertAdjacentHTML('beforeend', `
+                        <div class="collection-item">
+                            <span class="remove-item"><i class="fas fa-times"></i></span>
+                            ${newForm}
+                        </div>
+                    `);
+                    
+                    // Mettre à jour l'index
+                    collectionHolder.dataset.index = parseInt(index) + 1;
+                    
+                    // Ajouter l'événement pour supprimer l'élément
+                    addRemoveItemListeners();
+                });
+                
+                // Supprimer un élément existant
+                addRemoveItemListeners();
+                
+                function addRemoveItemListeners() {
+                    document.querySelectorAll('.remove-item').forEach(button => {
+                        button.addEventListener('click', function() {
+                            this.closest('.collection-item').remove();
+                        });
+                    });
+                }
+            }
+        });
+    </script>
+{% endblock %} 

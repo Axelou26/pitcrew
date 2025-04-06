@@ -91,9 +91,23 @@
                 
                 <div class="card-footer bg-white">
                     <div class="row text-center">
-                        <div class="col-12">
+                        <div class="col-4">
                             <h5 class="mb-0">{{ postsCount }}</h5>
                             <small class="text-muted">Publications</small>
+                        </div>
+                        <div class="col-4">
+                            <h5 class="mb-0">{{ user.getFriends()|length }}</h5>
+                            <small class="text-muted">Amis</small>
+                        </div>
+                        <div class="col-4">
+                            <h5 class="mb-0">
+                                {% if user.isRecruiter %}
+                                    {{ user.jobOffers|length }}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </h5>
+                            <small class="text-muted">Offres</small>
                         </div>
                     </div>
                 </div>

@@ -33,6 +33,14 @@
                     <a href="{{ path('app_profile_edit') }}" class="list-group-item list-group-item-action">
                         <i class="bi bi-pencil-square me-2"></i> Modifier mon profil
                     </a>
+                    {% if user.isPostulant %}
+                        <a href="{{ path('app_profile_edit_skills') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-tools me-2"></i> Gérer mes compétences
+                        </a>
+                        <a href="{{ path('app_profile_edit_experience') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-briefcase me-2"></i> Gérer mon expérience
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -51,7 +59,35 @@
                 <!-- Experience Section -->
                 <div class="card mb-4">
                     <div class="card-body">
-                        <h5 class="card-title">Expérience professionnelle</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title">Expérience professionnelle</h5>
+                            <a href="{{ path('app_profile_edit_experience') }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil me-1"></i> Modifier
+                            </a>
+                        </div>
+                        
+                        {% if user.workExperience is not empty %}
+                            <div class="timeline mb-4">
+                                {% for experience in user.workExperience %}
+                                    <div class="timeline-item">
+                                        <div class="timeline-marker"></div>
+                                        <div class="timeline-content">
+                                            <h6 class="mb-1">{{ experience.title }} - {{ experience.company }}</h6>
+                                            <p class="text-muted small mb-1">
+                                                {{ experience.startDate }} - {{ experience.endDate == 'present' ? 'Actuel' : experience.endDate }}
+                                                {% if experience.location %}
+                                                    • {{ experience.location }}
+                                                {% endif %}
+                                            </p>
+                                            {% if experience.description %}
+                                                <p class="mb-0">{{ experience.description }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
                         <p class="card-text">{{ user.experience|default('Aucune expérience renseignée.')|nl2br }}</p>
                     </div>
                 </div>
@@ -59,21 +95,75 @@
                 <!-- Education Section -->
                 <div class="card mb-4">
                     <div class="card-body">
-                        <h5 class="card-title">Formation</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title">Formation</h5>
+                            <a href="{{ path('app_profile_edit_experience') }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil me-1"></i> Modifier
+                            </a>
+                        </div>
+                        
+                        {% if user.educationHistory is not empty %}
+                            <div class="timeline mb-4">
+                                {% for education in user.educationHistory %}
+                                    <div class="timeline-item">
+                                        <div class="timeline-marker"></div>
+                                        <div class="timeline-content">
+                                            <h6 class="mb-1">{{ education.degree }} - {{ education.institution }}</h6>
+                                            <p class="text-muted small mb-1">
+                                                {{ education.startDate }} - {{ education.endDate == 'present' ? 'Actuel' : education.endDate }}
+                                                {% if education.location %}
+                                                    • {{ education.location }}
+                                                {% endif %}
+                                            </p>
+                                            {% if education.description %}
+                                                <p class="mb-0">{{ education.description }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
                         <p class="card-text">{{ user.education|default('Aucune formation renseignée.')|nl2br }}</p>
                     </div>
                 </div>
 
-                <!-- Skills Section -->
+                <!-- Technical Skills Section -->
                 <div class="card mb-4">
                     <div class="card-body">
-                        <h5 class="card-title">Compétences</h5>
-                        {% if user.skills is empty %}
-                            <p class="card-text">Aucune compétence renseignée.</p>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title">Compétences techniques</h5>
+                            <a href="{{ path('app_profile_edit_skills') }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil me-1"></i> Modifier
+                            </a>
+                        </div>
+                        {% if user.technicalSkills is empty %}
+                            <p class="card-text">Aucune compétence technique renseignée.</p>
                         {% else %}
                             <div class="d-flex flex-wrap gap-2">
-                                {% for skill in user.skills %}
-                                    <span class="badge bg-secondary">{{ skill }}</span>
+                                {% for skill in user.technicalSkills %}
+                                    <span class="badge bg-primary">{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Soft Skills Section -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title">Soft skills</h5>
+                            <a href="{{ path('app_profile_edit_skills') }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil me-1"></i> Modifier
+                            </a>
+                        </div>
+                        {% if user.softSkills is empty %}
+                            <p class="card-text">Aucune soft skill renseignée.</p>
+                        {% else %}
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for skill in user.softSkills %}
+                                    <span class="badge bg-success">{{ skill }}</span>
                                 {% endfor %}
                             </div>
                         {% endif %}
@@ -146,4 +236,49 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+    /* Timeline styles for experience and education sections */
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 25px;
+    }
+    
+    .timeline-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        top: 6px;
+        left: -30px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #4e73df;
+        z-index: 1;
+    }
+    
+    .timeline-item:not(:last-child):before {
+        content: '';
+        position: absolute;
+        top: 18px;
+        left: -24px;
+        width: 1px;
+        height: calc(100% + 15px);
+        background-color: #e9ecef;
+    }
+    
+    .timeline-content {
+        padding-bottom: 8px;
+    }
+</style>
 {% endblock %} 

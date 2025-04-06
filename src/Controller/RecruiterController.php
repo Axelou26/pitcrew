@@ -27,20 +27,8 @@ class RecruiterController extends AbstractController
         JobApplicationRepository $jobApplicationRepository,
         SubscriptionService $subscriptionService
     ): Response {
-        $recruiter = $this->getUser();
-        $activeOffers = $jobOfferRepository->findBy(['recruiter' => $recruiter, 'isActive' => true]);
-        $expiredOffers = $jobOfferRepository->findBy(['recruiter' => $recruiter, 'isActive' => false]);
-        $recentApplications = $jobApplicationRepository->findRecentApplicationsForRecruiter($recruiter, 5);
-        
-        // Récupérer l'abonnement actif
-        $activeSubscription = $subscriptionService->getActiveSubscription($recruiter);
-        
-        return $this->render('recruiter/dashboard.html.twig', [
-            'activeOffers' => $activeOffers,
-            'expiredOffers' => $expiredOffers,
-            'recentApplications' => $recentApplications,
-            'activeSubscription' => $activeSubscription
-        ]);
+        // Au lieu de rendre un template qui n'existe pas, on redirige vers le dashboard général
+        return $this->redirectToRoute('app_dashboard');
     }
 
     #[Route('/job-offer/new', name: 'app_recruiter_job_offer_new')]

@@ -163,4 +163,37 @@ class PostRepository extends ServiceEntityRepository
         
         return $qb->getQuery()->getResult();
     }
+
+    /**
+     * Compte le nombre de posts qui utilisent un hashtag spécifique
+     */
+    public function countByHashtag(Hashtag $hashtag): int
+    {
+        return $this->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->innerJoin('p.hashtags', 'h')
+            ->where('h.id = :hashtagId')
+            ->setParameter('hashtagId', $hashtag->getId())
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Trouve les posts récents qui contiennent des hashtags (à partir d'une date donnée)
+     * 
+     * @param \DateTimeInterface $fromDate Date à partir de laquelle chercher
+     * @return Post[] Posts trouvés
+     */
+    public function findRecentPostsWithHashtags(\DateTimeInterface $fromDate): array
+    {
+        return $this->createQueryBuilder('p')
+            ->leftJoin('p.hashtags', 'h')
+            ->leftJoin('p.author', 'a')
+            ->where('p.createdAt >= :fromDate')
+            ->andWhere('p.hashtags IS NOT EMPTY')
+            ->setParameter('fromDate', $fromDate)
+            ->orderBy('p.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 } 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace DoctrineMigrations;
+namespace App\Migrations;
 
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
@@ -11,35 +11,27 @@ final class Version20240701000001 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Create job_offer table';
+        return 'Add optional_skills column to job_offer table';
     }
 
     public function up(Schema $schema): void
     {
-        // Create job_offer table if it doesn't exist
-        $this->addSql('CREATE TABLE IF NOT EXISTS job_offer (
-            id INT AUTO_INCREMENT NOT NULL,
-            recruiter_id INT NOT NULL,
-            title VARCHAR(255) NOT NULL,
-            description LONGTEXT NOT NULL,
-            contract_type VARCHAR(50) NOT NULL,
-            location VARCHAR(255) NOT NULL,
-            salary INT DEFAULT NULL,
-            required_skills JSON NOT NULL,
-            expires_at DATE DEFAULT NULL,
-            is_active TINYINT(1) NOT NULL,
-            created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\',
-            INDEX IDX_288A3A4E156BE243 (recruiter_id),
-            PRIMARY KEY(id)
-        ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
+        // Add the optional_skills column as JSON
+        $this->addSql('ALTER TABLE job_offer ADD optional_skills JSON DEFAULT NULL');
         
-        // Add foreign key constraint
-        $this->addSql('ALTER TABLE job_offer ADD CONSTRAINT FK_288A3A4E156BE243 FOREIGN KEY (recruiter_id) REFERENCES user (id)');
+        // Set default empty array for all existing records
+        $this->addSql('UPDATE job_offer SET optional_skills = \'[]\'');
+        
+        // Add a new column for the application deadline
+        $this->addSql('ALTER TABLE job_offer ADD application_deadline DATE DEFAULT NULL');
     }
 
     public function down(Schema $schema): void
     {
-        // Drop job_offer table
-        $this->addSql('DROP TABLE job_offer');
+        // Drop the optional_skills column
+        $this->addSql('ALTER TABLE job_offer DROP optional_skills');
+        
+        // Drop the application_deadline column
+        $this->addSql('ALTER TABLE job_offer DROP application_deadline');
     }
 } 

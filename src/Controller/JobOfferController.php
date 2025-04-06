@@ -7,6 +7,7 @@ use App\Form\JobOfferType;
 use App\Repository\JobOfferRepository;
 use App\Repository\FavoriteRepository;
 use App\Service\SubscriptionService;
+use App\Service\FileUploader;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -62,16 +63,13 @@ class JobOfferController extends AbstractController
 
     #[Route('/new', name: 'app_job_offer_new', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_RECRUTEUR')]
-    public function new(Request $request, EntityManagerInterface $entityManager, SubscriptionService $subscriptionService): Response
-    {
-        // Vérifier si l'utilisateur a un abonnement qui permet de publier des offres
-        // Commenté pour permettre de tester la création d'offres
-        /*
-        if (!$subscriptionService->canPostJobOffer($this->getUser())) {
-            $this->addFlash('error', 'Votre abonnement ne vous permet pas de publier d\'autres offres d\'emploi. Veuillez mettre à niveau votre abonnement.');
-            return $this->redirectToRoute('app_subscription_plans');
-        }
-        */
+    #[IsGranted('CREATE_JOB_OFFER')]
+    public function new(
+        Request $request, 
+        EntityManagerInterface $entityManager, 
+        SubscriptionService $subscriptionService,
+        FileUploader $fileUploader
+    ): Response {
         
         $jobOffer = new JobOffer();
         $jobOffer->setRecruiter($this->getUser());
@@ -83,36 +81,22 @@ class JobOfferController extends AbstractController
             // Gestion du logo
             $logoFile = $form->get('logoFile')->getData();
             if ($logoFile) {
-                $originalLogoFilename = pathinfo($logoFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $safeLogoFilename = $this->slugify($originalLogoFilename);
-                $newLogoFilename = $safeLogoFilename.'-'.uniqid().'.'.$logoFile->guessExtension();
-
                 try {
-                    $logoFile->move(
-                        $this->getParameter('logos_directory'),
-                        $newLogoFilename
-                    );
+                    $newLogoFilename = $fileUploader->upload($logoFile, 'logos_directory');
                     $jobOffer->setLogoUrl($newLogoFilename);
                 } catch (\Exception $e) {
-                    $this->addFlash('error', 'Une erreur est survenue lors de l\'upload du logo.');
+                    $this->addFlash('error', $e->getMessage());
                 }
             }
 
             // Gestion de l'image
             $imageFile = $form->get('imageFile')->getData();
             if ($imageFile) {
-                $originalImageFilename = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $safeImageFilename = $this->slugify($originalImageFilename);
-                $newImageFilename = $safeImageFilename.'-'.uniqid().'.'.$imageFile->guessExtension();
-
                 try {
-                    $imageFile->move(
-                        $this->getParameter('job_images_directory'),
-                        $newImageFilename
-                    );
+                    $newImageFilename = $fileUploader->upload($imageFile, 'job_images_directory');
                     $jobOffer->setImage($newImageFilename);
                 } catch (\Exception $e) {
-                    $this->addFlash('error', 'Une erreur est survenue lors de l\'upload de l\'image.');
+                    $this->addFlash('error', $e->getMessage());
                 }
             }
             
@@ -159,8 +143,13 @@ class JobOfferController extends AbstractController
 
     #[Route('/{id}/edit', name: 'app_job_offer_edit', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_RECRUTEUR')]
-    public function edit(Request $request, string $id, JobOfferRepository $jobOfferRepository, EntityManagerInterface $entityManager): Response
-    {
+    public function edit(
+        Request $request, 
+        string $id, 
+        JobOfferRepository $jobOfferRepository, 
+        EntityManagerInterface $entityManager,
+        FileUploader $fileUploader
+    ): Response {
         $jobOffer = $jobOfferRepository->find($id);
         
         if (!$jobOffer) {
@@ -179,52 +168,30 @@ class JobOfferController extends AbstractController
             // Gestion du logo
             $logoFile = $form->get('logoFile')->getData();
             if ($logoFile) {
-                $originalLogoFilename = pathinfo($logoFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $safeLogoFilename = $this->slugify($originalLogoFilename);
-                $newLogoFilename = $safeLogoFilename.'-'.uniqid().'.'.$logoFile->guessExtension();
-
                 try {
-                    // Supprimer l'ancien logo si présent
-                    if ($jobOffer->getLogoUrl()) {
-                        $oldLogoPath = $this->getParameter('logos_directory').'/'.$jobOffer->getLogoUrl();
-                        if (file_exists($oldLogoPath)) {
-                            unlink($oldLogoPath);
-                        }
-                    }
-                    
-                    $logoFile->move(
-                        $this->getParameter('logos_directory'),
-                        $newLogoFilename
+                    $newLogoFilename = $fileUploader->upload(
+                        $logoFile, 
+                        'logos_directory', 
+                        $jobOffer->getLogoUrl()
                     );
                     $jobOffer->setLogoUrl($newLogoFilename);
                 } catch (\Exception $e) {
-                    $this->addFlash('error', 'Une erreur est survenue lors de l\'upload du logo.');
+                    $this->addFlash('error', $e->getMessage());
                 }
             }
 
             // Gestion de l'image
             $imageFile = $form->get('imageFile')->getData();
             if ($imageFile) {
-                $originalImageFilename = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $safeImageFilename = $this->slugify($originalImageFilename);
-                $newImageFilename = $safeImageFilename.'-'.uniqid().'.'.$imageFile->guessExtension();
-
                 try {
-                    // Supprimer l'ancienne image si présente
-                    if ($jobOffer->getImage()) {
-                        $oldImagePath = $this->getParameter('job_images_directory').'/'.$jobOffer->getImage();
-                        if (file_exists($oldImagePath)) {
-                            unlink($oldImagePath);
-                        }
-                    }
-                    
-                    $imageFile->move(
-                        $this->getParameter('job_images_directory'),
-                        $newImageFilename
+                    $newImageFilename = $fileUploader->upload(
+                        $imageFile, 
+                        'job_images_directory', 
+                        $jobOffer->getImage()
                     );
                     $jobOffer->setImage($newImageFilename);
                 } catch (\Exception $e) {
-                    $this->addFlash('error', 'Une erreur est survenue lors de l\'upload de l\'image.');
+                    $this->addFlash('error', $e->getMessage());
                 }
             }
             
@@ -286,13 +253,5 @@ class JobOfferController extends AbstractController
             'location' => $location,
             'contract_type' => $contractType,
         ]);
-    }
-
-    /**
-     * Convertit une chaîne en format slug sécurisé pour les noms de fichiers
-     */
-    private function slugify(string $string): string
-    {
-        return strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $string), '-'));
     }
 } 

@@ -377,15 +377,6 @@
                                 <a href="{{ path('app_interviews_for_job', {'id': offer.id}) }}" class="btn btn-info text-white">
                                     <i class="bi bi-camera-video me-2"></i> Gérer les entretiens
                                 </a>
-                                {% if offer.isActive %}
-                                    <a href="#" class="btn btn-warning">
-                                        <i class="bi bi-pause-circle me-2"></i> Désactiver l'offre
-                                    </a>
-                                {% else %}
-                                    <a href="#" class="btn btn-success">
-                                        <i class="bi bi-play-circle me-2"></i> Activer l'offre
-                                    </a>
-                                {% endif %}
                                 <form action="{{ path('app_job_offer_delete', {'id': offer.id}) }}" method="post" 
                                       onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette offre ?')">
                                     <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ offer.id) }}">

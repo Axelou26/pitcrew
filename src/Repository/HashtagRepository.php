@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Hashtag;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Psr\Cache\CacheItemPoolInterface;
 
 /**
  * @extends ServiceEntityRepository<Hashtag>
@@ -16,9 +17,12 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class HashtagRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    private $cache;
+
+    public function __construct(ManagerRegistry $registry, CacheItemPoolInterface $cache)
     {
         parent::__construct($registry, Hashtag::class);
+        $this->cache = $cache;
     }
 
     //    /**
@@ -71,6 +75,41 @@ class HashtagRepository extends ServiceEntityRepository
      */
     public function findTrending(int $limit = 10): array
     {
+        // Essayer de récupérer les hashtags depuis le cache
+        $cacheItem = $this->cache->getItem('trending_hashtags');
+        
+        if ($cacheItem->isHit()) {
+            // Si présent en cache, récupérer les IDs et charger les hashtags
+            $hashtagIds = $cacheItem->get();
+            
+            if (!empty($hashtagIds)) {
+                $hashtags = $this->createQueryBuilder('h')
+                    ->where('h.id IN (:hashtagIds)')
+                    ->setParameter('hashtagIds', $hashtagIds)
+                    ->getQuery()
+                    ->getResult();
+                
+                // Réorganiser dans le même ordre que les IDs
+                $hashtagsMap = [];
+                foreach ($hashtags as $hashtag) {
+                    $hashtagsMap[$hashtag->getId()] = $hashtag;
+                }
+                
+                $orderedHashtags = [];
+                foreach ($hashtagIds as $id) {
+                    if (isset($hashtagsMap[$id])) {
+                        $orderedHashtags[] = $hashtagsMap[$id];
+                    }
+                }
+                
+                // Si on a des hashtags, les retourner
+                if (!empty($orderedHashtags)) {
+                    return array_slice($orderedHashtags, 0, $limit);
+                }
+            }
+        }
+        
+        // Sinon, faire la requête normale
         return $this->createQueryBuilder('h')
             ->orderBy('h.usageCount', 'DESC')
             ->setMaxResults($limit)

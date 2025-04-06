@@ -11,18 +11,22 @@ use App\Entity\PostComment;
 use App\Entity\PostShare;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Psr\Log\LoggerInterface;
 
 class NotificationService
 {
     private EntityManagerInterface $entityManager;
     private UrlGeneratorInterface $urlGenerator;
+    private LoggerInterface $logger;
 
     public function __construct(
         EntityManagerInterface $entityManager,
-        UrlGeneratorInterface $urlGenerator
+        UrlGeneratorInterface $urlGenerator,
+        LoggerInterface $logger
     ) {
         $this->entityManager = $entityManager;
         $this->urlGenerator = $urlGenerator;
+        $this->logger = $logger;
     }
 
     /**
@@ -119,123 +123,238 @@ class NotificationService
     }
 
     /**
-     * Notifie l'auteur d'un post quand quelqu'un aime son post
+     * Notifie un utilisateur lorsqu'il est mentionné dans un post
+     * 
+     * @param Post $post Le post contenant la mention
+     * @param User $user L'utilisateur mentionné
+     * @return void
      */
-    public function notifyPostLike(PostLike $postLike): void
+    public function notifyMention(Post $post, User $user): void
     {
-        $post = $postLike->getPost();
-        $postAuthor = $post->getAuthor();
-        $liker = $postLike->getUser();
-        
-        // Ne pas notifier si l'auteur aime son propre post
-        if ($postAuthor->getId() === $liker->getId()) {
+        if ($post->getAuthor() === $user) {
+            // Ne pas notifier l'auteur du post
             return;
         }
-        
-        // Préparer les textes en fonction du type de réaction
-        $reactionLabels = [
-            PostLike::REACTION_LIKE => 'aimé',
-            PostLike::REACTION_CONGRATS => 'félicité pour',
-            PostLike::REACTION_INTERESTING => 'trouvé intéressant',
-            PostLike::REACTION_SUPPORT => 'soutenu',
-            PostLike::REACTION_ENCOURAGING => 'encouragé pour'
-        ];
-        
-        $reactionType = $postLike->getReactionType();
-        $reactionText = $reactionLabels[$reactionType] ?? 'aimé';
-        
-        $title = 'Nouvelle réaction';
-        $message = sprintf(
-            '%s a %s votre post "%s"',
-            $liker->getFullName(),
-            $reactionText,
-            substr($post->getContent(), 0, 30) . (strlen($post->getContent()) > 30 ? '...' : '')
-        );
-        
-        $link = $this->urlGenerator->generate(
-            'app_post_show',
-            ['id' => $post->getId()],
-            UrlGeneratorInterface::ABSOLUTE_URL
-        );
 
-        $this->createNotification($postAuthor, $title, $message, $link, 'reaction');
+        try {
+            $notification = new Notification();
+            $notification->setUser($user);
+            $notification->setType(Notification::TYPE_MENTION);
+            $notification->setEntityType('post');
+            $notification->setEntityId($post->getId());
+            $notification->setActorId($post->getAuthor()->getId());
+            
+            // Définir le titre et le message
+            $notification->setTitle('Nouvelle mention');
+            $notification->setMessage('Vous a mentionné dans une publication');
+            $notification->setIsRead(false);
+            
+            // Générer le lien vers le post
+            $link = $this->urlGenerator->generate(
+                'app_post_show',
+                ['id' => $post->getId()],
+                UrlGeneratorInterface::ABSOLUTE_URL
+            );
+            $notification->setLink($link);
+            
+            $this->entityManager->persist($notification);
+            $this->entityManager->flush();
+            
+            $this->logger->info('Notification de mention créée', [
+                'user_id' => $user->getId(),
+                'post_id' => $post->getId()
+            ]);
+        } catch (\Throwable $e) {
+            $this->logger->error('Erreur lors de la création d\'une notification de mention', [
+                'error' => $e->getMessage(),
+                'user_id' => $user->getId(),
+                'post_id' => $post->getId()
+            ]);
+        }
     }
 
     /**
-     * Notifie l'auteur d'un post quand quelqu'un commente son post
+     * Notifie l'auteur d'un post qu'un utilisateur a aimé son post
+     * 
+     * @param PostLike $like Le like
+     * @return void
+     */
+    public function notifyPostLike(PostLike $like): void
+    {
+        $post = $like->getPost();
+        $author = $post->getAuthor();
+        $user = $like->getUser();
+        
+        if ($author === $user) {
+            // Ne pas notifier l'auteur s'il aime son propre post
+            return;
+        }
+        
+        try {
+            $notification = new Notification();
+            $notification->setUser($author);
+            $notification->setType(Notification::TYPE_LIKE);
+            $notification->setEntityType('post');
+            $notification->setEntityId($post->getId());
+            $notification->setActorId($user->getId());
+            
+            // Titre standard
+            $notification->setTitle('Nouvelle réaction');
+            
+            // Message personnalisé en fonction du type de réaction
+            $reactionType = $like->getReactionType();
+            $message = 'A réagi à votre publication';
+            
+            switch ($reactionType) {
+                case PostLike::REACTION_LIKE:
+                    $message = 'A aimé votre publication';
+                    break;
+                case PostLike::REACTION_CONGRATS:
+                    $message = 'A félicité votre publication';
+                    break;
+                case PostLike::REACTION_INTERESTING:
+                    $message = 'Trouve votre publication intéressante';
+                    break;
+                case PostLike::REACTION_SUPPORT:
+                    $message = 'Soutient votre publication';
+                    break;
+                case PostLike::REACTION_ENCOURAGING:
+                    $message = 'Encourage votre publication';
+                    break;
+            }
+            
+            $notification->setMessage($message);
+            $notification->setIsRead(false);
+            
+            // Générer le lien vers le post
+            $link = $this->urlGenerator->generate(
+                'app_post_show',
+                ['id' => $post->getId()],
+                UrlGeneratorInterface::ABSOLUTE_URL
+            );
+            $notification->setLink($link);
+            
+            $this->entityManager->persist($notification);
+            $this->entityManager->flush();
+            
+            $this->logger->info('Notification de like créée', [
+                'post_id' => $post->getId(),
+                'reaction_type' => $reactionType
+            ]);
+        } catch (\Throwable $e) {
+            $this->logger->error('Erreur lors de la création d\'une notification de like', [
+                'error' => $e->getMessage(),
+                'post_id' => $post->getId()
+            ]);
+        }
+    }
+
+    /**
+     * Notifie l'auteur d'un post qu'un utilisateur a commenté son post
+     * 
+     * @param PostComment $comment Le commentaire
+     * @return void
      */
     public function notifyPostComment(PostComment $comment): void
     {
         $post = $comment->getPost();
-        $postAuthor = $post->getAuthor();
-        $commenter = $comment->getAuthor();
+        $author = $post->getAuthor();
+        $commentAuthor = $comment->getAuthor();
         
-        // Ne pas notifier si l'auteur commente son propre post
-        if ($postAuthor->getId() === $commenter->getId()) {
+        if ($author === $commentAuthor) {
+            // Ne pas notifier l'auteur s'il commente son propre post
             return;
         }
         
-        $title = 'Nouveau commentaire';
-        $message = sprintf(
-            '%s a commenté votre post "%s"',
-            $commenter->getFullName(),
-            substr($post->getContent(), 0, 30) . (strlen($post->getContent()) > 30 ? '...' : '')
-        );
-        
-        $link = $this->urlGenerator->generate(
-            'app_post_show',
-            ['id' => $post->getId()],
-            UrlGeneratorInterface::ABSOLUTE_URL
-        ) . '#comment-' . $comment->getId();
-
-        $this->createNotification($postAuthor, $title, $message, $link, 'comment');
-        
-        // Si c'est une réponse à un commentaire, notifier aussi l'auteur du commentaire parent
-        if ($comment->getParent() && $comment->getParent()->getAuthor()->getId() !== $commenter->getId()) {
-            $parentAuthor = $comment->getParent()->getAuthor();
+        try {
+            $notification = new Notification();
+            $notification->setUser($author);
+            $notification->setType(Notification::TYPE_COMMENT);
+            $notification->setEntityType('post');
+            $notification->setEntityId($post->getId());
+            $notification->setActorId($commentAuthor->getId());
             
-            // Ne pas notifier deux fois l'auteur du post s'il a aussi écrit le commentaire parent
-            if ($parentAuthor->getId() !== $postAuthor->getId()) {
-                $title = 'Nouvelle réponse';
-                $message = sprintf(
-                    '%s a répondu à votre commentaire sur le post "%s"',
-                    $commenter->getFullName(),
-                    substr($post->getContent(), 0, 30) . (strlen($post->getContent()) > 30 ? '...' : '')
-                );
-                
-                $this->createNotification($parentAuthor, $title, $message, $link, 'comment');
-            }
+            // Définir le titre et le message
+            $notification->setTitle('Nouveau commentaire');
+            $notification->setMessage('A commenté votre publication');
+            $notification->setIsRead(false);
+            
+            // Générer le lien vers le post
+            $link = $this->urlGenerator->generate(
+                'app_post_show',
+                ['id' => $post->getId()],
+                UrlGeneratorInterface::ABSOLUTE_URL
+            );
+            $notification->setLink($link);
+            
+            $this->entityManager->persist($notification);
+            $this->entityManager->flush();
+            
+            $this->logger->info('Notification de commentaire créée', [
+                'post_id' => $post->getId(),
+                'comment_id' => $comment->getId()
+            ]);
+        } catch (\Throwable $e) {
+            $this->logger->error('Erreur lors de la création d\'une notification de commentaire', [
+                'error' => $e->getMessage(),
+                'post_id' => $post->getId(),
+                'comment_id' => $comment->getId()
+            ]);
         }
     }
 
     /**
-     * Notifie l'auteur d'un post quand quelqu'un partage son post
+     * Notifie l'auteur d'un post qu'un utilisateur a partagé son post
+     * 
+     * @param PostShare $share Le partage
+     * @return void
      */
     public function notifyPostShare(PostShare $share): void
     {
         $post = $share->getPost();
-        $postAuthor = $post->getAuthor();
-        $sharer = $share->getUser();
+        $author = $post->getAuthor();
+        $shareUser = $share->getUser();
         
-        // Ne pas notifier si l'auteur partage son propre post
-        if ($postAuthor->getId() === $sharer->getId()) {
+        if ($author === $shareUser) {
+            // Ne pas notifier l'auteur s'il partage son propre post
             return;
         }
         
-        $title = 'Nouveau partage';
-        $message = sprintf(
-            '%s a partagé votre post "%s"',
-            $sharer->getFullName(),
-            substr($post->getContent(), 0, 30) . (strlen($post->getContent()) > 30 ? '...' : '')
-        );
-        
-        $link = $this->urlGenerator->generate(
-            'app_post_show',
-            ['id' => $post->getId()],
-            UrlGeneratorInterface::ABSOLUTE_URL
-        );
-
-        $this->createNotification($postAuthor, $title, $message, $link, 'share');
+        try {
+            $notification = new Notification();
+            $notification->setUser($author);
+            $notification->setType(Notification::TYPE_SHARE);
+            $notification->setEntityType('post');
+            $notification->setEntityId($post->getId());
+            $notification->setActorId($shareUser->getId());
+            
+            // Définir le titre et le message
+            $notification->setTitle('Nouveau partage');
+            $notification->setMessage('A partagé votre publication');
+            $notification->setIsRead(false);
+            
+            // Générer le lien vers le post
+            $link = $this->urlGenerator->generate(
+                'app_post_show',
+                ['id' => $post->getId()],
+                UrlGeneratorInterface::ABSOLUTE_URL
+            );
+            $notification->setLink($link);
+            
+            $this->entityManager->persist($notification);
+            $this->entityManager->flush();
+            
+            $this->logger->info('Notification de partage créée', [
+                'post_id' => $post->getId(),
+                'share_id' => $share->getId()
+            ]);
+        } catch (\Throwable $e) {
+            $this->logger->error('Erreur lors de la création d\'une notification de partage', [
+                'error' => $e->getMessage(),
+                'post_id' => $post->getId(),
+                'share_id' => $share->getId()
+            ]);
+        }
     }
 
     /**

@@ -1,0 +1,330 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Détails de matching - {{ applicant.firstName }} {{ applicant.lastName }}{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="mb-4">Détails de matching</h1>
+            
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        {% if applicant.profilePicture %}
+                            <img src="{{ asset('uploads/profile_pictures/' ~ applicant.profilePicture) }}" 
+                                 alt="Photo de {{ applicant.firstName }}" 
+                                 class="rounded-circle me-3"
+                                 style="width: 64px; height: 64px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-secondary text-white rounded-circle d-inline-flex align-items-center justify-content-center me-3"
+                                 style="width: 64px; height: 64px;">
+                                <i class="bi bi-person-fill fs-3"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <div>
+                            <h2 class="h4 mb-1">{{ applicant.firstName }} {{ applicant.lastName }}</h2>
+                            <p class="text-muted mb-0">{{ applicant.jobTitle|default('Pas de titre de poste spécifié') }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Compétences techniques</h5>
+                            {% if applicant.technicalSkills is empty %}
+                                <p class="text-muted">Aucune compétence technique renseignée</p>
+                            {% else %}
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    {% for skill in applicant.technicalSkills %}
+                                        <span class="badge bg-primary">{{ skill }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5>Soft skills</h5>
+                            {% if applicant.softSkills is empty %}
+                                <p class="text-muted">Aucune soft skill renseignée</p>
+                            {% else %}
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    {% for skill in applicant.softSkills %}
+                                        <span class="badge bg-success">{{ skill }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Section Expérience et Formation -->
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <h5>Expérience professionnelle</h5>
+                            {% if applicant.workExperience is empty %}
+                                <p class="text-muted">Aucune expérience détaillée renseignée</p>
+                            {% else %}
+                                <div class="timeline">
+                                    {% for experience in applicant.workExperience|slice(0, 3) %}
+                                        <div class="timeline-item">
+                                            <div class="timeline-marker"></div>
+                                            <div class="timeline-content">
+                                                <h6 class="mb-1">{{ experience.title }} - {{ experience.company }}</h6>
+                                                <p class="text-muted small mb-1">
+                                                    {{ experience.startDate }} - {{ experience.endDate == 'present' ? 'Actuel' : experience.endDate }}
+                                                    {% if experience.location %}
+                                                        • {{ experience.location }}
+                                                    {% endif %}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                    
+                                    {% if applicant.workExperience|length > 3 %}
+                                        <div class="text-center mt-2">
+                                            <a href="{{ path('app_recruiter_candidate_profile', {'id': applicant.id}) }}" class="small">
+                                                Voir toutes les expériences ({{ applicant.workExperience|length }})
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5>Formation</h5>
+                            {% if applicant.educationHistory is empty %}
+                                <p class="text-muted">Aucune formation détaillée renseignée</p>
+                            {% else %}
+                                <div class="timeline">
+                                    {% for education in applicant.educationHistory|slice(0, 3) %}
+                                        <div class="timeline-item">
+                                            <div class="timeline-marker bg-info"></div>
+                                            <div class="timeline-content">
+                                                <h6 class="mb-1">{{ education.degree }}</h6>
+                                                <p class="text-muted small mb-1">
+                                                    {{ education.institution }}
+                                                    ({{ education.startDate }} - {{ education.endDate == 'present' ? 'Actuel' : education.endDate }})
+                                                </p>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                    
+                                    {% if applicant.educationHistory|length > 3 %}
+                                        <div class="text-center mt-2">
+                                            <a href="{{ path('app_recruiter_candidate_profile', {'id': applicant.id}) }}" class="small">
+                                                Voir toutes les formations ({{ applicant.educationHistory|length }})
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if compatibilityScore %}
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="h5 mb-0">Compatibilité avec "{{ jobOffer.title }}"</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row align-items-center mb-4">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <div class="position-relative me-4">
+                                        <svg viewBox="0 0 36 36" class="circular-chart">
+                                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                            <path class="circle" stroke-dasharray="{{ compatibilityScore.score }}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                            <text x="18" y="20.35" class="percentage">{{ compatibilityScore.score }}%</text>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h4 class="h6 mb-1">Score global</h4>
+                                        <p class="mb-0 text-{{ compatibilityScore.score >= 75 ? 'success' : (compatibilityScore.score >= 50 ? 'primary' : 'warning') }}">
+                                            {{ compatibilityScore.score >= 75 ? 'Excellent' : (compatibilityScore.score >= 50 ? 'Bon' : 'Moyen') }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="{{ path('app_job_offer_show', {'id': jobOffer.id}) }}" class="btn btn-outline-primary">
+                                    <i class="bi bi-eye me-2"></i> Voir l'offre
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <h4 class="h5 mb-3">Détails par catégorie</h4>
+                        <div class="row">
+                            {% for reason in compatibilityScore.reasons %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-header bg-light">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h5 class="h6 mb-0">{{ reason.category }}</h5>
+                                                <span class="badge {{ reason.score / reason.maxScore >= 0.7 ? 'bg-success' : (reason.score / reason.maxScore >= 0.4 ? 'bg-primary' : 'bg-warning') }}">
+                                                    {{ reason.score }}/{{ reason.maxScore }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            {% if reason.matches is defined and reason.matches is not empty %}
+                                                <h6 class="small mb-2">Correspondances:</h6>
+                                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                                    {% for match in reason.matches %}
+                                                        <span class="badge bg-light text-dark">{{ match }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                            
+                                            {% if reason.details is defined and reason.details is not empty %}
+                                                <h6 class="small mb-2">Détails:</h6>
+                                                <ul class="small mb-0">
+                                                    {% for detail in reason.details %}
+                                                        <li>{{ detail }}</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="h5 mb-0">Meilleures offres pour ce candidat</h3>
+                </div>
+                <div class="card-body">
+                    {% if bestOffers is empty %}
+                        <p class="text-muted">Aucune offre d'emploi compatible trouvée pour ce candidat.</p>
+                    {% else %}
+                        <div class="table-responsive">
+                            <table class="table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Offre</th>
+                                        <th>Score</th>
+                                        <th>Localisation</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for offer in bestOffers %}
+                                        <tr>
+                                            <td>
+                                                <p class="mb-0 fw-semibold">{{ offer.jobOffer.title }}</p>
+                                                <small class="text-muted">{{ offer.jobOffer.contractType }}</small>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="progress me-2" style="width: 100px; height: 8px;">
+                                                        <div class="progress-bar {{ offer.score >= 75 ? 'bg-success' : (offer.score >= 50 ? 'bg-primary' : 'bg-warning') }}" 
+                                                             role="progressbar" 
+                                                             style="width: {{ offer.score }}%" 
+                                                             aria-valuenow="{{ offer.score }}" 
+                                                             aria-valuemin="0" 
+                                                             aria-valuemax="100"></div>
+                                                    </div>
+                                                    <span>{{ offer.score }}%</span>
+                                                </div>
+                                            </td>
+                                            <td>{{ offer.jobOffer.location }}</td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{{ path('app_job_offer_show', {'id': offer.jobOffer.id}) }}" class="btn btn-outline-secondary">
+                                                        <i class="bi bi-eye"></i>
+                                                    </a>
+                                                    <a href="{{ path('app_matching_candidate_details', {'id': applicant.id, 'job_offer': offer.jobOffer.id}) }}" class="btn btn-outline-primary">
+                                                        <i class="bi bi-graph-up"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+    .circular-chart {
+        display: block;
+        height: 80px;
+        width: 80px;
+    }
+    
+    .circle-bg {
+        fill: none;
+        stroke: #eee;
+        stroke-width: 3.8;
+    }
+    
+    .circle {
+        fill: none;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke: #4285F4;
+    }
+    
+    .circular-chart .circle {
+        stroke: #4285F4;
+    }
+    
+    .percentage {
+        fill: #333;
+        font-family: sans-serif;
+        font-size: 0.5em;
+        text-anchor: middle;
+    }
+    
+    /* Timeline styles */
+    .timeline {
+        position: relative;
+        padding-left: 20px;
+        margin-bottom: 0;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 15px;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        top: 5px;
+        left: -10px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #4285F4;
+        z-index: 1;
+    }
+    
+    .timeline-marker.bg-info {
+        background-color: #17a2b8;
+    }
+    
+    .timeline-item:not(:last-child):before {
+        content: '';
+        position: absolute;
+        top: 15px;
+        left: -5px;
+        width: 1px;
+        height: calc(100% + 5px);
+        background-color: #e9ecef;
+    }
+</style>
+{% endblock %} 

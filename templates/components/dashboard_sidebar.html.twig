@@ -14,7 +14,7 @@
 {% if is_granted('ROLE_RECRUTEUR') %}
     {% set dashboardLinks = dashboardLinks|merge([
         {
-            'route': 'app_job_offer_index',
+            'route': 'app_dashboard_offers',
             'icon': 'fas fa-briefcase',
             'label': 'Mes offres d\'emploi'
         },
@@ -58,7 +58,7 @@
             'label': 'Mes entretiens'
         },
         {
-            'route': 'app_favorite_index',
+            'route': 'app_favorites_index',
             'icon': 'fas fa-bookmark',
             'label': 'Mes favoris'
         },
@@ -86,7 +86,7 @@
         'label': 'Messages'
     },
     {
-        'route': 'app_post_index',
+        'route': 'app_dashboard_posts',
         'icon': 'fas fa-newspaper',
         'label': 'Publications'
     }

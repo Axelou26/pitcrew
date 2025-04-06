@@ -3,53 +3,68 @@
 {% block title %}Mes posts{% endblock %}
 
 {% block body %}
-<div class="container py-4">
-    <div class="row">
+<div class="container-fluid py-4">
+    <div class="row g-4">
         <!-- Sidebar -->
-        <div class="col-md-3">
-            <div class="card mb-4">
-                <div class="card-body text-center">
+        <div class="col-lg-3 col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center p-4">
                     {% if app.user.profilePicture %}
-                        <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}" 
-                             alt="{{ app.user.fullName }}"
-                             class="rounded-circle mb-3"
-                             style="width: 100px; height: 100px; object-fit: cover;">
+                        <div class="position-relative d-inline-block mb-3">
+                            <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}" 
+                                 alt="{{ app.user.fullName }}"
+                                 class="rounded-circle border border-3 border-white shadow"
+                                 style="width: 120px; height: 120px; object-fit: cover;">
+                            <span class="position-absolute bottom-0 end-0 bg-success rounded-circle p-1 border border-2 border-white" style="width: 20px; height: 20px;"></span>
+                        </div>
                     {% else %}
-                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
-                             style="width: 100px; height: 100px;">
-                            <i class="bi bi-person display-4 text-muted"></i>
+                        <div class="position-relative d-inline-block mb-3">
+                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center border border-3 border-white shadow mx-auto"
+                                 style="width: 120px; height: 120px;">
+                                <i class="bi bi-person-fill display-5 text-secondary"></i>
+                            </div>
+                            <span class="position-absolute bottom-0 end-0 bg-success rounded-circle p-1 border border-2 border-white" style="width: 20px; height: 20px;"></span>
                         </div>
                     {% endif %}
-                    <h5 class="card-title">{{ app.user.fullName }}</h5>
+                    <h5 class="fw-bold mb-1">{{ app.user.fullName }}</h5>
                     {% if app.user.company %}
-                        <p class="card-text text-muted">{{ app.user.company }}</p>
+                        <p class="text-muted mb-3"><i class="bi bi-building me-1"></i>{{ app.user.company }}</p>
                     {% endif %}
-                    <a href="{{ path('app_profile_edit') }}" class="btn btn-outline-primary btn-sm">
+                    <a href="{{ path('app_profile_edit') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
                         <i class="bi bi-pencil me-1"></i> Modifier le profil
                     </a>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title h6">Navigation</h5>
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
                     <div class="list-group list-group-flush">
-                        <a href="{{ path('app_dashboard') }}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-speedometer2 me-2"></i> Tableau de bord
+                        <a href="{{ path('app_dashboard') }}" class="list-group-item list-group-item-action d-flex align-items-center py-3 px-4">
+                            <i class="bi bi-speedometer2 me-3 text-primary fs-5"></i>
+                            <span>Tableau de bord</span>
                         </a>
-                        <a href="{{ path('app_dashboard_posts') }}" class="list-group-item list-group-item-action active">
-                            <i class="bi bi-file-text me-2"></i> Mes posts
+                        <a href="{{ path('app_dashboard_posts') }}" class="list-group-item list-group-item-action d-flex align-items-center py-3 px-4 active">
+                            <i class="bi bi-file-text me-3 text-primary fs-5"></i>
+                            <span>Mes posts</span>
+                            <span class="badge bg-primary rounded-pill ms-auto">{{ posts|length }}</span>
                         </a>
-                        <a href="{{ path('app_message_index') }}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-chat-dots me-2"></i> Messages
+                        <a href="{{ path('app_message_index') }}" class="list-group-item list-group-item-action d-flex align-items-center py-3 px-4">
+                            <i class="bi bi-chat-dots me-3 text-primary fs-5"></i>
+                            <span>Messages</span>
                         </a>
                         {% if is_granted('ROLE_RECRUTEUR') %}
-                            <a href="{{ path('app_dashboard_offers') }}" class="list-group-item list-group-item-action">
-                                <i class="bi bi-briefcase me-2"></i> Mes offres
+                            <a href="{{ path('app_dashboard_offers') }}" class="list-group-item list-group-item-action d-flex align-items-center py-3 px-4">
+                                <i class="bi bi-briefcase me-3 text-primary fs-5"></i>
+                                <span>Mes offres</span>
                             </a>
                         {% endif %}
-                        <a href="{{ path('app_dashboard_applications') }}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-send me-2"></i> Candidatures
+                        <a href="{{ path('app_dashboard_applications') }}" class="list-group-item list-group-item-action d-flex align-items-center py-3 px-4">
+                            <i class="bi bi-send me-3 text-primary fs-5"></i>
+                            <span>Candidatures</span>
+                        </a>
+                        <a href="{{ path('app_interviews_index') }}" class="list-group-item list-group-item-action d-flex align-items-center py-3 px-4">
+                            <i class="bi bi-camera-video me-3 text-primary fs-5"></i>
+                            <span>Entretiens</span>
                         </a>
                     </div>
                 </div>
@@ -57,64 +72,147 @@
         </div>
 
         <!-- Main Content -->
-        <div class="col-md-9">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Mes posts</h5>
-                    <a href="{{ path('app_post_new') }}" class="btn btn-primary">
-                        <i class="bi bi-plus-lg me-1"></i> Nouveau post
-                    </a>
+        <div class="col-lg-9 col-md-8">
+            <div class="d-flex justify-content-between align-items-center flex-wrap mb-4">
+                <div>
+                    <h2 class="fw-bold mb-1">Mes posts</h2>
+                    <p class="text-muted">Gérez vos publications et analysez leur impact</p>
                 </div>
+                <a href="{{ path('app_post_new') }}" class="btn btn-primary rounded-pill px-4 py-2 d-flex align-items-center">
+                    <i class="bi bi-plus-lg me-2"></i> Nouveau post
+                </a>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="card border-0 bg-primary bg-opacity-10 h-100">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                                <i class="bi bi-file-text text-primary fs-4"></i>
+                            </div>
+                            <div>
+                                <h3 class="fw-bold mb-0">{{ posts|length }}</h3>
+                                <p class="text-muted mb-0">Total des posts</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 bg-success bg-opacity-10 h-100">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+                                <i class="bi bi-graph-up text-success fs-4"></i>
+                            </div>
+                            <div>
+                                <h3 class="fw-bold mb-0">{{ posts|reduce((total, post) => total + post.likesCount, 0) }}</h3>
+                                <p class="text-muted mb-0">Total des j'aimes</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 bg-info bg-opacity-10 h-100">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
+                                <i class="bi bi-chat-dots text-info fs-4"></i>
+                            </div>
+                            <div>
+                                <h3 class="fw-bold mb-0">{{ posts|reduce((total, post) => total + post.commentsCount, 0) }}</h3>
+                                <p class="text-muted mb-0">Total des commentaires</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des posts -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="mb-0 fw-bold">Liste de mes publications</h5>
+                        </div>
+                        <div class="col-auto">
+                            <div class="input-group">
+                                <span class="input-group-text border-end-0 bg-white">
+                                    <i class="bi bi-search text-muted"></i>
+                                </span>
+                                <input type="text" class="form-control border-start-0" id="searchPosts" placeholder="Rechercher un post...">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {% if posts is empty %}
                     <div class="card-body text-center py-5">
-                        <i class="bi bi-file-text display-1 text-muted mb-3"></i>
-                        <h6 class="text-muted">Vous n'avez pas encore créé de post</h6>
-                        <a href="{{ path('app_post_new') }}" class="btn btn-primary mt-3">
-                            <i class="bi bi-plus-lg me-1"></i> Créer un post
-                        </a>
+                        <div class="py-5">
+                            <div class="mb-4">
+                                <i class="bi bi-file-earmark-text display-1 text-muted"></i>
+                            </div>
+                            <h5 class="text-muted mb-3">Vous n'avez pas encore créé de post</h5>
+                            <p class="text-muted mb-4">Commencez à partager votre expertise avec la communauté PitCrew</p>
+                            <a href="{{ path('app_post_new') }}" class="btn btn-primary rounded-pill px-4">
+                                <i class="bi bi-plus-lg me-2"></i> Créer mon premier post
+                            </a>
+                        </div>
                     </div>
                 {% else %}
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead>
+                        <table class="table table-hover align-middle mb-0" id="postsTable">
+                            <thead class="table-light">
                                 <tr>
-                                    <th>Titre</th>
-                                    <th>Date</th>
-                                    <th>J'aimes</th>
-                                    <th>Commentaires</th>
-                                    <th>Actions</th>
+                                    <th scope="col" class="fw-medium">Post</th>
+                                    <th scope="col" class="fw-medium text-center">Date</th>
+                                    <th scope="col" class="fw-medium text-center">Likes</th>
+                                    <th scope="col" class="fw-medium text-center">Commentaires</th>
+                                    <th scope="col" class="fw-medium text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for post in posts %}
                                     <tr>
                                         <td>
-                                            <a href="{{ path('app_post_show', {'id': post.id}) }}" class="text-decoration-none">
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <h6 class="mb-1">{{ post.title }}</h6>
-                                                    <small class="text-muted">{{ post.createdAt|date('d/m/Y') }}</small>
+                                            <div class="d-flex align-items-center">
+                                                {% if post.image %}
+                                                    <div class="flex-shrink-0 me-3">
+                                                        <img src="{{ asset('uploads/posts/' ~ post.image) }}" 
+                                                            alt="Post image" 
+                                                            class="rounded" 
+                                                            style="width: 60px; height: 60px; object-fit: cover;">
+                                                    </div>
+                                                {% endif %}
+                                                <div class="flex-grow-1 {% if not post.image %}ms-3{% endif %}">
+                                                    <h6 class="mb-1">{{ post.title ?: 'Sans titre' }}</h6>
+                                                    <p class="text-muted small mb-0">
+                                                        {% if post.content|length > 80 %}
+                                                            {{ post.content|slice(0, 80) }}...
+                                                        {% else %}
+                                                            {{ post.content }}
+                                                        {% endif %}
+                                                    </p>
                                                 </div>
-                                                <p class="mb-1">
-                                                    {% if post.content|length > 150 %}
-                                                        {{ post.content|slice(0, 150) }}...
-                                                    {% else %}
-                                                        {{ post.content }}
-                                                    {% endif %}
-                                                </p>
-                                            </a>
+                                            </div>
                                         </td>
-                                        <td>{{ post.createdAt|date('d/m/Y') }}</td>
-                                        <td>{{ post.likesCount }}</td>
-                                        <td>{{ post.commentsCount }}</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-light text-dark">{{ post.createdAt|date('d/m/Y') }}</span>
+                                            <div class="small text-muted">{{ post.createdAt|date('H:i') }}</div>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-primary rounded-pill px-3 py-2">{{ post.likesCount }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-info rounded-pill px-3 py-2">{{ post.commentsCount }}</span>
+                                        </td>
                                         <td>
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="{{ path('app_post_show', {'id': post.id}) }}" class="btn btn-outline-primary">
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <a href="{{ path('app_post_show', {'id': post.id}) }}" class="btn btn-sm btn-outline-primary rounded-circle" data-bs-toggle="tooltip" title="Voir le post">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
-                                                <a href="{{ path('app_post_edit', {'id': post.id}) }}" class="btn btn-outline-secondary">
+                                                <a href="{{ path('app_post_edit', {'id': post.id}) }}" class="btn btn-sm btn-outline-secondary rounded-circle" data-bs-toggle="tooltip" title="Modifier">
                                                     <i class="bi bi-pencil"></i>
                                                 </a>
-                                                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ post.id }}">
+                                                <button type="button" class="btn btn-sm btn-outline-danger rounded-circle" data-bs-toggle="modal" data-bs-target="#deleteModal{{ post.id }}" data-bs-toggle="tooltip" title="Supprimer">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </div>
@@ -123,20 +221,26 @@
                                     
                                     <!-- Modal de confirmation de suppression -->
                                     <div class="modal fade" id="deleteModal{{ post.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ post.id }}" aria-hidden="true">
-                                        <div class="modal-dialog">
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title" id="deleteModalLabel{{ post.id }}">Confirmer la suppression</h5>
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content border-0 shadow">
+                                                <div class="modal-header border-0">
+                                                    <h5 class="modal-title fw-bold" id="deleteModalLabel{{ post.id }}">Confirmer la suppression</h5>
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                 </div>
                                                 <div class="modal-body">
-                                                    Êtes-vous sûr de vouloir supprimer le post "{{ post.title }}" ? Cette action est irréversible.
+                                                    <div class="text-center mb-4">
+                                                        <div class="rounded-circle bg-danger bg-opacity-10 p-3 d-inline-block mb-3">
+                                                            <i class="bi bi-exclamation-triangle text-danger fs-1"></i>
+                                                        </div>
+                                                        <h5>Êtes-vous sûr de vouloir supprimer ce post ?</h5>
+                                                        <p class="text-muted">Cette action est irréversible et supprimera définitivement votre publication "{{ post.title ?: 'Sans titre' }}".</p>
+                                                    </div>
                                                 </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                <div class="modal-footer border-0 pt-0">
+                                                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Annuler</button>
                                                     <form method="post" action="{{ path('app_post_delete', {'id': post.id}) }}">
                                                         <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ post.id) }}">
-                                                        <button type="submit" class="btn btn-danger">Supprimer</button>
+                                                        <button type="submit" class="btn btn-danger rounded-pill px-4">Supprimer</button>
                                                     </form>
                                                 </div>
                                             </div>
@@ -151,4 +255,36 @@
         </div>
     </div>
 </div>
+
+{% block javascripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialiser les tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+        
+        // Recherche dans le tableau
+        const searchInput = document.getElementById('searchPosts');
+        const postsTable = document.getElementById('postsTable');
+        
+        if (searchInput && postsTable) {
+            searchInput.addEventListener('keyup', function() {
+                const searchValue = this.value.toLowerCase();
+                const rows = postsTable.querySelectorAll('tbody tr');
+                
+                rows.forEach(row => {
+                    const postContent = row.querySelector('td:first-child').textContent.toLowerCase();
+                    if (postContent.includes(searchValue)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}
 {% endblock %} 

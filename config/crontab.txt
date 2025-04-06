@@ -1,0 +1,2 @@
+# Mise à jour des hashtags tendance toutes les heures
+0 * * * * cd /chemin/vers/pitcrew && php bin/console app:update-trending-hashtags >> var/log/trending-hashtags.log 2>&1 

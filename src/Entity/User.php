@@ -201,6 +201,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return in_array('ROLE_RECRUTEUR', $this->roles);
     }
 
+    /**
+     * Retourne un identifiant unique basé sur le prénom et le nom de l'utilisateur
+     */
+    public function getUsername(): string
+    {
+        $firstName = $this->firstName ? strtolower($this->firstName) : '';
+        $lastName = $this->lastName ? strtolower($this->lastName) : '';
+        
+        return preg_replace('/[^a-z0-9]/', '', $firstName . $lastName);
+    }
+
     public function setRoles(array $roles): static
     {
         $this->roles = $roles;
@@ -892,5 +903,31 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
 
         return $this;
+    }
+
+    /**
+     * Récupère tous les amis de l'utilisateur (relations acceptées)
+     * 
+     * @return array<int, User>
+     */
+    public function getFriends(): array
+    {
+        $friends = [];
+        
+        // Ajouter les amis où l'utilisateur est le demandeur
+        foreach ($this->sentFriendRequests as $request) {
+            if ($request->isAccepted()) {
+                $friends[] = $request->getAddressee();
+            }
+        }
+        
+        // Ajouter les amis où l'utilisateur est le destinataire
+        foreach ($this->receivedFriendRequests as $request) {
+            if ($request->isAccepted()) {
+                $friends[] = $request->getRequester();
+            }
+        }
+        
+        return $friends;
     }
 }

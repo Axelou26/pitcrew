@@ -1,0 +1,135 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier mes compétences{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .collection-item {
+            position: relative;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .remove-item {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            cursor: pointer;
+            color: #dc3545;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-3">
+            {% include 'components/dashboard_sidebar.html.twig' with {'active': 'profile'} %}
+        </div>
+        <div class="col-md-9">
+            <div class="card shadow-sm border-0 rounded-lg">
+                <div class="card-header bg-white py-3">
+                    <h1 class="h4 mb-0">Modifier mes compétences</h1>
+                </div>
+                <div class="card-body p-4">
+                    {{ form_start(form) }}
+                        <div class="mb-4">
+                            <h5>{{ form_label(form.technicalSkills) }}</h5>
+                            <div class="form-text mb-2">
+                                Listez vos compétences techniques (langages de programmation, technologies, outils, etc.)
+                            </div>
+                            
+                            <div class="technical-skills-collection-container mb-2" 
+                                 data-prototype="{{ form_widget(form.technicalSkills.vars.prototype)|e('html_attr') }}">
+                                {% for skill in form.technicalSkills %}
+                                    <div class="collection-item">
+                                        {{ form_widget(skill) }}
+                                        <span class="remove-item"><i class="fas fa-times"></i></span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <button type="button" class="btn btn-sm btn-outline-primary add-skill-button" 
+                                    data-collection-target="technical-skills">
+                                <i class="fas fa-plus me-1"></i> Ajouter une compétence technique
+                            </button>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5>{{ form_label(form.softSkills) }}</h5>
+                            <div class="form-text mb-2">
+                                Listez vos compétences personnelles (communication, travail d'équipe, adaptabilité, etc.)
+                            </div>
+                            
+                            <div class="soft-skills-collection-container mb-2" 
+                                 data-prototype="{{ form_widget(form.softSkills.vars.prototype)|e('html_attr') }}">
+                                {% for skill in form.softSkills %}
+                                    <div class="collection-item">
+                                        {{ form_widget(skill) }}
+                                        <span class="remove-item"><i class="fas fa-times"></i></span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <button type="button" class="btn btn-sm btn-outline-primary add-skill-button" 
+                                    data-collection-target="soft-skills">
+                                <i class="fas fa-plus me-1"></i> Ajouter une compétence personnelle
+                            </button>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ path('app_profile_index') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i> Retour au profil
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i> Enregistrer
+                            </button>
+                        </div>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add new item to collection
+            document.querySelectorAll('.add-skill-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const collectionTarget = this.getAttribute('data-collection-target');
+                    const container = document.querySelector(`.${collectionTarget}-collection-container`);
+                    const prototype = container.getAttribute('data-prototype');
+                    const index = container.querySelectorAll('.collection-item').length;
+                    
+                    const newForm = prototype.replace(/__name__/g, index);
+                    const itemDiv = document.createElement('div');
+                    itemDiv.classList.add('collection-item');
+                    itemDiv.innerHTML = newForm + '<span class="remove-item"><i class="fas fa-times"></i></span>';
+                    container.appendChild(itemDiv);
+                    
+                    // Add click event to the new remove button
+                    addRemoveButtonEvent(itemDiv.querySelector('.remove-item'));
+                });
+            });
+            
+            // Remove item from collection
+            function addRemoveButtonEvent(button) {
+                button.addEventListener('click', function() {
+                    this.closest('.collection-item').remove();
+                });
+            }
+            
+            // Add remove event to existing items
+            document.querySelectorAll('.remove-item').forEach(button => {
+                addRemoveButtonEvent(button);
+            });
+        });
+    </script>
+{% endblock %} 

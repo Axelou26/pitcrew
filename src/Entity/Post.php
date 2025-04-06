@@ -16,7 +16,7 @@ class Post
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT)]
@@ -92,7 +92,7 @@ class Post
         return $this->title;
     }
 
-    public function setTitle(string $title): static
+    public function setTitle(?string $title): static
     {
         $this->title = $title;
         return $this;
@@ -103,7 +103,7 @@ class Post
         return $this->content;
     }
 
-    public function setContent(string $content): static
+    public function setContent(?string $content): static
     {
         $this->content = $content;
         return $this;
@@ -341,6 +341,7 @@ class Post
     {
         if (!$this->hashtags->contains($hashtag)) {
             $this->hashtags->add($hashtag);
+            // L'incrémentation du compteur d'usage est maintenant gérée directement dans le contrôleur
         }
         
         return $this;
@@ -355,11 +356,22 @@ class Post
     
     /**
      * Extrait les hashtags du contenu
+     * 
+     * @return array Les hashtags extraits du contenu
      */
     public function extractHashtags(): array
     {
-        preg_match_all('/#([a-zA-Z0-9_]+)/', $this->content, $matches);
-        return $matches[1] ?? [];
+        if ($this->content === null || trim($this->content) === '') {
+            return [];
+        }
+        
+        try {
+            preg_match_all('/#([a-zA-Z0-9_]+)/', $this->content, $matches);
+            return array_unique($matches[1] ?? []);
+        } catch (\Throwable $e) {
+            // En cas d'erreur avec preg_match_all, retourner un tableau vide
+            return [];
+        }
     }
     
     /**
@@ -393,11 +405,22 @@ class Post
     
     /**
      * Extrait les mentions (@username) du contenu
+     * 
+     * @return array Les noms d'utilisateur mentionnés
      */
     public function extractMentions(): array
     {
-        preg_match_all('/@([a-zA-Z0-9_]+)/', $this->content, $matches);
-        return $matches[1] ?? [];
+        if ($this->content === null || trim($this->content) === '') {
+            return [];
+        }
+        
+        try {
+            preg_match_all('/@([a-zA-Z0-9_]+)/', $this->content, $matches);
+            return array_unique($matches[1] ?? []);
+        } catch (\Throwable $e) {
+            // En cas d'erreur avec preg_match_all, retourner un tableau vide
+            return [];
+        }
     }
     
     /**
@@ -469,5 +492,14 @@ class Post
             }
         }
         return null;
+    }
+    
+    /**
+     * Alias pour getUserReaction()
+     * Cette méthode est utilisée dans les templates
+     */
+    public function getUserReactionType(User $user): ?string
+    {
+        return $this->getUserReaction($user);
     }
 } 

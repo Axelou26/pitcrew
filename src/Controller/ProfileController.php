@@ -139,4 +139,24 @@ class ProfileController extends AbstractController
 
         return $this->redirectToRoute('app_profile_documents');
     }
+    
+    /**
+     * Raccourci pour accéder à l'édition des compétences depuis le profil
+     */
+    #[Route('/edit-skills', name: 'app_profile_edit_skills')]
+    #[IsGranted('ROLE_POSTULANT')]
+    public function editSkills(): Response
+    {
+        return $this->redirectToRoute('app_applicant_edit_skills');
+    }
+    
+    /**
+     * Raccourci pour accéder à l'édition de l'expérience depuis le profil
+     */
+    #[Route('/edit-experience', name: 'app_profile_edit_experience')]
+    #[IsGranted('ROLE_POSTULANT')]
+    public function editExperience(): Response
+    {
+        return $this->redirectToRoute('app_applicant_edit_experience');
+    }
 } 

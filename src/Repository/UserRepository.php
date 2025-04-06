@@ -186,4 +186,82 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->getQuery()
             ->getResult();
     }
+    
+    /**
+     * Trouve un utilisateur par son nom d'utilisateur
+     */
+    public function findByUsername(string $username): ?User
+    {
+        // Nettoyage du nom d'utilisateur (suppression des espaces et mise en minuscules)
+        $usernameClean = str_replace(' ', '', strtolower($username));
+        
+        // Essayer d'abord une recherche exacte (cas le plus simple et rapide)
+        $qb = $this->createQueryBuilder('u');
+        $exactMatches = $qb
+            ->where('LOWER(CONCAT(u.firstName, u.lastName)) = :fullname')
+            ->orWhere('LOWER(CONCAT(u.lastName, u.firstName)) = :fullname')
+            ->setParameter('fullname', $usernameClean)
+            ->getQuery()
+            ->getResult();
+            
+        if (!empty($exactMatches)) {
+            return $exactMatches[0];
+        }
+        
+        // Si pas de correspondance exacte et que le nom semble contenir prénom et nom
+        if (strlen($usernameClean) > 5) {
+            // Essayer de détecter la séparation prénom/nom
+            for ($i = 3; $i < strlen($usernameClean) - 2; $i++) {
+                $potentialFirstName = substr($usernameClean, 0, $i);
+                $potentialLastName = substr($usernameClean, $i);
+                
+                $qb = $this->createQueryBuilder('u');
+                $matchedUsers = $qb
+                    ->where('LOWER(u.firstName) LIKE :firstName')
+                    ->andWhere('LOWER(u.lastName) LIKE :lastName')
+                    ->setParameter('firstName', $potentialFirstName . '%')
+                    ->setParameter('lastName', $potentialLastName . '%')
+                    ->getQuery()
+                    ->getResult();
+                
+                if (!empty($matchedUsers)) {
+                    return $matchedUsers[0];
+                }
+            }
+            
+            // Essayer l'autre sens (nom puis prénom)
+            for ($i = 3; $i < strlen($usernameClean) - 2; $i++) {
+                $potentialLastName = substr($usernameClean, 0, $i);
+                $potentialFirstName = substr($usernameClean, $i);
+                
+                $qb = $this->createQueryBuilder('u');
+                $matchedUsers = $qb
+                    ->where('LOWER(u.firstName) LIKE :firstName')
+                    ->andWhere('LOWER(u.lastName) LIKE :lastName')
+                    ->setParameter('firstName', $potentialFirstName . '%')
+                    ->setParameter('lastName', $potentialLastName . '%')
+                    ->getQuery()
+                    ->getResult();
+                
+                if (!empty($matchedUsers)) {
+                    return $matchedUsers[0];
+                }
+            }
+        }
+        
+        // Si toujours pas de correspondance, essayer avec une recherche plus souple
+        $qb = $this->createQueryBuilder('u');
+        $looseMatches = $qb
+            ->where('LOWER(CONCAT(u.firstName, u.lastName)) LIKE :partialName')
+            ->orWhere('LOWER(CONCAT(u.lastName, u.firstName)) LIKE :partialName')
+            ->setParameter('partialName', '%' . $usernameClean . '%')
+            ->getQuery()
+            ->getResult();
+            
+        if (!empty($looseMatches)) {
+            return $looseMatches[0];
+        }
+        
+        return null;
+    }
 } 

@@ -71,11 +71,9 @@ class RecommendationService
     private function getUserPosts(User $user): array
     {
         $qb = $this->entityManager->createQueryBuilder();
-        $qb->select('p, a, s')
+        $qb->select('p, a')
            ->from('App\Entity\Post', 'p')
            ->leftJoin('p.author', 'a')
-           ->leftJoin('p.shares', 's')
-           ->leftJoin('s.user', 'su')
            ->where('p.author = :userId')
            ->setParameter('userId', $user->getId())
            ->orderBy('p.createdAt', 'DESC');
@@ -115,11 +113,9 @@ class RecommendationService
         
         // Récupérer les posts des amis avec les relations chargées
         $qb = $this->entityManager->createQueryBuilder();
-        $qb->select('p, a, s')
+        $qb->select('p, a')
            ->from('App\Entity\Post', 'p')
            ->leftJoin('p.author', 'a')
-           ->leftJoin('p.shares', 's')
-           ->leftJoin('s.user', 'su')
            ->where('p.author IN (:friendIds)')
            ->setParameter('friendIds', $friendIds)
            ->orderBy('p.createdAt', 'DESC');
@@ -339,19 +335,45 @@ class RecommendationService
         }
         
         try {
-            // Récupérer les posts qui ont été partagés avec toutes les relations nécessaires
-            $qb = $this->entityManager->createQueryBuilder();
-            $qb->select('DISTINCT p, a, s, su')
-               ->from('App\Entity\Post', 'p')
-               ->innerJoin('p.shares', 's')
-               ->innerJoin('s.user', 'su')
-               ->leftJoin('p.author', 'a')
-               ->where('s.user IN (:userIds)')
-               ->setParameter('userIds', $allUserIds)
-               ->orderBy('s.createdAt', 'DESC');
+            // Au lieu d'utiliser innerJoin sur p.shares, nous utilisons une sous-requête
+            // pour récupérer d'abord les IDs des posts partagés, puis nous chargeons ces posts
             
-            return $qb->getQuery()->getResult();
+            // 1. Récupérer les IDs des posts partagés
+            $qbShares = $this->entityManager->createQueryBuilder();
+            $qbShares->select('DISTINCT ps.post')
+                   ->from('App\Entity\PostShare', 'ps')
+                   ->where('ps.user IN (:userIds)')
+                   ->setParameter('userIds', $allUserIds);
+            
+            $sharedPostIds = $qbShares->getQuery()->getResult();
+            
+            // Si aucun post n'est partagé, retourner un tableau vide
+            if (empty($sharedPostIds)) {
+                return [];
+            }
+            
+            // Extraire les IDs des posts
+            $postIds = [];
+            foreach ($sharedPostIds as $record) {
+                if (is_object($record) && method_exists($record, 'getId')) {
+                    $postIds[] = $record->getId();
+                } elseif (is_array($record) && isset($record['post'])) {
+                    $postIds[] = $record['post'];
+                }
+            }
+            
+            // 2. Récupérer les posts complets
+            $qbPosts = $this->entityManager->createQueryBuilder();
+            $qbPosts->select('p, a')
+                  ->from('App\Entity\Post', 'p')
+                  ->leftJoin('p.author', 'a')
+                  ->where('p.id IN (:postIds)')
+                  ->setParameter('postIds', $postIds)
+                  ->orderBy('p.createdAt', 'DESC');
+            
+            return $qbPosts->getQuery()->getResult();
         } catch (\Exception $e) {
+            // Logger l'erreur si nécessaire
             return [];
         }
     }

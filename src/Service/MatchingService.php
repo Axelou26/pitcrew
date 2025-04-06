@@ -171,13 +171,14 @@ class MatchingService
     private function calculateExperienceScore(Applicant $applicant, JobOffer $jobOffer): array
     {
         $workExperience = $applicant->getWorkExperience() ?? [];
+        $educationHistory = $applicant->getEducationHistory() ?? [];
         
-        // Si pas d'expérience, score minimal
-        if (empty($workExperience)) {
+        // Si pas d'expérience ni d'éducation, score minimal
+        if (empty($workExperience) && empty($educationHistory)) {
             return [
                 'score' => 0,
                 'maxScore' => 5,
-                'details' => ['Aucune expérience professionnelle']
+                'details' => ['Aucune expérience professionnelle ni formation renseignée']
             ];
         }
         
@@ -188,9 +189,33 @@ class MatchingService
         // Nombre total d'années d'expérience
         $totalYearsExperience = 0;
         $relevantExperienceCount = 0;
+        $relevantYearsExperience = 0;
+        $mostRecentExperiences = [];
+        
+        // Trier les expériences par date (de la plus récente à la plus ancienne)
+        usort($workExperience, function($a, $b) {
+            $endDateA = $a['endDate'] ?? 'present';
+            $endDateB = $b['endDate'] ?? 'present';
+            
+            // Si une des dates est "present", elle est plus récente
+            if ($endDateA === 'present' && $endDateB !== 'present') return -1;
+            if ($endDateA !== 'present' && $endDateB === 'present') return 1;
+            
+            // Sinon, comparer les dates de fin
+            try {
+                $dateA = $endDateA === 'present' ? new \DateTime() : new \DateTime($endDateA);
+                $dateB = $endDateB === 'present' ? new \DateTime() : new \DateTime($endDateB);
+                return $dateB <=> $dateA; // Ordre décroissant
+            } catch (\Exception $e) {
+                return 0;
+            }
+        });
+        
+        // Limiter à 5 expériences maximum pour l'analyse
+        $workExperience = array_slice($workExperience, 0, 5);
         
         foreach ($workExperience as $experience) {
-            // Calcul de la durée de l'expérience si les dates sont disponibles
+            // Calcul de la durée de l'expérience
             $duration = isset($experience['startDate'], $experience['endDate']) 
                 ? $this->calculateExperienceDuration($experience['startDate'], $experience['endDate']) 
                 : 0;
@@ -202,17 +227,110 @@ class MatchingService
             
             if ($isRelevant) {
                 $relevantExperienceCount++;
-                $details[] = 'Expérience pertinente: ' . ($experience['title'] ?? 'Non spécifiée');
+                $relevantYearsExperience += $duration;
+                
+                // Ajouter plus de détails sur l'expérience pertinente
+                $expDetails = [];
+                if (!empty($experience['title'])) $expDetails[] = $experience['title'];
+                if (!empty($experience['company'])) $expDetails[] = 'chez ' . $experience['company'];
+                if ($duration > 0) $expDetails[] = sprintf('(%.1f ans)', $duration);
+                
+                $details[] = 'Expérience pertinente: ' . implode(' ', $expDetails);
+                
+                // Garder trace des expériences pertinentes les plus récentes
+                $mostRecentExperiences[] = $experience;
             }
         }
         
-        // Score basé sur les années d'expérience (max 3 points)
-        $yearsScore = min(3, $totalYearsExperience / 2);
+        // Évaluation des formations pertinentes
+        $relevantEducationCount = 0;
+        $educationScore = 0;
         
-        // Score basé sur la pertinence (max 2 points)
-        $relevanceScore = min(2, $relevantExperienceCount);
+        foreach ($educationHistory as $education) {
+            $isRelevant = $this->isRelevantEducation($education, $jobOffer);
+            
+            if ($isRelevant) {
+                $relevantEducationCount++;
+                
+                // Ajouter plus de détails sur la formation pertinente
+                $eduDetails = [];
+                if (!empty($education['degree'])) $eduDetails[] = $education['degree'];
+                if (!empty($education['institution'])) $eduDetails[] = 'à ' . $education['institution'];
+                
+                $details[] = 'Formation pertinente: ' . implode(' ', $eduDetails);
+            }
+        }
         
-        $score = $yearsScore + $relevanceScore;
+        // Calculer le score basé sur plusieurs facteurs
+        
+        // 1. Score basé sur les années d'expérience totale (max 1.5 points)
+        $yearsScore = min(1.5, $totalYearsExperience / 3);
+        
+        // 2. Score basé sur les années d'expérience pertinente (max 2 points)
+        $relevantYearsScore = min(2, $relevantYearsExperience / 2);
+        
+        // 3. Score basé sur le nombre d'expériences pertinentes (max 1 point)
+        $relevantCountScore = min(1, $relevantExperienceCount / 2);
+        
+        // 4. Bonus pour formation pertinente (max 0.5 point)
+        $educationBonus = min(0.5, $relevantEducationCount * 0.25);
+        
+        // 5. Bonus pour expérience récente dans le domaine (max 0.5 point)
+        $recentExperienceBonus = 0;
+        if (!empty($mostRecentExperiences)) {
+            $mostRecent = $mostRecentExperiences[0];
+            $endDate = $mostRecent['endDate'] ?? '';
+            
+            // Si l'expérience est en cours ou s'est terminée il y a moins de 2 ans
+            if ($endDate === 'present') {
+                $recentExperienceBonus = 0.5;
+            } else {
+                try {
+                    $end = new \DateTime($endDate);
+                    $now = new \DateTime();
+                    $yearsSinceEnd = $now->diff($end)->y;
+                    
+                    if ($yearsSinceEnd <= 2) {
+                        $recentExperienceBonus = 0.5;
+                    } elseif ($yearsSinceEnd <= 5) {
+                        $recentExperienceBonus = 0.25;
+                    }
+                } catch (\Exception $e) {
+                    // En cas d'erreur de format de date, pas de bonus
+                }
+            }
+        }
+        
+        // Score total (max 5 points)
+        $score = $yearsScore + $relevantYearsScore + $relevantCountScore + $recentExperienceBonus + $educationBonus;
+        $score = min(5, $score); // Plafonnement à 5
+        
+        // Ajouter un résumé au début de la liste de détails
+        if ($relevantExperienceCount > 0 || $relevantEducationCount > 0) {
+            $summaryParts = [];
+            
+            if ($relevantExperienceCount > 0) {
+                $summaryParts[] = sprintf(
+                    '%d expérience(s) pertinente(s) totalisant %.1f an(s)',
+                    $relevantExperienceCount,
+                    $relevantYearsExperience
+                );
+            }
+            
+            if ($relevantEducationCount > 0) {
+                $summaryParts[] = sprintf(
+                    '%d formation(s) pertinente(s)',
+                    $relevantEducationCount
+                );
+            }
+            
+            array_unshift($details, implode(' et ', $summaryParts));
+        } else {
+            array_unshift($details, sprintf(
+                'Expérience générale de %.1f an(s) sans correspondance directe avec le poste',
+                $totalYearsExperience
+            ));
+        }
         
         return [
             'score' => $score,
@@ -232,28 +350,123 @@ class MatchingService
         
         $experienceTitle = $experience['title'] ?? '';
         $experienceDescription = $experience['description'] ?? '';
+        $experienceCompany = $experience['company'] ?? '';
+        $experienceLocation = $experience['location'] ?? '';
         
-        // Vérification du titre
-        if ($this->hasCommonKeywords($experienceTitle, $jobTitle)) {
+        // Concaténer tous les champs d'expérience pour une analyse plus complète
+        $experienceFullText = $experienceTitle . ' ' . $experienceDescription . ' ' . $experienceCompany . ' ' . $experienceLocation;
+        
+        // 1. Vérification par mots-clés entre le titre de l'expérience et le titre du poste
+        if ($this->hasCommonKeywords($experienceTitle, $jobTitle, 2)) {
             return true;
         }
         
-        // Vérification de la description
-        if ($this->hasCommonKeywords($experienceDescription, $jobDescription)) {
+        // 2. Vérification par mots-clés entre la description de l'expérience et la description du poste
+        if ($this->hasCommonKeywords($experienceDescription, $jobDescription, 3)) {
             return true;
         }
         
-        // Vérification des compétences requises
+        // 3. Vérification des compétences requises dans tous les champs d'expérience
         foreach ($requiredSkills as $skill) {
-            if (
-                stripos($experienceTitle, $skill) !== false || 
-                stripos($experienceDescription, $skill) !== false
-            ) {
+            if (stripos($experienceFullText, $skill) !== false) {
                 return true;
             }
         }
         
+        // 4. Vérification des secteurs d'activité (ex: F1, automobile, sport)
+        $jobSectors = $this->extractSectors($jobTitle . ' ' . $jobDescription);
+        $experienceSectors = $this->extractSectors($experienceFullText);
+        
+        if (!empty(array_intersect($jobSectors, $experienceSectors))) {
+            return true;
+        }
+        
         return false;
+    }
+
+    /**
+     * Vérifie si une formation est pertinente pour l'offre d'emploi
+     */
+    private function isRelevantEducation(array $education, JobOffer $jobOffer): bool
+    {
+        $jobTitle = $jobOffer->getTitle();
+        $jobDescription = $jobOffer->getDescription();
+        $requiredSkills = $jobOffer->getRequiredSkills();
+        
+        $educationDegree = $education['degree'] ?? '';
+        $educationInstitution = $education['institution'] ?? '';
+        $educationDescription = $education['description'] ?? '';
+        $educationLocation = $education['location'] ?? '';
+        
+        // Concaténer tous les champs d'éducation pour une analyse plus complète
+        $educationFullText = $educationDegree . ' ' . $educationInstitution . ' ' . $educationDescription . ' ' . $educationLocation;
+        
+        // 1. Vérification par mots-clés entre le diplôme et le titre du poste
+        if ($this->hasCommonKeywords($educationDegree, $jobTitle, 1)) {
+            return true;
+        }
+        
+        // 2. Vérification par mots-clés entre la description de la formation et la description du poste
+        if ($this->hasCommonKeywords($educationDescription, $jobDescription, 2)) {
+            return true;
+        }
+        
+        // 3. Vérification des compétences requises dans tous les champs de formation
+        foreach ($requiredSkills as $skill) {
+            if (stripos($educationFullText, $skill) !== false) {
+                return true;
+            }
+        }
+        
+        // 4. Vérification des secteurs d'activité (ex: F1, automobile, sport)
+        $jobSectors = $this->extractSectors($jobTitle . ' ' . $jobDescription);
+        $educationSectors = $this->extractSectors($educationFullText);
+        
+        if (!empty(array_intersect($jobSectors, $educationSectors))) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Extrait les secteurs d'activité potentiels d'un texte
+     */
+    private function extractSectors(string $text): array
+    {
+        $sectors = [
+            'f1', 'formule 1', 'sport automobile', 'motorsport', 'grand prix', 'course automobile',
+            'automobile', 'auto', 'voiture', 'racing', 'rallye', 'circuit',
+            'sport', 'sportif', 'competition', 'équipe sportive', 'team',
+            'ingénierie', 'mécanique', 'technique', 'technologie', 'aérodynamique',
+            'logistique', 'composite', 'industrie'
+        ];
+        
+        $foundSectors = [];
+        foreach ($sectors as $sector) {
+            if (stripos($text, $sector) !== false) {
+                $foundSectors[] = $sector;
+            }
+        }
+        
+        return $foundSectors;
+    }
+
+    /**
+     * Vérifie si deux textes ont des mots-clés en commun
+     * @param string $text1 Premier texte à comparer
+     * @param string $text2 Second texte à comparer
+     * @param int $minCommonCount Nombre minimum de mots-clés communs requis
+     * @return bool
+     */
+    private function hasCommonKeywords(string $text1, string $text2, int $minCommonCount = 1): bool
+    {
+        $keywords1 = $this->extractKeywords($text1);
+        $keywords2 = $this->extractKeywords($text2);
+        
+        $common = array_intersect($keywords1, $keywords2);
+        
+        return count($common) >= $minCommonCount;
     }
 
     /**
@@ -270,19 +483,6 @@ class MatchingService
         } catch (\Exception $e) {
             return 0;
         }
-    }
-
-    /**
-     * Vérifie si deux textes ont des mots-clés en commun
-     */
-    private function hasCommonKeywords(string $text1, string $text2): bool
-    {
-        $keywords1 = $this->extractKeywords($text1);
-        $keywords2 = $this->extractKeywords($text2);
-        
-        $common = array_intersect($keywords1, $keywords2);
-        
-        return count($common) > 0;
     }
 
     /**
@@ -350,10 +550,33 @@ class MatchingService
     private function extractSoftSkillsFromJobDescription(string $description): array
     {
         $commonSoftSkills = [
-            'communication', 'travail d\'équipe', 'équipe', 'leadership', 'gestion du stress',
-            'adaptabilité', 'réactivité', 'autonomie', 'rigueur', 'organisation',
-            'créativité', 'innovation', 'résolution de problèmes', 'analytique',
-            'prise de décision', 'négociation', 'motivation', 'ponctualité'
+            // Communication
+            'communication', 'écoute active', 'expression orale', 'présentation', 'négociation', 
+            'rédaction', 'vulgarisation', 'diplomatie', 'persuasion', 'médiation',
+            
+            // Travail en équipe
+            'travail d\'équipe', 'équipe', 'collaboration', 'coopération', 'esprit d\'équipe',
+            'coordination', 'cohésion', 'entraide', 'synergie',
+            
+            // Leadership
+            'leadership', 'management', 'gestion d\'équipe', 'encadrement', 'motivation d\'équipe',
+            'délégation', 'prise de décision', 'coaching', 'mentorat', 'influence',
+            
+            // Adaptation et résilience
+            'adaptabilité', 'flexibilité', 'résilience', 'gestion du stress', 'gestion de crise',
+            'résistance à la pression', 'agilité', 'polyvalence', 'réactivité',
+            
+            // Organisation
+            'organisation', 'planification', 'gestion du temps', 'priorisation', 'ponctualité',
+            'méthode', 'rigueur', 'précision', 'autonomie', 'efficacité',
+            
+            // Créativité et résolution de problèmes
+            'créativité', 'innovation', 'résolution de problèmes', 'pensée critique', 'analyse',
+            'esprit critique', 'prise d\'initiative', 'curiosité', 'proactivité',
+            
+            // Relationnel
+            'empathie', 'intelligence émotionnelle', 'relationnel', 'sociabilité', 'sens du service',
+            'orientation client', 'respect', 'éthique', 'bienveillance'
         ];
         
         $foundSkills = [];

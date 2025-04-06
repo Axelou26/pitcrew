@@ -222,17 +222,17 @@
                             {# Traitement des mentions #}
                             {% set contentWithMentions = content %}
                             {% for mention in post.extractMentions %}
-                                {% set contentWithMentions = contentWithMentions|replace({
-                                    '@' ~ mention: '<a href="' ~ path('app_user_profile', {'id': mention}) ~ '" class="mention">@' ~ mention ~ '</a>'
-                                }) %}
+                                {% set mentionPattern = '@' ~ mention %}
+                                {% set mentionLink = '<a href="' ~ path('app_user_profile_by_username', {'username': mention}) ~ '" class="mention">@' ~ mention ~ '</a>' %}
+                                {% set contentWithMentions = contentWithMentions|replace({(mentionPattern): mentionLink}) %}
                             {% endfor %}
                             
                             {# Traitement des hashtags #}
                             {% set contentWithHashtags = contentWithMentions %}
                             {% for hashtag in post.extractHashtags %}
-                                {% set contentWithHashtags = contentWithHashtags|replace({
-                                    '#' ~ hashtag: '<a href="' ~ path('app_hashtag_show', {'name': hashtag}) ~ '" class="hashtag">#' ~ hashtag ~ '</a>'
-                                }) %}
+                                {% set hashtagPattern = '#' ~ hashtag %}
+                                {% set hashtagLink = '<a href="' ~ path('app_hashtag_show', {'name': hashtag}) ~ '" class="hashtag">#' ~ hashtag ~ '</a>' %}
+                                {% set contentWithHashtags = contentWithHashtags|replace({(hashtagPattern): hashtagLink}) %}
                             {% endfor %}
                             
                             <p class="card-text mb-3">

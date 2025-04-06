@@ -28,8 +28,8 @@
                                 <i class="bi bi-check"></i> Marquer comme lu
                             </button>
                         {% endif %}
-                        {% if notification.link %}
-                            <a href="{{ notification.link }}" class="btn btn-sm btn-outline-secondary ms-2">
+                        {% if notification.targetUrl %}
+                            <a href="{{ notification.targetUrl }}" class="btn btn-sm btn-outline-secondary ms-2">
                                 <i class="bi bi-eye"></i> Voir
                             </a>
                         {% endif %}

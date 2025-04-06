@@ -25,6 +25,9 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => console.error('Erreur lors de la récupération du nombre de notifications:', error));
     }
 
+    // Appeler la fonction immédiatement au chargement
+    updateNotificationCounter();
+
     // Mettre à jour le compteur toutes les 60 secondes
     setInterval(updateNotificationCounter, 60000);
 }); 

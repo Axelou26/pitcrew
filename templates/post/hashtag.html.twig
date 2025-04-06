@@ -82,17 +82,18 @@
                             {# Traitement des mentions #}
                             {% set contentWithMentions = content %}
                             {% for mention in post.extractMentions %}
-                                {% set contentWithMentions = contentWithMentions|replace({
-                                    '@' ~ mention: '<a href="' ~ path('app_user_profile', {'id': mention}) ~ '" class="mention">@' ~ mention ~ '</a>'
-                                }) %}
+                                {% set mentionKey = '@' ~ mention %}
+                                {% set userPath = path('app_user_profile_by_username', {'username': mention}) %}
+                                {% set mentionValue = '<a href="' ~ userPath ~ '" class="mention">@' ~ mention ~ '</a>' %}
+                                {% set contentWithMentions = contentWithMentions|replace({(mentionKey): mentionValue}) %}
                             {% endfor %}
                             
                             {# Traitement des hashtags #}
                             {% set contentWithHashtags = contentWithMentions %}
                             {% for hashtag in post.extractHashtags %}
-                                {% set contentWithHashtags = contentWithHashtags|replace({
-                                    '#' ~ hashtag: '<a href="' ~ path('app_hashtag_show', {'name': hashtag}) ~ '" class="hashtag fw-bold">#' ~ hashtag ~ '</a>'
-                                }) %}
+                                {% set hashtagKey = '#' ~ hashtag %}
+                                {% set hashtagValue = '<a href="' ~ path('app_hashtag_show', {'name': hashtag}) ~ '" class="hashtag fw-bold">#' ~ hashtag ~ '</a>' %}
+                                {% set contentWithHashtags = contentWithHashtags|replace({(hashtagKey): hashtagValue}) %}
                             {% endfor %}
                             
                             <p class="card-text mb-3">
@@ -145,8 +146,8 @@
                             <div class="d-flex border-top pt-2">
                                 <div class="dropdown flex-fill">
                                     <button class="btn btn-light w-100 dropdown-toggle" type="button" id="reactionDropdown{{ post.id }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                        {% if app.user and post.getUserReactionType(app.user) %}
-                                            {% set userReaction = post.getUserReactionType(app.user) %}
+                                        {% if app.user and post.getUserReaction(app.user) %}
+                                            {% set userReaction = post.getUserReaction(app.user) %}
                                             <span class="reaction-active">
                                                 {% if userReaction == 'like' %}👍 J'aime{% endif %}
                                                 {% if userReaction == 'congrats' %}👏 Félicitations{% endif %}
