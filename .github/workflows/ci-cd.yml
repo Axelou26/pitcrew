@@ -99,7 +99,7 @@ jobs:
         with:
           host: '${{ env.DEPLOY_HOST }}'
           username: '${{ env.DEPLOY_USERNAME }}'
-          key: '${{ env.DEPLOY_KEY }}'
+          key: '${{ env.DEPLOY_SSH_KEY }}'
           port: '22'
           debug: true
           script: |
