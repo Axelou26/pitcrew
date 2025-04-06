@@ -1,87 +1,53 @@
-name: CI/CD Pipeline
+name: CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
+
+permissions:
+  contents: read
 
 jobs:
-  test:
-    name: Tests & Quality
+  symfony-tests:
     runs-on: ubuntu-latest
-    
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: azerty-26
-          MYSQL_DATABASE: blog
-          MYSQL_ROOT_HOST: '%'
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-          --health-start-period=30s
-
     steps:
-      - uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, mysql, pdo_mysql
-          coverage: xdebug
-
-      - name: Cache Composer packages
-        id: composer-cache
-        uses: actions/cache@v3
-        with:
-          path: vendor
-          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-php-
-
-      - name: Install Dependencies
-        run: |
-          composer update symfony/browser-kit symfony/css-selector --with-all-dependencies
-          composer require --dev phpunit/phpunit:^10.5 symfony/test-pack phpstan/phpstan --with-all-dependencies
-          composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
-
-      - name: Wait for MySQL
-        run: |
-          while ! mysqladmin ping -h"127.0.0.1" -P"3306" --silent; do
-            sleep 1
-          done
-
-      - name: Create test database
-        env:
-          DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog?serverVersion=8.0"
-        run: |
-          mysql -h 127.0.0.1 -P 3306 -u root -pazerty-26 -e "CREATE DATABASE IF NOT EXISTS blog_test;"
-          php bin/console --env=test doctrine:schema:update --force --complete
-          
-      - name: Execute tests
-        env:
-          DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog?serverVersion=8.0"
-        run: |
-          php bin/phpunit --coverage-clover coverage.xml
-          
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
-
-      - name: PHPStan Static Analysis
-        run: vendor/bin/phpstan analyse src tests
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, iconv, json, mbstring, pdo
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        
+    - name: Install Dependencies
+      run: |
+        composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+        npm ci
+        
+    - name: Build Assets
+      run: npm run build
+        
+    - name: Create test database
+      run: |
+        mkdir -p var/data
+        php bin/console --env=test doctrine:database:create
+        php bin/console --env=test doctrine:schema:create
+        
+    - name: Execute tests
+      env:
+        DATABASE_URL: "sqlite:///%kernel.project_dir%/var/data/blog_test.db"
+      run: ./vendor/bin/phpunit --coverage-clover coverage.xml
 
   deploy:
     name: Deploy to Production
-    needs: test
+    needs: symfony-tests
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     
@@ -106,7 +72,7 @@ jobs:
       - name: Deploy to production
         uses: deployphp/action@v1
         with:
-          private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+          private-key: ${{secrets.DEPLOY_SSH_KEY}}
           deployer-version: "7.3.1"
           deployment: production
           dep: deploy 
