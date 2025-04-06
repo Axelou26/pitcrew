@@ -92,11 +92,15 @@ jobs:
           
       - name: Deploy to production
         uses: appleboy/ssh-action@master
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USERNAME: ${{ secrets.DEPLOY_USERNAME }}
+          DEPLOY_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USERNAME }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: COMPOSER_PROCESS_TIMEOUT,COMPOSER_NO_INTERACTION,COMPOSER_NO_AUDIT
+          host: "${{ env.DEPLOY_HOST }}"
+          username: "${{ env.DEPLOY_USERNAME }}"
+          key: "${{ env.DEPLOY_KEY }}"
+          script_stop: true
           script: |
             cd /var/www/pitcrew
             git pull origin main
