@@ -66,6 +66,7 @@ jobs:
     needs: symfony-tests
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    environment: production
     
     steps:
       - uses: actions/checkout@v3
@@ -86,11 +87,24 @@ jobs:
           npm run build
           
       - name: Setup SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
         run: |
+          if [ -z "$DEPLOY_HOST" ]; then
+            echo "Error: DEPLOY_HOST is not set"
+            exit 1
+          fi
+          
+          if [ -z "$DEPLOY_SSH_KEY" ]; then
+            echo "Error: DEPLOY_SSH_KEY is not set"
+            exit 1
+          fi
+          
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          echo "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan "$DEPLOY_HOST" >> ~/.ssh/known_hosts
         
       - name: Deploy to production
         uses: deployphp/action@v1
