@@ -20,9 +20,10 @@ export default defineConfig({
         }
     },
     css: {
+        devSourcemap: true,
         preprocessorOptions: {
             scss: {
-                additionalData: `@import "bootstrap/scss/bootstrap";`
+                includePaths: ['node_modules']
             }
         }
     }
