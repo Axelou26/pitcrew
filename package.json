@@ -1,0 +1,22 @@
+{
+    "name": "pitcrew",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "watch": "vite build --watch"
+    },
+    "dependencies": {
+        "@popperjs/core": "^2.11.8",
+        "bootstrap": "^5.3.2",
+        "bootstrap-icons": "^1.11.3"
+    },
+    "devDependencies": {
+        "@symfony/webpack-encore": "^4.5.0",
+        "@vitejs/plugin-vue": "^4.5.0",
+        "sass": "^1.69.5",
+        "vite": "^4.5.1",
+        "vite-plugin-symfony": "^4.0.0"
+    }
+} 
