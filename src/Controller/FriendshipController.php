@@ -106,7 +106,7 @@ class FriendshipController extends AbstractController
     }
     
     #[Route('/decline/{id}', name: 'app_friendship_decline')]
-    public function decline(Friendship $friendship, EntityManagerInterface $entityManager): Response
+    public function decline(Friendship $friendship, Request $request, EntityManagerInterface $entityManager): Response
     {
         // Vérifier que l'utilisateur actuel est bien le destinataire de la demande
         if ($friendship->getAddressee() !== $this->getUser()) {
