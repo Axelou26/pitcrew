@@ -85,23 +85,17 @@ jobs:
           npm install
           npm run build
           
-      - name: Setup SSH key
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          eval $(ssh-agent -s)
-          ssh-add ~/.ssh/deploy_key
-          
-      - name: Add known hosts
-        run: |
           ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
-          
+        
       - name: Deploy to production
         uses: deployphp/action@v1
         with:
+          private-key: ~/.ssh/deploy_key
           deployer-version: "7.3.1"
           deployment: production
-          dep: deploy
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh-auth.sock 
+          dep: deploy 
