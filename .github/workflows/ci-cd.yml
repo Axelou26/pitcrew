@@ -97,11 +97,10 @@ jobs:
           username: ${{ secrets.DEPLOY_USERNAME }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: 22
-          script_stop: true
-          envs: GITHUB_SHA
+          command_timeout: 10m
           debug: true
+          envs: GITHUB_SHA
           script: |
-            set -e
             cd /var/www/pitcrew
             git pull origin main
             composer install --no-dev --optimize-autoloader
