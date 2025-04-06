@@ -16,7 +16,7 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: azerty-26
-          MYSQL_DATABASE: blog_test_test
+          MYSQL_DATABASE: blog_test
           MYSQL_ROOT_HOST: '%'
         ports:
           - 3306:3306
@@ -57,14 +57,14 @@ jobs:
 
       - name: Create test database
         env:
-          DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog_test_test?serverVersion=8.0"
+          DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog?serverVersion=8.0"
         run: |
-          mysql -h 127.0.0.1 -P 3306 -u root -pazerty-26 -e "CREATE DATABASE IF NOT EXISTS blog_test_test;"
+          mysql -h 127.0.0.1 -P 3306 -u root -pazerty-26 -e "CREATE DATABASE IF NOT EXISTS blog_test;"
           php bin/console --env=test doctrine:schema:update --force --complete
           
       - name: Execute tests
         env:
-          DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog_test_test?serverVersion=8.0"
+          DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog?serverVersion=8.0"
         run: |
           php bin/phpunit --coverage-clover coverage.xml
           
