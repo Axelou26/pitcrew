@@ -93,13 +93,11 @@ jobs:
       - name: Deploy to production
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USERNAME }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: 22
-          command_timeout: 10m
+          host: "${{ secrets.DEPLOY_HOST }}"
+          username: "${{ secrets.DEPLOY_USERNAME }}"
+          key: "${{ secrets.DEPLOY_SSH_KEY }}"
+          port: "22"
           debug: true
-          envs: GITHUB_SHA
           script: |
             cd /var/www/pitcrew
             git pull origin main
