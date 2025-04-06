@@ -49,7 +49,7 @@ jobs:
       - name: Install Dependencies
         run: |
           composer update symfony/browser-kit symfony/css-selector --with-all-dependencies
-          composer require --dev phpunit/phpunit:^10.5 symfony/test-pack --with-all-dependencies
+          composer require --dev phpunit/phpunit:^10.5 symfony/test-pack phpstan/phpstan --with-all-dependencies
           composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
 
       - name: Wait for MySQL
