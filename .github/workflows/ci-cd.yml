@@ -91,24 +91,15 @@ jobs:
           npm run build
           
       - name: Deploy to production
-        uses: appleboy/ssh-action@v1.0.0
-        env:
-          COMPOSER_PROCESS_TIMEOUT: 0
-          COMPOSER_NO_INTERACTION: 1
-          COMPOSER_NO_AUDIT: 1
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USERNAME }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: 22
-          timeout: 30s
-          command_timeout: 10m
+          envs: COMPOSER_PROCESS_TIMEOUT,COMPOSER_NO_INTERACTION,COMPOSER_NO_AUDIT
           script: |
             cd /var/www/pitcrew
             git pull origin main
-            export COMPOSER_PROCESS_TIMEOUT=0
-            export COMPOSER_NO_INTERACTION=1
-            export COMPOSER_NO_AUDIT=1
             composer install --no-dev --optimize-autoloader
             php bin/console cache:clear --env=prod
             php bin/console doctrine:migrations:migrate --no-interaction --env=prod
