@@ -17,9 +17,15 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: azerty-26
           MYSQL_DATABASE: blog_test
+          MYSQL_ROOT_HOST: '%'
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+          --health-start-period=30s
 
     steps:
       - uses: actions/checkout@v3
@@ -43,11 +49,17 @@ jobs:
       - name: Install Dependencies
         run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
 
+      - name: Wait for MySQL
+        run: |
+          while ! mysqladmin ping -h"127.0.0.1" -P"3306" --silent; do
+            sleep 1
+          done
+
       - name: Create test database
         env:
           DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog_test?serverVersion=8.0"
         run: |
-          php bin/console --env=test doctrine:database:create --if-not-exists
+          mysql -h 127.0.0.1 -P 3306 -u root -pazerty-26 -e "CREATE DATABASE IF NOT EXISTS blog_test;"
           php bin/console --env=test doctrine:schema:update --force
           
       - name: Execute tests
