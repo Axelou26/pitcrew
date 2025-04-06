@@ -48,7 +48,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          composer require --dev phpunit/phpunit symfony/test-pack
+          composer update symfony/browser-kit symfony/css-selector --with-all-dependencies
+          composer require --dev phpunit/phpunit:^10.5 symfony/test-pack --with-all-dependencies
           composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
 
       - name: Wait for MySQL
@@ -68,7 +69,7 @@ jobs:
         env:
           DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog_test?serverVersion=8.0"
         run: |
-          ./vendor/bin/phpunit --coverage-clover coverage.xml
+          php bin/phpunit --coverage-clover coverage.xml
           
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
