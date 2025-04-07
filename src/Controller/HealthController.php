@@ -6,16 +6,16 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Cache\Adapter\AdapterInterface;
+use Psr\Cache\CacheItemPoolInterface;
 
 class HealthController extends AbstractController
 {
     private EntityManagerInterface $entityManager;
-    private AdapterInterface $cache;
+    private CacheItemPoolInterface $cache;
 
     public function __construct(
         EntityManagerInterface $entityManager,
-        AdapterInterface $cache
+        CacheItemPoolInterface $cache
     ) {
         $this->entityManager = $entityManager;
         $this->cache = $cache;
