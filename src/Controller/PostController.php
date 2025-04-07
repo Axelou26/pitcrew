@@ -31,138 +31,44 @@ use Psr\Log\LoggerInterface;
 
 class PostController extends AbstractController
 {
-    private $logger;
-    
-    public function __construct(LoggerInterface $logger)
-    {
-        $this->logger = $logger;
+    public function __construct(
+        private LoggerInterface $logger,
+        private EntityManagerInterface $entityManager,
+        private NotificationService $notificationService,
+        private ContentProcessorService $contentProcessor,
+        private FileUploader $fileUploader
+    ) {
     }
 
     #[Route('/posts', name: 'app_post_index', methods: ['GET'])]
-    public function index(
-        PostRepository $postRepository, 
-        EntityManagerInterface $entityManager
-    ): Response
+    public function index(): Response
     {
-        // Au lieu d'essayer de rendre un template qui n'existe pas,
-        // rediriger vers la page qui affiche les posts de l'utilisateur connecté
         return $this->redirectToRoute('app_dashboard_posts');
     }
 
     #[Route('/post/new', name: 'app_post_new', methods: ['GET', 'POST'])]
     #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
     public function new(
-        Request $request, 
-        EntityManagerInterface $entityManager, 
-        SluggerInterface $slugger,
-        UserRepository $userRepository,
-        HashtagRepository $hashtagRepository,
-        NotificationService $notificationService,
-        ContentProcessorService $contentProcessor,
-        FileUploader $fileUploader
+        Request $request,
+        SluggerInterface $slugger
     ): Response {
         $post = new Post();
         $post->setAuthor($this->getUser());
-        
+
         $form = $this->createForm(PostType::class, $post);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // Gestion de l'image
-            $imageFile = $form->get('imageFile')->getData();
-            if ($imageFile) {
-                try {
-                    $newFilename = $fileUploader->upload($imageFile, 'posts_directory');
-                    $post->setImage($newFilename);
-                } catch (\Exception $e) {
-                    $this->addFlash('error', $e->getMessage());
-                }
-            }
-            
-            // Traitement des hashtags et des mentions
-            $contentProcessor->processPostContent($post);
-
-            $entityManager->persist($post);
-            $entityManager->flush();
-
-            return $this->redirectToRoute('app_home');
-        }
-
-        return $this->render('post/new.html.twig', [
-            'form' => $form,
-        ]);
-    }
-
-    #[Route('/post/{id}', name: 'app_post_show', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
-    public function show(
-        Post $post, 
-        Request $request, 
-        EntityManagerInterface $entityManager, 
-        PostCommentRepository $commentRepository,
-        NotificationService $notificationService
-    ): Response {
-        // Formulaire pour ajouter un commentaire
-        $comment = new PostComment();
-        $comment->setAuthor($this->getUser());
-        $comment->setPost($post);
-        
-        $commentForm = $this->createForm(PostCommentType::class, $comment);
-        $commentForm->handleRequest($request);
-        
-        if ($commentForm->isSubmitted() && $commentForm->isValid()) {
-            $entityManager->persist($comment);
-            $post->updateCommentsCounter(); // Mettre à jour le compteur
-            $entityManager->flush();
-            
-            // Envoyer une notification
-            $notificationService->notifyPostComment($comment);
-            
-            $this->addFlash('success', 'Votre commentaire a été ajouté avec succès !');
-            return $this->redirectToRoute('app_post_show', ['id' => $post->getId()]);
-        }
-        
-        // Récupérer les commentaires (triés par date décroissante)
-        $comments = $commentRepository->findBy(
-            ['post' => $post, 'parent' => null],
-            ['createdAt' => 'DESC']
-        );
-        
-        return $this->render('post/show.html.twig', [
-            'post' => $post,
-            'comments' => $comments,
-            'commentForm' => $commentForm->createView(),
-        ]);
-    }
-
-    #[Route('/post/{id}/edit', name: 'app_post_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
-    #[IsGranted('POST_EDIT', 'post')]
-    public function edit(
-        Request $request, 
-        Post $post, 
-        EntityManagerInterface $entityManager, 
-        SluggerInterface $slugger,
-        UserRepository $userRepository,
-        HashtagRepository $hashtagRepository,
-        NotificationService $notificationService,
-        ContentProcessorService $contentProcessor,
-        FileUploader $fileUploader
-    ): Response {
-        $form = $this->createForm(PostType::class, $post);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            // S'assurer que le titre n'est pas null (DB peut ne pas accepter NULL malgré la configuration)
             if ($post->getTitle() === null) {
                 $post->setTitle('');
             }
-            
-            // Gestion de l'image
+
             $imageFile = $form->get('imageFile')->getData();
             if ($imageFile) {
                 try {
-                    $newFilename = $fileUploader->upload(
-                        $imageFile, 
-                        'posts_directory', 
+                    $newFilename = $this->fileUploader->upload(
+                        $imageFile,
+                        'posts_directory',
                         $post->getImage()
                     );
                     $post->setImage($newFilename);
@@ -170,11 +76,71 @@ class PostController extends AbstractController
                     $this->addFlash('error', $e->getMessage());
                 }
             }
-            
-            // Traitement des hashtags et des mentions
-            $contentProcessor->processPostContent($post, true);
-            
-            $entityManager->flush();
+
+            $this->contentProcessor->processPostContent($post, true);
+            $this->entityManager->persist($post);
+            $this->entityManager->flush();
+
+            $this->addFlash('success', 'Votre post a été créé avec succès !');
+            return $this->redirectToRoute('app_post_show', ['id' => $post->getId()]);
+        }
+
+        return $this->render('post/new.html.twig', [
+            'post' => $post,
+            'form' => $form->createView(),
+        ]);
+    }
+
+    #[Route('/post/{id}', name: 'app_post_show', methods: ['GET'], requirements: ['id' => '\d+'])]
+    public function show(
+        Post $post,
+        Request $request,
+        PostCommentRepository $commentRepository
+    ): Response {
+        $comment = new PostComment();
+        $commentForm = $this->createForm(PostCommentType::class, $comment);
+
+        $page = $request->query->getInt('page', 1);
+        $comments = $commentRepository->findByPost($post, $page);
+
+        return $this->render('post/show.html.twig', [
+            'post' => $post,
+            'comment_form' => $commentForm->createView(),
+            'comments' => $comments,
+        ]);
+    }
+
+    #[Route('/post/{id}/edit', name: 'app_post_edit', methods: ['GET', 'POST'])]
+    #[IsGranted('POST_EDIT', 'post')]
+    public function edit(
+        Request $request,
+        Post $post,
+        SluggerInterface $slugger
+    ): Response {
+        $form = $this->createForm(PostType::class, $post);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            if ($post->getTitle() === null) {
+                $post->setTitle('');
+            }
+
+            $imageFile = $form->get('imageFile')->getData();
+            if ($imageFile) {
+                try {
+                    $newFilename = $this->fileUploader->upload(
+                        $imageFile,
+                        'posts_directory',
+                        $post->getImage()
+                    );
+                    $post->setImage($newFilename);
+                } catch (\Exception $e) {
+                    $this->addFlash('error', $e->getMessage());
+                }
+            }
+
+            $this->contentProcessor->processPostContent($post, true);
+            $this->entityManager->flush();
 
             $this->addFlash('success', 'Votre post a été modifié avec succès !');
             return $this->redirectToRoute('app_post_show', ['id' => $post->getId()]);
@@ -182,17 +148,19 @@ class PostController extends AbstractController
 
         return $this->render('post/edit.html.twig', [
             'post' => $post,
-            'form' => $form,
+            'form' => $form->createView(),
         ]);
     }
 
-    #[Route('/post/{id}/delete', name: 'app_post_delete', methods: ['POST'], requirements: ['id' => '\d+'])]
+    #[Route('/post/{id}/delete', name: 'app_post_delete', methods: ['POST'])]
     #[IsGranted('POST_DELETE', 'post')]
-    public function delete(Request $request, Post $post, EntityManagerInterface $entityManager): Response
-    {
-        if ($this->isCsrfTokenValid('delete'.$post->getId(), $request->request->get('_token'))) {
-            $entityManager->remove($post);
-            $entityManager->flush();
+    public function delete(
+        Request $request,
+        Post $post
+    ): Response {
+        if ($this->isCsrfTokenValid('delete' . $post->getId(), $request->request->get('_token'))) {
+            $this->entityManager->remove($post);
+            $this->entityManager->flush();
             $this->addFlash('success', 'Le post a été supprimé avec succès !');
         }
 
@@ -200,52 +168,91 @@ class PostController extends AbstractController
     }
 
     #[Route('/post/create', name: 'app_post_create', methods: ['POST'])]
+    #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
     public function create(
-        Request $request, 
-        EntityManagerInterface $entityManager, 
-        SluggerInterface $slugger,
-        UserRepository $userRepository,
-        HashtagRepository $hashtagRepository,
-        NotificationService $notificationService,
-        ContentProcessorService $contentProcessor,
-        FileUploader $fileUploader
+        Request $request,
+        SluggerInterface $slugger
     ): Response {
-        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        try {
+            $this->logger->info('Tentative de création de post rapide', [
+                'request_content' => $request->request->all(),
+                'has_files' => $request->files->count() > 0
+            ]);
 
-        $content = $request->request->get('content');
-        if (!$content) {
-            $this->addFlash('error', 'Le contenu ne peut pas être vide');
-            return $this->redirectToRoute('app_home');
-        }
-
-        $post = new Post();
-        $post->setContent($content);
-        $post->setAuthor($this->getUser());
-
-        $imageFile = $request->files->get('image');
-        if ($imageFile) {
-            try {
-                $newFilename = $fileUploader->upload($imageFile, 'posts_directory');
-                $post->setImage($newFilename);
-            } catch (\Exception $e) {
-                $this->addFlash('error', $e->getMessage());
+            if ($request->request->count() === 0 && $request->files->count() === 0) {
+                throw new \Exception('La requête ne contient aucune donnée');
             }
+
+            $content = $request->request->get('content');
+            if (!$content || trim($content) === '') {
+                throw new \Exception('Le contenu du post ne peut pas être vide');
+            }
+
+            $post = new Post();
+            $post->setAuthor($this->getUser());
+
+            $title = $request->request->get('title');
+            $post->setTitle($title ? trim($title) : '');
+            $post->setContent(trim($content));
+
+            $imageFile = $request->files->get('imageFile');
+            if ($imageFile) {
+                try {
+                    $newFilename = $this->fileUploader->upload(
+                        $imageFile,
+                        'posts_directory'
+                    );
+                    $post->setImage($newFilename);
+                } catch (\Exception $e) {
+                    throw new \Exception(
+                        'Erreur lors du téléchargement de l\'image : ' . $e->getMessage()
+                    );
+                }
+            }
+
+            $this->contentProcessor->processPostContent($post, true);
+            $this->entityManager->persist($post);
+            $this->entityManager->flush();
+
+            $this->notificationService->notifyMentionedUsers($post);
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Post créé avec succès',
+                'post' => [
+                    'id' => $post->getId(),
+                    'content' => $post->getContent(),
+                    'author' => [
+                        'id' => $post->getAuthor()->getId(),
+                        'username' => $post->getAuthor()->getUsername()
+                    ]
+                ]
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur de création de post: ' . $e->getMessage(), [
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_content' => $request->request->all(),
+                'has_files' => $request->files->count() > 0,
+                'request_content_type' => $request->headers->get('Content-Type')
+            ]);
+
+            return $this->json([
+                'success' => false,
+                'error' => 'Erreur lors de la création du post: ' . $e->getMessage(),
+                'debug_info' => [
+                    'request_parameters' => $request->request->count(),
+                    'request_files' => $request->files->count(),
+                    'content_type' => $request->headers->get('Content-Type')
+                ]
+            ], 400);
         }
-        
-        // Traitement des hashtags et mentions
-        $contentProcessor->processPostContent($post);
-
-        $entityManager->persist($post);
-        $entityManager->flush();
-
-        // Redirection vers la page d'accueil sans message flash
-        return $this->redirectToRoute('app_home');
     }
 
     #[Route('/post/{id}/like', name: 'app_post_like', requirements: ['id' => '\d+'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function like(
-        Post $post, 
+        Post $post,
         EntityManagerInterface $entityManager,
         PostLikeRepository $likeRepository,
         Request $request,
@@ -253,22 +260,22 @@ class PostController extends AbstractController
     ): Response {
         $user = $this->getUser();
         $reactionType = $request->query->get('type', PostLike::REACTION_LIKE);
-        
+
         // Vérifier si le type de réaction est valide
         if (!array_key_exists($reactionType, PostLike::REACTIONS)) {
             $reactionType = PostLike::REACTION_LIKE;
         }
-        
+
         // Vérifier si l'utilisateur a déjà liké ce post
         $existingLike = $likeRepository->findOneBy([
             'user' => $user,
             'post' => $post
         ]);
-        
+
         $clickedSameReaction = false;
         $liked = true;
         $newLike = null;
-        
+
         if ($existingLike) {
             // Si l'utilisateur clique sur le même type de réaction, on supprime sa réaction
             if ($existingLike->getReactionType() === $reactionType) {
@@ -292,20 +299,20 @@ class PostController extends AbstractController
             $newLike = $like;
             $this->addFlash('success', 'Vous avez ajouté une réaction');
         }
-        
+
         // Mettre à jour les compteurs de likes et de réactions
         if (!$clickedSameReaction) {
             $post->updateLikesCounter();
             $post->updateReactionCounts();
         }
-        
+
         $entityManager->flush();
-        
+
         // Envoyer une notification à l'auteur du post
         if ($newLike !== null) {
             $notificationService->notifyPostLike($newLike);
         }
-        
+
         // Si c'est une requête AJAX, retourner une réponse JSON
         if ($request->isXmlHttpRequest()) {
             return $this->json([
@@ -314,12 +321,12 @@ class PostController extends AbstractController
                 'likesCount' => $post->getLikesCount()
             ]);
         }
-        
+
         // Rediriger vers la page d'origine
         $referer = $request->headers->get('referer');
         return $referer ? $this->redirect($referer) : $this->redirectToRoute('app_home');
     }
-    
+
     #[Route('/post/debug', name: 'app_post_debug', methods: ['GET'])]
     public function debug(PostRepository $postRepository): Response
     {
@@ -327,9 +334,9 @@ class PostController extends AbstractController
         if ($this->getParameter('kernel.environment') === 'prod') {
             throw $this->createNotFoundException('Cette page n\'est disponible qu\'en environnement de développement');
         }
-        
+
         $posts = $postRepository->findAllOrderedByDate();
-        
+
         // Retourner directement les données au format JSON pour le débogage
         $postsData = [];
         foreach ($posts as $post) {
@@ -342,7 +349,7 @@ class PostController extends AbstractController
                 'sharesCount' => $post->getSharesCount()
             ];
         }
-        
+
         return $this->json([
             'posts' => $postsData,
             'count' => count($postsData),
@@ -353,8 +360,8 @@ class PostController extends AbstractController
     #[Route('/post/{id}/share', name: 'app_post_share', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function share(
-        Post $post, 
-        Request $request, 
+        Post $post,
+        Request $request,
         EntityManagerInterface $entityManager,
         NotificationService $notificationService
     ): Response {
@@ -362,23 +369,23 @@ class PostController extends AbstractController
         $share = new PostShare();
         $share->setUser($this->getUser());
         $share->setPost($post);
-        
+
         $entityManager->persist($share);
         $post->updateSharesCounter(); // Mettre à jour le compteur
         $entityManager->flush();
-        
+
         // Envoyer une notification
         $notificationService->notifyPostShare($share);
-        
+
         // Rediriger vers la page d'accueil pour voir le partage dans le fil d'actualité
         return $this->redirectToRoute('app_home');
     }
-    
+
     #[Route('/post/comment/{id}/reply', name: 'app_post_comment_reply', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function replyToComment(
-        PostComment $parentComment, 
-        Request $request, 
+        PostComment $parentComment,
+        Request $request,
         EntityManagerInterface $entityManager,
         NotificationService $notificationService
     ): Response {
@@ -386,21 +393,21 @@ class PostController extends AbstractController
         $comment->setAuthor($this->getUser());
         $comment->setPost($parentComment->getPost());
         $comment->setParent($parentComment);
-        
+
         $form = $this->createForm(PostCommentType::class, $comment);
         $form->handleRequest($request);
-        
+
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->persist($comment);
             $entityManager->flush();
-            
+
             // Envoyer une notification
             $notificationService->notifyPostComment($comment);
-            
+
             $this->addFlash('success', 'Votre réponse a été ajoutée avec succès !');
             return $this->redirectToRoute('app_post_show', ['id' => $parentComment->getPost()->getId()]);
         }
-        
+
         return $this->render('post/reply.html.twig', [
             'parentComment' => $parentComment,
             'form' => $form->createView(),
@@ -415,29 +422,29 @@ class PostController extends AbstractController
     ): Response {
         // Trouver le hashtag
         $hashtag = $hashtagRepository->findOneBy(['name' => ltrim($name, '#')]);
-        
+
         if (!$hashtag) {
             throw $this->createNotFoundException('Ce hashtag n\'existe pas');
         }
-        
+
         // Récupérer les posts avec ce hashtag
         $posts = $postRepository->findByHashtag($hashtag);
-        
+
         // Récupérer les hashtags tendance
         $trendingHashtags = $hashtagRepository->findTrending(5);
-        
+
         return $this->render('post/hashtag.html.twig', [
             'hashtag' => $hashtag,
             'posts' => $posts,
             'trendingHashtags' => $trendingHashtags
         ]);
     }
-    
+
     #[Route('/hashtags/trending', name: 'app_hashtags_trending')]
     public function trendingHashtags(HashtagRepository $hashtagRepository): Response
     {
         $hashtags = $hashtagRepository->findTrending(20);
-        
+
         return $this->render('post/trending_hashtags.html.twig', [
             'hashtags' => $hashtags
         ]);
@@ -454,12 +461,12 @@ class PostController extends AbstractController
             ['post' => $post, 'parent' => null],
             ['createdAt' => 'DESC']
         );
-        
+
         // Si ce n'est pas une requête AJAX, rediriger vers la page du post
         if (!$request->isXmlHttpRequest()) {
             return $this->redirectToRoute('app_post_show', ['id' => $post->getId()]);
         }
-        
+
         $formattedComments = [];
         foreach ($comments as $comment) {
             $formattedComments[] = [
@@ -472,13 +479,13 @@ class PostController extends AbstractController
                 'repliesCount' => count($comment->getReplies())
             ];
         }
-        
+
         return $this->json([
             'success' => true,
             'comments' => $formattedComments
         ]);
     }
-    
+
     #[Route('/post/{id}/comment/add', name: 'app_post_comment_add', methods: ['POST'], requirements: ['id' => '\d+'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function addComment(
@@ -491,29 +498,29 @@ class PostController extends AbstractController
         if (!$request->isXmlHttpRequest()) {
             return $this->redirectToRoute('app_post_show', ['id' => $post->getId()]);
         }
-        
+
         $data = json_decode($request->getContent(), true);
         $content = $data['content'] ?? null;
-        
+
         if (!$content) {
             return $this->json([
                 'success' => false,
                 'error' => 'Le contenu ne peut pas être vide'
             ]);
         }
-        
+
         $comment = new PostComment();
         $comment->setContent($content);
         $comment->setAuthor($this->getUser());
         $comment->setPost($post);
-        
+
         $entityManager->persist($comment);
         $post->updateCommentsCounter();
         $entityManager->flush();
 
         // Envoyer une notification
         $notificationService->notifyPostComment($comment);
-        
+
         return $this->json([
             'success' => true,
             'commentId' => $comment->getId(),
@@ -535,35 +542,34 @@ class PostController extends AbstractController
         NotificationService $notificationService,
         ContentProcessorService $contentProcessor,
         FileUploader $fileUploader
-    ): Response
-    {
+    ): Response {
         try {
             // Journaliser les informations de la requête
             $this->logger->info('Tentative de création de post rapide', [
                 'request_content' => $request->request->all(),
                 'has_files' => $request->files->count() > 0
             ]);
-            
+
             // Vérifier que la requête contient des données
             if ($request->request->count() === 0 && $request->files->count() === 0) {
                 throw new \Exception('La requête ne contient aucune donnée');
             }
-            
+
             // Vérifier que le contenu n'est pas vide
             $content = $request->request->get('content');
             if (!$content || trim($content) === '') {
                 throw new \Exception('Le contenu du post ne peut pas être vide');
             }
-            
+
             $post = new Post();
             $post->setAuthor($this->getUser());
-            
+
             // Récupérer le titre s'il existe, ou définir une chaîne vide
             $title = $request->request->get('title');
             $post->setTitle($title ? trim($title) : '');
-            
+
             $post->setContent(trim($content));
-            
+
             // Gérer l'image si présente
             $imageFile = $request->files->get('imageFile');
             if ($imageFile) {
@@ -572,7 +578,7 @@ class PostController extends AbstractController
                     'size' => $imageFile->getSize(),
                     'mime_type' => $imageFile->getMimeType()
                 ]);
-                
+
                 try {
                     $newFilename = $fileUploader->upload($imageFile, 'posts_directory');
                     $post->setImage($newFilename);
@@ -583,7 +589,7 @@ class PostController extends AbstractController
                     throw new \Exception('Erreur lors de l\'upload de l\'image: ' . $e->getMessage());
                 }
             }
-            
+
             // IMPORTANT: Persister et flusher avant de traiter le contenu
             // pour s'assurer que l'ID est généré
             try {
@@ -595,7 +601,7 @@ class PostController extends AbstractController
                 ]);
                 throw new \Exception('Erreur lors de la persistance en base de données: ' . $e->getMessage());
             }
-            
+
             // Traitement des hashtags et des mentions APRÈS avoir enregistré le post
             try {
                 $contentProcessor->processPostContent($post);
@@ -609,7 +615,7 @@ class PostController extends AbstractController
                 // Ne pas lancer d'exception ici, le post a déjà été créé
                 // On peut continuer avec l'ID existant
             }
-            
+
             // Récupérer l'ID après le flush
             $postId = $post->getId();
             if (!$postId || !is_numeric($postId) || intval($postId) <= 0) {
@@ -618,19 +624,19 @@ class PostController extends AbstractController
                 ]);
                 throw new \Exception('L\'ID du post n\'a pas été généré correctement');
             }
-            
+
             // Générer l'URL avec l'ID vérifié
             $postUrl = $this->generateUrl('app_post_show', ['id' => $postId]);
-            
+
             // Générer l'URL de la page d'accueil pour y retourner
             $homeUrl = $this->generateUrl('app_home');
-            
+
             $this->logger->info('Post créé avec succès', [
                 'post_id' => $postId,
                 'post_url' => $postUrl,    // URL du post pour référence
                 'redirect_url' => $homeUrl
             ]);
-            
+
             // Retourner une réponse JSON avec des informations détaillées
             return $this->json([
                 'success' => true,
@@ -643,7 +649,6 @@ class PostController extends AbstractController
                     'route_name' => 'app_home'
                 ]
             ]);
-            
         } catch (\Exception $e) {
             // Logger l'erreur côté serveur pour une analyse plus approfondie
             $this->logger->error('Erreur de création de post: ' . $e->getMessage(), [
@@ -653,7 +658,7 @@ class PostController extends AbstractController
                 'has_files' => $request->files->count() > 0,
                 'request_content_type' => $request->headers->get('Content-Type')
             ]);
-            
+
             return $this->json([
                 'success' => false,
                 'error' => 'Erreur lors de la création du post: ' . $e->getMessage(),
@@ -665,4 +670,4 @@ class PostController extends AbstractController
             ], 400);
         }
     }
-} 
+}
