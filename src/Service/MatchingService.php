@@ -19,8 +19,7 @@ class MatchingService
         private readonly EntityManagerInterface $entityManager,
         private readonly UserRepository $userRepository,
         private readonly JobOfferRepository $jobOfferRepository
-    )
-    {
+    ) {
     }
 
     /**
@@ -109,7 +108,7 @@ class MatchingService
 
     /**
      * Calcule le score basé sur les compétences techniques
-     * 
+     *
      * @return array{score: int, maxScore: int, matches: array<string>}
      */
     private function calculateTechnicalSkillsScore(Applicant $applicant, JobOffer $jobOffer): array
@@ -125,12 +124,16 @@ class MatchingService
         $matchCount = 0;
 
         foreach ($requiredSkills as $skill) {
-            if (empty($skill)) continue;
-            
+            if (empty($skill)) {
+                continue;
+            }
+
             $found = false;
             foreach ($candidateSkills as $candidateSkill) {
-                if (empty($candidateSkill)) continue;
-                
+                if (empty($candidateSkill)) {
+                    continue;
+                }
+
                 if ($this->isSimilarSkill($skill, $candidateSkill)) {
                     $found = true;
                     $matches[] = $skill;
@@ -193,7 +196,7 @@ class MatchingService
         $relevantExperiences = $this->findRelevantExperiences($experiences, $jobOffer);
         $experienceScore = $this->calculateBaseExperienceScore($relevantExperiences);
         $bonusScore = $this->calculateExperienceBonusScore($relevantExperiences, $jobOffer);
-        
+
         return min(100, $experienceScore + $bonusScore);
     }
 
@@ -204,13 +207,13 @@ class MatchingService
     {
         $relevantExperiences = [];
         $jobKeywords = $this->extractKeywords($jobOffer->getTitle() . ' ' . $jobOffer->getDescription());
-        
+
         foreach ($experiences as $experience) {
             if ($this->isExperienceRelevant($experience, $jobKeywords)) {
                 $relevantExperiences[] = $experience;
             }
         }
-        
+
         return $relevantExperiences;
     }
 
@@ -221,13 +224,13 @@ class MatchingService
     {
         $score = 0;
         $totalYears = 0;
-        
+
         foreach ($relevantExperiences as $experience) {
             $years = $this->calculateExperienceYears($experience);
             $totalYears += $years;
             $score += $years * 10;
         }
-        
+
         return min(70, $score);
     }
 
@@ -238,11 +241,11 @@ class MatchingService
     private function isExperienceRelevant(array $experience, array $jobKeywords): bool
     {
         $experienceKeywords = $this->extractKeywords(
-            $experience['title'] . ' ' . 
-            $experience['description'] . ' ' . 
+            $experience['title'] . ' ' .
+            $experience['description'] . ' ' .
             $experience['company']
         );
-        
+
         return count(array_intersect($jobKeywords, $experienceKeywords)) > 0;
     }
 
@@ -275,14 +278,14 @@ class MatchingService
         $jobKeywords = $this->extractKeywords(
             $jobOffer->getTitle() . ' ' . $jobOffer->getDescription()
         );
-        
+
         $matchingKeywords = count(array_intersect($experienceKeywords, $jobKeywords));
         $bonus += $matchingKeywords * 2;
-        
+
         if ($this->isSimilarSkill($experience['title'], $jobOffer->getTitle())) {
             $bonus += 10;
         }
-        
+
         return $bonus;
     }
 
@@ -526,24 +529,24 @@ class MatchingService
 
     /**
      * Calcule le score bonus basé sur l'expérience professionnelle récente
-     * 
+     *
      * @param array<string, mixed> $relevantExperiences
      */
     private function calculateExperienceBonusScore(array $relevantExperiences, JobOffer $jobOffer): float
     {
         $score = 0;
         $recentExperiences = $this->filterRecentExperiences($relevantExperiences);
-        
+
         foreach ($recentExperiences as $experience) {
             $score += $this->calculateSingleExperienceBonus($experience, $jobOffer);
         }
-        
+
         return min(30, $score);
     }
 
     /**
      * Extrait les mots-clés d'un texte
-     * 
+     *
      * @return array<string>
      */
     private function extractKeywords(string $text): array
@@ -557,7 +560,7 @@ class MatchingService
 
         // Filtrer les mots courts et les mots vides
         $stopWords = ['le', 'la', 'les', 'un', 'une', 'des', 'et', 'ou', 'de', 'du', 'en', 'dans'];
-        $words = array_filter($words, function($word) use ($stopWords) {
+        $words = array_filter($words, function ($word) use ($stopWords) {
             return strlen($word) > 2 && !in_array($word, $stopWords);
         });
 
