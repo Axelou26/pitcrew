@@ -35,10 +35,10 @@ class NotifyExpiringSubscriptionsCommand extends Command
     protected function configure(): void
     {
         $this
-
-
-                    ->setHelp('Cette commande envoie des notifications aux utilisateurs dont l\'abonnement expire dans les 7 prochains jours
-                        . Elle est conçue pour être exécutée quotidiennement via un cron job.');
+            ->setHelp(
+                'Cette commande envoie des notifications aux utilisateurs dont l\'abonnement expire ' .
+                'dans les 7 prochains jours. Elle est conçue pour être exécutée quotidiennement via un cron job.'
+            );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

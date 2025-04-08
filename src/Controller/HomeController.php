@@ -33,7 +33,12 @@ class HomeController extends AbstractController
     ): Response {
         $data = $cache->get(
             'homepage_data_' . ($this->getUser() ? $this->getUser()->getId() : 'anonymous'),
-            function (ItemInterface $item) use ($postRepository, $userRepository, $hashtagRepository, $jobOfferRepository) {
+            function (ItemInterface $item) use (
+                $postRepository,
+                $userRepository,
+                $hashtagRepository,
+                $jobOfferRepository
+            ) {
                 $item->expiresAfter(300); // Cache pour 5 minutes
 
                 $user = $this->getUser();

@@ -117,7 +117,9 @@ class JobOfferRepository extends ServiceEntityRepository
 
             foreach ($keywords as $index => $keyword) {
                 if (strlen($keyword) > 3) { // Ignorer les mots trop courts
-                    $conditions[] = "CASE WHEN LOWER(j.title) LIKE :keyword{$index} OR LOWER(j.description) LIKE :keyword{$index} THEN 3 ELSE 0 END";
+                    $conditions[] = 
+                        "CASE WHEN LOWER(j.title) LIKE :keyword{$index} OR " .
+                        "LOWER(j.description) LIKE :keyword{$index} THEN 3 ELSE 0 END";
                     $parameters["keyword{$index}"] = '%' . strtolower($keyword) . '%';
                 }
             }

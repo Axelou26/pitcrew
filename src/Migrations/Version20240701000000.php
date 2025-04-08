@@ -27,7 +27,10 @@ final class Version20240701000000 extends AbstractMigration
     {
         // Revert back to ARRAY type
         $this
-            
-               ->addSql('ALTER TABLE job_offer CHANGE required_skills required_skills LONGTEXT NOT NULL COMMENT \'(DC2Type:array)\'');
+            ->addSql(
+                'ALTER TABLE job_offer ' .
+                'CHANGE required_skills required_skills LONGTEXT NOT NULL ' .
+                'COMMENT \'(DC2Type:array)\''
+            );
     }
 }

@@ -313,7 +313,17 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
             'Concepteur pièces F1'
         ];
 
-        $locations = ['Monaco', 'Silverstone, UK', 'Maranello, Italie', 'Milton Keynes, UK', 'Enstone, UK', 'Viry-Châtillon, France', 'Hinwil, Suisse', 'Brackley, UK'];
+        $locations = [
+            'Monaco',
+            'Silverstone, UK',
+            'Maranello, Italie',
+            'Milton Keynes, UK',
+            'Enstone, UK',
+            'Viry-Châtillon, France',
+            'Hinwil, Suisse',
+            'Brackley, UK'
+        ];
+
         $contractTypes = ['CDI', 'CDD', 'Freelance', 'Stage', 'Alternance'];
 
         foreach ($recruiters as $index => $recruiter) {
@@ -350,7 +360,14 @@ Nous offrons:
                 $jobOffer->setLocation($locations[array_rand($locations)]);
                 $jobOffer->setSalary(rand(35000, 90000));
                 $jobOffer
-                    ->setRequiredSkills(['Mécanique F1', 'Connaissance des règlements', 'Travail d\'équipe', 'Anglais courant', 'Résistance au stress', 'Disponibilité pour voyager']);
+                    ->setRequiredSkills([
+                        'Mécanique F1',
+                        'Connaissance des règlements',
+                        'Travail d\'équipe',
+                        'Anglais courant',
+                        'Résistance au stress',
+                        'Disponibilité pour voyager'
+                    ]);
                 $jobOffer->setExpiresAt(new \DateTime('+30 days'));
                 $jobOffer->setRecruiter($recruiter);
                 $jobOffer->setIsActive(true);
@@ -405,7 +422,11 @@ Nous offrons:
                 $randomIndex = array_rand($postTitles);
                 $post->setTitle($postTitles[$randomIndex]);
                 $post
-                    ->setContent($postContents[$randomIndex] . "\n\nQu'en pensez-vous? Partagez vos expériences dans ce domaine! #F1 #Motorsport #CarrièreF1");
+                    ->setContent(
+                        $postContents[$randomIndex] . 
+                        "\n\nQu'en pensez-vous? Partagez vos expériences dans ce domaine! " .
+                        "#F1 #Motorsport #CarrièreF1"
+                    );
                 $post->setAuthor($user);
 
                 $manager->persist($post);

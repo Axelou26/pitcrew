@@ -46,8 +46,10 @@ class RecruiterController extends AbstractController
                 return $this->redirectToRoute('app_subscription_plans');
             } else {
                 $this
-                    ->addFlash('error', 'Vous avez atteint la limite de publication d\'offres pour votre abonnement actuel
-                        .');
+                    ->addFlash(
+                        'error',
+                        'Vous avez atteint la limite de publication d\'offres pour votre abonnement actuel.'
+                    );
                 return $this->redirectToRoute('app_subscription_manage');
             }
         }
