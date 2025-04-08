@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
 use App\Entity\JobOffer;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Query\QueryException;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -23,7 +26,7 @@ class JobOfferRepository extends ServiceEntityRepository
     }
 
     /**
-     * @return JobOffer[] Returns an array of active JobOffer objects
+     * @return array<int, JobOffer>
      */
     public function findActiveOffers(): array
     {
@@ -38,7 +41,7 @@ class JobOfferRepository extends ServiceEntityRepository
     }
 
     /**
-     * @return JobOffer[] Returns an array of JobOffer objects matching the search criteria
+     * @return array<int, JobOffer>
      */
     public function search(?string $query = null, ?string $location = null, ?string $contractType = null): array
     {
@@ -69,7 +72,7 @@ class JobOfferRepository extends ServiceEntityRepository
     }
 
     /**
-     * @return JobOffer[] Returns an array of similar JobOffer objects
+     * @return array<int, JobOffer>
      */
     public function findSimilarOffers(JobOffer $jobOffer, int $limit = 3): array
     {
@@ -114,9 +117,8 @@ class JobOfferRepository extends ServiceEntityRepository
 
             foreach ($keywords as $index => $keyword) {
                 if (strlen($keyword) > 3) { // Ignorer les mots trop courts
-                    "CASE WHEN LOWER(j.title) LIKE :keyword{$index} OR LOWER(j.description) LIKE ' .
-                        ':keyword{$index} THEN 3 ELSE 0 END "
-                    $parameters["keyword{$index}"] = '%' . $keyword . '%';
+                    $conditions[] = "CASE WHEN LOWER(j.title) LIKE :keyword{$index} OR LOWER(j.description) LIKE :keyword{$index} THEN 3 ELSE 0 END";
+                    $parameters["keyword{$index}"] = '%' . strtolower($keyword) . '%';
                 }
             }
         }
@@ -139,7 +141,7 @@ class JobOfferRepository extends ServiceEntityRepository
     }
 
     /**
-     * @return JobOffer[] Returns an array of expired JobOffer objects
+     * @return array<int, JobOffer>
      */
     public function findExpiredOffers(): array
     {
@@ -153,11 +155,11 @@ class JobOfferRepository extends ServiceEntityRepository
     }
 
     /**
-     * @return int Returns the number of active job offers
+     * @throws QueryException
      */
     public function countActiveOffers(): int
     {
-        return $this->createQueryBuilder('j')
+        $result = $this->createQueryBuilder('j')
             ->select('COUNT(j.id)')
             ->where('j.isActive = :active')
             ->andWhere('j.expiresAt > :now OR j.expiresAt IS NULL')
@@ -165,38 +167,36 @@ class JobOfferRepository extends ServiceEntityRepository
             ->setParameter('now', new \DateTime())
             ->getQuery()
             ->getSingleScalarResult();
+
+        return (int) $result;
     }
 
     /**
-     * Recherche et filtre les offres d'emploi
+     * @param array<string, mixed> $filters
+     * @return array<int, JobOffer>
      */
-    public function searchOffers(?string $query = null, ?array $filters = []): array
+    public function searchOffers(?string $query = null, array $filters = []): array
     {
         $qb = $this->createQueryBuilder('j')
             ->where('j.expiresAt > :now OR j.expiresAt IS NULL')
             ->setParameter('now', new \DateTime());
 
-        // Recherche par mot-clé
         if ($query) {
             $qb->andWhere('j.title LIKE :query OR j.description LIKE :query OR j.location LIKE :query')
                 ->setParameter('query', '%' . $query . '%');
         }
 
-        // Filtres
         if (!empty($filters)) {
-            // Filtre par type de contrat
             if (!empty($filters['contractType'])) {
                 $qb->andWhere('j.contractType = :contractType')
                     ->setParameter('contractType', $filters['contractType']);
             }
 
-            // Filtre par lieu
             if (!empty($filters['location'])) {
                 $qb->andWhere('j.location LIKE :location')
                     ->setParameter('location', '%' . $filters['location'] . '%');
             }
 
-            // Filtre par salaire minimum
             if (!empty($filters['minSalary'])) {
                 $qb->andWhere('j.salary >= :minSalary')
                     ->setParameter('minSalary', $filters['minSalary']);
@@ -209,9 +209,9 @@ class JobOfferRepository extends ServiceEntityRepository
     }
 
     /**
-     * @return JobOffer[] Returns an array of JobOffer objects for a specific recruiter
+     * @return array<int, JobOffer>
      */
-    public function findByRecruiter($recruiter): array
+    public function findByRecruiter(User $recruiter): array
     {
         return $this->createQueryBuilder('j')
             ->andWhere('j.recruiter = :recruiter')
@@ -222,11 +222,11 @@ class JobOfferRepository extends ServiceEntityRepository
     }
 
     /**
-     * Compte le nombre d'offres d'emploi publiées par un utilisateur dans une période donnée
+     * @throws QueryException
      */
     public function countJobOffersByUserAndDateRange(User $user, \DateTime $startDate, \DateTime $endDate): int
     {
-        return $this->createQueryBuilder('j')
+        $result = $this->createQueryBuilder('j')
             ->select('COUNT(j.id)')
             ->andWhere('j.recruiter = :user')
             ->andWhere('j.createdAt BETWEEN :startDate AND :endDate')
@@ -235,5 +235,7 @@ class JobOfferRepository extends ServiceEntityRepository
             ->setParameter('endDate', $endDate)
             ->getQuery()
             ->getSingleScalarResult();
+
+        return (int) $result;
     }
 }

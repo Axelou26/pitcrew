@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 use App\Entity\JobApplication;
@@ -12,21 +14,15 @@ use App\Entity\PostShare;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 class NotificationService
 {
-    private EntityManagerInterface $entityManager;
-    private UrlGeneratorInterface $urlGenerator;
-    private LoggerInterface $logger;
-
     public function __construct(
-        EntityManagerInterface $entityManager,
-        UrlGeneratorInterface $urlGenerator,
-        LoggerInterface $logger
+        private readonly EntityManagerInterface $entityManager,
+        private readonly UrlGeneratorInterface $urlGenerator,
+        private readonly LoggerInterface $logger
     ) {
-        $this->entityManager = $entityManager;
-        $this->urlGenerator = $urlGenerator;
-        $this->logger = $logger;
     }
 
     /**
@@ -54,18 +50,30 @@ class NotificationService
 
     /**
      * Notifie un recruteur d'une nouvelle candidature
+     * @throws RuntimeException Si les relations requises sont nulles
      */
     public function notifyNewApplication(JobApplication $application): void
     {
-        $recruiter = $application->getJobOffer()->getRecruiter();
-        $applicant = $application->getApplicant();
         $jobOffer = $application->getJobOffer();
+        if (!$jobOffer) {
+            throw new RuntimeException('JobOffer not found for application');
+        }
+
+        $recruiter = $jobOffer->getRecruiter();
+        if (!$recruiter) {
+            throw new RuntimeException('Recruiter not found for job offer');
+        }
+
+        $applicant = $application->getApplicant();
+        if (!$applicant) {
+            throw new RuntimeException('Applicant not found for application');
+        }
 
         $title = 'Nouvelle candidature';
         $message = sprintf(
             '%s a postulé à votre offre "%s"',
             $applicant->getFullName(),
-            $jobOffer->getTitle()
+            $jobOffer->getTitle() ?? 'Sans titre'
         );
 
         $link = $this->urlGenerator->generate(
@@ -79,11 +87,20 @@ class NotificationService
 
     /**
      * Notifie un candidat du changement de statut de sa candidature
+     * @throws RuntimeException Si les relations requises sont nulles
      */
     public function notifyApplicationStatusChange(JobApplication $application): void
     {
         $applicant = $application->getApplicant();
+        if (!$applicant) {
+            throw new RuntimeException('Applicant not found for application');
+        }
+
         $jobOffer = $application->getJobOffer();
+        if (!$jobOffer) {
+            throw new RuntimeException('JobOffer not found for application');
+        }
+
         $status = $application->getStatus();
 
         $statusLabels = [
@@ -103,7 +120,7 @@ class NotificationService
         $title = 'Mise à jour de candidature';
         $message = sprintf(
             'Votre candidature pour l\'offre "%s" est maintenant %s',
-            $jobOffer->getTitle(),
+            $jobOffer->getTitle() ?? 'Sans titre',
             $statusLabels[$status] ?? $status
         );
 
@@ -124,14 +141,16 @@ class NotificationService
 
     /**
      * Notifie un utilisateur lorsqu'il est mentionné dans un post
-     *
-     * @param Post $post Le post contenant la mention
-     * @param User $user L'utilisateur mentionné
-     * @return void
+     * @throws RuntimeException Si l'auteur du post est null
      */
     public function notifyMention(Post $post, User $user): void
     {
-        if ($post->getAuthor() === $user) {
+        $author = $post->getAuthor();
+        if (!$author) {
+            throw new RuntimeException('Author not found for post');
+        }
+
+        if ($author === $user) {
             // Ne pas notifier l'auteur du post
             return;
         }
@@ -142,14 +161,12 @@ class NotificationService
             $notification->setType(Notification::TYPE_MENTION);
             $notification->setEntityType('post');
             $notification->setEntityId($post->getId());
-            $notification->setActorId($post->getAuthor()->getId());
+            $notification->setActorId($author->getId());
 
-            // Définir le titre et le message
             $notification->setTitle('Nouvelle mention');
             $notification->setMessage('Vous a mentionné dans une publication');
             $notification->setIsRead(false);
 
-            // Générer le lien vers le post
             $link = $this->urlGenerator->generate(
                 'app_post_show',
                 ['id' => $post->getId()],
@@ -175,15 +192,24 @@ class NotificationService
 
     /**
      * Notifie l'auteur d'un post qu'un utilisateur a aimé son post
-     *
-     * @param PostLike $like Le like
-     * @return void
+     * @throws RuntimeException Si les relations requises sont nulles
      */
     public function notifyPostLike(PostLike $like): void
     {
         $post = $like->getPost();
+        if (!$post) {
+            throw new RuntimeException('Post not found for like');
+        }
+
         $author = $post->getAuthor();
+        if (!$author) {
+            throw new RuntimeException('Author not found for post');
+        }
+
         $user = $like->getUser();
+        if (!$user) {
+            throw new RuntimeException('User not found for like');
+        }
 
         if ($author === $user) {
             // Ne pas notifier l'auteur s'il aime son propre post
@@ -244,7 +270,8 @@ class NotificationService
         } catch (\Throwable $e) {
             $this->logger->error('Erreur lors de la création d\'une notification de like', [
                 'error' => $e->getMessage(),
-                'post_id' => $post->getId()
+                'post_id' => $post->getId(),
+                'user_id' => $user->getId()
             ]);
         }
     }

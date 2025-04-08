@@ -18,11 +18,11 @@ use App\Validator\Email;
 #[UniqueEntity(fields: ['email'], message: 'Il existe déjà un compte avec cette adresse email')]
 #[ORM\InheritanceType('SINGLE_TABLE')]
 #[ORM\DiscriminatorColumn(name: 'discr', type: 'string')]
-#[ORM\DiscriminatorMap(
-    ['user' => User::class,
+#[ORM\DiscriminatorMap([
+    'user' => User::class,
     'recruiter' => 'App\Entity\Recruiter',
-    'applicant' => 'App\Entity\Applicant']
-)
+    'applicant' => 'App\Entity\Applicant'
+])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     // Constantes pour les types d'utilisateurs

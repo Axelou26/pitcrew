@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\DataFixtures;
 
 use App\Entity\Applicant;
@@ -14,14 +16,15 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class AppFixtures extends Fixture implements DependentFixtureInterface
 {
-    private UserPasswordHasherInterface $passwordHasher;
-
-    public function __construct(UserPasswordHasherInterface $passwordHasher)
-    {
-        $this->passwordHasher = $passwordHasher;
+    public function __construct(
+        private readonly UserPasswordHasherInterface $passwordHasher
+    ) {
     }
 
-    public function getDependencies()
+    /**
+     * @return array<class-string<Fixture>>
+     */
+    public function getDependencies(): array
     {
         return [
             SubscriptionFixtures::class,
@@ -31,8 +34,10 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
     public function load(ObjectManager $manager): void
     {
         // Création des recruteurs
+        /** @var array<int, Recruiter> $recruiters */
         $recruiters = [];
 
+        /** @var array<int, array<string, string>> $recruiterData */
         $recruiterData = [
             [
                 'email' => 'recruteur1@exemple.com',
@@ -86,7 +91,7 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
             ]
         ];
 
-        foreach ($recruiterData as $index => $data) {
+        foreach ($recruiterData as $data) {
             $recruiter = new Recruiter();
             $recruiter->setEmail($data['email']);
             $recruiter->setFirstName($data['firstName']);
@@ -112,12 +117,10 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
                 'lastName' => 'Robert',
                 'jobTitle' => 'Mécanicien F1 Senior',
                 'description' => 'Mécanicien passionné avec 8 ans d\'expérience dans les stands F1. Spécialiste...',
-                'technicalSkills' 
-                    = > ['Mécanique de précision', 'Systèmes hydrauliques', 'Aérodynamique', 'Maintenance préventive', 'Diagnostic rapide'],
-                'softSkills' 
-                    = > ['Travail d\'équipe', 'Résistance au stress', 'Communication', 'Précision', 'Résolution de problèmes'],
+                'technicalSkills' => ['Mécanique de précision', 'Systèmes hydrauliques', 'Aérodynamique', 'Maintenance préventive', 'Diagnostic rapide'],
+                'softSkills' => ['Travail d\'équipe', 'Résistance au stress', 'Communication', 'Précision', 'Résolution de problèmes'],
                 'city' => 'Marseille',
-                'bio' => 'Mécanicien passionné de sports automobiles depuis l\'enfance. J\'ai commencé ma carri�...',
+                'bio' => 'Mécanicien passionné de sports automobiles depuis l\'enfance. J\'ai commencé ma carrière...',
                 'experience' => "2015-2020 : Mécanicien principal, Team AlphaTauri F1\n2012-2015 : Mécanicien jun...",
                 'education' => "2008-2010 : BTS Maintenance des véhicules, option véhicules de compétition\n2006-..."
             ],
@@ -127,10 +130,8 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
                 'lastName' => 'Moreau',
                 'jobTitle' => 'Ingénieure Aérodynamique',
                 'description' => 'Ingénieure aérodynamique spécialisée dans la simulation CFD et l\'optimisatio...',
-                'technicalSkills' 
-                    = > ['CFD', 'Simulation numérique', 'Conception aérodynamique', 'MATLAB', 'SolidWorks', 'Analyse de données'],
-                'softSkills' 
-                    = > ['Esprit analytique', 'Innovation', 'Travail en équipe', 'Présentation', 'Capacité d\'adaptation'],
+                'technicalSkills' => ['CFD', 'Simulation numérique', 'Conception aérodynamique', 'MATLAB', 'SolidWorks', 'Analyse de données'],
+                'softSkills' => ['Esprit analytique', 'Innovation', 'Travail en équipe', 'Présentation', 'Capacité d\'adaptation'],
                 'city' => 'Bordeaux',
                 'bio' => 'Ingénieure passionnée par l\'aérodynamique et la performance. Docteur en mécanique de...',
                 'experience' => "2018-2023 : Ingénieure aérodynamique senior, Alpine F1 Team\n2015-2018 : Ingéni...",
@@ -142,10 +143,8 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
                 'lastName' => 'Richard',
                 'jobTitle' => 'Technicien Composite',
                 'description' => 'Technicien spécialisé dans la fabrication et la réparation de pièces en maté...',
-                'technicalSkills' 
-                    = > ['Fabrication composite', 'Carbone préimprégné', 'Moulage sous vide', 'Réparation structurelle', 'Tests non destructifs'],
-                'softSkills' 
-                    = > ['Minutie', 'Attention aux détails', 'Gestion du temps', 'Auto-formation', 'Résistance à la pression'],
+                'technicalSkills' => ['Fabrication composite', 'Carbone préimprégné', 'Moulage sous vide', 'Réparation structurelle', 'Tests non destructifs'],
+                'softSkills' => ['Minutie', 'Attention aux détails', 'Gestion du temps', 'Auto-formation', 'Résistance à la pression'],
                 'city' => 'Silverstone',
                 'bio' => 'Technicien composite avec 6 ans d\'expérience dans le développement et la fabrication d...',
                 'experience' => "2017-2023 : Technicien composite senior, McLaren Racing\n2014-2017 : Technicien co...",
@@ -157,10 +156,8 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
                 'lastName' => 'Lambert',
                 'jobTitle' => 'Ingénieure Données',
                 'description' => 'Ingénieure spécialisée dans l\'analyse de données télémétriques et la stra...',
-                'technicalSkills' 
-                    = > ['Télémétrie', 'Python', 'MATLAB', 'Machine Learning', 'Visualisation de données', 'SQL'],
-                'softSkills' 
-                    = > ['Analyse critique', 'Communication technique', 'Travail sous pression', 'Multitâche', 'Adaptabilité'],
+                'technicalSkills' => ['Télémétrie', 'Python', 'MATLAB', 'Machine Learning', 'Visualisation de données', 'SQL'],
+                'softSkills' => ['Analyse critique', 'Communication technique', 'Travail sous pression', 'Multitâche', 'Adaptabilité'],
                 'city' => 'Milan',
                 'bio' => 'Ingénieure en données avec formation en statistiques avancées et IA. Passionnée par l...',
                 'experience' => "2019-2023 : Ingénieure données, Haas F1 Team\n2016-2019 : Analyste performance, ...",
@@ -172,10 +169,8 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
                 'lastName' => 'Girard',
                 'jobTitle' => 'Chef Mécanicien',
                 'description' => 'Chef mécanicien expérimenté, responsable de la coordination d\'équipes techni...',
-                'technicalSkills' 
-                    = > ['Coordination d\'équipe', 'Gestion technique', 'Diagnostic avancé', 'Mécanique de précision', 'Systèmes électroniques embarqués'],
-                'softSkills' 
-                    = > ['Leadership', 'Prise de décision', 'Gestion de crise', 'Communication', 'Organisation'],
+                'technicalSkills' => ['Coordination d\'équipe', 'Gestion technique', 'Diagnostic avancé', 'Mécanique de précision', 'Systèmes électroniques embarqués'],
+                'softSkills' => ['Leadership', 'Prise de décision', 'Gestion de crise', 'Communication', 'Organisation'],
                 'city' => 'Barcelone',
                 'bio' => 'Chef mécanicien avec 12 ans d\'expérience en F1 et endurance. J\'ai dirigé des équipe...',
                 'experience' => "2018-2023 : Chef mécanicien, Aston Martin F1\n2015-2018 : Mécanicien senior, Toy...",
@@ -216,8 +211,7 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
             'Concepteur pièces F1'
         ];
 
-        $locations 
-            =  ['Monaco', 'Silverstone, UK', 'Maranello, Italie', 'Milton Keynes, UK', 'Enstone, UK', 'Viry-Châtillon, France', 'Hinwil, Suisse', 'Brackley, UK'];
+        $locations = ['Monaco', 'Silverstone, UK', 'Maranello, Italie', 'Milton Keynes, UK', 'Enstone, UK', 'Viry-Châtillon, France', 'Hinwil, Suisse', 'Brackley, UK'];
         $contractTypes = ['CDI', 'CDD', 'Freelance', 'Stage', 'Alternance'];
 
         foreach ($recruiters as $index => $recruiter) {
@@ -282,7 +276,7 @@ Nous offrons:
         $postContents = [
             'Les équipes de F1 investissent massivement dans les nouvelles technologies pour gagner ces précieux ...',
 
-            'Devenir mécanicien de F1 demande beaucoup de travail et de détermination. J\'ai commencé ma carriè...',
+            'Devenir mécanicien de F1 demande beaucoup de travail et de détermination. J\'ai commencé ma carrière...',
 
             'Travailler dans les stands pendant une course est une expérience incroyable. L\'adrénaline est à so...',
 
@@ -290,7 +284,7 @@ Nous offrons:
 
             'Vous rêvez de travailler en F1? Voici mes conseils pour maximiser vos chances. D\'abord, spécialisez...',
 
-            'Dans le monde de la F1, l\'apprentissage ne s\'arrête jamais. Les technologies évoluent si rapidemen...',
+            'Dans le monde de la F1, l\'apprentissage ne s\'arrête jamais. Les technologies évoluent si rapidement...',
 
             'L\'utilisation des matériaux composites en F1 a révolutionné la conception des voitures de course. ...',
 
