@@ -17,7 +17,7 @@ class Notification
     public const TYPE_SHARE = 'share';
     public const TYPE_FRIEND_REQUEST = 'friend_request';
     public const TYPE_APPLICATION = 'application';
-    
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -44,13 +44,13 @@ class Notification
 
     #[ORM\Column(length: 50)]
     private ?string $type = self::TYPE_INFO;
-    
+
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $entityType = null;
-    
+
     #[ORM\Column(nullable: true)]
     private ?int $entityId = null;
-    
+
     #[ORM\Column(nullable: true)]
     private ?int $actorId = null;
 
@@ -141,40 +141,40 @@ class Notification
 
         return $this;
     }
-    
+
     public function getEntityType(): ?string
     {
         return $this->entityType;
     }
-    
+
     public function setEntityType(?string $entityType): static
     {
         $this->entityType = $entityType;
-        
+
         return $this;
     }
-    
+
     public function getEntityId(): ?int
     {
         return $this->entityId;
     }
-    
+
     public function setEntityId(?int $entityId): static
     {
         $this->entityId = $entityId;
-        
+
         return $this;
     }
-    
+
     public function getActorId(): ?int
     {
         return $this->actorId;
     }
-    
+
     public function setActorId(?int $actorId): static
     {
         $this->actorId = $actorId;
-        
+
         return $this;
     }
 
@@ -185,4 +185,4 @@ class Notification
     {
         return $this->link;
     }
-} 
+}

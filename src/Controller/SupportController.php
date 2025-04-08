@@ -19,20 +19,20 @@ class SupportController extends AbstractController
     public function index(SupportTicketRepository $supportTicketRepository): Response
     {
         $user = $this->getUser();
-        
+
         if (!$user) {
             return $this->redirectToRoute('app_login');
         }
-        
+
         // Vérifier si l'utilisateur a accès au support prioritaire
         $hasPrioritySupport = $this->isGranted('PRIORITY_SUPPORT');
-        
+
         // Récupérer les tickets de l'utilisateur
         $userTickets = $supportTicketRepository->findBy(
             ['user' => $user],
             ['createdAt' => 'DESC']
         );
-        
+
         return $this->render('support/index.html.twig', [
             'tickets' => $userTickets,
             'hasPrioritySupport' => $hasPrioritySupport,
@@ -43,19 +43,19 @@ class SupportController extends AbstractController
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
         $user = $this->getUser();
-        
+
         if (!$user) {
             return $this->redirectToRoute('app_login');
         }
-        
+
         // Vérifier si l'utilisateur a accès au support prioritaire
         $hasPrioritySupport = $this->isGranted('PRIORITY_SUPPORT');
-        
+
         $ticket = new SupportTicket();
         $ticket->setUser($user);
         $ticket->setStatus('new');
         $ticket->setPriority($hasPrioritySupport ? 'high' : 'normal');
-        
+
         $form = $this->createForm(SupportTicketType::class, $ticket);
         $form->handleRequest($request);
 
@@ -86,7 +86,7 @@ class SupportController extends AbstractController
         if ($ticket->getUser() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
             throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à accéder à ce ticket.');
         }
-        
+
         // Vérifier si l'utilisateur a accès au support prioritaire
         $hasPrioritySupport = $this->isGranted('PRIORITY_SUPPORT');
 
@@ -103,28 +103,28 @@ class SupportController extends AbstractController
         if ($ticket->getUser() !== $this->getUser() && !$this->isGranted('ROLE_ADMIN')) {
             throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à accéder à ce ticket.');
         }
-        
+
         $content = $request->request->get('reply');
-        
+
         if (!$content) {
             $this->addFlash('error', 'Le message ne peut pas être vide.');
             return $this->redirectToRoute('app_support_show', ['id' => $ticket->getId()]);
         }
-        
+
         // Ajouter la réponse au ticket
         $ticket->addReply([
             'user' => $this->getUser()->getId(),
             'content' => $content,
             'created_at' => new \DateTime(),
         ]);
-        
+
         // Mettre à jour le statut du ticket
         $ticket->setStatus('waiting_for_support');
         $ticket->setUpdatedAt(new \DateTime());
-        
+
         $entityManager->flush();
-        
+
         $this->addFlash('success', 'Votre réponse a été ajoutée.');
         return $this->redirectToRoute('app_support_show', ['id' => $ticket->getId()]);
     }
-} 
+}

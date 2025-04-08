@@ -126,4 +126,4 @@ class Application
         $this->status = $status;
         return $this;
     }
-} 
+}

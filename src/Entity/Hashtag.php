@@ -16,19 +16,19 @@ class Hashtag
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
-    
+
     #[ORM\Column(length: 50, unique: true)]
     private ?string $name = null;
-    
+
     #[ORM\Column]
     private int $usageCount = 0;
-    
+
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
-    
+
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $lastUsedAt = null;
-    
+
     #[ORM\ManyToMany(targetEntity: Post::class, mappedBy: 'hashtags')]
     private Collection $posts;
 
@@ -43,56 +43,56 @@ class Hashtag
     {
         return $this->id;
     }
-    
+
     public function getName(): ?string
     {
         return $this->name;
     }
-    
+
     public function setName(string $name): static
     {
         // Enlever le # si présent et convertir en minuscules
         $name = ltrim($name, '#');
         $name = strtolower($name);
-        
+
         $this->name = $name;
         return $this;
     }
-    
+
     public function getUsageCount(): int
     {
         return $this->usageCount;
     }
-    
+
     public function setUsageCount(int $usageCount): static
     {
         $this->usageCount = $usageCount;
         return $this;
     }
-    
+
     public function incrementUsageCount(): static
     {
         $this->usageCount++;
         $this->lastUsedAt = new \DateTimeImmutable();
         return $this;
     }
-    
+
     public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
     }
-    
+
     public function getLastUsedAt(): ?\DateTimeImmutable
     {
         return $this->lastUsedAt;
     }
-    
+
     public function setLastUsedAt(?\DateTimeImmutable $lastUsedAt): static
     {
         $this->lastUsedAt = $lastUsedAt;
         return $this;
     }
-    
+
     /**
      * @return Collection<int, Post>
      */
@@ -100,32 +100,36 @@ class Hashtag
     {
         return $this->posts;
     }
-    
-    public function addPost(Post $post): static
+
+    public function addPost(Post $post, bool $updateOtherSide = true): static
     {
         if (!$this->posts->contains($post)) {
             $this->posts->add($post);
-            $post->addHashtag($this);
+            if ($updateOtherSide) {
+                $post->addHashtag($this, false);
+            }
             $this->incrementUsageCount();
         }
-        
+
         return $this;
     }
-    
-    public function removePost(Post $post): static
+
+    public function removePost(Post $post, bool $updateOtherSide = true): static
     {
         if ($this->posts->removeElement($post)) {
-            $post->removeHashtag($this);
+            if ($updateOtherSide) {
+                $post->removeHashtag($this, false);
+            }
         }
-        
+
         return $this;
     }
-    
+
     public function getFormattedName(): string
     {
         return '#' . $this->name;
     }
-    
+
     public function __toString(): string
     {
         return $this->getFormattedName();

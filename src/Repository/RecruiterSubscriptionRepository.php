@@ -64,21 +64,6 @@ class RecruiterSubscriptionRepository extends ServiceEntityRepository
     /**
      * Trouve tous les abonnements expirés qui sont encore marqués comme actifs
      */
-    public function findExpiredActiveSubscriptions(): array
-    {
-        return $this->createQueryBuilder('rs')
-            ->andWhere('rs.isActive = :active')
-            ->andWhere('rs.endDate < :now')
-            ->setParameter('active', true)
-            ->setParameter('now', new \DateTime())
-            ->orderBy('rs.endDate', 'ASC')
-            ->getQuery()
-            ->getResult();
-    }
-
-    /**
-     * Trouve tous les abonnements expirés (date de fin dépassée) mais toujours actifs
-     */
     public function findExpiredSubscriptions(): array
     {
         return $this->createQueryBuilder('rs')
@@ -86,6 +71,7 @@ class RecruiterSubscriptionRepository extends ServiceEntityRepository
             ->andWhere('rs.endDate < :now')
             ->setParameter('active', true)
             ->setParameter('now', new \DateTime())
+            ->orderBy('rs.endDate', 'ASC')
             ->getQuery()
             ->getResult();
     }
@@ -111,4 +97,4 @@ class RecruiterSubscriptionRepository extends ServiceEntityRepository
 
         return $result > 0;
     }
-} 
+}

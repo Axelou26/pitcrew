@@ -169,7 +169,7 @@ class RecruiterSubscription
 
         $now = new \DateTime();
         $diff = $this->endDate->diff($now);
-        
+
         return $diff->days <= 7 && $this->endDate > $now;
     }
 
@@ -208,4 +208,4 @@ class RecruiterSubscription
 
         return $this;
     }
-} 
+}

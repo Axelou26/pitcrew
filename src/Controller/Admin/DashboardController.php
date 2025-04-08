@@ -32,18 +32,18 @@ class DashboardController extends AbstractDashboardController
     public function configureMenuItems(): iterable
     {
         yield MenuItem::linkToDashboard('Dashboard', 'fa fa-home');
-        
+
         yield MenuItem::section('Abonnements');
         yield MenuItem::linkToRoute('Plans d\'abonnement', 'fas fa-tags', 'admin_subscription_index');
         yield MenuItem::linkToRoute('Abonnements recruteurs', 'fas fa-users-cog', 'admin_recruiter_subscription_index');
-        
+
         yield MenuItem::section('Utilisateurs');
         yield MenuItem::linkToRoute('Utilisateurs', 'fas fa-users', 'admin_user_index');
-        
+
         yield MenuItem::section('Offres d\'emploi');
         yield MenuItem::linkToRoute('Offres d\'emploi', 'fas fa-briefcase', 'admin_job_offer_index');
-        
+
         yield MenuItem::section('Site');
         yield MenuItem::linkToRoute('Retour au site', 'fas fa-arrow-left', 'app_home');
     }
-} 
+}

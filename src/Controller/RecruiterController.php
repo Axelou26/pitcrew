@@ -33,14 +33,14 @@ class RecruiterController extends AbstractController
 
     #[Route('/job-offer/new', name: 'app_recruiter_job_offer_new')]
     public function newJobOffer(
-        Request $request, 
+        Request $request,
         EntityManagerInterface $entityManager,
         SubscriptionService $subscriptionService
     ): Response {
         // Vérifier si l'utilisateur peut publier une nouvelle offre selon son abonnement
         if (!$subscriptionService->canPostJobOffer($this->getUser())) {
             $activeSubscription = $subscriptionService->getActiveSubscription($this->getUser());
-            
+
             if (!$activeSubscription) {
                 $this->addFlash('error', 'Vous devez avoir un abonnement actif pour publier des offres d\'emploi.');
                 return $this->redirectToRoute('app_subscription_plans');
@@ -49,17 +49,17 @@ class RecruiterController extends AbstractController
                 return $this->redirectToRoute('app_subscription_manage');
             }
         }
-        
+
         $jobOffer = new JobOffer();
         $jobOffer->setRecruiter($this->getUser());
-        
+
         $form = $this->createForm(JobOfferType::class, $jobOffer);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->persist($jobOffer);
             $entityManager->flush();
-            
+
             // Décrémenter le nombre d'offres restantes pour l'abonnement Basic
             $subscriptionService->decrementRemainingJobOffers($this->getUser());
 
@@ -131,20 +131,20 @@ class RecruiterController extends AbstractController
     ): Response {
         $query = $request->query->get('q');
         $skills = $request->query->all('skills');
-        
+
         if ($query || !empty($skills)) {
             $candidates = $applicantRepository->searchBySkillsAndKeywords($skills, $query);
         } else {
             $candidates = $applicantRepository->findAll();
         }
-        
+
         return $this->render('recruiter/candidates.html.twig', [
             'candidates' => $candidates,
             'query' => $query,
             'selectedSkills' => $skills
         ]);
     }
-    
+
     #[Route('/candidates/{id}', name: 'app_recruiter_candidate_profile')]
     #[IsGranted('FULL_CV_ACCESS')]
     public function candidateProfile(Applicant $applicant): Response
@@ -153,7 +153,7 @@ class RecruiterController extends AbstractController
             'candidate' => $applicant
         ]);
     }
-    
+
     #[Route('/advanced-search', name: 'app_recruiter_advanced_search')]
     #[IsGranted('ADVANCED_CANDIDATE_SEARCH')]
     public function advancedSearch(
@@ -162,7 +162,7 @@ class RecruiterController extends AbstractController
     ): Response {
         $formData = $request->query->all();
         $results = [];
-        
+
         if (!empty($formData)) {
             $results = $applicantRepository->advancedSearch(
                 $formData['skills'] ?? [],
@@ -171,13 +171,13 @@ class RecruiterController extends AbstractController
                 $formData['location'] ?? null
             );
         }
-        
+
         return $this->render('recruiter/advanced_search.html.twig', [
             'results' => $results,
             'formData' => $formData
         ]);
     }
-    
+
     #[Route('/recommendations', name: 'app_recruiter_recommendations')]
     #[IsGranted('AUTOMATIC_RECOMMENDATIONS')]
     public function recommendations(
@@ -186,7 +186,7 @@ class RecruiterController extends AbstractController
     ): Response {
         $recruiter = $this->getUser();
         $activeOffers = $jobOfferRepository->findBy(['recruiter' => $recruiter, 'isActive' => true]);
-        
+
         $recommendations = [];
         foreach ($activeOffers as $offer) {
             $recommendations[$offer->getId()] = [
@@ -194,12 +194,12 @@ class RecruiterController extends AbstractController
                 'candidates' => $applicantRepository->findMatchingCandidates($offer)
             ];
         }
-        
+
         return $this->render('recruiter/recommendations.html.twig', [
             'recommendations' => $recommendations
         ]);
     }
-    
+
     #[Route('/statistics', name: 'app_recruiter_statistics')]
     #[IsGranted('BASIC_STATISTICS')]
     public function statistics(
@@ -208,20 +208,20 @@ class RecruiterController extends AbstractController
     ): Response {
         $recruiter = $this->getUser();
         $hasDetailedStats = $subscriptionService->hasAccessToPremiumFeature($recruiter, 'detailed_statistics');
-        
+
         // Statistiques de base
         $basicStats = $statisticsService->getBasicStatistics($recruiter);
-        
+
         // Statistiques détaillées (uniquement pour Business)
         $detailedStats = null;
         if ($hasDetailedStats) {
             $detailedStats = $statisticsService->getDetailedStatistics($recruiter);
         }
-        
+
         return $this->render('recruiter/statistics.html.twig', [
             'basicStats' => $basicStats,
             'detailedStats' => $detailedStats,
             'hasDetailedStats' => $hasDetailedStats
         ]);
     }
-} 
+}

@@ -19,7 +19,7 @@ class UserController extends AbstractController
     {
         // Récupérer l'utilisateur par son ID ou son nom d'utilisateur
         $userRepository = $entityManager->getRepository(User::class);
-        
+
         $user = null;
         if ($id) {
             $user = $userRepository->find($id);
@@ -28,23 +28,23 @@ class UserController extends AbstractController
         } else {
             throw $this->createNotFoundException('Aucun identifiant ou nom d\'utilisateur fourni.');
         }
-        
+
         // Vérifier si l'utilisateur existe
         if (!$user) {
             throw $this->createNotFoundException('L\'utilisateur n\'existe pas.');
         }
-        
+
         $currentUser = $this->getUser();
-        
+
         // Récupérer les posts de l'utilisateur
         $posts = $entityManager->getRepository(\App\Entity\Post::class)->findBy(
             ['author' => $user],
             ['createdAt' => 'DESC']
         );
-        
+
         // Récupérer les statistiques
         $postsCount = count($posts);
-        
+
         // Vérifier les relations d'amitié
         $friendshipInfo = [
             'isFriend' => false,
@@ -52,18 +52,18 @@ class UserController extends AbstractController
             'hasPendingRequestTo' => false,
             'pendingRequestId' => null
         ];
-        
+
         if ($currentUser && $currentUser !== $user) {
             $friendshipRepository = $entityManager->getRepository(\App\Entity\Friendship::class);
-            
+
             // Vérifier si l'utilisateur est déjà ami avec l'utilisateur courant
             $friendship = $friendshipRepository->findAcceptedBetweenUsers($currentUser, $user);
             $friendshipInfo['isFriend'] = ($friendship !== null);
-            
+
             // Vérifier si l'utilisateur courant a envoyé une demande d'amitié à cet utilisateur
             $pendingRequest = $friendshipRepository->findPendingRequestBetweenUsers($currentUser, $user, true);
             $friendshipInfo['hasPendingRequestFrom'] = ($pendingRequest !== null);
-            
+
             // Vérifier si l'utilisateur a envoyé une demande d'amitié à l'utilisateur courant
             $pendingRequestTo = $friendshipRepository->findPendingRequestBetweenUsers($user, $currentUser, true);
             $friendshipInfo['hasPendingRequestTo'] = ($pendingRequestTo !== null);
@@ -71,7 +71,7 @@ class UserController extends AbstractController
                 $friendshipInfo['pendingRequestId'] = $pendingRequestTo->getId();
             }
         }
-        
+
         return $this->render('user/profile.html.twig', [
             'user' => $user,
             'posts' => $posts,
@@ -86,13 +86,13 @@ class UserController extends AbstractController
     {
         $query = $request->query->get('q', '');
         $userRepository = $entityManager->getRepository(User::class);
-        
+
         if (strlen($query) < 2) {
             return $this->json(['users' => []]);
         }
-        
+
         $users = $userRepository->searchUsers($query, $this->getUser());
-        
+
         $results = [];
         foreach ($users as $user) {
             $results[] = [
@@ -103,7 +103,7 @@ class UserController extends AbstractController
                 'isFriend' => $user->isFriend
             ];
         }
-        
+
         return $this->json(['users' => $results]);
     }
-} 
+}

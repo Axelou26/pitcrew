@@ -9,74 +9,58 @@ use App\Repository\FriendshipRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
+use App\Repository\HashtagRepository;
 
 class HomeController extends AbstractController
 {
+    public function __construct(
+        private CacheInterface $cache
+    ) {
+    }
+
+    /**
+     * Page d'accueil
+     */
     #[Route('/', name: 'app_home')]
-    public function index(
-        PostRepository $postRepository, 
-        UserRepository $userRepository, 
-        JobOfferRepository $jobOfferRepository,
-        FriendshipRepository $friendshipRepository,
-        \App\Service\RecommendationService $recommendationService,
-        \App\Repository\HashtagRepository $hashtagRepository
-    ): Response
+    public function index(PostRepository $postRepository, UserRepository $userRepository, HashtagRepository $hashtagRepository, JobOfferRepository $jobOfferRepository, CacheInterface $cache): Response
     {
-        // Récupérer les offres d'emploi actives
-        $offers = $jobOfferRepository->findActiveOffers();
-        
-        // Récupérer les publications
-        $user = $this->getUser();
-        
-        if ($user) {
-            // Si l'utilisateur est connecté, utiliser le service de recommandation
-            $posts = $recommendationService->getRecommendedPosts($user, 12);
-            
-            // Récupérer les utilisateurs suggérés
-            $suggestedUsers = $recommendationService->getSuggestedUsers($user, 3);
-            
-            // Enrichir les utilisateurs suggérés avec les informations d'amitié
-            foreach ($suggestedUsers as $suggestedUser) {
-                // Vérifier si l'utilisateur est déjà ami avec l'utilisateur suggéré
-                $friendship = $friendshipRepository->findAcceptedBetweenUsers($user, $suggestedUser);
-                $suggestedUser->isFriend = ($friendship !== null);
-                
-                // Vérifier si l'utilisateur a envoyé une demande d'amitié à l'utilisateur suggéré
-                $pendingRequest = $friendshipRepository->findPendingRequestBetweenUsers($user, $suggestedUser, true);
-                $suggestedUser->hasPendingRequestFrom = ($pendingRequest !== null);
-                
-                // Vérifier si l'utilisateur suggéré a envoyé une demande d'amitié à l'utilisateur
-                $pendingRequestTo = $friendshipRepository->findPendingRequestBetweenUsers($suggestedUser, $user, true);
-                $suggestedUser->hasPendingRequestTo = ($pendingRequestTo !== null);
-                if ($pendingRequestTo) {
-                    $suggestedUser->pendingRequestId = $pendingRequestTo->getId();
-                }
+        // Récupérer les données en parallèle avec le cache
+        $data = $cache->get('homepage_data_' . ($this->getUser() ? $this->getUser()->getId() : 'anonymous'), function (ItemInterface $item) use ($postRepository, $userRepository, $hashtagRepository, $jobOfferRepository) {
+            $item->expiresAfter(300); // Cache pour 5 minutes
+
+            $user = $this->getUser();
+            $data = [];
+
+            // Récupérer les offres d'emploi actives
+            $data['activeJobOffers'] = $jobOfferRepository->findActiveJobOffers(5);
+
+            if ($user) {
+                // Récupérer les posts recommandés
+                $data['recommendedPosts'] = $postRepository->findRecentPosts(10);
+
+                // Récupérer les utilisateurs suggérés
+                $data['suggestedUsers'] = $userRepository->findSuggestedUsers($user, 5);
+
+                // Récupérer les hashtags tendance
+                $data['trendingHashtags'] = $hashtagRepository->findTrendingHashtags(10);
+
+                // Statistiques
+                $data['stats'] = [
+                    'recruiters' => $userRepository->count(['roles' => ['ROLE_RECRUITER']]),
+                    'applicants' => $userRepository->count(['roles' => ['ROLE_APPLICANT']])
+                ];
+            } else {
+                // Pour les utilisateurs non connectés
+                $data['recentPosts'] = $postRepository->findRecentPosts(10);
+                $data['trendingHashtags'] = $hashtagRepository->findTrendingHashtags(10);
             }
-        } else {
-            // Sinon, afficher simplement les posts récents
-            $posts = $postRepository->findBy([], ['createdAt' => 'DESC'], 6);
-            $suggestedUsers = [];
-        }
-        
-        // Compter les recruteurs et les candidats
-        $recruiters = $userRepository->findByRole('ROLE_RECRUTEUR');
-        $applicants = $userRepository->findByRole('ROLE_POSTULANT');
-        
-        // Compter directement les utilisateurs avec le rôle ROLE_POSTULANT
-        $applicantsCount = count($applicants);
-        
-        // Récupérer les hashtags tendance
-        $trendingHashtags = $hashtagRepository->findTrending(5);
-        
-        return $this->render('home/index.html.twig', [
-            'offers' => $offers,
-            'posts' => $posts,
-            'recruiters' => $recruiters,
-            'applicants' => $applicants,
-            'applicantsCount' => $applicantsCount,
-            'suggestedUsers' => $suggestedUsers,
-            'trendingHashtags' => $trendingHashtags,
-        ]);
+
+            return $data;
+        });
+
+        return $this->render('home/index.html.twig', $data);
     }
 
     #[Route('/about', name: 'app_about')]
@@ -84,4 +68,4 @@ class HomeController extends AbstractController
     {
         return $this->render('home/about.html.twig');
     }
-} 
+}

@@ -7,6 +7,8 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use App\Entity\Hashtag;
 use App\Entity\User;
+use Symfony\Component\Cache\Adapter\AdapterInterface;
+use Symfony\Component\Cache\Item\ItemInterface;
 
 /**
  * @extends ServiceEntityRepository<Post>
@@ -18,9 +20,21 @@ use App\Entity\User;
  */
 class PostRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    private const CACHE_TTL = 300; // 5 minutes
+    private const CACHE_KEY_RECENT_POSTS = 'recent_posts_%d';
+    private const CACHE_KEY_ALL_POSTS = 'all_posts_ordered';
+    private const CACHE_KEY_POSTS_BY_HASHTAG = 'posts_by_hashtag_%d';
+    private const CACHE_KEY_POSTS_BY_MENTION = 'posts_mentioned_%d';
+    private const CACHE_KEY_SEARCH_POSTS = 'search_posts_%s';
+    private const CACHE_KEY_FEED_POSTS = 'feed_posts_%d';
+    private const CACHE_KEY_RECENT_WITH_AUTHORS = 'recent_posts_with_authors_%d';
+
+    private AdapterInterface $cache;
+
+    public function __construct(ManagerRegistry $registry, AdapterInterface $cache)
     {
         parent::__construct($registry, Post::class);
+        $this->cache = $cache;
     }
 
     public function save(Post $entity, bool $flush = false): void
@@ -42,126 +56,149 @@ class PostRepository extends ServiceEntityRepository
     }
 
     /**
-     * @return Post[] Returns an array of Post objects
+     * Récupère un résultat depuis le cache ou l'enregistre s'il n'existe pas
      */
-    public function findRecentPosts(int $limit = 10): array
+    private function getCachedResult(string $key, callable $callback): mixed
     {
-        return $this->createQueryBuilder('p')
-            ->leftJoin('p.author', 'author')
-            ->leftJoin('p.shares', 'shares')
-            ->addSelect('author')
-            ->addSelect('shares')
-            ->orderBy('p.createdAt', 'DESC')
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
+        $item = $this->cache->getItem($key);
+
+        if (!$item->isHit()) {
+            $item->set($callback());
+            $item->expiresAfter(self::CACHE_TTL);
+            $this->cache->save($item);
+        }
+
+        return $item->get();
     }
 
     /**
-     * @return Post[] Returns an array of Post objects ordered by creation date
+     * @return array<Post>
+     */
+    public function findRecentPosts(int $limit = 10): array
+    {
+        return $this->getCachedResult(sprintf(self::CACHE_KEY_RECENT_POSTS, $limit), function () use ($limit): array {
+            $qb = $this->createQueryBuilder('p')
+                ->select('p', 'a', 'l', 'c', 'h', 's')
+                ->leftJoin('p.author', 'a')
+                ->leftJoin('p.likes', 'l')
+                ->leftJoin('p.comments', 'c')
+                ->leftJoin('p.hashtags', 'h')
+                ->leftJoin('p.shares', 's')
+                ->orderBy('p.createdAt', 'DESC')
+                ->setMaxResults($limit);
+
+            return $qb->getQuery()->getResult();
+        });
+    }
+
+    /**
+     * @return array<Post>
      */
     public function findAllOrderedByDate(): array
     {
-        return $this->createQueryBuilder('p')
-            ->leftJoin('p.author', 'author')
-            ->leftJoin('p.likes', 'likes')
-            ->leftJoin('p.comments', 'comments')
-            ->leftJoin('p.shares', 'shares')
-            ->leftJoin('p.hashtags', 'hashtags')
-            ->addSelect('author')
-            ->addSelect('likes')
-            ->addSelect('comments')
-            ->addSelect('shares')
-            ->addSelect('hashtags')
-            ->orderBy('p.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
+        return $this->getCachedResult(self::CACHE_KEY_ALL_POSTS, function (): array {
+            $qb = $this->createQueryBuilder('p')
+                ->select('p', 'a', 'l', 'c', 'h', 's')
+                ->leftJoin('p.author', 'a')
+                ->leftJoin('p.likes', 'l')
+                ->leftJoin('p.comments', 'c')
+                ->leftJoin('p.hashtags', 'h')
+                ->leftJoin('p.shares', 's')
+                ->orderBy('p.createdAt', 'DESC');
+
+            return $qb->getQuery()->getResult();
+        });
     }
 
     /**
      * Recherche les posts contenant un hashtag spécifique
+     * @return array<Post>
      */
     public function findByHashtag(Hashtag $hashtag): array
     {
-        return $this->createQueryBuilder('p')
-            ->leftJoin('p.author', 'author')
-            ->leftJoin('p.likes', 'likes')
-            ->leftJoin('p.comments', 'comments')
-            ->leftJoin('p.shares', 'shares')
-            ->leftJoin('p.hashtags', 'hashtags')
-            ->addSelect('author')
-            ->addSelect('likes')
-            ->addSelect('comments')
-            ->addSelect('shares')
-            ->addSelect('hashtags')
-            ->andWhere(':hashtag MEMBER OF p.hashtags')
-            ->setParameter('hashtag', $hashtag)
-            ->orderBy('p.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
+        return $this->getCachedResult(sprintf(self::CACHE_KEY_POSTS_BY_HASHTAG, $hashtag->getId()), function () use ($hashtag): array {
+            $qb = $this->createQueryBuilder('p')
+                ->select('p', 'a', 'l', 'c', 'h', 's')
+                ->leftJoin('p.author', 'a')
+                ->leftJoin('p.likes', 'l')
+                ->leftJoin('p.comments', 'c')
+                ->innerJoin('p.hashtags', 'h')
+                ->leftJoin('p.shares', 's')
+                ->where('h = :hashtag')
+                ->setParameter('hashtag', $hashtag)
+                ->orderBy('p.createdAt', 'DESC');
+
+            return $qb->getQuery()->getResult();
+        });
     }
 
     /**
      * Recherche les posts mentionnant un utilisateur spécifique
+     * @return array<Post>
      */
     public function findByMentionedUser(User $user): array
     {
-        $userId = $user->getId();
-        
-        return $this->createQueryBuilder('p')
-            ->leftJoin('p.author', 'author')
-            ->andWhere('JSON_CONTAINS(p.mentions, :userId) = 1')
-            ->setParameter('userId', $userId)
-            ->orderBy('p.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
+        return $this->getCachedResult(sprintf(self::CACHE_KEY_POSTS_BY_MENTION, $user->getId()), function () use ($user): array {
+            $qb = $this->createQueryBuilder('p')
+                ->select('p', 'a', 'l', 'c', 'h', 's')
+                ->leftJoin('p.author', 'a')
+                ->leftJoin('p.likes', 'l')
+                ->leftJoin('p.comments', 'c')
+                ->leftJoin('p.hashtags', 'h')
+                ->leftJoin('p.shares', 's')
+                ->where('JSON_CONTAINS(p.mentions, :userId) = 1')
+                ->setParameter('userId', $user->getId())
+                ->orderBy('p.createdAt', 'DESC');
+
+            return $qb->getQuery()->getResult();
+        });
     }
 
     /**
      * Recherche les posts avec texte libre
+     * @return array<Post>
      */
     public function search(string $query): array
     {
-        return $this->createQueryBuilder('p')
-            ->leftJoin('p.author', 'author')
-            ->andWhere('p.title LIKE :query OR p.content LIKE :query')
-            ->setParameter('query', '%' . $query . '%')
-            ->orderBy('p.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
+        return $this->getCachedResult(sprintf(self::CACHE_KEY_SEARCH_POSTS, md5($query)), function () use ($query): array {
+            $qb = $this->createQueryBuilder('p')
+                ->select('p', 'a', 'l', 'c', 'h', 's')
+                ->leftJoin('p.author', 'a')
+                ->leftJoin('p.likes', 'l')
+                ->leftJoin('p.comments', 'c')
+                ->leftJoin('p.hashtags', 'h')
+                ->leftJoin('p.shares', 's')
+                ->where('p.content LIKE :query OR p.title LIKE :query')
+                ->setParameter('query', '%' . $query . '%')
+                ->orderBy('p.createdAt', 'DESC')
+                ->setMaxResults(50);
+
+            return $qb->getQuery()->getResult();
+        });
     }
 
     /**
      * Récupère les posts à afficher dans le fil d'actualité d'un utilisateur
+     * @return array<Post>
      */
-    public function findPostsForFeed(User $user, int $limit = 20): array
+    public function findPostsForFeed(User $user): array
     {
-        // Implémentation basique : posts récents + posts des amis
-        // Une implémentation plus avancée prendrait en compte les centres d'intérêt de l'utilisateur
-        
-        // Récupérer les IDs des amis
-        $friendIds = [];
-        
-        // Récupérer les posts des amis et les posts récents
-        $qb = $this->createQueryBuilder('p')
-            ->leftJoin('p.author', 'author')
-            ->leftJoin('p.likes', 'likes')
-            ->leftJoin('p.comments', 'comments')
-            ->leftJoin('p.shares', 'shares')
-            ->addSelect('author')
-            ->addSelect('likes')
-            ->addSelect('comments')
-            ->addSelect('shares')
-            ->orderBy('p.createdAt', 'DESC')
-            ->setMaxResults($limit);
-            
-        if (!empty($friendIds)) {
-            $qb->andWhere('author.id IN (:friendIds) OR p.createdAt > :recentDate')
-               ->setParameter('friendIds', $friendIds)
-               ->setParameter('recentDate', new \DateTime('-3 days'));
-        }
-        
-        return $qb->getQuery()->getResult();
+        return $this->getCachedResult(sprintf(self::CACHE_KEY_FEED_POSTS, $user->getId()), function () use ($user): array {
+            $qb = $this->createQueryBuilder('p')
+                ->select('p', 'a', 'l', 'c', 'h', 's')
+                ->leftJoin('p.author', 'a')
+                ->leftJoin('p.likes', 'l')
+                ->leftJoin('p.comments', 'c')
+                ->leftJoin('p.hashtags', 'h')
+                ->leftJoin('p.shares', 's')
+                ->where('p.author = :user')
+                ->orWhere('p.author IN (:friends)')
+                ->setParameter('user', $user)
+                ->setParameter('friends', $user->getFriends())
+                ->orderBy('p.createdAt', 'DESC');
+
+            return $qb->getQuery()->getResult();
+        });
     }
 
     /**
@@ -169,7 +206,7 @@ class PostRepository extends ServiceEntityRepository
      */
     public function countByHashtag(Hashtag $hashtag): int
     {
-        return $this->createQueryBuilder('p')
+        return (int) $this->createQueryBuilder('p')
             ->select('COUNT(p.id)')
             ->innerJoin('p.hashtags', 'h')
             ->where('h.id = :hashtagId')
@@ -179,10 +216,9 @@ class PostRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve les posts récents qui contiennent des hashtags (à partir d'une date donnée)
-     * 
+     * Trouve les posts récents qui contiennent des hashtags
      * @param \DateTimeInterface $fromDate Date à partir de laquelle chercher
-     * @return Post[] Posts trouvés
+     * @return array<Post>
      */
     public function findRecentPostsWithHashtags(\DateTimeInterface $fromDate): array
     {
@@ -196,4 +232,25 @@ class PostRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
-} 
+
+    /**
+     * Récupère les posts récents avec leurs auteurs
+     * @return array<Post>
+     */
+    public function findRecentWithAuthors(int $limit): array
+    {
+        return $this->getCachedResult(sprintf(self::CACHE_KEY_RECENT_WITH_AUTHORS, $limit), function () use ($limit): array {
+            $qb = $this->createQueryBuilder('p')
+                ->select('p', 'a', 'l', 'c', 'h', 's')
+                ->leftJoin('p.author', 'a')
+                ->leftJoin('p.likes', 'l')
+                ->leftJoin('p.comments', 'c')
+                ->leftJoin('p.hashtags', 'h')
+                ->leftJoin('p.shares', 's')
+                ->orderBy('p.createdAt', 'DESC')
+                ->setMaxResults($limit);
+
+            return $qb->getQuery()->getResult();
+        });
+    }
+}

@@ -44,12 +44,12 @@ class CreateJobOfferCommand extends Command
         $jobOffer->setRequiredSkills(['PHP', 'Symfony', 'MySQL', 'JavaScript']);
         $jobOffer->setIsActive(true);
         $jobOffer->setRecruiter($recruiter);
-        
+
         $this->entityManager->persist($jobOffer);
         $this->entityManager->flush();
-        
+
         $output->writeln('Job offer created successfully with ID: ' . $jobOffer->getId());
-        
+
         return Command::SUCCESS;
     }
-} 
+}

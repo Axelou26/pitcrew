@@ -66,7 +66,7 @@ class JobOfferAdminController extends AbstractController
             ->setAction($this->generateUrl('admin_job_offer_delete', ['id' => $jobOffer->getId()]))
             ->setMethod('POST')
             ->getForm();
-            
+
         return $this->render('admin/job_offer/show.html.twig', [
             'job_offer' => $jobOffer,
             'delete_form' => $deleteForm,
@@ -102,7 +102,7 @@ class JobOfferAdminController extends AbstractController
     #[Route('/{id}', name: 'delete', methods: ['POST'])]
     public function delete(Request $request, JobOffer $jobOffer): Response
     {
-        if ($this->isCsrfTokenValid('delete'.$jobOffer->getId(), $request->request->get('_token'))) {
+        if ($this->isCsrfTokenValid('delete' . $jobOffer->getId(), $request->request->get('_token'))) {
             $this->entityManager->remove($jobOffer);
             $this->entityManager->flush();
 
@@ -111,4 +111,4 @@ class JobOfferAdminController extends AbstractController
 
         return $this->redirectToRoute('admin_job_offer_index');
     }
-} 
+}

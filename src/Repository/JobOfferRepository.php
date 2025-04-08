@@ -111,7 +111,7 @@ class JobOfferRepository extends ServiceEntityRepository
             $titleWords = explode(' ', strtolower($jobOffer->getTitle()));
             $descriptionWords = explode(' ', strtolower($jobOffer->getDescription()));
             $keywords = array_unique(array_merge($titleWords, $descriptionWords));
-            
+
             foreach ($keywords as $index => $keyword) {
                 if (strlen($keyword) > 3) { // Ignorer les mots trop courts
                     $conditions[] = "CASE WHEN LOWER(j.title) LIKE :keyword{$index} OR LOWER(j.description) LIKE :keyword{$index} THEN 3 ELSE 0 END";
@@ -127,7 +127,7 @@ class JobOfferRepository extends ServiceEntityRepository
 
         // Calculer le score total
         $scoreExpr = implode(' + ', $conditions);
-        
+
         $qb->select('j, (' . $scoreExpr . ') as HIDDEN score')
            ->setParameters($parameters)
            ->orderBy('score', 'DESC')
@@ -174,13 +174,13 @@ class JobOfferRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('j')
             ->where('j.expiresAt > :now OR j.expiresAt IS NULL')
             ->setParameter('now', new \DateTime());
-        
+
         // Recherche par mot-clé
         if ($query) {
             $qb->andWhere('j.title LIKE :query OR j.description LIKE :query OR j.location LIKE :query')
                 ->setParameter('query', '%' . $query . '%');
         }
-        
+
         // Filtres
         if (!empty($filters)) {
             // Filtre par type de contrat
@@ -188,20 +188,20 @@ class JobOfferRepository extends ServiceEntityRepository
                 $qb->andWhere('j.contractType = :contractType')
                     ->setParameter('contractType', $filters['contractType']);
             }
-            
+
             // Filtre par lieu
             if (!empty($filters['location'])) {
                 $qb->andWhere('j.location LIKE :location')
                     ->setParameter('location', '%' . $filters['location'] . '%');
             }
-            
+
             // Filtre par salaire minimum
             if (!empty($filters['minSalary'])) {
                 $qb->andWhere('j.salary >= :minSalary')
                     ->setParameter('minSalary', $filters['minSalary']);
             }
         }
-        
+
         return $qb->orderBy('j.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
@@ -235,4 +235,4 @@ class JobOfferRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
     }
-} 
+}

@@ -27,16 +27,16 @@ class JobOfferController extends AbstractController
             'location' => $request->query->get('location'),
             'minSalary' => $request->query->get('minSalary')
         ];
-        
+
         $offers = $jobOfferRepository->searchOffers($query, $filters);
-        
+
         // Récupérer les types de contrat distincts pour le filtre
         $contractTypes = $jobOfferRepository->createQueryBuilder('j')
             ->select('DISTINCT j.contractType')
             ->where('j.contractType IS NOT NULL')
             ->getQuery()
             ->getResult();
-        
+
         // Récupérer les lieux distincts pour le filtre
         $locations = $jobOfferRepository->createQueryBuilder('j')
             ->select('DISTINCT j.location')
@@ -52,7 +52,7 @@ class JobOfferController extends AbstractController
             'filters' => $filters
         ]);
     }
-    
+
     // Route sans préfixe pour accéder directement aux offres d'emploi
     #[Route('/job-offers', name: 'app_job_offers', methods: ['GET'])]
     public function jobOffers(Request $request): Response
@@ -65,15 +65,15 @@ class JobOfferController extends AbstractController
     #[IsGranted('ROLE_RECRUTEUR')]
     #[IsGranted('CREATE_JOB_OFFER')]
     public function new(
-        Request $request, 
-        EntityManagerInterface $entityManager, 
+        Request $request,
+        EntityManagerInterface $entityManager,
         SubscriptionService $subscriptionService,
         FileUploader $fileUploader
     ): Response {
-        
+
         $jobOffer = new JobOffer();
         $jobOffer->setRecruiter($this->getUser());
-        
+
         $form = $this->createForm(JobOfferType::class, $jobOffer);
         $form->handleRequest($request);
 
@@ -99,10 +99,10 @@ class JobOfferController extends AbstractController
                     $this->addFlash('error', $e->getMessage());
                 }
             }
-            
+
             // Décrémenter le nombre d'offres restantes si l'abonnement est limité
             $subscriptionService->decrementRemainingJobOffers($this->getUser());
-            
+
             $entityManager->persist($jobOffer);
             $entityManager->flush();
 
@@ -120,20 +120,20 @@ class JobOfferController extends AbstractController
     public function show(string $id, JobOfferRepository $jobOfferRepository, FavoriteRepository $favoriteRepository): Response
     {
         $jobOffer = $jobOfferRepository->find($id);
-        
+
         if (!$jobOffer) {
             throw $this->createNotFoundException('L\'offre d\'emploi demandée n\'existe pas.');
         }
-        
+
         // Récupérer les offres similaires
         $similarOffers = $jobOfferRepository->findSimilarOffers($jobOffer, 3);
-        
+
         // Vérifier si l'offre est dans les favoris de l'utilisateur connecté
         $isFavorite = false;
         if ($this->getUser() && !$this->getUser()->isRecruiter()) {
             $isFavorite = $favoriteRepository->isJobOfferFavorite($this->getUser(), $jobOffer);
         }
-        
+
         return $this->render('job_offer/show.html.twig', [
             'offer' => $jobOffer,
             'similarOffers' => $similarOffers,
@@ -144,18 +144,18 @@ class JobOfferController extends AbstractController
     #[Route('/{id}/edit', name: 'app_job_offer_edit', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_RECRUTEUR')]
     public function edit(
-        Request $request, 
-        string $id, 
-        JobOfferRepository $jobOfferRepository, 
+        Request $request,
+        string $id,
+        JobOfferRepository $jobOfferRepository,
         EntityManagerInterface $entityManager,
         FileUploader $fileUploader
     ): Response {
         $jobOffer = $jobOfferRepository->find($id);
-        
+
         if (!$jobOffer) {
             throw $this->createNotFoundException('L\'offre d\'emploi demandée n\'existe pas.');
         }
-        
+
         // Vérifier que l'utilisateur est bien le propriétaire de l'offre
         if ($jobOffer->getRecruiter() !== $this->getUser()) {
             throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à modifier cette offre.');
@@ -170,8 +170,8 @@ class JobOfferController extends AbstractController
             if ($logoFile) {
                 try {
                     $newLogoFilename = $fileUploader->upload(
-                        $logoFile, 
-                        'logos_directory', 
+                        $logoFile,
+                        'logos_directory',
                         $jobOffer->getLogoUrl()
                     );
                     $jobOffer->setLogoUrl($newLogoFilename);
@@ -185,8 +185,8 @@ class JobOfferController extends AbstractController
             if ($imageFile) {
                 try {
                     $newImageFilename = $fileUploader->upload(
-                        $imageFile, 
-                        'job_images_directory', 
+                        $imageFile,
+                        'job_images_directory',
                         $jobOffer->getImage()
                     );
                     $jobOffer->setImage($newImageFilename);
@@ -194,7 +194,7 @@ class JobOfferController extends AbstractController
                     $this->addFlash('error', $e->getMessage());
                 }
             }
-            
+
             $entityManager->flush();
 
             $this->addFlash('success', 'L\'offre d\'emploi a été mise à jour avec succès !');
@@ -212,17 +212,17 @@ class JobOfferController extends AbstractController
     public function delete(Request $request, string $id, JobOfferRepository $jobOfferRepository, EntityManagerInterface $entityManager): Response
     {
         $jobOffer = $jobOfferRepository->find($id);
-        
+
         if (!$jobOffer) {
             throw $this->createNotFoundException('L\'offre d\'emploi demandée n\'existe pas.');
         }
-        
+
         // Vérifier que l'utilisateur est bien le propriétaire de l'offre
         if ($jobOffer->getRecruiter() !== $this->getUser()) {
             throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à supprimer cette offre.');
         }
 
-        if ($this->isCsrfTokenValid('delete'.$jobOffer->getId(), $request->request->get('_token'))) {
+        if ($this->isCsrfTokenValid('delete' . $jobOffer->getId(), $request->request->get('_token'))) {
             $entityManager->remove($jobOffer);
             $entityManager->flush();
 
@@ -254,4 +254,4 @@ class JobOfferController extends AbstractController
             'contract_type' => $contractType,
         ]);
     }
-} 
+}

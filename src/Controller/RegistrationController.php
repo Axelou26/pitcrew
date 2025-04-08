@@ -37,7 +37,7 @@ class RegistrationController extends AbstractController
         $this->params = $params;
         $this->urlGenerator = $urlGenerator;
         $this->entityManager = $entityManager;
-        
+
         // Vérifier si la bibliothèque Stripe est disponible
         try {
             if (class_exists('\Stripe\Stripe')) {
@@ -75,15 +75,15 @@ class RegistrationController extends AbstractController
 
     #[Route('/register/details', name: 'app_register_details')]
     public function registerDetails(
-        Request $request, 
-        UserPasswordHasherInterface $userPasswordHasher, 
+        Request $request,
+        UserPasswordHasherInterface $userPasswordHasher,
         EntityManagerInterface $entityManager,
         SessionInterface $session,
         SubscriptionService $subscriptionService
     ): Response {
         // Récupérer le type d'utilisateur depuis la session
         $userType = $session->get('registration_user_type');
-        
+
         // Rediriger vers la première étape si le type n'est pas défini
         if (!$userType) {
             return $this->redirectToRoute('app_register');
@@ -95,40 +95,47 @@ class RegistrationController extends AbstractController
         ]);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            // Définir les rôles - un seul rôle par utilisateur
-            $user->setRoles([$userType]);
+        if ($form->isSubmitted()) {
+            if ($form->isValid()) {
+                // Définir les rôles - un seul rôle par utilisateur
+                $user->setRoles([$userType]);
 
-            // Encoder le mot de passe
-            $user->setPassword(
-                $userPasswordHasher->hashPassword(
-                    $user,
-                    $form->get('plainPassword')->getData()
-                )
-            );
+                // Encoder le mot de passe
+                $user->setPassword(
+                    $userPasswordHasher->hashPassword(
+                        $user,
+                        $form->get('plainPassword')->getData()
+                    )
+                );
 
-            // Pour les recruteurs, rediriger toujours vers le choix d'abonnement
-            if ($userType === User::ROLE_RECRUTEUR) {
-                // Enregistrer l'utilisateur 
-                $entityManager->persist($user);
-                $entityManager->flush();
-                
-                // Stocker l'ID de l'utilisateur en session pour continuer le processus
-                $session->set('registration_user_id', $user->getId());
-                
-                // Rediriger vers la page de choix d'abonnement
-                return $this->redirectToRoute('app_register_subscription');
-            } elseif ($userType === User::ROLE_POSTULANT) {
-                // Traitement pour les postulants
-                $entityManager->persist($user);
-                $entityManager->flush();
-                
-                // Nettoyer la session
-                $session->remove('registration_user_type');
-                
-                $this->addFlash('success', 'Votre compte a été créé avec succès !');
-                return $this->redirectToRoute('app_login');
+                // Pour les recruteurs, rediriger toujours vers le choix d'abonnement
+                if ($userType === User::ROLE_RECRUTEUR) {
+                    // Enregistrer l'utilisateur
+                    $entityManager->persist($user);
+                    $entityManager->flush();
+
+                    // Stocker l'ID de l'utilisateur en session pour continuer le processus
+                    $session->set('registration_user_id', $user->getId());
+
+                    // Rediriger vers la page de choix d'abonnement
+                    return $this->redirectToRoute('app_register_subscription');
+                } elseif ($userType === User::ROLE_POSTULANT) {
+                    // Traitement pour les postulants
+                    $entityManager->persist($user);
+                    $entityManager->flush();
+
+                    // Nettoyer la session
+                    $session->remove('registration_user_type');
+
+                    return $this->redirectToRoute('app_email_verification_sent');
+                }
             }
+
+            // En cas d'erreur de validation, renvoyer une réponse 422
+            return $this->render('registration/register_details.html.twig', [
+                'registrationForm' => $form->createView(),
+                'userType' => $userType,
+            ], new Response(null, Response::HTTP_UNPROCESSABLE_ENTITY));
         }
 
         return $this->render('registration/register_details.html.twig', [
@@ -142,10 +149,10 @@ class RegistrationController extends AbstractController
         try {
             // Initialiser Stripe
             \Stripe\Stripe::setApiKey($this->params->get('stripe_secret_key'));
-            
+
             // Créer ou récupérer le client Stripe
             $stripeCustomerId = $user->getStripeCustomerId();
-            
+
             if (!$stripeCustomerId) {
                 $customer = \Stripe\Customer::create([
                     'email' => $user->getEmail(),
@@ -154,20 +161,20 @@ class RegistrationController extends AbstractController
                         'user_id' => $user->getId()
                     ]
                 ]);
-                
+
                 $stripeCustomerId = $customer->id;
                 $user->setStripeCustomerId($stripeCustomerId);
                 $this->entityManager->persist($user);
                 $this->entityManager->flush();
             }
-            
+
             // Créer la session de paiement avec les URLs spécifiques à l'inscription
             $successUrl = $this->urlGenerator->generate('app_register_subscription_success', [], UrlGeneratorInterface::ABSOLUTE_URL);
             $cancelUrl = $this->urlGenerator->generate('app_register_subscription_cancel', [], UrlGeneratorInterface::ABSOLUTE_URL);
-            
+
             // Déterminer le prix en centimes
             $priceInCents = (int)($subscription->getPrice() * 100);
-            
+
             $sessionParams = [
                 'customer' => $stripeCustomerId,
                 'payment_method_types' => ['card'],
@@ -193,7 +200,7 @@ class RegistrationController extends AbstractController
                     'subscription_id' => $subscription->getId()
                 ]
             ];
-            
+
             $session = \Stripe\Checkout\Session::create($sessionParams);
             return $session;
         } catch (\Exception $e) {
@@ -235,7 +242,7 @@ class RegistrationController extends AbstractController
             ['isActive' => true],
             ['price' => 'ASC']
         );
-        
+
         if (empty($subscriptions)) {
             $this->addFlash('error', 'Aucun abonnement actif trouvé.');
             return $this->render('registration/select_subscription.html.twig', [
@@ -249,7 +256,7 @@ class RegistrationController extends AbstractController
         // Rendre obligatoire le choix d'un abonnement
         if ($request->isMethod('POST')) {
             $subscriptionId = $request->request->get('subscription_id');
-            
+
             if (!$subscriptionId) {
                 $this->addFlash('error', 'Vous devez choisir un abonnement pour finaliser votre inscription.');
                 return $this->render('registration/select_subscription.html.twig', [
@@ -259,9 +266,9 @@ class RegistrationController extends AbstractController
                     'is_offline_mode' => $stripeService->isOfflineMode()
                 ]);
             }
-            
+
             $subscription = $entityManager->getRepository('App\Entity\Subscription')->find($subscriptionId);
-            
+
             if (!$subscription) {
                 $this->addFlash('error', 'L\'abonnement sélectionné est invalide.');
                 return $this->render('registration/select_subscription.html.twig', [
@@ -271,14 +278,14 @@ class RegistrationController extends AbstractController
                     'is_offline_mode' => $stripeService->isOfflineMode()
                 ]);
             }
-            
+
             // Option pour le mode test: bypass Stripe pour les tests
             $useTestMode = $request->query->has('test_mode') && $stripeService->isTestMode();
-            
+
             // Si c'est un abonnement gratuit, en mode hors ligne ou useTestMode, l'activer directement
             if ($subscription->getPrice() == 0 || $useTestMode || $stripeService->isOfflineMode()) {
                 $recruiterSubscription = $subscriptionService->createSubscription($user, $subscription);
-                
+
                 // Si c'est un test ou mode hors ligne, marquer comme tel
                 if ($useTestMode || $stripeService->isOfflineMode()) {
                     $recruiterSubscription->setPaymentStatus('test_mode');
@@ -291,14 +298,14 @@ class RegistrationController extends AbstractController
                     $session->remove('registration_user_type');
                     $this->addFlash('success', 'Votre compte et votre abonnement gratuit ont été activés avec succès !');
                 }
-                
+
                 return $this->redirectToRoute('app_login');
             }
 
             // Pour les abonnements payants, créer une session Stripe et rediriger
             try {
                 $session->set('pending_subscription_id', $subscription->getId());
-                
+
                 if ($stripeService->isOfflineMode()) {
                     // En mode hors ligne, simuler le paiement
                     return $this->redirectToRoute('app_register_subscription_success');
@@ -309,7 +316,7 @@ class RegistrationController extends AbstractController
                 }
             } catch (\Exception $e) {
                 $this->addFlash('error', 'Erreur lors de la création de la session de paiement : ' . $e->getMessage());
-                
+
                 // Si une erreur survient, essayer en mode hors ligne
                 if (!$stripeService->isOfflineMode()) {
                     return $this->redirectToRoute('app_register_subscription_success');
@@ -361,22 +368,21 @@ class RegistrationController extends AbstractController
         try {
             // Créer l'abonnement pour l'utilisateur
             $recruiterSubscription = $subscriptionService->createSubscription($user, $subscription);
-            
+
             // Envoyer un email de confirmation
             $emailService->sendSubscriptionConfirmation($user, $recruiterSubscription);
-            
+
             // Si c'est un abonnement payant, envoyer également un reçu de paiement
             if ($subscription->getPrice() > 0) {
                 $emailService->sendPaymentReceipt($user, $recruiterSubscription);
             }
-            
+
             // Nettoyer la session
             $session->remove('registration_user_id');
             $session->remove('pending_subscription_id');
-            
+
             $this->addFlash('success', 'Votre compte et votre abonnement ont été activés avec succès !');
             return $this->redirectToRoute('app_login');
-            
         } catch (\Exception $e) {
             $this->addFlash('error', 'Une erreur est survenue lors de l\'activation de votre abonnement.');
             return $this->redirectToRoute('app_register_subscription');
@@ -389,4 +395,4 @@ class RegistrationController extends AbstractController
         $this->addFlash('info', 'Le paiement a été annulé. Vous pouvez réessayer ou choisir un autre abonnement.');
         return $this->redirectToRoute('app_register_subscription');
     }
-} 
+}

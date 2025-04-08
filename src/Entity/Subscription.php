@@ -150,4 +150,4 @@ class Subscription
 
         return $this;
     }
-} 
+}

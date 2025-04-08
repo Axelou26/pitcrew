@@ -58,4 +58,4 @@ class HealthController extends AbstractController
 
         return $response;
     }
-} 
+}

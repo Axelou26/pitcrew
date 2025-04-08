@@ -93,4 +93,4 @@ class JobApplicationRepository extends ServiceEntityRepository
 
         return $result > 0;
     }
-} 
+}

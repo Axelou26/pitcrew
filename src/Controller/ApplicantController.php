@@ -23,7 +23,7 @@ class ApplicantController extends AbstractController
     public function dashboard(EntityManagerInterface $entityManager): Response
     {
         $applicant = $this->getUser();
-        
+
         // Récupérer les candidatures de l'utilisateur
         $applications = $entityManager->getRepository(Application::class)->findBy([
             'applicant' => $applicant
@@ -53,7 +53,7 @@ class ApplicantController extends AbstractController
             'location' => $request->query->get('location'),
             'contractType' => $request->query->get('contractType')
         ];
-        
+
         $search = $request->query->get('search');
 
         $jobOffers = $entityManager->getRepository(JobOffer::class)
@@ -128,7 +128,7 @@ class ApplicantController extends AbstractController
     public function toggleFavorite(JobOffer $jobOffer, EntityManagerInterface $entityManager): Response
     {
         $applicant = $this->getUser();
-        
+
         if ($applicant->getFavoriteOffers()->contains($jobOffer)) {
             $applicant->removeFavoriteOffer($jobOffer);
             $message = 'Offre retirée des favoris.';
@@ -155,7 +155,7 @@ class ApplicantController extends AbstractController
             'applications' => $applications
         ]);
     }
-    
+
     /**
      * Permet à un candidat de modifier ses compétences (techniques et soft skills)
      */
@@ -165,18 +165,18 @@ class ApplicantController extends AbstractController
         $user = $this->getUser();
         $form = $this->createForm(ApplicantSkillsType::class, $user);
         $form->handleRequest($request);
-        
+
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->flush();
             $this->addFlash('success', 'Vos compétences ont été mises à jour avec succès.');
             return $this->redirectToRoute('app_profile_index');
         }
-        
+
         return $this->render('applicant/edit_skills.html.twig', [
             'form' => $form->createView()
         ]);
     }
-    
+
     /**
      * Permet à un candidat de modifier son expérience professionnelle
      */
@@ -186,15 +186,15 @@ class ApplicantController extends AbstractController
         $user = $this->getUser();
         $form = $this->createForm(ApplicantExperienceType::class, $user);
         $form->handleRequest($request);
-        
+
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->flush();
             $this->addFlash('success', 'Votre expérience a été mise à jour avec succès.');
             return $this->redirectToRoute('app_profile_index');
         }
-        
+
         return $this->render('applicant/edit_experience.html.twig', [
             'form' => $form->createView()
         ]);
     }
-} 
+}

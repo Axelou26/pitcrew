@@ -234,4 +234,4 @@ class JobApplication
 
         return $this;
     }
-} 
+}

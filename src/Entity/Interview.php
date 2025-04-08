@@ -197,4 +197,4 @@ class Interview
     {
         return $this->status === 'cancelled';
     }
-} 
+}

@@ -46,4 +46,4 @@ class EducationEntryType extends AbstractType
             'data_class' => null,
         ]);
     }
-} 
+}

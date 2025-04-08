@@ -67,7 +67,7 @@ class NotificationService
             $applicant->getFullName(),
             $jobOffer->getTitle()
         );
-        
+
         $link = $this->urlGenerator->generate(
             'app_job_application_show',
             ['id' => $application->getId()],
@@ -106,7 +106,7 @@ class NotificationService
             $jobOffer->getTitle(),
             $statusLabels[$status] ?? $status
         );
-        
+
         $link = $this->urlGenerator->generate(
             'app_job_application_show',
             ['id' => $application->getId()],
@@ -114,17 +114,17 @@ class NotificationService
         );
 
         $this->createNotification(
-            $applicant, 
-            $title, 
-            $message, 
-            $link, 
+            $applicant,
+            $title,
+            $message,
+            $link,
             $statusTypes[$status] ?? 'info'
         );
     }
 
     /**
      * Notifie un utilisateur lorsqu'il est mentionné dans un post
-     * 
+     *
      * @param Post $post Le post contenant la mention
      * @param User $user L'utilisateur mentionné
      * @return void
@@ -143,12 +143,12 @@ class NotificationService
             $notification->setEntityType('post');
             $notification->setEntityId($post->getId());
             $notification->setActorId($post->getAuthor()->getId());
-            
+
             // Définir le titre et le message
             $notification->setTitle('Nouvelle mention');
             $notification->setMessage('Vous a mentionné dans une publication');
             $notification->setIsRead(false);
-            
+
             // Générer le lien vers le post
             $link = $this->urlGenerator->generate(
                 'app_post_show',
@@ -156,10 +156,10 @@ class NotificationService
                 UrlGeneratorInterface::ABSOLUTE_URL
             );
             $notification->setLink($link);
-            
+
             $this->entityManager->persist($notification);
             $this->entityManager->flush();
-            
+
             $this->logger->info('Notification de mention créée', [
                 'user_id' => $user->getId(),
                 'post_id' => $post->getId()
@@ -175,7 +175,7 @@ class NotificationService
 
     /**
      * Notifie l'auteur d'un post qu'un utilisateur a aimé son post
-     * 
+     *
      * @param PostLike $like Le like
      * @return void
      */
@@ -184,12 +184,12 @@ class NotificationService
         $post = $like->getPost();
         $author = $post->getAuthor();
         $user = $like->getUser();
-        
+
         if ($author === $user) {
             // Ne pas notifier l'auteur s'il aime son propre post
             return;
         }
-        
+
         try {
             $notification = new Notification();
             $notification->setUser($author);
@@ -197,14 +197,14 @@ class NotificationService
             $notification->setEntityType('post');
             $notification->setEntityId($post->getId());
             $notification->setActorId($user->getId());
-            
+
             // Titre standard
             $notification->setTitle('Nouvelle réaction');
-            
+
             // Message personnalisé en fonction du type de réaction
             $reactionType = $like->getReactionType();
             $message = 'A réagi à votre publication';
-            
+
             switch ($reactionType) {
                 case PostLike::REACTION_LIKE:
                     $message = 'A aimé votre publication';
@@ -222,10 +222,10 @@ class NotificationService
                     $message = 'Encourage votre publication';
                     break;
             }
-            
+
             $notification->setMessage($message);
             $notification->setIsRead(false);
-            
+
             // Générer le lien vers le post
             $link = $this->urlGenerator->generate(
                 'app_post_show',
@@ -233,10 +233,10 @@ class NotificationService
                 UrlGeneratorInterface::ABSOLUTE_URL
             );
             $notification->setLink($link);
-            
+
             $this->entityManager->persist($notification);
             $this->entityManager->flush();
-            
+
             $this->logger->info('Notification de like créée', [
                 'post_id' => $post->getId(),
                 'reaction_type' => $reactionType
@@ -251,7 +251,7 @@ class NotificationService
 
     /**
      * Notifie l'auteur d'un post qu'un utilisateur a commenté son post
-     * 
+     *
      * @param PostComment $comment Le commentaire
      * @return void
      */
@@ -260,12 +260,12 @@ class NotificationService
         $post = $comment->getPost();
         $author = $post->getAuthor();
         $commentAuthor = $comment->getAuthor();
-        
+
         if ($author === $commentAuthor) {
             // Ne pas notifier l'auteur s'il commente son propre post
             return;
         }
-        
+
         try {
             $notification = new Notification();
             $notification->setUser($author);
@@ -273,12 +273,12 @@ class NotificationService
             $notification->setEntityType('post');
             $notification->setEntityId($post->getId());
             $notification->setActorId($commentAuthor->getId());
-            
+
             // Définir le titre et le message
             $notification->setTitle('Nouveau commentaire');
             $notification->setMessage('A commenté votre publication');
             $notification->setIsRead(false);
-            
+
             // Générer le lien vers le post
             $link = $this->urlGenerator->generate(
                 'app_post_show',
@@ -286,10 +286,10 @@ class NotificationService
                 UrlGeneratorInterface::ABSOLUTE_URL
             );
             $notification->setLink($link);
-            
+
             $this->entityManager->persist($notification);
             $this->entityManager->flush();
-            
+
             $this->logger->info('Notification de commentaire créée', [
                 'post_id' => $post->getId(),
                 'comment_id' => $comment->getId()
@@ -305,7 +305,7 @@ class NotificationService
 
     /**
      * Notifie l'auteur d'un post qu'un utilisateur a partagé son post
-     * 
+     *
      * @param PostShare $share Le partage
      * @return void
      */
@@ -314,12 +314,12 @@ class NotificationService
         $post = $share->getPost();
         $author = $post->getAuthor();
         $shareUser = $share->getUser();
-        
+
         if ($author === $shareUser) {
             // Ne pas notifier l'auteur s'il partage son propre post
             return;
         }
-        
+
         try {
             $notification = new Notification();
             $notification->setUser($author);
@@ -327,12 +327,12 @@ class NotificationService
             $notification->setEntityType('post');
             $notification->setEntityId($post->getId());
             $notification->setActorId($shareUser->getId());
-            
+
             // Définir le titre et le message
             $notification->setTitle('Nouveau partage');
             $notification->setMessage('A partagé votre publication');
             $notification->setIsRead(false);
-            
+
             // Générer le lien vers le post
             $link = $this->urlGenerator->generate(
                 'app_post_show',
@@ -340,10 +340,10 @@ class NotificationService
                 UrlGeneratorInterface::ABSOLUTE_URL
             );
             $notification->setLink($link);
-            
+
             $this->entityManager->persist($notification);
             $this->entityManager->flush();
-            
+
             $this->logger->info('Notification de partage créée', [
                 'post_id' => $post->getId(),
                 'share_id' => $share->getId()
@@ -374,4 +374,4 @@ class NotificationService
         $notification->setIsRead(true);
         $this->entityManager->flush();
     }
-} 
+}

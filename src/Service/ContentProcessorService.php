@@ -34,7 +34,7 @@ class ContentProcessorService
 
     /**
      * Traite le contenu d'un post pour extraire les hashtags et les mentions
-     * 
+     *
      * @param Post $post Le post à traiter
      * @param bool $isUpdate S'il s'agit d'une mise à jour (true) ou d'une création (false)
      * @return void
@@ -48,21 +48,21 @@ class ContentProcessorService
             ]);
             return; // Ne rien faire si le contenu est vide
         }
-        
+
         try {
             // Traiter les hashtags
             $this->processHashtags($post, $isUpdate);
-            
+
             // Traiter les mentions
             $this->processMentions($post);
-            
+
             $this->logger->info('Contenu traité avec succès', [
                 'post_id' => $post->getId(),
                 'hashtags_count' => count($post->getHashtags()),
                 'mentions_count' => count($post->getMentions() ?? [])
             ]);
         } catch (\Throwable $e) {
-            // Logger l'erreur mais ne pas la laisser remonter 
+            // Logger l'erreur mais ne pas la laisser remonter
             // pour éviter de bloquer la création du post
             $this->logger->error('Erreur lors du traitement du contenu: ' . $e->getMessage(), [
                 'post_id' => $post->getId(),
@@ -71,10 +71,10 @@ class ContentProcessorService
             ]);
         }
     }
-    
+
     /**
      * Traite les hashtags d'un post
-     * 
+     *
      * @param Post $post Le post à traiter
      * @param bool $isUpdate S'il s'agit d'une mise à jour
      * @return void
@@ -85,43 +85,45 @@ class ContentProcessorService
         if ($isUpdate) {
             foreach ($post->getHashtags()->toArray() as $existingHashtag) {
                 $post->removeHashtag($existingHashtag);
-                
+
                 // Si la méthode decrementUsageCount existe
                 if (method_exists($existingHashtag, 'decrementUsageCount')) {
                     $existingHashtag->decrementUsageCount();
                 }
             }
         }
-        
+
         // Extraire les hashtags du contenu
         $hashtagNames = $post->extractHashtags();
-        
+
         if (empty($hashtagNames)) {
             return; // Pas de hashtags à traiter
         }
-        
+
         // Ajouter chaque hashtag
         foreach ($hashtagNames as $name) {
             try {
                 // Nettoyage du nom de hashtag
                 $name = trim($name);
-                if (empty($name)) continue;
-                
+                if (empty($name)) {
+                    continue;
+                }
+
                 // Rechercher si le hashtag existe déjà
                 $hashtag = $this->hashtagRepository->findOneBy(['name' => $name]);
-                
+
                 // S'il n'existe pas, le créer
                 if (!$hashtag) {
                     $hashtag = new Hashtag();
                     $hashtag->setName($name);
                     $this->entityManager->persist($hashtag);
                 }
-                
+
                 // Incrémenter le compteur d'utilisation si la méthode existe
                 if (method_exists($hashtag, 'incrementUsageCount')) {
                     $hashtag->incrementUsageCount();
                 }
-                
+
                 // Associer le hashtag au post
                 $post->addHashtag($hashtag);
             } catch (\Throwable $e) {
@@ -131,10 +133,10 @@ class ContentProcessorService
             }
         }
     }
-    
+
     /**
      * Traite les mentions d'un post
-     * 
+     *
      * @param Post $post Le post à traiter
      * @return void
      */
@@ -142,28 +144,30 @@ class ContentProcessorService
     {
         // Extraire les mentions du contenu
         $mentionUsernames = $post->extractMentions();
-        
+
         if (empty($mentionUsernames)) {
             return; // Pas de mentions à traiter
         }
-        
+
         // Réinitialiser les mentions
         $post->setMentions([]);
-        
+
         // Ajouter chaque mention
         foreach ($mentionUsernames as $username) {
             try {
                 // Nettoyage du nom d'utilisateur
                 $username = trim($username);
-                if (empty($username)) continue;
-                
+                if (empty($username)) {
+                    continue;
+                }
+
                 // Rechercher l'utilisateur mentionné avec la méthode spéciale qui gère les noms d'utilisateur
                 $mentionedUser = $this->userRepository->findByUsername($username);
-                
+
                 if ($mentionedUser) {
                     // Ajouter l'ID de l'utilisateur à la liste des mentions
                     $post->addMention($mentionedUser);
-                    
+
                     // Si l'utilisateur mentionné n'est pas l'auteur, créer une notification
                     if ($mentionedUser !== $post->getAuthor()) {
                         try {
@@ -181,4 +185,4 @@ class ContentProcessorService
             }
         }
     }
-} 
+}

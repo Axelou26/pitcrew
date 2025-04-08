@@ -29,7 +29,7 @@ class ProfileController extends AbstractController
     public function edit(Request $request, EntityManagerInterface $entityManager): Response
     {
         $user = $this->getUser();
-        
+
         // Choisir le formulaire en fonction du type d'utilisateur
         if ($user->isRecruiter()) {
             $form = $this->createForm(ProfileRecruiterType::class, $user);
@@ -43,7 +43,7 @@ class ProfileController extends AbstractController
             // Gérer l'upload de la photo de profil
             $profilePicture = $form->get('profilePictureFile')->getData();
             if ($profilePicture) {
-                $newFilename = uniqid().'.'.$profilePicture->guessExtension();
+                $newFilename = uniqid() . '.' . $profilePicture->guessExtension();
                 $profilePicture->move(
                     $this->getParameter('profile_pictures_directory'),
                     $newFilename
@@ -55,7 +55,7 @@ class ProfileController extends AbstractController
             if ($user->isPostulant()) {
                 $cvFile = $form->get('cvFile')->getData();
                 if ($cvFile) {
-                    $newFilename = uniqid().'.'.$cvFile->guessExtension();
+                    $newFilename = uniqid() . '.' . $cvFile->guessExtension();
                     $cvFile->move(
                         $this->getParameter('cv_directory'),
                         $newFilename
@@ -86,7 +86,7 @@ class ProfileController extends AbstractController
         if ($request->isMethod('POST')) {
             $uploadedFile = $request->files->get('document');
             if ($uploadedFile) {
-                $newFilename = uniqid().'.'.$uploadedFile->guessExtension();
+                $newFilename = uniqid() . '.' . $uploadedFile->guessExtension();
                 $uploadedFile->move(
                     $this->getParameter('documents_directory'),
                     $newFilename
@@ -122,7 +122,7 @@ class ProfileController extends AbstractController
         foreach ($documents as $key => $document) {
             if ($document['filename'] === $filename) {
                 // Supprimer le fichier physique
-                $filePath = $this->getParameter('documents_directory').'/'.$filename;
+                $filePath = $this->getParameter('documents_directory') . '/' . $filename;
                 if (file_exists($filePath)) {
                     unlink($filePath);
                 }
@@ -139,7 +139,7 @@ class ProfileController extends AbstractController
 
         return $this->redirectToRoute('app_profile_documents');
     }
-    
+
     /**
      * Raccourci pour accéder à l'édition des compétences depuis le profil
      */
@@ -149,7 +149,7 @@ class ProfileController extends AbstractController
     {
         return $this->redirectToRoute('app_applicant_edit_skills');
     }
-    
+
     /**
      * Raccourci pour accéder à l'édition de l'expérience depuis le profil
      */
@@ -159,4 +159,4 @@ class ProfileController extends AbstractController
     {
         return $this->redirectToRoute('app_applicant_edit_experience');
     }
-} 
+}

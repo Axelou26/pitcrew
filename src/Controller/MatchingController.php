@@ -44,14 +44,14 @@ class MatchingController extends AbstractController
     {
         // Récupérer l'utilisateur connecté
         $user = $this->getUser();
-        
+
         // Nombre de suggestions à afficher
         $limit = $request->query->getInt('limit', 10);
-        
+
         try {
             // Récupérer les meilleures offres pour ce candidat
             $suggestedOffers = $this->matchingService->findBestJobOffersForCandidate($user, $limit);
-            
+
             return $this->render('matching/candidate_suggestions.html.twig', [
                 'suggestedOffers' => $suggestedOffers
             ]);
@@ -70,24 +70,24 @@ class MatchingController extends AbstractController
     {
         // Récupérer manuellement l'offre d'emploi
         $jobOffer = $this->jobOfferRepository->find($id);
-        
+
         // Vérifier que l'offre existe
         if (!$jobOffer) {
             $this->addFlash('error', 'L\'offre d\'emploi demandée n\'existe pas.');
             return $this->redirectToRoute('app_recruiter_dashboard');
         }
-        
+
         // Vérifier que l'offre appartient bien au recruteur connecté
         if ($jobOffer->getRecruiter() !== $this->getUser()) {
             throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à voir cette page.');
         }
-        
+
         // Nombre de suggestions à afficher
         $limit = $request->query->getInt('limit', 15);
-        
+
         // Récupérer les meilleurs candidats pour cette offre
         $suggestedCandidates = $this->matchingService->findBestCandidatesForJobOffer($jobOffer, $limit);
-        
+
         return $this->render('matching/job_offer_suggestions.html.twig', [
             'suggestedCandidates' => $suggestedCandidates,
             'jobOffer' => $jobOffer
@@ -102,26 +102,26 @@ class MatchingController extends AbstractController
     public function getCompatibilityScore(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
-        
+
         if (!isset($data['applicantId']) || !isset($data['jobOfferId'])) {
             return new JsonResponse(['error' => 'Paramètres manquants'], Response::HTTP_BAD_REQUEST);
         }
-        
+
         try {
             $applicant = $this->matchingService->getApplicantById($data['applicantId']);
             $jobOffer = $this->jobOfferRepository->find($data['jobOfferId']);
-            
+
             if (!$jobOffer) {
                 return new JsonResponse(['error' => 'Offre non trouvée'], Response::HTTP_NOT_FOUND);
             }
-            
+
             // Vérifier que l'offre appartient bien au recruteur connecté
             if ($jobOffer->getRecruiter() !== $this->getUser()) {
                 return new JsonResponse(['error' => 'Accès non autorisé'], Response::HTTP_FORBIDDEN);
             }
-            
+
             $compatibilityScore = $this->matchingService->calculateCompatibilityScore($applicant, $jobOffer);
-            
+
             return new JsonResponse($compatibilityScore);
         } catch (\LogicException $e) {
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_NOT_FOUND);
@@ -137,13 +137,13 @@ class MatchingController extends AbstractController
     {
         // Récupérer les offres du recruteur
         $jobOffers = $this->jobOfferRepository->findBy(['recruiter' => $this->getUser()]);
-        
+
         // Pour chaque offre, pré-calculer les 5 meilleurs candidats
         $offerSuggestions = [];
         foreach ($jobOffers as $jobOffer) {
             $offerSuggestions[$jobOffer->getId()] = $this->matchingService->findBestCandidatesForJobOffer($jobOffer, 5);
         }
-        
+
         return $this->render('matching/recruiter_dashboard.html.twig', [
             'jobOffers' => $jobOffers,
             'offerSuggestions' => $offerSuggestions
@@ -159,11 +159,11 @@ class MatchingController extends AbstractController
     {
         // Récupérer l'utilisateur connecté
         $user = $this->getUser();
-        
+
         try {
             // Récupérer les meilleures offres pour ce candidat
             $suggestedOffers = $this->matchingService->findBestJobOffersForCandidate($user, 10);
-            
+
             return $this->render('matching/candidate_dashboard.html.twig', [
                 'suggestedOffers' => $suggestedOffers
             ]);
@@ -183,19 +183,19 @@ class MatchingController extends AbstractController
         $jobOfferId = $request->query->getInt('job_offer');
         $jobOffer = null;
         $compatibilityScore = null;
-        
+
         // Si une offre d'emploi spécifique est demandée, calculer le score pour cette offre
         if ($jobOfferId) {
             $jobOffer = $this->jobOfferRepository->find($jobOfferId);
-            
+
             if ($jobOffer) {
                 $compatibilityScore = $this->matchingService->calculateCompatibilityScore($applicant, $jobOffer);
             }
         }
-        
+
         // Trouver les meilleures offres pour ce candidat
         $bestOffers = $this->matchingService->findBestJobOffersForCandidate($applicant, 5);
-        
+
         return $this->render('matching/candidate_matching_details.html.twig', [
             'applicant' => $applicant,
             'jobOffer' => $jobOffer,
@@ -203,4 +203,4 @@ class MatchingController extends AbstractController
             'bestOffers' => $bestOffers
         ]);
     }
-} 
+}

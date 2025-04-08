@@ -49,4 +49,4 @@ class ApplicationType extends AbstractType
             'data_class' => Application::class,
         ]);
     }
-} 
+}

@@ -72,4 +72,4 @@ class RecruiterSubscriptionType extends AbstractType
             'data_class' => RecruiterSubscription::class,
         ]);
     }
-} 
+}

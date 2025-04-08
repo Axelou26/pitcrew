@@ -12,7 +12,7 @@ class StatisticsService
     private $jobOfferRepository;
     private $jobApplicationRepository;
     private $entityManager;
-    
+
     public function __construct(
         JobOfferRepository $jobOfferRepository,
         JobApplicationRepository $jobApplicationRepository,
@@ -22,7 +22,7 @@ class StatisticsService
         $this->jobApplicationRepository = $jobApplicationRepository;
         $this->entityManager = $entityManager;
     }
-    
+
     /**
      * Obtenir les statistiques de base pour un recruteur
      * Disponible pour les abonnements Premium et Business
@@ -31,19 +31,19 @@ class StatisticsService
     {
         // Nombre total d'offres publiées
         $totalOffers = $this->jobOfferRepository->count(['recruiter' => $recruiter]);
-        
+
         // Nombre d'offres actives
         $activeOffers = $this->jobOfferRepository->count(['recruiter' => $recruiter, 'isActive' => true]);
-        
+
         // Nombre total de candidatures reçues
         $totalApplications = $this->jobApplicationRepository->countForRecruiter($recruiter);
-        
+
         // Nombre moyen de candidatures par offre
         $averageApplications = $totalOffers > 0 ? $totalApplications / $totalOffers : 0;
-        
+
         // Taux de conversion (candidatures / vues)
         $conversionRate = $this->calculateConversionRate($recruiter);
-        
+
         return [
             'totalOffers' => $totalOffers,
             'activeOffers' => $activeOffers,
@@ -52,7 +52,7 @@ class StatisticsService
             'conversionRate' => $conversionRate
         ];
     }
-    
+
     /**
      * Obtenir des statistiques détaillées pour un recruteur
      * Disponible uniquement pour l'abonnement Business
@@ -61,22 +61,22 @@ class StatisticsService
     {
         // Récupérer les statistiques de base
         $basicStats = $this->getBasicStatistics($recruiter);
-        
+
         // Statistiques par catégorie d'offre
         $statsByCategory = $this->getStatsByCategory($recruiter);
-        
+
         // Évolution mensuelle des candidatures (6 derniers mois)
         $monthlyApplications = $this->getMonthlyApplicationsStats($recruiter);
-        
+
         // Top 5 des offres avec le plus de candidatures
         $topOffers = $this->getTopOffersByApplications($recruiter);
-        
+
         // Provenance des candidats (LinkedIn, site web, etc.)
         $applicationsSources = $this->getApplicationsSources($recruiter);
-        
+
         // Répartition des candidats par compétences
         $skillsDistribution = $this->getSkillsDistribution($recruiter);
-        
+
         return array_merge($basicStats, [
             'statsByCategory' => $statsByCategory,
             'monthlyApplications' => $monthlyApplications,
@@ -85,7 +85,7 @@ class StatisticsService
             'skillsDistribution' => $skillsDistribution
         ]);
     }
-    
+
     /**
      * Calculer le taux de conversion (candidatures / vues)
      */
@@ -93,21 +93,21 @@ class StatisticsService
     {
         $totalViews = $this->jobOfferRepository->getTotalViewsForRecruiter($recruiter);
         $totalApplications = $this->jobApplicationRepository->countForRecruiter($recruiter);
-        
+
         if ($totalViews > 0) {
             return round(($totalApplications / $totalViews) * 100, 1);
         }
-        
+
         return 0;
     }
-    
+
     /**
      * Obtenir les statistiques par catégorie d'offre
      */
     private function getStatsByCategory(User $recruiter): array
     {
         $conn = $this->entityManager->getConnection();
-        
+
         $sql = '
             SELECT 
                 jo.category, 
@@ -120,20 +120,20 @@ class StatisticsService
             GROUP BY jo.category
             ORDER BY applications DESC
         ';
-        
+
         $stmt = $conn->prepare($sql);
         $result = $stmt->executeQuery(['recruiterId' => $recruiter->getId()]);
-        
+
         return $result->fetchAllAssociative();
     }
-    
+
     /**
      * Obtenir l'évolution mensuelle des candidatures
      */
     private function getMonthlyApplicationsStats(User $recruiter): array
     {
         $conn = $this->entityManager->getConnection();
-        
+
         $sql = '
             SELECT 
                 DATE_FORMAT(ja.created_at, "%Y-%m") as month,
@@ -145,20 +145,20 @@ class StatisticsService
             GROUP BY month
             ORDER BY month ASC
         ';
-        
+
         $stmt = $conn->prepare($sql);
         $result = $stmt->executeQuery(['recruiterId' => $recruiter->getId()]);
-        
+
         return $result->fetchAllAssociative();
     }
-    
+
     /**
      * Obtenir le top 5 des offres avec le plus de candidatures
      */
     private function getTopOffersByApplications(User $recruiter): array
     {
         $conn = $this->entityManager->getConnection();
-        
+
         $sql = '
             SELECT 
                 jo.id,
@@ -171,20 +171,20 @@ class StatisticsService
             ORDER BY applications DESC
             LIMIT 5
         ';
-        
+
         $stmt = $conn->prepare($sql);
         $result = $stmt->executeQuery(['recruiterId' => $recruiter->getId()]);
-        
+
         return $result->fetchAllAssociative();
     }
-    
+
     /**
      * Obtenir les sources des candidatures
      */
     private function getApplicationsSources(User $recruiter): array
     {
         $conn = $this->entityManager->getConnection();
-        
+
         $sql = '
             SELECT 
                 ja.source,
@@ -195,13 +195,13 @@ class StatisticsService
             GROUP BY ja.source
             ORDER BY count DESC
         ';
-        
+
         $stmt = $conn->prepare($sql);
         $result = $stmt->executeQuery(['recruiterId' => $recruiter->getId()]);
-        
+
         return $result->fetchAllAssociative();
     }
-    
+
     /**
      * Obtenir la répartition des candidats par compétences
      */
@@ -210,7 +210,7 @@ class StatisticsService
         // Cette fonction nécessiterait une structure de données spécifique
         // pour stocker les compétences des candidats. Pour cet exemple,
         // nous renvoyons des données simulées.
-        
+
         return [
             ['skill' => 'PHP', 'count' => 75],
             ['skill' => 'JavaScript', 'count' => 68],
@@ -221,4 +221,4 @@ class StatisticsService
             ['skill' => 'UX/UI', 'count' => 25]
         ];
     }
-} 
+}

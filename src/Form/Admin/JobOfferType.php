@@ -91,4 +91,4 @@ class JobOfferType extends AbstractType
             'data_class' => JobOffer::class,
         ]);
     }
-} 
+}

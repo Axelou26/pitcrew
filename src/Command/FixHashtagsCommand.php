@@ -40,7 +40,7 @@ class FixHashtagsCommand extends Command
 
         // Récupérer tous les hashtags
         $hashtags = $this->hashtagRepository->findAll();
-        
+
         if (empty($hashtags)) {
             $io->warning('Aucun hashtag trouvé dans la base de données.');
             return Command::SUCCESS;
@@ -52,15 +52,15 @@ class FixHashtagsCommand extends Command
             try {
                 // Compter le nombre de posts qui utilisent ce hashtag
                 $count = $this->postRepository->countByHashtag($hashtag);
-                
+
                 // Mettre à jour le compteur
                 $hashtag->setUsageCount($count);
-                
+
                 // Mettre à jour la date de dernière utilisation
                 if ($count > 0) {
                     $hashtag->setLastUsedAt(new \DateTimeImmutable());
                 }
-                
+
                 $io->progressAdvance();
             } catch (\Exception $e) {
                 $io->error('Erreur lors de la mise à jour du hashtag #' . $hashtag->getName() . ': ' . $e->getMessage());
@@ -69,10 +69,10 @@ class FixHashtagsCommand extends Command
 
         // Sauvegarder les modifications
         $this->entityManager->flush();
-        
+
         $io->progressFinish();
         $io->success('Les compteurs des hashtags ont été mis à jour avec succès !');
 
         return Command::SUCCESS;
     }
-} 
+}

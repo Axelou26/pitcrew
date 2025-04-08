@@ -33,18 +33,18 @@ class CreateApplicantCommand extends Command
         $user->setFirstName('Jane');
         $user->setLastName('Smith');
         $user->setRoles(['ROLE_POSTULANT']);
-        
+
         $hashedPassword = $this->passwordHasher->hashPassword(
             $user,
             'password'
         );
         $user->setPassword($hashedPassword);
-        
+
         $this->entityManager->persist($user);
         $this->entityManager->flush();
-        
+
         $output->writeln('Applicant user created successfully!');
-        
+
         return Command::SUCCESS;
     }
-} 
+}

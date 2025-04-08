@@ -55,4 +55,4 @@ class ProfileRecruiterType extends AbstractType
             'data_class' => User::class,
         ]);
     }
-} 
+}

@@ -22,7 +22,7 @@ class NotificationController extends AbstractController
     {
         $user = $this->getUser();
         $notifications = $notificationRepository->findBy(['user' => $user], ['createdAt' => 'DESC']);
-        
+
         return $this->render('notification/index.html.twig', [
             'notifications' => $notifications,
         ]);
@@ -32,7 +32,7 @@ class NotificationController extends AbstractController
     public function unread(NotificationRepository $notificationRepository): Response
     {
         $notifications = $notificationRepository->findUnreadByUser($this->getUser());
-        
+
         return $this->render('notification/unread.html.twig', [
             'notifications' => $notifications,
         ]);
@@ -42,7 +42,7 @@ class NotificationController extends AbstractController
     public function count(NotificationRepository $notificationRepository): JsonResponse
     {
         $count = $notificationRepository->countUnreadByUser($this->getUser());
-        
+
         return $this->json(['count' => $count]);
     }
 
@@ -50,7 +50,7 @@ class NotificationController extends AbstractController
     public function apiCount(NotificationRepository $notificationRepository): JsonResponse
     {
         $count = $notificationRepository->countUnreadByUser($this->getUser());
-        
+
         return $this->json(['count' => $count]);
     }
 
@@ -61,16 +61,16 @@ class NotificationController extends AbstractController
         if ($notification->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à accéder à cette notification.');
         }
-        
+
         // Marquer la notification comme lue
         $notification->setIsRead(true);
         $entityManager->flush();
-        
+
         // Si c'est une requête AJAX, retourner une réponse JSON
         if ($request->isXmlHttpRequest()) {
             return new JsonResponse(['success' => true]);
         }
-        
+
         // Rediriger vers l'URL cible de la notification
         $targetUrl = $notification->getTargetUrl() ?: $this->generateUrl('app_notification_index');
         return $this->redirect($targetUrl);
@@ -81,35 +81,35 @@ class NotificationController extends AbstractController
     {
         $user = $this->getUser();
         $unreadNotifications = $notificationRepository->findBy(['user' => $user, 'isRead' => false]);
-        
+
         foreach ($unreadNotifications as $notification) {
             $notification->setIsRead(true);
         }
-        
+
         $entityManager->flush();
-        
+
         // Si c'est une requête AJAX, retourner une réponse JSON
         if ($request->isXmlHttpRequest()) {
             return new JsonResponse(['success' => true]);
         }
-        
+
         // Rediriger vers la page des notifications
         return $this->redirectToRoute('app_notification_index');
     }
 
     #[Route('/{id}/delete', name: 'app_notification_delete', methods: ['POST'])]
     public function delete(
-        Notification $notification, 
+        Notification $notification,
         EntityManagerInterface $entityManager
     ): JsonResponse {
         // Vérifier que la notification appartient à l'utilisateur
         if ($notification->getUser() !== $this->getUser()) {
             return $this->json(['success' => false, 'message' => 'Notification non trouvée'], 404);
         }
-        
+
         $entityManager->remove($notification);
         $entityManager->flush();
-        
+
         return $this->json(['success' => true]);
     }
-} 
+}

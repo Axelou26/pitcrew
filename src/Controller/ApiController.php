@@ -31,7 +31,7 @@ class ApiController extends AbstractController
         try {
             // Vérification de la connexion à la base de données
             $this->entityManager->getConnection()->connect();
-            
+
             return new JsonResponse([
                 'status' => 'healthy',
                 'timestamp' => (new \DateTime())->format('c'),
@@ -47,4 +47,4 @@ class ApiController extends AbstractController
             ], 503);
         }
     }
-} 
+}

@@ -15,7 +15,7 @@ class VideoConferenceService
     private $apiKey;
 
     public function __construct(
-        InterviewRepository $interviewRepository, 
+        InterviewRepository $interviewRepository,
         UrlGeneratorInterface $urlGenerator,
         string $apiKey = 'dummy_api_key' // À remplacer par un paramètre de configuration réel
     ) {
@@ -31,22 +31,22 @@ class VideoConferenceService
     {
         // Génération d'un identifiant unique pour la salle
         $roomId = uniqid('room_') . '_' . $interview->getId();
-        
+
         // Dans une vraie implémentation, on appellerait une API externe ici
         // Par exemple Jitsi, Twilio, Vonage, etc.
-        
+
         // Pour cet exemple, on simule simplement la création de salle
         $interview->setRoomId($roomId);
-        
+
         // Génération de l'URL de la salle
         $meetingUrl = $this->urlGenerator->generate('app_interview_room', [
             'id' => $interview->getId(),
             'token' => $this->generateRoomToken($interview)
         ], UrlGeneratorInterface::ABSOLUTE_URL);
-        
+
         $interview->setMeetingUrl($meetingUrl);
         $this->interviewRepository->save($interview, true);
-        
+
         return $roomId;
     }
 
@@ -85,11 +85,11 @@ class VideoConferenceService
     {
         $now = new \DateTime();
         $scheduledTime = $interview->getScheduledAt();
-        
+
         // Entretien actif si on est dans la fenêtre de 15 minutes avant à 1 heure après
         $earliestJoin = (clone $scheduledTime)->modify('-15 minutes');
         $latestJoin = (clone $scheduledTime)->modify('+1 hour');
-        
+
         // On vérifie seulement la fenêtre de temps et que l'entretien n'est pas annulé
         return $now >= $earliestJoin && $now <= $latestJoin && !$interview->isCancelled();
     }
@@ -102,7 +102,7 @@ class VideoConferenceService
         $interview->setEndedAt(new \DateTime());
         $interview->setStatus('completed');
         $this->interviewRepository->save($interview, true);
-        
+
         // Dans une vraie implémentation, on pourrait appeler l'API pour fermer la salle
     }
 
@@ -121,7 +121,7 @@ class VideoConferenceService
     public function getClientConfig(Interview $interview, User $user): array
     {
         $isRecruiter = $interview->getRecruiter() === $user;
-        
+
         return [
             'roomName' => $interview->getRoomId(),
             'userDisplayName' => $user->getFullName(),
@@ -132,4 +132,4 @@ class VideoConferenceService
             'startWithVideoMuted' => false,
         ];
     }
-} 
+}

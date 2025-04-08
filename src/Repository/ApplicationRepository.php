@@ -110,4 +110,4 @@ class ApplicationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
-} 
+}

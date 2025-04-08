@@ -130,4 +130,4 @@ class Applicant extends User
         $this->favoriteOffers->removeElement($jobOffer);
         return $this;
     }
-} 
+}

@@ -70,4 +70,4 @@ class CreateAdminCommand extends Command
 
         return Command::SUCCESS;
     }
-} 
+}

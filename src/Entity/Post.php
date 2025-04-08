@@ -16,10 +16,10 @@ class Post
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(length: 255)]
     private ?string $title = null;
 
-    #[ORM\Column(type: Types::TEXT)]
+    #[ORM\Column(type: 'text')]
     private ?string $content = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -46,19 +46,19 @@ class Post
 
     #[ORM\Column(options: ["default" => 0])]
     private int $likesCounter = 0;
-    
+
     #[ORM\Column(options: ["default" => 0])]
     private int $commentsCounter = 0;
-    
+
     #[ORM\Column(options: ["default" => 0])]
     private int $sharesCounter = 0;
 
     #[ORM\ManyToMany(targetEntity: Hashtag::class, inversedBy: 'posts')]
     private Collection $hashtags;
-    
+
     #[ORM\Column(type: Types::JSON)]
     private ?array $mentions = [];
-    
+
     #[ORM\Column(type: Types::JSON)]
     private ?array $reactionCounts = [];
 
@@ -92,7 +92,7 @@ class Post
         return $this->title;
     }
 
-    public function setTitle(?string $title): static
+    public function setTitle(string $title): self
     {
         $this->title = $title;
         return $this;
@@ -103,7 +103,7 @@ class Post
         return $this->content;
     }
 
-    public function setContent(?string $content): static
+    public function setContent(string $content): self
     {
         $this->content = $content;
         return $this;
@@ -184,7 +184,7 @@ class Post
     {
         return $this->likesCounter;
     }
-    
+
     public function updateLikesCounter(): void
     {
         $this->likesCounter = $this->likes->count();
@@ -237,7 +237,7 @@ class Post
     {
         return $this->commentsCounter;
     }
-    
+
     public function updateCommentsCounter(): void
     {
         $this->commentsCounter = $this->comments->count();
@@ -272,7 +272,7 @@ class Post
         }
         return $this;
     }
-    
+
     /**
      * @return int
      */
@@ -280,12 +280,12 @@ class Post
     {
         return $this->sharesCounter;
     }
-    
+
     public function updateSharesCounter(): void
     {
         $this->sharesCounter = $this->shares->count();
     }
-    
+
     /**
      * Met à jour tous les compteurs en fonction du contenu des collections
      */
@@ -295,34 +295,34 @@ class Post
         $this->updateCommentsCounter();
         $this->updateSharesCounter();
     }
-    
+
     public function getLikesCounter(): int
     {
         return $this->likesCounter;
     }
-    
+
     public function setLikesCounter(int $likesCounter): static
     {
         $this->likesCounter = $likesCounter;
         return $this;
     }
-    
+
     public function getCommentsCounter(): int
     {
         return $this->commentsCounter;
     }
-    
+
     public function setCommentsCounter(int $commentsCounter): static
     {
         $this->commentsCounter = $commentsCounter;
         return $this;
     }
-    
+
     public function getSharesCounter(): int
     {
         return $this->sharesCounter;
     }
-    
+
     public function setSharesCounter(int $sharesCounter): static
     {
         $this->sharesCounter = $sharesCounter;
@@ -336,27 +336,33 @@ class Post
     {
         return $this->hashtags;
     }
-    
-    public function addHashtag(Hashtag $hashtag): static
+
+    public function addHashtag(Hashtag $hashtag, bool $updateOtherSide = true): static
     {
         if (!$this->hashtags->contains($hashtag)) {
             $this->hashtags->add($hashtag);
-            // L'incrémentation du compteur d'usage est maintenant gérée directement dans le contrôleur
+            if ($updateOtherSide) {
+                $hashtag->addPost($this, false);
+            }
         }
-        
+
         return $this;
     }
-    
-    public function removeHashtag(Hashtag $hashtag): static
+
+    public function removeHashtag(Hashtag $hashtag, bool $updateOtherSide = true): static
     {
-        $this->hashtags->removeElement($hashtag);
-        
+        if ($this->hashtags->removeElement($hashtag)) {
+            if ($updateOtherSide) {
+                $hashtag->removePost($this, false);
+            }
+        }
+
         return $this;
     }
-    
+
     /**
      * Extrait les hashtags du contenu
-     * 
+     *
      * @return array Les hashtags extraits du contenu
      */
     public function extractHashtags(): array
@@ -364,7 +370,7 @@ class Post
         if ($this->content === null || trim($this->content) === '') {
             return [];
         }
-        
+
         try {
             preg_match_all('/#([a-zA-Z0-9_]+)/', $this->content, $matches);
             return array_unique($matches[1] ?? []);
@@ -373,7 +379,7 @@ class Post
             return [];
         }
     }
-    
+
     /**
      * @return array
      */
@@ -381,7 +387,7 @@ class Post
     {
         return $this->mentions;
     }
-    
+
     /**
      * @param array|null $mentions
      */
@@ -390,7 +396,7 @@ class Post
         $this->mentions = $mentions ?? [];
         return $this;
     }
-    
+
     /**
      * Ajoute une mention d'utilisateur
      */
@@ -402,10 +408,10 @@ class Post
         }
         return $this;
     }
-    
+
     /**
      * Extrait les mentions (@username) du contenu
-     * 
+     *
      * @return array Les noms d'utilisateur mentionnés
      */
     public function extractMentions(): array
@@ -413,7 +419,7 @@ class Post
         if ($this->content === null || trim($this->content) === '') {
             return [];
         }
-        
+
         try {
             preg_match_all('/@([a-zA-Z0-9_]+)/', $this->content, $matches);
             return array_unique($matches[1] ?? []);
@@ -422,7 +428,7 @@ class Post
             return [];
         }
     }
-    
+
     /**
      * @return array
      */
@@ -430,7 +436,7 @@ class Post
     {
         return $this->reactionCounts;
     }
-    
+
     /**
      * Met à jour les compteurs de réactions
      */
@@ -443,17 +449,17 @@ class Post
             PostLike::REACTION_SUPPORT => 0,
             PostLike::REACTION_ENCOURAGING => 0
         ];
-        
+
         foreach ($this->likes as $like) {
             $type = $like->getReactionType();
             if (isset($counts[$type])) {
                 $counts[$type]++;
             }
         }
-        
+
         $this->reactionCounts = $counts;
     }
-    
+
     /**
      * Retourne le nombre de réactions d'un type spécifique
      */
@@ -462,25 +468,25 @@ class Post
         if ($this->reactionCounts === null) {
             return 0;
         }
-        
+
         // Vérifier d'abord la clé exacte
         if (isset($this->reactionCounts[$type])) {
             return $this->reactionCounts[$type];
         }
-        
+
         // Vérifier si c'est 'like' mais stocké comme 'likes'
         if ($type === 'like' && isset($this->reactionCounts['likes'])) {
             return $this->reactionCounts['likes'];
         }
-        
+
         // Vérifier si c'est 'likes' mais stocké comme 'like'
         if ($type === 'likes' && isset($this->reactionCounts['like'])) {
             return $this->reactionCounts['like'];
         }
-        
+
         return 0;
     }
-    
+
     /**
      * Récupère le type de réaction d'un utilisateur pour ce post
      */
@@ -493,7 +499,7 @@ class Post
         }
         return null;
     }
-    
+
     /**
      * Alias pour getUserReaction()
      * Cette méthode est utilisée dans les templates
@@ -502,4 +508,4 @@ class Post
     {
         return $this->getUserReaction($user);
     }
-} 
+}

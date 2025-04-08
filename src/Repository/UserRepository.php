@@ -58,7 +58,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
 
     /**
      * Trouve des utilisateurs suggérés pour un utilisateur donné
-     * 
+     *
      * @param User|null $user L'utilisateur pour lequel on cherche des suggestions
      * @param int $limit Nombre maximum de suggestions à retourner
      * @return User[] Liste des utilisateurs suggérés
@@ -66,18 +66,18 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     public function findSuggestedUsers(?User $user = null, int $limit = 5): array
     {
         $qb = $this->createQueryBuilder('u');
-        
+
         if ($user) {
             // Récupérer les IDs des amis de l'utilisateur
             $friendshipRepository = $this->getEntityManager()->getRepository(\App\Entity\Friendship::class);
             $friends = $friendshipRepository->findFriends($user);
-            $friendIds = array_map(function($friend) {
+            $friendIds = array_map(function ($friend) {
                 return $friend->getId();
             }, $friends);
-            
+
             // Ajouter l'ID de l'utilisateur courant pour l'exclure des suggestions
             $excludeIds = array_merge($friendIds, [$user->getId()]);
-            
+
             $qb->leftJoin('u.posts', 'p')
                ->where('u.id NOT IN (:excludeIds)')
                ->groupBy('u.id')
@@ -87,7 +87,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             // Si aucun utilisateur n'est fourni, retourne simplement les utilisateurs les plus récents
             $qb->orderBy('u.createdAt', 'DESC');
         }
-        
+
         return $qb->setMaxResults($limit)
                  ->getQuery()
                  ->getResult();
@@ -100,7 +100,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     {
         return $this->createQueryBuilder('u')
             ->where('u.roles LIKE :role')
-            ->setParameter('role', '%"'.$role.'"%')
+            ->setParameter('role', '%"' . $role . '"%')
             ->getQuery()
             ->getResult();
     }
@@ -124,21 +124,21 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->orderBy('u.firstName', 'ASC')
             ->addOrderBy('u.lastName', 'ASC')
             ->setMaxResults(50);
-        
+
         $users = $qb->getQuery()->getResult();
-        
+
         // Enrichir les résultats avec des informations sur les relations d'amitié
         $friendshipRepository = $this->getEntityManager()->getRepository(Friendship::class);
-        
+
         foreach ($users as $user) {
             // Vérifier si l'utilisateur est déjà ami avec l'utilisateur courant
             $friendship = $friendshipRepository->findAcceptedBetweenUsers($currentUser, $user);
             $user->isFriend = ($friendship !== null);
-            
+
             // Vérifier si l'utilisateur courant a envoyé une demande d'amitié à cet utilisateur
             $pendingRequest = $friendshipRepository->findPendingRequestBetweenUsers($currentUser, $user, true);
             $user->hasPendingRequestFrom = ($pendingRequest !== null);
-            
+
             // Vérifier si l'utilisateur a envoyé une demande d'amitié à l'utilisateur courant
             $pendingRequestTo = $friendshipRepository->findPendingRequestBetweenUsers($user, $currentUser, true);
             $user->hasPendingRequestTo = ($pendingRequestTo !== null);
@@ -146,7 +146,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
                 $user->pendingRequestId = $pendingRequestTo->getId();
             }
         }
-        
+
         return $users;
     }
 
@@ -158,7 +158,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->getQuery()
             ->getOneOrNullResult();
     }
-    
+
     /**
      * Trouve tous les utilisateurs sauf celui spécifié
      * Limité aux amis de l'utilisateur
@@ -167,15 +167,15 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     {
         $friendshipRepository = $this->getEntityManager()->getRepository(Friendship::class);
         $friends = $friendshipRepository->findFriends($user);
-        
+
         if (empty($friends)) {
             return [];
         }
-        
-        $friendIds = array_map(function($friend) {
+
+        $friendIds = array_map(function ($friend) {
             return $friend->getId();
         }, $friends);
-        
+
         return $this->createQueryBuilder('u')
             ->andWhere('u.id != :userId')
             ->andWhere('u.id IN (:friendIds)')
@@ -186,7 +186,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->getQuery()
             ->getResult();
     }
-    
+
     /**
      * Trouve un utilisateur par son nom d'utilisateur
      */
@@ -194,7 +194,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     {
         // Nettoyage du nom d'utilisateur (suppression des espaces et mise en minuscules)
         $usernameClean = str_replace(' ', '', strtolower($username));
-        
+
         // Essayer d'abord une recherche exacte (cas le plus simple et rapide)
         $qb = $this->createQueryBuilder('u');
         $exactMatches = $qb
@@ -203,18 +203,18 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->setParameter('fullname', $usernameClean)
             ->getQuery()
             ->getResult();
-            
+
         if (!empty($exactMatches)) {
             return $exactMatches[0];
         }
-        
+
         // Si pas de correspondance exacte et que le nom semble contenir prénom et nom
         if (strlen($usernameClean) > 5) {
             // Essayer de détecter la séparation prénom/nom
             for ($i = 3; $i < strlen($usernameClean) - 2; $i++) {
                 $potentialFirstName = substr($usernameClean, 0, $i);
                 $potentialLastName = substr($usernameClean, $i);
-                
+
                 $qb = $this->createQueryBuilder('u');
                 $matchedUsers = $qb
                     ->where('LOWER(u.firstName) LIKE :firstName')
@@ -223,17 +223,17 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
                     ->setParameter('lastName', $potentialLastName . '%')
                     ->getQuery()
                     ->getResult();
-                
+
                 if (!empty($matchedUsers)) {
                     return $matchedUsers[0];
                 }
             }
-            
+
             // Essayer l'autre sens (nom puis prénom)
             for ($i = 3; $i < strlen($usernameClean) - 2; $i++) {
                 $potentialLastName = substr($usernameClean, 0, $i);
                 $potentialFirstName = substr($usernameClean, $i);
-                
+
                 $qb = $this->createQueryBuilder('u');
                 $matchedUsers = $qb
                     ->where('LOWER(u.firstName) LIKE :firstName')
@@ -242,13 +242,13 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
                     ->setParameter('lastName', $potentialLastName . '%')
                     ->getQuery()
                     ->getResult();
-                
+
                 if (!empty($matchedUsers)) {
                     return $matchedUsers[0];
                 }
             }
         }
-        
+
         // Si toujours pas de correspondance, essayer avec une recherche plus souple
         $qb = $this->createQueryBuilder('u');
         $looseMatches = $qb
@@ -257,11 +257,11 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->setParameter('partialName', '%' . $usernameClean . '%')
             ->getQuery()
             ->getResult();
-            
+
         if (!empty($looseMatches)) {
             return $looseMatches[0];
         }
-        
+
         return null;
     }
-} 
+}

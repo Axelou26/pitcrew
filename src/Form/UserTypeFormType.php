@@ -36,4 +36,4 @@ class UserTypeFormType extends AbstractType
             // Configure your form options here
         ]);
     }
-} 
+}

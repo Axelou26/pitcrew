@@ -58,18 +58,18 @@ class FriendshipRepository extends ServiceEntityRepository
     public function findPendingRequestBetweenUsers(User $user1, User $user2, bool $directional = false): ?Friendship
     {
         $qb = $this->createQueryBuilder('f');
-        
+
         if ($directional) {
             $qb->where('f.requester = :user1 AND f.addressee = :user2');
         } else {
             $qb->where('(f.requester = :user1 AND f.addressee = :user2) OR (f.requester = :user2 AND f.addressee = :user1)');
         }
-        
+
         $qb->andWhere('f.status = :status')
             ->setParameter('user1', $user1)
             ->setParameter('user2', $user2)
             ->setParameter('status', Friendship::STATUS_PENDING);
-        
+
         return $qb->getQuery()->getOneOrNullResult();
     }
 
@@ -115,7 +115,7 @@ class FriendshipRepository extends ServiceEntityRepository
             ->setParameter('status', Friendship::STATUS_ACCEPTED)
             ->getQuery()
             ->getResult();
-        
+
         $friends = [];
         foreach ($friendships as $friendship) {
             if ($friendship->getRequester() === $user) {
@@ -124,7 +124,7 @@ class FriendshipRepository extends ServiceEntityRepository
                 $friends[] = $friendship->getRequester();
             }
         }
-        
+
         return $friends;
     }
 
@@ -136,4 +136,4 @@ class FriendshipRepository extends ServiceEntityRepository
         $friendship = $this->findAcceptedBetweenUsers($user1, $user2);
         return $friendship !== null;
     }
-} 
+}

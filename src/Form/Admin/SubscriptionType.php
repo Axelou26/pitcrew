@@ -55,4 +55,4 @@ class SubscriptionType extends AbstractType
             'data_class' => Subscription::class,
         ]);
     }
-} 
+}

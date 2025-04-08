@@ -41,4 +41,4 @@ class AdminDashboardController extends AbstractController
             'activeSubscriptionsCount' => $activeSubscriptionsCount,
         ]);
     }
-} 
+}

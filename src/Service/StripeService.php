@@ -31,10 +31,10 @@ class StripeService
         $this->entityManager = $entityManager;
         $this->urlGenerator = $urlGenerator;
         $this->subscriptionService = $subscriptionService;
-        
+
         // Vérifier si le mode hors ligne est activé
         $this->isOfflineMode = filter_var($this->params->get('stripe_offline_mode', false), FILTER_VALIDATE_BOOLEAN);
-        
+
         // Initialiser Stripe avec la clé API seulement si pas en mode hors ligne
         if (!$this->isOfflineMode) {
             try {
@@ -59,7 +59,7 @@ class StripeService
     {
         return $this->isTestMode;
     }
-    
+
     /**
      * Vérifie si le service est en mode hors ligne
      */
@@ -77,10 +77,10 @@ class StripeService
         if ($this->isOfflineMode) {
             return $this->createOfflineCheckoutSession($user, $subscription);
         }
-        
+
         // Créer ou récupérer le client Stripe
         $stripeCustomerId = $user->getStripeCustomerId();
-        
+
         if (!$stripeCustomerId) {
             $customer = Customer::create([
                 'email' => $user->getEmail(),
@@ -89,23 +89,23 @@ class StripeService
                     'user_id' => $user->getId()
                 ]
             ]);
-            
+
             $stripeCustomerId = $customer->id;
             $user->setStripeCustomerId($stripeCustomerId);
             $this->entityManager->persist($user);
             $this->entityManager->flush();
         }
-        
+
         // Créer la session de paiement
         $successUrl = $this->urlGenerator->generate('app_subscription_success', [
             'subscription_id' => $subscription->getId()
         ], UrlGeneratorInterface::ABSOLUTE_URL);
-        
+
         $cancelUrl = $this->urlGenerator->generate('app_subscription_cancel', [], UrlGeneratorInterface::ABSOLUTE_URL);
-        
+
         // Déterminer le prix en centimes
         $priceInCents = $subscription->getPrice() * 100;
-        
+
         $sessionParams = [
             'customer' => $stripeCustomerId,
             'payment_method_types' => ['card'],
@@ -131,7 +131,7 @@ class StripeService
                 'subscription_id' => $subscription->getId()
             ]
         ];
-        
+
         // En mode test, ajoutez des paramètres spécifiques pour faciliter les tests
         if ($this->isTestMode) {
             $sessionParams['payment_intent_data'] = [
@@ -143,7 +143,7 @@ class StripeService
                 ]
             ];
         }
-        
+
         try {
             return Session::create($sessionParams);
         } catch (\Exception $e) {
@@ -152,7 +152,7 @@ class StripeService
             return $this->createOfflineCheckoutSession($user, $subscription);
         }
     }
-    
+
     /**
      * Crée une session de paiement simulée quand le mode hors ligne est activé
      */
@@ -161,13 +161,13 @@ class StripeService
         $successUrl = $this->urlGenerator->generate('app_subscription_success', [
             'subscription_id' => $subscription->getId()
         ], UrlGeneratorInterface::ABSOLUTE_URL);
-        
+
         // Créer un objet qui ressemble à une session Stripe
         $fakeSession = new \stdClass();
         $fakeSession->id = 'offline_' . uniqid();
         $fakeSession->url = $successUrl;
         $fakeSession->is_offline_session = true;
-        
+
         return $fakeSession;
     }
 
@@ -180,25 +180,25 @@ class StripeService
         if ($this->isOfflineMode) {
             return;
         }
-        
+
         $session = $payload['data']['object'];
-        
+
         // Récupérer les métadonnées
         $userId = $session['metadata']['user_id'] ?? null;
         $subscriptionId = $session['metadata']['subscription_id'] ?? null;
-        
+
         if (!$userId || !$subscriptionId) {
             throw new \Exception('Métadonnées manquantes dans la session Stripe');
         }
-        
+
         // Récupérer l'utilisateur et l'abonnement
         $user = $this->entityManager->getRepository(User::class)->find($userId);
         $subscription = $this->entityManager->getRepository(Subscription::class)->find($subscriptionId);
-        
+
         if (!$user || !$subscription) {
             throw new \Exception('Utilisateur ou abonnement introuvable');
         }
-        
+
         // Créer l'abonnement pour l'utilisateur
         $this->subscriptionService->createSubscription($user, $subscription);
     }
@@ -212,12 +212,12 @@ class StripeService
         if (!$this->isTestMode && !$this->isOfflineMode) {
             throw new \Exception('Cette méthode ne peut être utilisée qu\'en mode test ou hors ligne');
         }
-        
+
         // Générer une URL de succès directe
         $successUrl = $this->urlGenerator->generate('app_subscription_success', [
             'subscription_id' => $subscription->getId()
         ], UrlGeneratorInterface::ABSOLUTE_URL);
-        
+
         // Retourner un faux objet de session
         return [
             'id' => 'test_session_' . uniqid(),
@@ -236,14 +236,14 @@ class StripeService
             $successUrl = $this->urlGenerator->generate('app_subscription_success', [
                 'subscription_id' => $subscription->getId()
             ], UrlGeneratorInterface::ABSOLUTE_URL);
-            
+
             return $successUrl;
         }
-        
+
         try {
             // Créer ou récupérer le client Stripe
             $stripeCustomerId = $user->getStripeCustomerId();
-            
+
             if (!$stripeCustomerId) {
                 $customer = Customer::create([
                     'email' => $user->getEmail(),
@@ -252,13 +252,13 @@ class StripeService
                         'user_id' => $user->getId()
                     ]
                 ]);
-                
+
                 $stripeCustomerId = $customer->id;
                 $user->setStripeCustomerId($stripeCustomerId);
                 $this->entityManager->persist($user);
                 $this->entityManager->flush();
             }
-            
+
             // Créer un produit pour l'abonnement s'il n'existe pas déjà
             $productName = 'Abonnement ' . $subscription->getName();
             $product = \Stripe\Product::create([
@@ -267,7 +267,7 @@ class StripeService
                     'subscription_id' => $subscription->getId()
                 ]
             ]);
-            
+
             // Créer un prix pour l'abonnement
             $price = \Stripe\Price::create([
                 'product' => $product->id,
@@ -278,14 +278,14 @@ class StripeService
                     'interval_count' => 1
                 ]
             ]);
-            
+
             // Créer une session de paiement pour l'abonnement récurrent
             $successUrl = $this->urlGenerator->generate('app_subscription_success', [
                 'subscription_id' => $subscription->getId()
             ], UrlGeneratorInterface::ABSOLUTE_URL);
-            
+
             $cancelUrl = $this->urlGenerator->generate('app_subscription_cancel', [], UrlGeneratorInterface::ABSOLUTE_URL);
-            
+
             $sessionParams = [
                 'customer' => $stripeCustomerId,
                 'line_items' => [[
@@ -300,23 +300,23 @@ class StripeService
                     'subscription_id' => $subscription->getId()
                 ]
             ];
-            
+
             // En mode test, ajoutez des paramètres spécifiques
             if ($this->isTestMode) {
                 $sessionParams['metadata']['is_test'] = 'true';
             }
-            
+
             $session = Session::create($sessionParams);
-            
+
             return $session->url;
         } catch (\Exception $e) {
             // En cas d'erreur, passer en mode hors ligne et retourner une URL de succès directe
             $this->isOfflineMode = true;
-            
+
             $successUrl = $this->urlGenerator->generate('app_subscription_success', [
                 'subscription_id' => $subscription->getId()
             ], UrlGeneratorInterface::ABSOLUTE_URL);
-            
+
             return $successUrl;
         }
     }
@@ -330,17 +330,17 @@ class StripeService
         if ($this->isOfflineMode) {
             return true;
         }
-        
+
         $stripeSubscriptionId = $subscription->getStripeSubscriptionId();
-        
+
         if (!$stripeSubscriptionId) {
             return false;
         }
-        
+
         try {
             $stripeSubscription = \Stripe\Subscription::retrieve($stripeSubscriptionId);
             $stripeSubscription->cancel();
-            
+
             return true;
         } catch (\Exception $e) {
             // En cas d'erreur, on passe en mode hors ligne et on simule un succès
@@ -348,4 +348,4 @@ class StripeService
             return true;
         }
     }
-} 
+}

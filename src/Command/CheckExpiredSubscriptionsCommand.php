@@ -45,4 +45,4 @@ class CheckExpiredSubscriptionsCommand extends Command
             return Command::FAILURE;
         }
     }
-} 
+}

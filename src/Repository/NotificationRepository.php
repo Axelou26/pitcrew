@@ -82,4 +82,4 @@ class NotificationRepository extends ServiceEntityRepository
             ->getQuery()
             ->execute();
     }
-} 
+}

@@ -30,11 +30,11 @@ class DashboardController extends AbstractController
         if ($this->isGranted('ROLE_RECRUTEUR')) {
             // Récupérer uniquement les offres du recruteur connecté
             $allOffers = $jobOfferRepository->findByRecruiter($this->getUser());
-            
+
             // Séparer les offres actives des offres expirées
             $activeOffers = [];
             $expiredOffers = [];
-            
+
             foreach ($allOffers as $offer) {
                 if ($offer->getIsActive()) {
                     $activeOffers[] = $offer;
@@ -42,11 +42,11 @@ class DashboardController extends AbstractController
                     $expiredOffers[] = $offer;
                 }
             }
-            
+
             $applications = $jobApplicationRepository->findByRecruiter($this->getUser());
             $recentApplications = array_slice($applications, 0, 5); // Récupère les 5 candidatures les plus récentes
             $totalApplications = count($applications);
-            
+
             // Récupérer les entretiens à venir
             $upcomingInterviews = $interviewRepository->findUpcomingInterviewsForUser($this->getUser());
 
@@ -58,14 +58,14 @@ class DashboardController extends AbstractController
                 'upcomingInterviews' => $upcomingInterviews
             ]);
         }
-        
+
         // Pour les postulants
         if ($this->isGranted('ROLE_POSTULANT')) {
             $applications = $jobApplicationRepository->findBy(['applicant' => $this->getUser()]);
-            
+
             // Récupérer les entretiens à venir pour le candidat
             $upcomingInterviews = $interviewRepository->findUpcomingInterviewsForUser($this->getUser());
-            
+
             return $this->render('dashboard/applicant.html.twig', [
                 'applications' => $applications,
                 'upcomingInterviews' => $upcomingInterviews
@@ -98,7 +98,7 @@ class DashboardController extends AbstractController
     {
         // Récupérer seulement les offres du recruteur connecté
         $offers = $jobOfferRepository->findByRecruiter($this->getUser());
-        
+
         return $this->render('dashboard/offers.html.twig', [
             'offers' => $offers,
         ]);
@@ -109,18 +109,17 @@ class DashboardController extends AbstractController
         JobApplicationRepository $jobApplicationRepository,
         PostRepository $postRepository,
         MatchingService $matchingService
-    ): Response
-    {
+    ): Response {
         /** @var User $user */
         $user = $this->getUser();
-        
+
         try {
             $applications = $jobApplicationRepository->findBy(['applicant' => $user], ['createdAt' => 'DESC']);
             $posts = $postRepository->findBy(['author' => $user], ['createdAt' => 'DESC'], 5);
-            
+
             // Récupérer les offres recommandées
             $suggestedOffers = $matchingService->findBestJobOffersForCandidate($user, 3);
-            
+
             return $this->render('dashboard/applicant.html.twig', [
                 'applications' => $applications,
                 'posts' => $posts,
@@ -131,4 +130,4 @@ class DashboardController extends AbstractController
             return $this->redirectToRoute('app_home');
         }
     }
-} 
+}

@@ -11,6 +11,8 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
+use App\Service\EmailValidationService;
+use App\Validator\Email;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[UniqueEntity(fields: ['email'], message: 'Il existe déjà un compte avec cette adresse email')]
@@ -29,8 +31,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?int $id = null;
 
     #[ORM\Column(length: 180, unique: true)]
-    #[Assert\NotBlank(message: 'L\'email est obligatoire')]
-    #[Assert\Email(message: 'L\'email {{ value }} n\'est pas valide')]
+    #[Assert\NotBlank]
+    #[Assert\Email]
+    #[App\Validator\Email]
     private ?string $email = null;
 
     #[ORM\Column]
@@ -122,11 +125,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'applicant', targetEntity: Interview::class)]
     private Collection $interviewsAsApplicant;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: Education::class, orphanRemoval: true)]
+    private Collection $educationCollection;
+
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: WorkExperience::class, orphanRemoval: true)]
+    private Collection $workExperiences;
+
     // Propriétés dynamiques pour les relations d'amitié (non persistées)
     public $isFriend = false;
     public $hasPendingRequestFrom = false;
     public $hasPendingRequestTo = false;
     public $pendingRequestId = null;
+
+    #[ORM\Column(type: 'boolean')]
+    private bool $isVerified = false;
 
     public function __construct()
     {
@@ -147,6 +159,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->postShares = new ArrayCollection();
         $this->interviewsAsRecruiter = new ArrayCollection();
         $this->interviewsAsApplicant = new ArrayCollection();
+        $this->educationCollection = new ArrayCollection();
+        $this->workExperiences = new ArrayCollection();
+        $this->isVerified = false;
     }
 
     public function getId(): ?int
@@ -208,7 +223,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $firstName = $this->firstName ? strtolower($this->firstName) : '';
         $lastName = $this->lastName ? strtolower($this->lastName) : '';
-        
+
         return preg_replace('/[^a-z0-9]/', '', $firstName . $lastName);
     }
 
@@ -519,7 +534,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->city = $city;
         return $this;
     }
-    
+
     /**
      * @return Collection<int, Friendship>
      */
@@ -579,7 +594,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
-    
+
     /**
      * Vérifie si l'utilisateur a une demande d'amitié en attente avec un autre utilisateur
      */
@@ -590,16 +605,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 return true;
             }
         }
-        
+
         foreach ($this->receivedFriendRequests as $request) {
             if ($request->getRequester() === $user && $request->isPending()) {
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     /**
      * Vérifie si l'utilisateur est ami avec un autre utilisateur
      */
@@ -610,13 +625,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 return true;
             }
         }
-        
+
         foreach ($this->receivedFriendRequests as $request) {
             if ($request->getRequester() === $user && $request->isAccepted()) {
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -649,43 +664,43 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
-    
+
     /**
      * Récupère les offres d'emploi en favoris
-     * 
+     *
      * @return array<int, JobOffer>
      */
     public function getFavoriteJobOffers(): array
     {
         $jobOffers = [];
-        
+
         foreach ($this->favorites as $favorite) {
             if ($favorite->isJobOfferFavorite() && $favorite->getJobOffer() !== null) {
                 $jobOffers[] = $favorite->getJobOffer();
             }
         }
-        
+
         return $jobOffers;
     }
-    
+
     /**
      * Récupère les candidats en favoris (pour les recruteurs)
-     * 
+     *
      * @return array<int, User>
      */
     public function getFavoriteCandidates(): array
     {
         $candidates = [];
-        
+
         foreach ($this->favorites as $favorite) {
             if ($favorite->isCandidateFavorite() && $favorite->getCandidate() !== null) {
                 $candidates[] = $favorite->getCandidate();
             }
         }
-        
+
         return $candidates;
     }
-    
+
     /**
      * Vérifie si une offre d'emploi est en favoris
      */
@@ -696,10 +711,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     /**
      * Vérifie si un candidat est en favoris
      */
@@ -710,7 +725,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -841,7 +856,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -907,27 +922,98 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     /**
      * Récupère tous les amis de l'utilisateur (relations acceptées)
-     * 
+     *
      * @return array<int, User>
      */
     public function getFriends(): array
     {
         $friends = [];
-        
+
         // Ajouter les amis où l'utilisateur est le demandeur
         foreach ($this->sentFriendRequests as $request) {
             if ($request->isAccepted()) {
                 $friends[] = $request->getAddressee();
             }
         }
-        
+
         // Ajouter les amis où l'utilisateur est le destinataire
         foreach ($this->receivedFriendRequests as $request) {
             if ($request->isAccepted()) {
                 $friends[] = $request->getRequester();
             }
         }
-        
+
         return $friends;
+    }
+
+    public function isVerified(): bool
+    {
+        return $this->isVerified;
+    }
+
+    public function setIsVerified(bool $isVerified): static
+    {
+        $this->isVerified = $isVerified;
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Education>
+     */
+    public function getEducationCollection(): Collection
+    {
+        return $this->educationCollection;
+    }
+
+    public function addEducation(Education $education): self
+    {
+        if (!$this->educationCollection->contains($education)) {
+            $this->educationCollection->add($education);
+            $education->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeEducation(Education $education): self
+    {
+        if ($this->educationCollection->removeElement($education)) {
+            // set the owning side to null (unless already changed)
+            if ($education->getUser() === $this) {
+                $education->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, WorkExperience>
+     */
+    public function getWorkExperiences(): Collection
+    {
+        return $this->workExperiences;
+    }
+
+    public function addWorkExperience(WorkExperience $workExperience): self
+    {
+        if (!$this->workExperiences->contains($workExperience)) {
+            $this->workExperiences->add($workExperience);
+            $workExperience->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeWorkExperience(WorkExperience $workExperience): self
+    {
+        if ($this->workExperiences->removeElement($workExperience)) {
+            // set the owning side to null (unless already changed)
+            if ($workExperience->getUser() === $this) {
+                $workExperience->setUser(null);
+            }
+        }
+
+        return $this;
     }
 }

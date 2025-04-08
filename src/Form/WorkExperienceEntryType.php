@@ -48,4 +48,4 @@ class WorkExperienceEntryType extends AbstractType
             'data_class' => null,
         ]);
     }
-} 
+}

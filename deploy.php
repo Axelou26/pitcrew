@@ -1,6 +1,7 @@
 <?php
 namespace Deployer;
 
+require 'recipe/common.php';
 require 'recipe/symfony.php';
 
 // Config
@@ -9,17 +10,18 @@ set('git_tty', true);
 set('keep_releases', 5);
 
 // Partagé entre les déploiements
-add('shared_files', [
+set('shared_files', [
     '.env.local',
+    '.env.prod.local'
 ]);
-add('shared_dirs', [
+set('shared_dirs', [
     'var/log',
     'var/sessions',
     'public/uploads'
 ]);
 
 // Répertoires à écraser entre les déploiements
-add('writable_dirs', [
+set('writable_dirs', [
     'var',
     'var/cache',
     'var/log',
@@ -28,39 +30,61 @@ add('writable_dirs', [
 ]);
 
 // Hôtes
-host('production')
-    ->setHostname('votre-serveur.com')
-    ->set('remote_user', 'votre-user')
-    ->set('deploy_path', '/var/www/pitcrew');
+host('local')
+    ->setHostname('localhost')
+    ->set('remote_user', get_current_user())
+    ->set('deploy_path', getcwd() . '/deploy')
+    ->set('bin/php', 'php')
+    ->set('composer_options', '--no-dev --optimize-autoloader')
+    ->set('branch', 'main');
+
+// Désactiver SSH pour le déploiement local
+set('use_relative_symlink', true);
+set('use_ssh', false);
 
 // Tâches
 task('build', function () {
-    run('cd {{release_path}} && build');
+    cd('{{release_path}}');
+    run('composer install --no-dev --optimize-autoloader');
+    run('npm install');
+    run('npm run build');
+});
+
+// Nettoyage du cache
+task('app:cache:clear', function () {
+    cd('{{release_path}}');
+    run('php bin/console cache:clear');
+});
+
+// Tâches de qualité et performance
+task('quality:check', function () {
+    cd('{{release_path}}');
+    run('php vendor/bin/php-cs-fixer fix --dry-run --diff');
+    run('php vendor/bin/phpstan analyse src');
+});
+
+task('performance:check', function () {
+    cd('{{release_path}}');
+    run('php bin/console cache:warmup');
+    run('php bin/console doctrine:schema:validate');
 });
 
 // Hooks
 after('deploy:failed', 'deploy:unlock');
-
-// Migration de base de données
 before('deploy:symlink', 'database:migrate');
+after('deploy:symlink', 'app:cache:clear');
 
-// Nettoyage du cache
-after('deploy:symlink', 'symfony:cache:clear');
-
-// Pipeline de déploiement personnalisé
+// Pipeline de déploiement
 desc('Deploy project');
 task('deploy', [
-    'deploy:info',
     'deploy:prepare',
-    'deploy:lock',
-    'deploy:release',
-    'deploy:update_code',
+    'deploy:vendors',
     'deploy:shared',
     'deploy:writable',
-    'deploy:vendors',
-    'deploy:cache:clear',
-    'deploy:cache:warmup',
-    'deploy:symlink',
-    'deploy:unlock',
-    'cleanup',
+    'build',
+    'quality:check',
+    'performance:check',
+    'database:migrate',
+    'app:cache:clear',
+    'deploy:publish'
 ]); 

@@ -182,4 +182,4 @@ class Conversation
 
         return $this->messages->matching($criteria)->first();
     }
-} 
+}

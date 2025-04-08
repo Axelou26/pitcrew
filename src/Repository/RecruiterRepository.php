@@ -45,4 +45,4 @@ class RecruiterRepository extends ServiceEntityRepository
             ->getOneOrNullResult()
         ;
     }
-} 
+}

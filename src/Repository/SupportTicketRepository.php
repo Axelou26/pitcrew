@@ -25,20 +25,20 @@ class SupportTicketRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('t')
             ->orderBy('t.priority', 'DESC')
             ->addOrderBy('t.createdAt', 'ASC');
-        
+
         if (isset($criteria['status'])) {
             $qb->andWhere('t.status = :status')
                ->setParameter('status', $criteria['status']);
         }
-        
+
         if (isset($criteria['priority'])) {
             $qb->andWhere('t.priority = :priority')
                ->setParameter('priority', $criteria['priority']);
         }
-        
+
         return $qb->getQuery()->getResult();
     }
-    
+
     /**
      * Trouver les tickets prioritaires non résolus
      */
@@ -53,7 +53,7 @@ class SupportTicketRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
-    
+
     /**
      * Trouver les tickets non résolus d'un utilisateur
      */
@@ -68,7 +68,7 @@ class SupportTicketRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
-    
+
     /**
      * Compter le nombre de tickets par statut
      */
@@ -79,12 +79,12 @@ class SupportTicketRepository extends ServiceEntityRepository
             ->groupBy('t.status')
             ->getQuery()
             ->getResult();
-        
+
         $counts = [];
         foreach ($result as $row) {
             $counts[$row['status']] = $row['count'];
         }
-        
+
         return $counts;
     }
-} 
+}

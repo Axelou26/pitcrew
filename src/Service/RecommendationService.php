@@ -8,61 +8,167 @@ use App\Repository\PostRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Friendship;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 
 class RecommendationService
 {
     private $postRepository;
     private $userRepository;
     private $entityManager;
+    private $cache;
 
     public function __construct(
         PostRepository $postRepository,
         UserRepository $userRepository,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        CacheInterface $cache
     ) {
         $this->postRepository = $postRepository;
         $this->userRepository = $userRepository;
         $this->entityManager = $entityManager;
+        $this->cache = $cache;
     }
 
     /**
      * Récupère les posts recommandés pour un utilisateur
-     * 
+     *
      * @param User $user L'utilisateur pour lequel on génère des recommandations
      * @param int $limit Nombre maximum de posts à récupérer
-     * 
+     *
      * @return array Liste des posts recommandés
      */
     public function getRecommendedPosts(User $user, int $limit = 10): array
     {
-        // 1. Posts de l'utilisateur lui-même
-        $userPosts = $this->getUserPosts($user);
-        
-        // 2. Posts des amis
-        $friendsPosts = $this->getFriendsPosts($user);
-        
-        // 3. Partages de l'utilisateur et de ses amis
-        $shares = $this->getRelevantShares($user);
-        
-        // 4. Posts recommandés basés sur les intérêts et l'historique
-        $recommendedPosts = $this->getPersonalizedRecommendations($user, $limit);
-        
-        // Fusionner les ensembles de posts, en évitant les doublons
-        $allPosts = array_merge($userPosts, $friendsPosts, $shares, $recommendedPosts);
-        
-        // Supprimer les doublons en utilisant l'ID du post comme clé
-        $uniquePosts = [];
-        foreach ($allPosts as $post) {
-            $uniquePosts[$post->getId()] = $post;
-        }
-        
-        // Trier les posts par date de création (du plus récent au plus ancien)
-        usort($uniquePosts, function ($a, $b) {
-            return $b->getCreatedAt() <=> $a->getCreatedAt();
+        // Utiliser le cache pour les recommandations
+        return $this->cache->get('recommended_posts_' . $user->getId(), function (ItemInterface $item) use ($user, $limit) {
+            $item->expiresAfter(300); // Cache pour 5 minutes
+
+            // Récupérer les IDs des amis
+            $friendIds = $this->getFriendIds($user);
+
+            // Récupérer les hashtags d'intérêt
+            $interests = $this->getUserInterestsAndHashtags($user);
+
+            // Construire la requête
+            $qb = $this->entityManager->createQueryBuilder();
+            $qb->select('DISTINCT p')
+               ->from('App\Entity\Post', 'p')
+               ->leftJoin('p.author', 'a')
+               ->leftJoin('p.hashtags', 'h');
+
+            // Créer une condition OR pour les différents critères
+            $orX = $qb->expr()->orX();
+            $orX->add($qb->expr()->eq('a.id', ':userId'));
+
+            if (!empty($friendIds)) {
+                $orX->add($qb->expr()->in('a.id', ':friendIds'));
+                $qb->setParameter('friendIds', $friendIds);
+            }
+
+            if (!empty($interests)) {
+                $orX->add($qb->expr()->in('h.name', ':interests'));
+                $qb->setParameter('interests', $interests);
+            }
+
+            $qb->where($orX)
+               ->setParameter('userId', $user->getId())
+               ->orderBy('p.createdAt', 'DESC')
+               ->addOrderBy('p.likesCounter', 'DESC')
+               ->setMaxResults($limit * 2);
+
+            $posts = $qb->getQuery()->getResult();
+
+            // Calculer un score pour chaque post
+            $scoredPosts = [];
+            foreach ($posts as $post) {
+                $score = $this->calculatePostScore($post, $user);
+                $scoredPosts[] = [
+                    'post' => $post,
+                    'score' => $score
+                ];
+            }
+
+            // Trier par score
+            usort($scoredPosts, function ($a, $b) {
+                return $b['score'] <=> $a['score'];
+            });
+
+            // Retourner uniquement les posts
+            return array_slice(array_map(function ($item) {
+                return $item['post'];
+            }, $scoredPosts), 0, $limit);
         });
-        
-        // Limiter le nombre de résultats
-        return array_slice($uniquePosts, 0, $limit);
+    }
+
+    /**
+     * Calcule un score pour un post en fonction de plusieurs critères
+     */
+    private function calculatePostScore(Post $post, User $user): float
+    {
+        $score = 0;
+
+        // Score basé sur la date (posts plus récents = score plus élevé)
+        $age = time() - $post->getCreatedAt()->getTimestamp();
+        $score += max(0, 100 - ($age / 3600)); // Diminue le score avec l'âge (en heures)
+
+        // Score basé sur l'engagement
+        $score += $post->getLikesCounter() * 2;
+        $score += $post->getCommentsCounter() * 3;
+        $score += $post->getSharesCounter() * 4;
+
+        // Bonus si c'est un post de l'utilisateur ou d'un ami
+        if ($post->getAuthor() === $user) {
+            $score *= 1.5;
+        } elseif (in_array($post->getAuthor()->getId(), $this->getFriendIds($user))) {
+            $score *= 1.3;
+        }
+
+        return $score;
+    }
+
+    /**
+     * Récupère les IDs des amis de l'utilisateur (avec cache)
+     */
+    private function getFriendIds(User $user): array
+    {
+        return $this->cache->get('friend_ids_' . $user->getId(), function (ItemInterface $item) use ($user) {
+            $item->expiresAfter(3600); // Cache pour 1 heure
+
+            $qb = $this->entityManager->createQueryBuilder();
+            $qb->select('DISTINCT CASE 
+                    WHEN f.requester = :user THEN IDENTITY(f.addressee)
+                    ELSE IDENTITY(f.requester)
+                END as friendId')
+               ->from('App\Entity\Friendship', 'f')
+               ->where('(f.requester = :user OR f.addressee = :user)')
+               ->andWhere('f.status = :status')
+               ->setParameter('user', $user)
+               ->setParameter('status', Friendship::STATUS_ACCEPTED);
+
+            $result = $qb->getQuery()->getScalarResult();
+            return array_column($result, 'friendId');
+        });
+    }
+
+    /**
+     * Récupère les hashtags utilisés par l'utilisateur
+     */
+    private function getUserInterestsAndHashtags(User $user): array
+    {
+        return $this->cache->get('user_interests_' . $user->getId(), function (ItemInterface $item) use ($user) {
+            $item->expiresAfter(3600); // Cache pour 1 heure
+
+            $qb = $this->entityManager->createQueryBuilder();
+            $qb->select('DISTINCT h.name')
+               ->from('App\Entity\Post', 'p')
+               ->join('p.hashtags', 'h')
+               ->where('p.author = :user')
+               ->setParameter('user', $user);
+
+            $result = $qb->getQuery()->getScalarResult();
+            return array_column($result, 'name');
+        });
     }
 
     /**
@@ -77,7 +183,7 @@ class RecommendationService
            ->where('p.author = :userId')
            ->setParameter('userId', $user->getId())
            ->orderBy('p.createdAt', 'DESC');
-        
+
         return $qb->getQuery()->getResult();
     }
 
@@ -87,30 +193,30 @@ class RecommendationService
     private function getFriendsPosts(User $user): array
     {
         // Récupérer les demandes d'amitié acceptées où l'utilisateur est le demandeur
-        $sentFriendships = $user->getSentFriendRequests()->filter(function($friendship) {
+        $sentFriendships = $user->getSentFriendRequests()->filter(function ($friendship) {
             return $friendship->getStatus() === Friendship::STATUS_ACCEPTED;
         });
-        
+
         // Récupérer les demandes d'amitié acceptées où l'utilisateur est le destinataire
-        $receivedFriendships = $user->getReceivedFriendRequests()->filter(function($friendship) {
+        $receivedFriendships = $user->getReceivedFriendRequests()->filter(function ($friendship) {
             return $friendship->getStatus() === Friendship::STATUS_ACCEPTED;
         });
-        
+
         // Extraire les IDs des amis
         $friendIds = [];
-        
+
         foreach ($sentFriendships as $friendship) {
             $friendIds[] = $friendship->getAddressee()->getId();
         }
-        
+
         foreach ($receivedFriendships as $friendship) {
             $friendIds[] = $friendship->getRequester()->getId();
         }
-        
+
         if (empty($friendIds)) {
             return [];
         }
-        
+
         // Récupérer les posts des amis avec les relations chargées
         $qb = $this->entityManager->createQueryBuilder();
         $qb->select('p, a')
@@ -119,7 +225,7 @@ class RecommendationService
            ->where('p.author IN (:friendIds)')
            ->setParameter('friendIds', $friendIds)
            ->orderBy('p.createdAt', 'DESC');
-        
+
         return $qb->getQuery()->getResult();
     }
 
@@ -128,170 +234,129 @@ class RecommendationService
      */
     private function getPersonalizedRecommendations(User $user, int $limit): array
     {
-        // Cette méthode utilise un algorithme plus sophistiqué pour recommander du contenu pertinent
-        
-        // 1. Récupérer les IDs des posts que l'utilisateur a déjà vus/aimés
-        $userPostIds = $user->getPosts()->map(function($post) {
-            return $post->getId();
-        })->toArray();
-        
-        // 2. Récupérer les IDs des auteurs avec qui l'utilisateur interagit souvent
-        $interactedUserIds = $this->getFrequentlyInteractedUsers($user);
-        
-        // 3. Récupérer les hashtags que l'utilisateur suit ou utilise fréquemment
-        $userInterests = $this->getUserInterestsAndHashtags($user);
-        
-        try {
-            // Construire une requête DQL personnalisée pour trouver des posts intéressants
-            $qb = $this->entityManager->createQueryBuilder();
-            $qb->select('p, a, s, su, RAND() as HIDDEN rand')
-               ->from('App\Entity\Post', 'p')
-               ->leftJoin('p.author', 'a')
-               ->leftJoin('p.hashtags', 'h')
-               ->leftJoin('p.shares', 's')
-               ->leftJoin('s.user', 'su')
-               ->where('p.author != :userId') // Exclure les posts de l'utilisateur (déjà inclus séparément)
-               ->setParameter('userId', $user->getId());
-            
-            // Ajouter une clause pour exclure les posts que l'utilisateur a déjà vus
-            if (!empty($userPostIds)) {
-                $qb->andWhere('p.id NOT IN (:userPostIds)')
-                   ->setParameter('userPostIds', $userPostIds);
-            }
-            
-            // Booster le score des posts ayant des hashtags d'intérêt pour l'utilisateur
-            if (!empty($userInterests)) {
-                $qb->leftJoin('p.hashtags', 'ph')
-                   ->orWhere('ph.name IN (:interests)')
-                   ->setParameter('interests', $userInterests);
-            }
-            
-            // Booster le score des posts des utilisateurs avec qui l'utilisateur interagit souvent
-            if (!empty($interactedUserIds)) {
-                $qb->orWhere('p.author IN (:interactedUserIds)')
-                   ->setParameter('interactedUserIds', $interactedUserIds);
-            }
-            
-            // Privilégier les posts récents et populaires
-            $qb->orderBy('p.likesCounter', 'DESC')
-               ->addOrderBy('p.createdAt', 'DESC')
-               ->addOrderBy('rand')
-               ->setMaxResults($limit * 2); // Récupérer plus de résultats pour avoir plus de diversité
-            
-            $result = $qb->getQuery()->getResult();
-            
-            // Filtrer uniquement les posts (ignorer la valeur RAND())
-            $filteredResult = [];
-            foreach ($result as $item) {
-                if ($item instanceof Post) {
-                    $filteredResult[] = $item;
+        return $this->cache->get('personalized_recommendations_' . $user->getId(), function (ItemInterface $item) use ($user, $limit) {
+            $item->expiresAfter(900); // Cache pour 15 minutes
+
+            try {
+                // Récupérer les données nécessaires en une seule requête
+                $qb = $this->entityManager->createQueryBuilder();
+                $qb->select('p', 'a', 'h', 'l', 'c')
+                   ->from('App\Entity\Post', 'p')
+                   ->leftJoin('p.author', 'a')
+                   ->leftJoin('p.hashtags', 'h')
+                   ->leftJoin('p.likes', 'l')
+                   ->leftJoin('p.comments', 'c')
+                   ->where('p.author != :userId')
+                   ->andWhere($qb->expr()->orX(
+                       // Posts avec hashtags d'intérêt
+                       'h.name IN (:interests)',
+                       // Posts des utilisateurs avec qui l'utilisateur interagit
+                       'p.author IN (:interactedUsers)',
+                       // Posts populaires récents
+                       'p.likesCounter >= :minLikes AND p.createdAt >= :recentDate'
+                   ))
+                   ->setParameter('userId', $user->getId())
+                   ->setParameter('interests', $this->getUserInterestsAndHashtags($user))
+                   ->setParameter('interactedUsers', $this->getFrequentlyInteractedUsers($user))
+                   ->setParameter('minLikes', 5)
+                   ->setParameter('recentDate', new \DateTime('-7 days'))
+                   ->orderBy('p.createdAt', 'DESC')
+                   ->addOrderBy('p.likesCounter', 'DESC')
+                   ->setMaxResults($limit * 2);
+
+                $posts = $qb->getQuery()->getResult();
+
+                // Calculer les scores et trier
+                $scoredPosts = [];
+                foreach ($posts as $post) {
+                    $score = $this->calculateRecommendationScore($post, $user);
+                    $scoredPosts[] = [
+                        'post' => $post,
+                        'score' => $score
+                    ];
                 }
+
+                usort($scoredPosts, function ($a, $b) {
+                    return $b['score'] <=> $a['score'];
+                });
+
+                // Retourner les meilleurs posts
+                return array_slice(array_map(function ($item) {
+                    return $item['post'];
+                }, $scoredPosts), 0, $limit);
+            } catch (\Exception $e) {
+                return [];
             }
-            
-            // Assurer que les champs JSON ne sont pas null
-            foreach ($filteredResult as $post) {
-                if ($post->getMentions() === null) {
-                    $post->setMentions([]);
-                }
-                if ($post->getReactionCounts() === null) {
-                    $post->updateReactionCounts();
-                }
-            }
-            
-            // Mélanger les résultats pour plus de diversité
-            shuffle($filteredResult);
-            
-            return array_slice($filteredResult, 0, $limit);
-        } catch (\Exception $e) {
-            // En cas d'erreur, retourner un tableau vide
-            return [];
-        }
+        });
     }
-    
+
+    /**
+     * Calcule un score de recommandation pour un post
+     */
+    private function calculateRecommendationScore(Post $post, User $user): float
+    {
+        $score = 0;
+
+        // Score basé sur la fraîcheur (décroissance exponentielle)
+        $age = time() - $post->getCreatedAt()->getTimestamp();
+        $score += 100 * exp(-$age / (7 * 24 * 3600)); // Demi-vie de 7 jours
+
+        // Score basé sur l'engagement (avec pondération)
+        $score += $post->getLikesCounter() * 2;
+        $score += $post->getCommentsCounter() * 3;
+        $score += $post->getSharesCounter() * 4;
+
+        // Bonus pour les hashtags d'intérêt
+        $userInterests = $this->getUserInterestsAndHashtags($user);
+        foreach ($post->getHashtags() as $hashtag) {
+            if (in_array($hashtag->getName(), $userInterests)) {
+                $score *= 1.2;
+            }
+        }
+
+        // Bonus pour les auteurs avec qui l'utilisateur interagit
+        if (in_array($post->getAuthor()->getId(), $this->getFrequentlyInteractedUsers($user))) {
+            $score *= 1.3;
+        }
+
+        return $score;
+    }
+
     /**
      * Récupère les utilisateurs avec qui l'utilisateur interagit fréquemment
      */
     private function getFrequentlyInteractedUsers(User $user): array
     {
-        try {
-            // 1. Utilisateurs dont l'utilisateur a aimé des posts
-            $qb = $this->entityManager->createQueryBuilder();
-            $qb->select('DISTINCT p.author')
-               ->from('App\Entity\PostLike', 'pl')
-               ->leftJoin('pl.post', 'p')
-               ->where('pl.user = :userId')
-               ->setParameter('userId', $user->getId());
-            
-            $likedAuthors = $qb->getQuery()->getResult();
-            
-            // 2. Utilisateurs dont l'utilisateur a commenté des posts
-            $qb = $this->entityManager->createQueryBuilder();
-            $qb->select('DISTINCT p.author')
-               ->from('App\Entity\PostComment', 'pc')
-               ->leftJoin('pc.post', 'p')
-               ->where('pc.author = :userId')
-               ->setParameter('userId', $user->getId());
-            
-            $commentedAuthors = $qb->getQuery()->getResult();
-            
-            // Fusionner les deux ensembles
-            $interactedUsers = array_merge($likedAuthors, $commentedAuthors);
-            
-            // Extraire uniquement les IDs
-            $interactedUserIds = [];
-            foreach ($interactedUsers as $author) {
-                if ($author instanceof User) {
-                    $interactedUserIds[] = $author->getId();
-                }
+        return $this->cache->get('frequently_interacted_users_' . $user->getId(), function (ItemInterface $item) use ($user) {
+            $item->expiresAfter(1800); // Cache pour 30 minutes
+
+            try {
+                // Récupérer les utilisateurs avec qui l'utilisateur interagit en une seule requête
+                $qb = $this->entityManager->createQueryBuilder();
+                $qb->select('DISTINCT u.id')
+                    ->from('App\Entity\User', 'u')
+                    ->leftJoin('App\Entity\PostLike', 'pl', 'WITH', 'pl.user = :userId AND pl.post MEMBER OF u.posts')
+                    ->leftJoin('App\Entity\PostComment', 'pc', 'WITH', 'pc.author = :userId AND pc.post MEMBER OF u.posts')
+                    ->leftJoin(
+                        'App\Entity\Friendship',
+                        'f',
+                        'WITH',
+                        '(f.user = :userId AND f.friend = u) OR (f.user = u AND f.friend = :userId)'
+                    )
+                    ->where('u != :userId')
+                    ->andWhere($qb->expr()->orX(
+                        'pl.id IS NOT NULL',
+                        'pc.id IS NOT NULL',
+                        'f.id IS NOT NULL'
+                    ))
+                    ->setParameter('userId', $user->getId());
+
+                $result = $qb->getQuery()->getScalarResult();
+                return array_column($result, 'id');
+            } catch (\Exception $e) {
+                return [];
             }
-            
-            return array_unique($interactedUserIds);
-        } catch (\Exception $e) {
-            return [];
-        }
-    }
-    
-    /**
-     * Récupère les centres d'intérêt et hashtags fréquemment utilisés par l'utilisateur
-     */
-    private function getUserInterestsAndHashtags(User $user): array
-    {
-        try {
-            // 1. Hashtags utilisés dans les posts de l'utilisateur
-            $qb = $this->entityManager->createQueryBuilder();
-            $qb->select('h.name')
-               ->from('App\Entity\Post', 'p')
-               ->leftJoin('p.hashtags', 'h')
-               ->where('p.author = :userId')
-               ->setParameter('userId', $user->getId());
-            
-            $userHashtags = $qb->getQuery()->getResult();
-            
-            // 2. Hashtags des posts aimés par l'utilisateur
-            $qb = $this->entityManager->createQueryBuilder();
-            $qb->select('h.name')
-               ->from('App\Entity\PostLike', 'pl')
-               ->leftJoin('pl.post', 'p')
-               ->leftJoin('p.hashtags', 'h')
-               ->where('pl.user = :userId')
-               ->setParameter('userId', $user->getId());
-            
-            $likedHashtags = $qb->getQuery()->getResult();
-            
-            // Fusionner et aplatir les résultats
-            $allHashtags = array_merge($userHashtags, $likedHashtags);
-            $flattenedHashtags = [];
-            
-            foreach ($allHashtags as $item) {
-                if (isset($item['name'])) {
-                    $flattenedHashtags[] = $item['name'];
-                }
-            }
-            
-            return array_unique($flattenedHashtags);
-        } catch (\Exception $e) {
-            return [];
-        }
+        });
     }
 
     /**
@@ -308,73 +373,108 @@ class RecommendationService
      */
     private function getRelevantShares(User $user): array
     {
-        // Récupérer les demandes d'amitié acceptées où l'utilisateur est le demandeur
-        $sentFriendships = $user->getSentFriendRequests()->filter(function($friendship) {
-            return $friendship->getStatus() === Friendship::STATUS_ACCEPTED;
-        });
-        
-        // Récupérer les demandes d'amitié acceptées où l'utilisateur est le destinataire
-        $receivedFriendships = $user->getReceivedFriendRequests()->filter(function($friendship) {
-            return $friendship->getStatus() === Friendship::STATUS_ACCEPTED;
-        });
-        
-        // Ajouter le user lui-même
-        $allUserIds = [$user->getId()];
-        
-        // Ajouter les amis à la liste
-        foreach ($sentFriendships as $friendship) {
-            $allUserIds[] = $friendship->getAddressee()->getId();
-        }
-        
-        foreach ($receivedFriendships as $friendship) {
-            $allUserIds[] = $friendship->getRequester()->getId();
-        }
-        
-        if (empty($allUserIds)) {
-            return [];
-        }
-        
-        try {
-            // Au lieu d'utiliser innerJoin sur p.shares, nous utilisons une sous-requête
-            // pour récupérer d'abord les IDs des posts partagés, puis nous chargeons ces posts
-            
-            // 1. Récupérer les IDs des posts partagés
-            $qbShares = $this->entityManager->createQueryBuilder();
-            $qbShares->select('DISTINCT ps.post')
-                   ->from('App\Entity\PostShare', 'ps')
-                   ->where('ps.user IN (:userIds)')
-                   ->setParameter('userIds', $allUserIds);
-            
-            $sharedPostIds = $qbShares->getQuery()->getResult();
-            
-            // Si aucun post n'est partagé, retourner un tableau vide
-            if (empty($sharedPostIds)) {
+        return $this->cache->get('relevant_shares_' . $user->getId(), function (ItemInterface $item) use ($user) {
+            $item->expiresAfter(300); // Cache pour 5 minutes
+
+            try {
+                // Récupérer les IDs des amis en une seule requête
+                $qb = $this->entityManager->createQueryBuilder();
+                $friendIds = $qb->select('DISTINCT CASE 
+                        WHEN f.user = :userId THEN f.friend
+                        ELSE f.user
+                    END')
+                    ->from('App\Entity\Friendship', 'f')
+                    ->where('(f.user = :userId OR f.friend = :userId)')
+                    ->andWhere('f.status = :status')
+                    ->setParameter('userId', $user->getId())
+                    ->setParameter('status', Friendship::STATUS_ACCEPTED)
+                    ->getQuery()
+                    ->getScalarResult();
+
+                $allUserIds = array_merge([$user->getId()], array_column($friendIds, 1));
+
+                // Récupérer les posts partagés avec leurs relations en une seule requête
+                $qb = $this->entityManager->createQueryBuilder();
+                return $qb->select('p', 'a', 'l', 'c', 'h')
+                    ->from('App\Entity\Post', 'p')
+                    ->innerJoin('p.shares', 's')
+                    ->leftJoin('p.author', 'a')
+                    ->leftJoin('p.likes', 'l')
+                    ->leftJoin('p.comments', 'c')
+                    ->leftJoin('p.hashtags', 'h')
+                    ->where('s.user IN (:userIds)')
+                    ->setParameter('userIds', $allUserIds)
+                    ->orderBy('p.createdAt', 'DESC')
+                    ->getQuery()
+                    ->getResult();
+            } catch (\Exception $e) {
                 return [];
             }
-            
-            // Extraire les IDs des posts
-            $postIds = [];
-            foreach ($sharedPostIds as $record) {
-                if (is_object($record) && method_exists($record, 'getId')) {
-                    $postIds[] = $record->getId();
-                } elseif (is_array($record) && isset($record['post'])) {
-                    $postIds[] = $record['post'];
+        });
+    }
+
+    public function getSuggestedUsersWithFriendshipStatus(User $user, int $limit): array
+    {
+        $qb = $this->entityManager->createQueryBuilder();
+
+        $suggestedUsers = $qb->select('u', 'f')
+            ->from('App\Entity\User', 'u')
+            ->leftJoin(
+                'App\Entity\Friendship',
+                'f',
+                'WITH',
+                '(f.user = :currentUser AND f.friend = u) OR (f.user = u AND f.friend = :currentUser)'
+            )
+            ->where('u != :currentUser')
+            ->andWhere('u.roles LIKE :role')
+            ->setParameter('currentUser', $user)
+            ->setParameter('role', '%"' . $user->getRoles()[0] . '"%')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        // Traiter les résultats pour définir les statuts d'amitié
+        foreach ($suggestedUsers as $suggestedUser) {
+            $friendship = null;
+            foreach ($suggestedUser->getFriendships() as $f) {
+                if (
+                    ($f->getUser() === $user && $f->getFriend() === $suggestedUser) ||
+                    ($f->getUser() === $suggestedUser && $f->getFriend() === $user)
+                ) {
+                    $friendship = $f;
+                    break;
                 }
             }
-            
-            // 2. Récupérer les posts complets
-            $qbPosts = $this->entityManager->createQueryBuilder();
-            $qbPosts->select('p, a')
-                  ->from('App\Entity\Post', 'p')
-                  ->leftJoin('p.author', 'a')
-                  ->where('p.id IN (:postIds)')
-                  ->setParameter('postIds', $postIds)
-                  ->orderBy('p.createdAt', 'DESC');
-            
-            return $qbPosts->getQuery()->getResult();
-        } catch (\Exception $e) {
-            // Logger l'erreur si nécessaire
-            return [];
+
+            $suggestedUser->isFriend = $friendship && $friendship->getStatus() === 'accepted';
+            $suggestedUser->hasPendingRequestFrom = $friendship && $friendship->getStatus() === 'pending' && $friendship->getUser() === $user;
+            $suggestedUser->hasPendingRequestTo = $friendship && $friendship->getStatus() === 'pending' && $friendship->getUser() === $suggestedUser;
+            if ($suggestedUser->hasPendingRequestTo) {
+                $suggestedUser->pendingRequestId = $friendship->getId();
+            }
         }
+
+        return $suggestedUsers;
     }
-} 
+
+    /**
+     * Récupère les hashtags tendance
+     *
+     * @param int $limit Nombre maximum de hashtags à récupérer
+     * @return array Liste des hashtags les plus utilisés
+     */
+    public function getTrendingHashtags(int $limit = 10): array
+    {
+        return $this->cache->get('trending_hashtags', function (ItemInterface $item) use ($limit) {
+            $item->expiresAfter(300); // Cache pour 5 minutes
+
+            $qb = $this->entityManager->createQueryBuilder();
+            $qb->select('h')
+               ->from('App\Entity\Hashtag', 'h')
+               ->orderBy('h.usageCount', 'DESC')
+               ->setMaxResults($limit);
+
+            return $qb->getQuery()->getResult();
+        });
+    }
+}

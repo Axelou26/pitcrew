@@ -34,3 +34,25 @@ services:
             - '../src/Kernel.php'
     
     # Le service FileUploader n'a plus besoin de configuration spéciale car il utilise ParameterBagInterface 
+
+    App\Service\MetricsCollector:
+        arguments:
+            $logger: '@logger'
+
+    App\Repository\PostRepository:
+        arguments:
+            $cache: '@cache.app'
+
+    # Rendre le service de recommandation public pour les tests
+    App\Service\RecommendationService:
+        public: true 
+
+    App\Service\EmailValidationService:
+        arguments:
+            $env: '%kernel.environment%'
+
+    App\Validator\EmailValidator:
+        arguments:
+            $emailValidationService: '@App\Service\EmailValidationService'
+        tags:
+            - { name: validator.constraint_validator } 

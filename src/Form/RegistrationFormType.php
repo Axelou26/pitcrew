@@ -14,6 +14,7 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\IsTrue;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
+use App\Service\EmailValidationService;
 
 class RegistrationFormType extends AbstractType
 {
@@ -26,7 +27,7 @@ class RegistrationFormType extends AbstractType
                 'attr' => ['placeholder' => 'Votre prénom'],
                 'constraints' => [
                     new NotBlank([
-                        'message' => 'Veuillez entrer votre prénom',
+                        'message' => 'Le prénom est obligatoire',
                     ]),
                 ],
             ])
@@ -35,7 +36,7 @@ class RegistrationFormType extends AbstractType
                 'attr' => ['placeholder' => 'Votre nom'],
                 'constraints' => [
                     new NotBlank([
-                        'message' => 'Veuillez entrer votre nom',
+                        'message' => 'Le nom est obligatoire',
                     ]),
                 ],
             ])
@@ -44,7 +45,16 @@ class RegistrationFormType extends AbstractType
                 'attr' => ['placeholder' => 'votre@email.com'],
                 'constraints' => [
                     new NotBlank([
-                        'message' => 'Veuillez entrer votre email',
+                        'message' => 'L\'email est obligatoire',
+                    ]),
+                    new \Symfony\Component\Validator\Constraints\Email([
+                        'message' => 'L\'email n\'est pas valide',
+                        'mode' => \Symfony\Component\Validator\Constraints\Email::VALIDATION_MODE_STRICT,
+                        'normalizer' => 'trim',
+                    ]),
+                    new \Symfony\Component\Validator\Constraints\Length([
+                        'max' => 254,
+                        'maxMessage' => 'L\'email ne doit pas dépasser {{ limit }} caractères',
                     ]),
                 ],
             ])
@@ -57,8 +67,8 @@ class RegistrationFormType extends AbstractType
                         'message' => 'Veuillez entrer un mot de passe',
                     ]),
                     new Length([
-                        'min' => 6,
-                        'minMessage' => 'Votre mot de passe doit faire au moins {{ limit }} caractères',
+                        'min' => 8,
+                        'minMessage' => 'Le mot de passe doit contenir au moins {{ limit }} caractères',
                         'max' => 4096,
                     ]),
                 ],
@@ -68,14 +78,14 @@ class RegistrationFormType extends AbstractType
                 'label' => 'J\'accepte les conditions d\'utilisation',
                 'constraints' => [
                     new IsTrue([
-                        'message' => 'Vous devez accepter les conditions d\'utilisation.',
+                        'message' => 'Vous devez accepter les conditions d\'utilisation',
                     ]),
                 ],
             ]);
-            
+
         // Si l'utilisateur est un recruteur, ajout des champs spécifiques
         $userType = $options['user_type'] ?? null;
-        
+
         if ($userType === User::ROLE_RECRUTEUR) {
             $builder
                 ->add('company', TextType::class, [
@@ -98,7 +108,7 @@ class RegistrationFormType extends AbstractType
                     ],
                 ]);
         }
-        
+
         // Si l'utilisateur est un postulant, ajout des champs spécifiques
         if ($userType === User::ROLE_POSTULANT) {
             $builder
@@ -132,4 +142,4 @@ class RegistrationFormType extends AbstractType
             'user_type' => null,  // Option pour déterminer le type d'utilisateur
         ]);
     }
-} 
+}

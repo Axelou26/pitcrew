@@ -69,4 +69,4 @@ class Recruiter extends User
         $this->favoriteApplicants->removeElement($applicant);
         return $this;
     }
-} 
+}

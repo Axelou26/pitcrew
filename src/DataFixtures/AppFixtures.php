@@ -32,7 +32,7 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
     {
         // Création des recruteurs
         $recruiters = [];
-        
+
         $recruiterData = [
             [
                 'email' => 'recruteur1@exemple.com',
@@ -85,7 +85,7 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
                 'jobTitle' => 'Directeur Technique'
             ]
         ];
-        
+
         foreach ($recruiterData as $index => $data) {
             $recruiter = new Recruiter();
             $recruiter->setEmail($data['email']);
@@ -97,14 +97,14 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
             $recruiter->setCity($data['city']);
             $recruiter->setBio($data['bio']);
             $recruiter->setJobTitle($data['jobTitle']);
-            
+
             $manager->persist($recruiter);
             $recruiters[] = $recruiter;
         }
 
         // Création des candidats
         $applicants = [];
-        
+
         $applicantData = [
             [
                 'email' => 'candidat1@exemple.com',
@@ -172,7 +172,7 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
                 'education' => "2008-2010 : Ingénierie en mécanique automobile, ESTACA\n2005-2008 : BTS Maintenance Automobile"
             ]
         ];
-        
+
         foreach ($applicantData as $index => $data) {
             $applicant = new Applicant();
             $applicant->setEmail($data['email']);
@@ -187,7 +187,7 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
             $applicant->setBio($data['bio']);
             $applicant->setExperience($data['experience']);
             $applicant->setEducation($data['education']);
-            
+
             $manager->persist($applicant);
             $applicants[] = $applicant;
         }
@@ -205,10 +205,10 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
             'Ingénieur moteur',
             'Concepteur pièces F1'
         ];
-        
+
         $locations = ['Monaco', 'Silverstone, UK', 'Maranello, Italie', 'Milton Keynes, UK', 'Enstone, UK', 'Viry-Châtillon, France', 'Hinwil, Suisse', 'Brackley, UK'];
         $contractTypes = ['CDI', 'CDD', 'Freelance', 'Stage', 'Alternance'];
-        
+
         foreach ($recruiters as $index => $recruiter) {
             for ($j = 1; $j <= 2; $j++) {
                 $jobOffer = new JobOffer();
@@ -247,7 +247,7 @@ Nous offrons:
                 $jobOffer->setIsActive(true);
                 $jobOffer->setIsRemote(rand(0, 1) === 1);
                 $jobOffer->setContactEmail($recruiter->getEmail());
-                
+
                 $manager->persist($jobOffer);
             }
         }
@@ -265,29 +265,29 @@ Nous offrons:
             'Les compétences clés recherchées par les équipes',
             'La vie d\'un ingénieur sur la route'
         ];
-        
+
         $postContents = [
             'Les équipes de F1 investissent massivement dans les nouvelles technologies pour gagner ces précieux dixièmes de seconde. Cette année, nous avons vu des avancées impressionnantes dans l\'aérodynamique active et les systèmes de refroidissement. Les planchers des voitures sont également devenus un domaine clé de développement suite aux derniers changements de règlement. Les équipes qui maîtrisent l\'effet de sol ont un avantage significatif.',
-            
+
             'Devenir mécanicien de F1 demande beaucoup de travail et de détermination. J\'ai commencé ma carrière dans les championnats nationaux, puis j\'ai progressé vers la F3 et la F2. Un BTS en mécanique automobile spécialisé en compétition est un excellent point de départ, mais rien ne remplace l\'expérience de terrain. Les stages sont essentiels. La maîtrise de l\'anglais est également indispensable dans ce milieu international.',
-            
+
             'Travailler dans les stands pendant une course est une expérience incroyable. L\'adrénaline est à son comble quand la voiture arrive pour un arrêt au stand de 2 secondes. Chaque membre de l\'équipe doit être parfaitement synchronisé et anticiper tout problème potentiel. La pression est énorme, mais la satisfaction après un arrêt parfait est incomparable. C\'est un véritable travail d\'équipe où chaque milliseconde compte.',
-            
+
             'Les nouvelles réglementations pour la saison prochaine vont considérablement changer notre approche du développement aérodynamique. La réduction supplémentaire de l\'appui va forcer les équipes à repenser leurs concepts. La limitation du temps en soufflerie favorise désormais la simulation CFD, mais avec des restrictions de puissance de calcul. C\'est un défi passionnant pour les ingénieurs qui doivent optimiser leurs ressources.',
-            
+
             'Vous rêvez de travailler en F1? Voici mes conseils pour maximiser vos chances. D\'abord, spécialisez-vous dans un domaine précis : mécanique, aérodynamique, matériaux composites ou analyse de données. Ensuite, développez votre réseau - LinkedIn est crucial. Participez à des événements du secteur. Soyez prêt à commencer par des postes juniors ou des stages, même si vous avez de l\'expérience dans d\'autres industries. La persévérance est la clé!',
-            
+
             'Dans le monde de la F1, l\'apprentissage ne s\'arrête jamais. Les technologies évoluent si rapidement que la formation continue est essentielle pour rester compétitif. Les équipes investissent massivement dans le développement des compétences de leur personnel. En tant que professionnel du motorsport, consacrer du temps à se former sur les nouvelles méthodes et technologies est aussi important que le travail quotidien.',
-            
+
             'L\'utilisation des matériaux composites en F1 a révolutionné la conception des voitures de course. Des premières pièces en carbone dans les années 80 aux structures hybrides ultra-sophistiquées d\'aujourd\'hui, l\'évolution a été spectaculaire. Les nouveaux composites permettent une rigidité exceptionnelle pour un poids minimal, tout en absorbant l\'énergie en cas d\'impact. C\'est un domaine fascinant qui continue d\'évoluer.',
-            
+
             'Décrocher mon premier emploi en F1 a été un parcours semé d\'embûches mais incroyablement gratifiant. Après des années d\'études et plusieurs stages dans des catégories inférieures, j\'ai finalement eu ma chance grâce à une candidature spontanée persistante. La clé a été de montrer ma passion et ma détermination lors des entretiens, et de mettre en avant mes projets personnels liés au motorsport.',
-            
+
             'Les équipes de F1 recherchent aujourd\'hui bien plus que des compétences techniques. La capacité à travailler sous pression, l\'esprit d\'équipe, l\'adaptabilité et la communication sont devenus aussi importants que l\'expertise dans votre domaine. La F1 moderne est tellement complexe qu\'une collaboration efficace entre les différents départements est cruciale pour le succès.',
-            
+
             'La vie d\'un ingénieur F1 sur la route est intense et exigeante. Entre les voyages constants, les longues journées de travail et le décalage horaire, c\'est un véritable défi physique et mental. Mais l\'expérience de travailler sur les circuits les plus emblématiques du monde et la camaraderie au sein de l\'équipe compensent largement ces difficultés. C\'est un mode de vie unique qui demande des sacrifices mais offre des récompenses incomparables.'
         ];
-        
+
         // Tous les utilisateurs publient
         $allUsers = array_merge($recruiters, $applicants);
         foreach ($allUsers as $user) {
@@ -297,7 +297,7 @@ Nous offrons:
                 $post->setTitle($postTitles[$randomIndex]);
                 $post->setContent($postContents[$randomIndex] . "\n\nQu'en pensez-vous? Partagez vos expériences dans ce domaine! #F1 #Motorsport #CarrièreF1");
                 $post->setAuthor($user);
-                
+
                 $manager->persist($post);
             }
         }
@@ -308,24 +308,24 @@ Nous offrons:
             $randomApplicants = $applicants;
             shuffle($randomApplicants);
             $selectedApplicants = array_slice($randomApplicants, 0, 2);
-            
+
             foreach ($selectedApplicants as $applicant) {
                 $friendship = new Friendship();
                 $friendship->setRequester($recruiter);
                 $friendship->setAddressee($applicant);
                 $friendship->setStatus(Friendship::STATUS_ACCEPTED);
                 $friendship->setUpdatedAt(new \DateTimeImmutable());
-                
+
                 $manager->persist($friendship);
             }
         }
-        
+
         // Chaque candidat demande au moins 1 recruteur en ami
         foreach ($applicants as $applicant) {
             $randomRecruiters = $recruiters;
             shuffle($randomRecruiters);
             $selectedRecruiter = $randomRecruiters[0];
-            
+
             // On vérifie que cette amitié n'existe pas déjà dans l'autre sens
             $exists = false;
             foreach ($applicant->getReceivedFriendRequests() as $request) {
@@ -334,18 +334,18 @@ Nous offrons:
                     break;
                 }
             }
-            
+
             if (!$exists) {
                 $friendship = new Friendship();
                 $friendship->setRequester($applicant);
                 $friendship->setAddressee($selectedRecruiter);
-                
+
                 // Certaines demandes sont en attente, d'autres acceptées
                 if (rand(0, 1) === 1) {
                     $friendship->setStatus(Friendship::STATUS_ACCEPTED);
                     $friendship->setUpdatedAt(new \DateTimeImmutable());
                 }
-                
+
                 $manager->persist($friendship);
             }
         }

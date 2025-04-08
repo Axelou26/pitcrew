@@ -23,13 +23,13 @@ class AppExtension extends AbstractExtension
         if (isset($reactionCounts[$type])) {
             return $reactionCounts[$type];
         }
-        
+
         // Ensuite, essayer avec un 's' à la fin
         if ($type === 'like' && isset($reactionCounts['likes'])) {
             return $reactionCounts['likes'];
         }
-        
+
         // Par défaut retourner 0
         return 0;
     }
-} 
+}

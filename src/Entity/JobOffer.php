@@ -263,7 +263,7 @@ class JobOffer
         $this->isPromoted = $isPromoted;
         return $this;
     }
-    
+
     public function isPromoted(): ?bool
     {
         return $this->isPromoted;
@@ -342,4 +342,4 @@ class JobOffer
 
         return $this;
     }
-} 
+}

@@ -1,0 +1,10 @@
+parameters:
+    level: 8
+    paths:
+        - src/
+    excludePaths:
+        - src/Migrations/
+    ignoreErrors:
+        - '#PHPDoc tag @var#'
+        - '#Call to an undefined method#'
+        - '#Access to an undefined property#' 

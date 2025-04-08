@@ -30,7 +30,7 @@ class ApplicantSkillsType extends AbstractType
             ])
             ->add('softSkills', CollectionType::class, [
                 'label' => 'Soft skills (compétences personnelles)',
-                'entry_type' => TextType::class, 
+                'entry_type' => TextType::class,
                 'allow_add' => true,
                 'allow_delete' => true,
                 'prototype' => true,
@@ -49,4 +49,4 @@ class ApplicantSkillsType extends AbstractType
             'data_class' => Applicant::class,
         ]);
     }
-} 
+}

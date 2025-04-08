@@ -26,7 +26,7 @@ class SupportTicket
 
     #[ORM\Column(length: 50)]
     private ?string $status = null;
-    
+
     #[ORM\Column(length: 50)]
     private ?string $priority = null;
 
@@ -99,16 +99,16 @@ class SupportTicket
 
         return $this;
     }
-    
+
     public function getPriority(): ?string
     {
         return $this->priority;
     }
-    
+
     public function setPriority(string $priority): static
     {
         $this->priority = $priority;
-        
+
         return $this;
     }
 
@@ -147,14 +147,14 @@ class SupportTicket
 
         return $this;
     }
-    
+
     public function addReply(array $reply): static
     {
         $this->replies[] = $reply;
-        
+
         return $this;
     }
-    
+
     /**
      * Vérifie si le ticket est prioritaire
      */
@@ -162,13 +162,13 @@ class SupportTicket
     {
         return $this->priority === 'high';
     }
-    
+
     /**
      * Renvoie la classe CSS correspondant au statut du ticket
      */
     public function getStatusClass(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'new' => 'info',
             'in_progress' => 'primary',
             'waiting_for_user' => 'warning',
@@ -178,26 +178,26 @@ class SupportTicket
             default => 'light'
         };
     }
-    
+
     /**
      * Renvoie la classe CSS correspondant à la priorité du ticket
      */
     public function getPriorityClass(): string
     {
-        return match($this->priority) {
+        return match ($this->priority) {
             'high' => 'danger',
             'normal' => 'primary',
             'low' => 'secondary',
             default => 'light'
         };
     }
-    
+
     /**
      * Renvoie le libellé du statut du ticket
      */
     public function getStatusLabel(): string
     {
-        return match($this->status) {
+        return match ($this->status) {
             'new' => 'Nouveau',
             'in_progress' => 'En cours',
             'waiting_for_user' => 'En attente de votre réponse',
@@ -207,17 +207,17 @@ class SupportTicket
             default => 'Inconnu'
         };
     }
-    
+
     /**
      * Renvoie le libellé de la priorité du ticket
      */
     public function getPriorityLabel(): string
     {
-        return match($this->priority) {
+        return match ($this->priority) {
             'high' => 'Prioritaire',
             'normal' => 'Normal',
             'low' => 'Faible',
             default => 'Inconnu'
         };
     }
-} 
+}

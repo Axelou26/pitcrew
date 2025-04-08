@@ -23,7 +23,7 @@ class RefreshMatchingCommand extends Command
     private MatchingService $matchingService;
 
     public function __construct(
-        EntityManagerInterface $entityManager, 
+        EntityManagerInterface $entityManager,
         MatchingService $matchingService
     ) {
         $this->entityManager = $entityManager;
@@ -67,78 +67,78 @@ class RefreshMatchingCommand extends Command
     private function processSpecificJobOffer(SymfonyStyle $io, int $jobOfferId, int $limit, bool $dump): void
     {
         $jobOffer = $this->entityManager->getRepository(JobOffer::class)->find($jobOfferId);
-        
+
         if (!$jobOffer) {
             $io->error(sprintf('Offre d\'emploi #%d introuvable.', $jobOfferId));
             return;
         }
-        
+
         $io->section(sprintf('Traitement de l\'offre: %s (ID: %d)', $jobOffer->getTitle(), $jobOffer->getId()));
-        
+
         $candidates = $this->matchingService->findBestCandidatesForJobOffer($jobOffer, $limit);
-        
+
         if (empty($candidates)) {
             $io->warning('Aucun candidat trouvé pour cette offre.');
             return;
         }
-        
+
         $this->displayCandidateResults($io, $candidates, $dump);
     }
 
     private function processSpecificApplicant(SymfonyStyle $io, int $applicantId, int $limit, bool $dump): void
     {
         $applicant = $this->entityManager->getRepository(Applicant::class)->find($applicantId);
-        
+
         if (!$applicant) {
             $io->error(sprintf('Candidat #%d introuvable.', $applicantId));
             return;
         }
-        
+
         $io->section(sprintf(
-            'Traitement du candidat: %s %s (ID: %d)', 
-            $applicant->getFirstName(), 
-            $applicant->getLastName(), 
+            'Traitement du candidat: %s %s (ID: %d)',
+            $applicant->getFirstName(),
+            $applicant->getLastName(),
             $applicant->getId()
         ));
-        
+
         $offers = $this->matchingService->findBestJobOffersForCandidate($applicant, $limit);
-        
+
         if (empty($offers)) {
             $io->warning('Aucune offre d\'emploi trouvée pour ce candidat.');
             return;
         }
-        
+
         $this->displayJobOfferResults($io, $offers, $dump);
     }
 
     private function processAllMatches(SymfonyStyle $io, int $limit, bool $dump): void
     {
         $io->section('Traitement de tous les candidats et offres d\'emploi actifs');
-        
+
         $candidates = $this->entityManager->getRepository(Applicant::class)->findAll();
         $offers = $this->entityManager->getRepository(JobOffer::class)->findBy(['isActive' => true]);
-        
+
         $io->writeln(sprintf('Trouvé %d candidat(s) et %d offre(s) d\'emploi active(s).', count($candidates), count($offers)));
-        
+
         $progressBar = $io->createProgressBar(count($candidates));
         $progressBar->start();
-        
+
         foreach ($candidates as $applicant) {
             // Pour chaque candidat, calculer les offres qui correspondent le mieux
             $this->matchingService->findBestJobOffersForCandidate($applicant, 5);
             $progressBar->advance();
         }
-        
+
         $progressBar->finish();
         $io->newLine(2);
-        
+
         // Afficher quelques exemples aléatoires
         if (count($candidates) > 0 && count($offers) > 0) {
             $randomCandidate = $candidates[array_rand($candidates)];
             $io->section('Exemple de résultats pour un candidat aléatoire');
             $sampleOffers = $this->matchingService->findBestJobOffersForCandidate($randomCandidate, 5);
             $this->displayJobOfferResults($io, $sampleOffers, $dump);
-            
+
             $randomOffer = $offers[array_rand($offers)];
             $io->section('Exemple de résultats pour une offre aléatoire');
             $sampleCandidates = $this->matchingService->findBestCandidatesForJobOffer($randomOffer, 5);
@@ -157,12 +157,12 @@ class RefreshMatchingCommand extends Command
                 $candidate['score'] . '%',
                 $this->getSkillMatches($candidate['reasons'])
             ];
-            
+
             if ($dump) {
                 $this->dumpReasonDetails($io, $candidate['reasons']);
             }
         }
-        
+
         $io->table(
             ['#', 'ID', 'Nom', 'Score', 'Compétences correspondantes'],
             $rows
@@ -180,12 +180,12 @@ class RefreshMatchingCommand extends Command
                 $offer['score'] . '%',
                 $offer['jobOffer']->getLocation()
             ];
-            
+
             if ($dump) {
                 $this->dumpReasonDetails($io, $offer['reasons']);
             }
         }
-        
+
         $io->table(
             ['#', 'ID', 'Titre', 'Score', 'Localisation'],
             $rows
@@ -195,20 +195,20 @@ class RefreshMatchingCommand extends Command
     private function getSkillMatches(array $reasons): string
     {
         $skillMatches = [];
-        
+
         foreach ($reasons as $reason) {
             if ($reason['category'] === 'Compétences techniques' && !empty($reason['matches'])) {
                 $skillMatches = array_merge($skillMatches, array_slice($reason['matches'], 0, 3));
             }
         }
-        
+
         return implode(', ', array_slice($skillMatches, 0, 5));
     }
 
     private function dumpReasonDetails(SymfonyStyle $io, array $reasons): void
     {
         $io->writeln('<info>Détails du score:</info>');
-        
+
         foreach ($reasons as $reason) {
             $io->writeln(sprintf(
                 '- <comment>%s</comment>: %d/%d (%d%%)',
@@ -217,16 +217,16 @@ class RefreshMatchingCommand extends Command
                 $reason['maxScore'],
                 $reason['maxScore'] > 0 ? round(($reason['score'] / $reason['maxScore']) * 100) : 0
             ));
-            
+
             if (isset($reason['matches']) && !empty($reason['matches'])) {
                 $io->writeln('  Correspondances: ' . implode(', ', $reason['matches']));
             }
-            
+
             if (isset($reason['details']) && !empty($reason['details'])) {
                 $io->writeln('  Détails: ' . implode("\n  - ", $reason['details']));
             }
         }
-        
+
         $io->newLine();
     }
-} 
+}

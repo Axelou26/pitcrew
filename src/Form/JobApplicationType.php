@@ -93,4 +93,4 @@ class JobApplicationType extends AbstractType
             'data_class' => JobApplication::class,
         ]);
     }
-} 
+}

@@ -58,18 +58,18 @@ class HashtagRepository extends ServiceEntityRepository
         // Normaliser le nom du hashtag
         $name = ltrim($name, '#');
         $name = strtolower($name);
-        
+
         $hashtag = $this->findOneBy(['name' => $name]);
-        
+
         if (!$hashtag) {
             $hashtag = new Hashtag();
             $hashtag->setName($name);
             $this->getEntityManager()->persist($hashtag);
         }
-        
+
         return $hashtag;
     }
-    
+
     /**
      * Recherche les hashtags les plus populaires
      */
@@ -77,38 +77,38 @@ class HashtagRepository extends ServiceEntityRepository
     {
         // Essayer de récupérer les hashtags depuis le cache
         $cacheItem = $this->cache->getItem('trending_hashtags');
-        
+
         if ($cacheItem->isHit()) {
             // Si présent en cache, récupérer les IDs et charger les hashtags
             $hashtagIds = $cacheItem->get();
-            
+
             if (!empty($hashtagIds)) {
                 $hashtags = $this->createQueryBuilder('h')
                     ->where('h.id IN (:hashtagIds)')
                     ->setParameter('hashtagIds', $hashtagIds)
                     ->getQuery()
                     ->getResult();
-                
+
                 // Réorganiser dans le même ordre que les IDs
                 $hashtagsMap = [];
                 foreach ($hashtags as $hashtag) {
                     $hashtagsMap[$hashtag->getId()] = $hashtag;
                 }
-                
+
                 $orderedHashtags = [];
                 foreach ($hashtagIds as $id) {
                     if (isset($hashtagsMap[$id])) {
                         $orderedHashtags[] = $hashtagsMap[$id];
                     }
                 }
-                
+
                 // Si on a des hashtags, les retourner
                 if (!empty($orderedHashtags)) {
                     return array_slice($orderedHashtags, 0, $limit);
                 }
             }
         }
-        
+
         // Sinon, faire la requête normale
         return $this->createQueryBuilder('h')
             ->orderBy('h.usageCount', 'DESC')
@@ -116,14 +116,14 @@ class HashtagRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
-    
+
     /**
      * Recherche les hashtags par leur nom (pour l'autocomplétion)
      */
     public function searchByName(string $query, int $limit = 5): array
     {
         $query = ltrim($query, '#');
-        
+
         return $this->createQueryBuilder('h')
             ->where('h.name LIKE :query')
             ->setParameter('query', $query . '%')
@@ -132,7 +132,7 @@ class HashtagRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
-    
+
     /**
      * Recherche les hashtags récemment utilisés
      */

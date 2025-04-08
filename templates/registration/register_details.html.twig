@@ -62,6 +62,13 @@
         .btn-back:hover {
             background: #e1e1e1;
         }
+        
+        .invalid-feedback {
+            display: block;
+            color: #dc3545;
+            margin-top: 0.25rem;
+            font-size: 0.875em;
+        }
     </style>
 {% endblock %}
 
@@ -70,7 +77,7 @@
         <div class="container">
             <h1>
                 {% if userType == 'ROLE_POSTULANT' %}
-                    Créez votre profil de chercheur d'emploi
+                    Rejoignez PitCrew
                 {% else %}
                     Créez votre profil de recruteur
                 {% endif %}
@@ -91,34 +98,34 @@
             
             <div class="row mb-4">
                 <div class="col-md-6 mb-3 mb-md-0">
-                    {{ form_row(registrationForm.firstName, {
-                        'attr': {'class': 'form-control'}
-                    }) }}
+                    {{ form_label(registrationForm.firstName) }}
+                    {{ form_widget(registrationForm.firstName, {'attr': {'class': 'form-control'}}) }}
+                    {{ form_errors(registrationForm.firstName) }}
                 </div>
                 <div class="col-md-6">
-                    {{ form_row(registrationForm.lastName, {
-                        'attr': {'class': 'form-control'}
-                    }) }}
+                    {{ form_label(registrationForm.lastName) }}
+                    {{ form_widget(registrationForm.lastName, {'attr': {'class': 'form-control'}}) }}
+                    {{ form_errors(registrationForm.lastName) }}
                 </div>
             </div>
             
             <div class="mb-4">
-                {{ form_row(registrationForm.email, {
-                    'attr': {'class': 'form-control'}
-                }) }}
+                {{ form_label(registrationForm.email) }}
+                {{ form_widget(registrationForm.email, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(registrationForm.email) }}
             </div>
             
             {% if userType == 'ROLE_RECRUTEUR' %}
                 <div class="row mb-4">
                     <div class="col-md-6 mb-3 mb-md-0">
-                        {{ form_row(registrationForm.company, {
-                            'attr': {'class': 'form-control'}
-                        }) }}
+                        {{ form_label(registrationForm.company) }}
+                        {{ form_widget(registrationForm.company, {'attr': {'class': 'form-control'}}) }}
+                        {{ form_errors(registrationForm.company) }}
                     </div>
                     <div class="col-md-6">
-                        {{ form_row(registrationForm.position, {
-                            'attr': {'class': 'form-control'}
-                        }) }}
+                        {{ form_label(registrationForm.position) }}
+                        {{ form_widget(registrationForm.position, {'attr': {'class': 'form-control'}}) }}
+                        {{ form_errors(registrationForm.position) }}
                     </div>
                 </div>
             {% endif %}
@@ -126,32 +133,28 @@
             {% if userType == 'ROLE_POSTULANT' %}
                 <div class="row mb-4">
                     <div class="col-md-6 mb-3 mb-md-0">
-                        {{ form_row(registrationForm.jobTitle, {
-                            'attr': {'class': 'form-control'}
-                        }) }}
+                        {{ form_label(registrationForm.jobTitle) }}
+                        {{ form_widget(registrationForm.jobTitle, {'attr': {'class': 'form-control'}}) }}
+                        {{ form_errors(registrationForm.jobTitle) }}
                     </div>
                     <div class="col-md-6">
-                        {{ form_row(registrationForm.skills, {
-                            'attr': {'class': 'form-control'}
-                        }) }}
+                        {{ form_label(registrationForm.skills) }}
+                        {{ form_widget(registrationForm.skills, {'attr': {'class': 'form-control'}}) }}
+                        {{ form_errors(registrationForm.skills) }}
                     </div>
                 </div>
             {% endif %}
             
             <div class="mb-4">
-                {{ form_row(registrationForm.plainPassword, {
-                    'attr': {'class': 'form-control'}
-                }) }}
+                {{ form_label(registrationForm.plainPassword) }}
+                {{ form_widget(registrationForm.plainPassword, {'attr': {'class': 'form-control'}}) }}
+                {{ form_errors(registrationForm.plainPassword) }}
             </div>
             
             <div class="mb-4">
                 <div class="form-check">
-                    {{ form_widget(registrationForm.agreeTerms, {
-                        'attr': {'class': 'form-check-input'}
-                    }) }}
-                    {{ form_label(registrationForm.agreeTerms, null, {
-                        'label_attr': {'class': 'form-check-label'}
-                    }) }}
+                    {{ form_widget(registrationForm.agreeTerms, {'attr': {'class': 'form-check-input'}}) }}
+                    {{ form_label(registrationForm.agreeTerms, null, {'label_attr': {'class': 'form-check-label'}}) }}
                 </div>
                 {{ form_errors(registrationForm.agreeTerms) }}
             </div>

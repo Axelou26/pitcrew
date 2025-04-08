@@ -27,7 +27,7 @@ class MatchingService
 
     /**
      * Calcule un score de compatibilité entre un candidat et une offre d'emploi
-     * 
+     *
      * @param Applicant $applicant
      * @param JobOffer $jobOffer
      * @return array Score détaillé avec les raisons
@@ -43,7 +43,7 @@ class MatchingService
         $score += $technicalScore['score'] * 0.4;
         $maxScore += $technicalScore['maxScore'] * 0.4;
         $reasons[] = [
-            'category' => 'Compétences techniques', 
+            'category' => 'Compétences techniques',
             'score' => $technicalScore['score'],
             'maxScore' => $technicalScore['maxScore'],
             'matches' => $technicalScore['matches']
@@ -54,7 +54,7 @@ class MatchingService
         $score += $experienceScore['score'] * 0.3;
         $maxScore += $experienceScore['maxScore'] * 0.3;
         $reasons[] = [
-            'category' => 'Expérience professionnelle', 
+            'category' => 'Expérience professionnelle',
             'score' => $experienceScore['score'],
             'maxScore' => $experienceScore['maxScore'],
             'details' => $experienceScore['details']
@@ -65,7 +65,7 @@ class MatchingService
         $score += $softSkillsScore['score'] * 0.2;
         $maxScore += $softSkillsScore['maxScore'] * 0.2;
         $reasons[] = [
-            'category' => 'Soft skills', 
+            'category' => 'Soft skills',
             'score' => $softSkillsScore['score'],
             'maxScore' => $softSkillsScore['maxScore'],
             'matches' => $softSkillsScore['matches']
@@ -76,7 +76,7 @@ class MatchingService
         $score += $locationScore['score'] * 0.1;
         $maxScore += $locationScore['maxScore'] * 0.1;
         $reasons[] = [
-            'category' => 'Localisation', 
+            'category' => 'Localisation',
             'score' => $locationScore['score'],
             'maxScore' => $locationScore['maxScore'],
             'details' => $locationScore['details']
@@ -100,14 +100,14 @@ class MatchingService
     {
         $requiredSkills = $jobOffer->getRequiredSkills();
         $candidateSkills = $applicant->getTechnicalSkills() ?? [];
-        
+
         if (empty($requiredSkills)) {
             return ['score' => 0, 'maxScore' => 0, 'matches' => []];
         }
 
         $matches = [];
         $matchCount = 0;
-        
+
         foreach ($requiredSkills as $skill) {
             $found = false;
             foreach ($candidateSkills as $candidateSkill) {
@@ -122,10 +122,10 @@ class MatchingService
                 $matchCount++;
             }
         }
-        
+
         $maxScore = count($requiredSkills);
         $score = $matchCount;
-        
+
         return [
             'score' => $score,
             'maxScore' => $maxScore,
@@ -141,27 +141,27 @@ class MatchingService
         // Simplification pour éviter les différences mineures (casse, espaces)
         $skill1 = strtolower(trim($skill1));
         $skill2 = strtolower(trim($skill2));
-        
+
         // Correspondance exacte
         if ($skill1 === $skill2) {
             return true;
         }
-        
+
         // Correspondance partielle pour les acronymes et abréviations
         if (
-            (strlen($skill1) <= 5 && strpos($skill2, $skill1) === 0) || 
+            (strlen($skill1) <= 5 && strpos($skill2, $skill1) === 0) ||
             (strlen($skill2) <= 5 && strpos($skill1, $skill2) === 0)
         ) {
             return true;
         }
-        
+
         // Distance de Levenshtein pour les fautes de frappe
         $distance = levenshtein($skill1, $skill2);
         $maxLength = max(strlen($skill1), strlen($skill2));
-        
+
         // Tolérance proportionnelle à la longueur
         $threshold = min(2, ceil($maxLength * 0.3));
-        
+
         return $distance <= $threshold;
     }
 
@@ -172,7 +172,7 @@ class MatchingService
     {
         $workExperience = $applicant->getWorkExperience() ?? [];
         $educationHistory = $applicant->getEducationHistory() ?? [];
-        
+
         // Si pas d'expérience ni d'éducation, score minimal
         if (empty($workExperience) && empty($educationHistory)) {
             return [
@@ -181,26 +181,30 @@ class MatchingService
                 'details' => ['Aucune expérience professionnelle ni formation renseignée']
             ];
         }
-        
+
         // Évaluation de la pertinence des expériences
         $score = 0;
         $details = [];
-        
+
         // Nombre total d'années d'expérience
         $totalYearsExperience = 0;
         $relevantExperienceCount = 0;
         $relevantYearsExperience = 0;
         $mostRecentExperiences = [];
-        
+
         // Trier les expériences par date (de la plus récente à la plus ancienne)
-        usort($workExperience, function($a, $b) {
+        usort($workExperience, function ($a, $b) {
             $endDateA = $a['endDate'] ?? 'present';
             $endDateB = $b['endDate'] ?? 'present';
-            
+
             // Si une des dates est "present", elle est plus récente
-            if ($endDateA === 'present' && $endDateB !== 'present') return -1;
-            if ($endDateA !== 'present' && $endDateB === 'present') return 1;
-            
+            if ($endDateA === 'present' && $endDateB !== 'present') {
+                return -1;
+            }
+            if ($endDateA !== 'present' && $endDateB === 'present') {
+                return 1;
+            }
+
             // Sinon, comparer les dates de fin
             try {
                 $dateA = $endDateA === 'present' ? new \DateTime() : new \DateTime($endDateA);
@@ -210,77 +214,87 @@ class MatchingService
                 return 0;
             }
         });
-        
+
         // Limiter à 5 expériences maximum pour l'analyse
         $workExperience = array_slice($workExperience, 0, 5);
-        
+
         foreach ($workExperience as $experience) {
             // Calcul de la durée de l'expérience
-            $duration = isset($experience['startDate'], $experience['endDate']) 
-                ? $this->calculateExperienceDuration($experience['startDate'], $experience['endDate']) 
+            $duration = isset($experience['startDate'], $experience['endDate'])
+                ? $this->calculateExperienceDuration($experience['startDate'], $experience['endDate'])
                 : 0;
-            
+
             $totalYearsExperience += $duration;
-            
+
             // Vérification de la pertinence par rapport au poste
             $isRelevant = $this->isRelevantExperience($experience, $jobOffer);
-            
+
             if ($isRelevant) {
                 $relevantExperienceCount++;
                 $relevantYearsExperience += $duration;
-                
+
                 // Ajouter plus de détails sur l'expérience pertinente
                 $expDetails = [];
-                if (!empty($experience['title'])) $expDetails[] = $experience['title'];
-                if (!empty($experience['company'])) $expDetails[] = 'chez ' . $experience['company'];
-                if ($duration > 0) $expDetails[] = sprintf('(%.1f ans)', $duration);
-                
+                if (!empty($experience['title'])) {
+                    $expDetails[] = $experience['title'];
+                }
+                if (!empty($experience['company'])) {
+                    $expDetails[] = 'chez ' . $experience['company'];
+                }
+                if ($duration > 0) {
+                    $expDetails[] = sprintf('(%.1f ans)', $duration);
+                }
+
                 $details[] = 'Expérience pertinente: ' . implode(' ', $expDetails);
-                
+
                 // Garder trace des expériences pertinentes les plus récentes
                 $mostRecentExperiences[] = $experience;
             }
         }
-        
+
         // Évaluation des formations pertinentes
         $relevantEducationCount = 0;
         $educationScore = 0;
-        
+
         foreach ($educationHistory as $education) {
             $isRelevant = $this->isRelevantEducation($education, $jobOffer);
-            
+
             if ($isRelevant) {
                 $relevantEducationCount++;
-                
+
                 // Ajouter plus de détails sur la formation pertinente
                 $eduDetails = [];
-                if (!empty($education['degree'])) $eduDetails[] = $education['degree'];
-                if (!empty($education['institution'])) $eduDetails[] = 'à ' . $education['institution'];
-                
+                if (!empty($education['degree'])) {
+                    $eduDetails[] = $education['degree'];
+                }
+                if (!empty($education['institution'])) {
+                    $eduDetails[] = 'à ' . $education['institution'];
+                }
+
                 $details[] = 'Formation pertinente: ' . implode(' ', $eduDetails);
             }
         }
-        
+
         // Calculer le score basé sur plusieurs facteurs
-        
+
         // 1. Score basé sur les années d'expérience totale (max 1.5 points)
         $yearsScore = min(1.5, $totalYearsExperience / 3);
-        
+
         // 2. Score basé sur les années d'expérience pertinente (max 2 points)
         $relevantYearsScore = min(2, $relevantYearsExperience / 2);
-        
+
         // 3. Score basé sur le nombre d'expériences pertinentes (max 1 point)
         $relevantCountScore = min(1, $relevantExperienceCount / 2);
-        
+
         // 4. Bonus pour formation pertinente (max 0.5 point)
         $educationBonus = min(0.5, $relevantEducationCount * 0.25);
-        
+
         // 5. Bonus pour expérience récente dans le domaine (max 0.5 point)
         $recentExperienceBonus = 0;
         if (!empty($mostRecentExperiences)) {
             $mostRecent = $mostRecentExperiences[0];
             $endDate = $mostRecent['endDate'] ?? '';
-            
+
             // Si l'expérience est en cours ou s'est terminée il y a moins de 2 ans
             if ($endDate === 'present') {
                 $recentExperienceBonus = 0.5;
@@ -289,7 +303,7 @@ class MatchingService
                     $end = new \DateTime($endDate);
                     $now = new \DateTime();
                     $yearsSinceEnd = $now->diff($end)->y;
-                    
+
                     if ($yearsSinceEnd <= 2) {
                         $recentExperienceBonus = 0.5;
                     } elseif ($yearsSinceEnd <= 5) {
@@ -300,15 +314,15 @@ class MatchingService
                 }
             }
         }
-        
+
         // Score total (max 5 points)
         $score = $yearsScore + $relevantYearsScore + $relevantCountScore + $recentExperienceBonus + $educationBonus;
         $score = min(5, $score); // Plafonnement à 5
-        
+
         // Ajouter un résumé au début de la liste de détails
         if ($relevantExperienceCount > 0 || $relevantEducationCount > 0) {
             $summaryParts = [];
-            
+
             if ($relevantExperienceCount > 0) {
                 $summaryParts[] = sprintf(
                     '%d expérience(s) pertinente(s) totalisant %.1f an(s)',
@@ -316,14 +330,14 @@ class MatchingService
                     $relevantYearsExperience
                 );
             }
-            
+
             if ($relevantEducationCount > 0) {
                 $summaryParts[] = sprintf(
                     '%d formation(s) pertinente(s)',
                     $relevantEducationCount
                 );
             }
-            
+
             array_unshift($details, implode(' et ', $summaryParts));
         } else {
             array_unshift($details, sprintf(
@@ -331,7 +345,7 @@ class MatchingService
                 $totalYearsExperience
             ));
         }
-        
+
         return [
             'score' => $score,
             'maxScore' => 5,
@@ -347,40 +361,40 @@ class MatchingService
         $jobTitle = $jobOffer->getTitle();
         $jobDescription = $jobOffer->getDescription();
         $requiredSkills = $jobOffer->getRequiredSkills();
-        
+
         $experienceTitle = $experience['title'] ?? '';
         $experienceDescription = $experience['description'] ?? '';
         $experienceCompany = $experience['company'] ?? '';
         $experienceLocation = $experience['location'] ?? '';
-        
+
         // Concaténer tous les champs d'expérience pour une analyse plus complète
         $experienceFullText = $experienceTitle . ' ' . $experienceDescription . ' ' . $experienceCompany . ' ' . $experienceLocation;
-        
+
         // 1. Vérification par mots-clés entre le titre de l'expérience et le titre du poste
         if ($this->hasCommonKeywords($experienceTitle, $jobTitle, 2)) {
             return true;
         }
-        
+
         // 2. Vérification par mots-clés entre la description de l'expérience et la description du poste
         if ($this->hasCommonKeywords($experienceDescription, $jobDescription, 3)) {
             return true;
         }
-        
+
         // 3. Vérification des compétences requises dans tous les champs d'expérience
         foreach ($requiredSkills as $skill) {
             if (stripos($experienceFullText, $skill) !== false) {
                 return true;
             }
         }
-        
+
         // 4. Vérification des secteurs d'activité (ex: F1, automobile, sport)
         $jobSectors = $this->extractSectors($jobTitle . ' ' . $jobDescription);
         $experienceSectors = $this->extractSectors($experienceFullText);
-        
+
         if (!empty(array_intersect($jobSectors, $experienceSectors))) {
             return true;
         }
-        
+
         return false;
     }
 
@@ -392,40 +406,40 @@ class MatchingService
         $jobTitle = $jobOffer->getTitle();
         $jobDescription = $jobOffer->getDescription();
         $requiredSkills = $jobOffer->getRequiredSkills();
-        
+
         $educationDegree = $education['degree'] ?? '';
         $educationInstitution = $education['institution'] ?? '';
         $educationDescription = $education['description'] ?? '';
         $educationLocation = $education['location'] ?? '';
-        
+
         // Concaténer tous les champs d'éducation pour une analyse plus complète
         $educationFullText = $educationDegree . ' ' . $educationInstitution . ' ' . $educationDescription . ' ' . $educationLocation;
-        
+
         // 1. Vérification par mots-clés entre le diplôme et le titre du poste
         if ($this->hasCommonKeywords($educationDegree, $jobTitle, 1)) {
             return true;
         }
-        
+
         // 2. Vérification par mots-clés entre la description de la formation et la description du poste
         if ($this->hasCommonKeywords($educationDescription, $jobDescription, 2)) {
             return true;
         }
-        
+
         // 3. Vérification des compétences requises dans tous les champs de formation
         foreach ($requiredSkills as $skill) {
             if (stripos($educationFullText, $skill) !== false) {
                 return true;
             }
         }
-        
+
         // 4. Vérification des secteurs d'activité (ex: F1, automobile, sport)
         $jobSectors = $this->extractSectors($jobTitle . ' ' . $jobDescription);
         $educationSectors = $this->extractSectors($educationFullText);
-        
+
         if (!empty(array_intersect($jobSectors, $educationSectors))) {
             return true;
         }
-        
+
         return false;
     }
 
@@ -441,14 +455,14 @@ class MatchingService
             'ingénierie', 'mécanique', 'technique', 'technologie', 'aérodynamique',
             'logistique', 'composite', 'industrie'
         ];
-        
+
         $foundSectors = [];
         foreach ($sectors as $sector) {
             if (stripos($text, $sector) !== false) {
                 $foundSectors[] = $sector;
             }
         }
-        
+
         return $foundSectors;
     }
 
@@ -463,9 +477,9 @@ class MatchingService
     {
         $keywords1 = $this->extractKeywords($text1);
         $keywords2 = $this->extractKeywords($text2);
-        
+
         $common = array_intersect($keywords1, $keywords2);
-        
+
         return count($common) >= $minCommonCount;
     }
 
@@ -477,7 +491,7 @@ class MatchingService
         try {
             $start = new \DateTime($startDate);
             $end = $endDate === 'present' ? new \DateTime() : new \DateTime($endDate);
-            
+
             $interval = $end->diff($start);
             return $interval->y + ($interval->m / 12);
         } catch (\Exception $e) {
@@ -492,12 +506,12 @@ class MatchingService
     {
         // Liste des mots vides en français
         $stopWords = ['le', 'la', 'les', 'un', 'une', 'des', 'et', 'ou', 'de', 'du', 'en', 'à', 'au', 'aux', 'par', 'pour'];
-        
+
         // Nettoyage et tokenisation
         $text = strtolower($text);
         $text = preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $text);
         $words = preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY);
-        
+
         // Filtrage des mots courts et des mots vides
         $keywords = [];
         foreach ($words as $word) {
@@ -505,7 +519,7 @@ class MatchingService
                 $keywords[] = $word;
             }
         }
-        
+
         return array_unique($keywords);
     }
 
@@ -518,11 +532,11 @@ class MatchingService
         // Pour cette démo, on utilise une liste de soft skills communs dans le sport automobile
         $jobSoftSkillsList = $this->extractSoftSkillsFromJobDescription($jobOffer->getDescription());
         $candidateSoftSkills = $applicant->getSoftSkills() ?? [];
-        
+
         if (empty($jobSoftSkillsList) || empty($candidateSoftSkills)) {
             return ['score' => 0, 'maxScore' => 0, 'matches' => []];
         }
-        
+
         $matches = [];
         foreach ($candidateSoftSkills as $skill) {
             foreach ($jobSoftSkillsList as $jobSkill) {
@@ -532,11 +546,11 @@ class MatchingService
                 }
             }
         }
-        
+
         $matchCount = count($matches);
         $maxScore = min(5, count($jobSoftSkillsList));
         $score = min($matchCount, $maxScore);
-        
+
         return [
             'score' => $score,
             'maxScore' => $maxScore,
@@ -551,46 +565,46 @@ class MatchingService
     {
         $commonSoftSkills = [
             // Communication
-            'communication', 'écoute active', 'expression orale', 'présentation', 'négociation', 
+            'communication', 'écoute active', 'expression orale', 'présentation', 'négociation',
             'rédaction', 'vulgarisation', 'diplomatie', 'persuasion', 'médiation',
-            
+
             // Travail en équipe
             'travail d\'équipe', 'équipe', 'collaboration', 'coopération', 'esprit d\'équipe',
             'coordination', 'cohésion', 'entraide', 'synergie',
-            
+
             // Leadership
             'leadership', 'management', 'gestion d\'équipe', 'encadrement', 'motivation d\'équipe',
             'délégation', 'prise de décision', 'coaching', 'mentorat', 'influence',
-            
+
             // Adaptation et résilience
             'adaptabilité', 'flexibilité', 'résilience', 'gestion du stress', 'gestion de crise',
             'résistance à la pression', 'agilité', 'polyvalence', 'réactivité',
-            
+
             // Organisation
             'organisation', 'planification', 'gestion du temps', 'priorisation', 'ponctualité',
             'méthode', 'rigueur', 'précision', 'autonomie', 'efficacité',
-            
+
             // Créativité et résolution de problèmes
             'créativité', 'innovation', 'résolution de problèmes', 'pensée critique', 'analyse',
             'esprit critique', 'prise d\'initiative', 'curiosité', 'proactivité',
-            
+
             // Relationnel
             'empathie', 'intelligence émotionnelle', 'relationnel', 'sociabilité', 'sens du service',
             'orientation client', 'respect', 'éthique', 'bienveillance'
         ];
-        
+
         $foundSkills = [];
         foreach ($commonSoftSkills as $skill) {
             if (stripos($description, $skill) !== false) {
                 $foundSkills[] = $skill;
             }
         }
-        
+
         // Ajouter quelques soft skills par défaut si rien n'est trouvé
         if (empty($foundSkills)) {
             return ['communication', 'travail d\'équipe', 'adaptabilité'];
         }
-        
+
         return $foundSkills;
     }
 
@@ -601,18 +615,18 @@ class MatchingService
     {
         // Dans un système réel, l'utilisateur aurait des préférences de localisation
         // Pour cette démo, on suppose qu'il n'y a pas de préférence stricte
-        
+
         $jobIsRemote = $jobOffer->getIsRemote();
         $jobLocation = $jobOffer->getLocation();
-        
+
         // Extrait la préférence de l'utilisateur (à récupérer d'un champ préférences)
         $user = $applicant; // Cast to User object
         $userPreferredLocation = $user->getCity() ?? '';
         $userPreferredRemote = true; // Par défaut on suppose que le remote est accepté
-        
+
         $details = [];
         $score = 0;
-        
+
         // Si le poste est en remote et que le candidat accepte le remote
         if ($jobIsRemote && $userPreferredRemote) {
             $score = 5;
@@ -628,7 +642,7 @@ class MatchingService
             $score = 3;
             $details[] = 'Compatibilité de localisation moyenne';
         }
-        
+
         return [
             'score' => $score,
             'maxScore' => 5,
@@ -645,25 +659,25 @@ class MatchingService
         if ($user instanceof Applicant) {
             return $user;
         }
-        
+
         // Si c'est un User, on vérifie qu'il a le rôle ROLE_POSTULANT
         if (!($user instanceof User) || !in_array('ROLE_POSTULANT', $user->getRoles())) {
             throw new \LogicException('L\'utilisateur doit avoir le rôle ROLE_POSTULANT');
         }
-        
+
         // On récupère l'entité Applicant correspondante via l'EntityManager
         $applicant = $this->entityManager->getRepository(Applicant::class)->find($user->getId());
-        
+
         if (!$applicant) {
             throw new \LogicException('Impossible de trouver l\'entité Applicant correspondante');
         }
-        
+
         return $applicant;
     }
 
     /**
      * Trouve les meilleures offres d'emploi pour un candidat
-     * 
+     *
      * @param User|Applicant $user
      * @param int $limit Nombre maximum d'offres à retourner
      * @return array
@@ -672,10 +686,10 @@ class MatchingService
     {
         // On s'assure d'avoir un objet Applicant
         $applicant = $this->ensureApplicant($user);
-        
+
         // Récupérer toutes les offres d'emploi actives
         $activeJobOffers = $this->jobOfferRepository->findBy(['isActive' => true]);
-        
+
         // Calculer le score de compatibilité pour chaque offre
         $scoredOffers = [];
         foreach ($activeJobOffers as $jobOffer) {
@@ -686,19 +700,19 @@ class MatchingService
                 'reasons' => $compatibilityScore['reasons']
             ];
         }
-        
+
         // Trier par score de compatibilité décroissant
-        usort($scoredOffers, function($a, $b) {
+        usort($scoredOffers, function ($a, $b) {
             return $b['score'] <=> $a['score'];
         });
-        
+
         // Limiter le nombre de résultats
         return array_slice($scoredOffers, 0, $limit);
     }
 
     /**
      * Trouve les meilleurs candidats pour une offre d'emploi
-     * 
+     *
      * @param JobOffer $jobOffer
      * @param int $limit Nombre maximum de candidats à retourner
      * @return array
@@ -707,9 +721,9 @@ class MatchingService
     {
         // Récupérer tous les candidats via le repository spécifique des Applicant
         $allApplicants = $this->entityManager->getRepository(Applicant::class)->findAll();
-        
+
         $scoredCandidates = [];
-        
+
         foreach ($allApplicants as $applicant) {
             $compatibilityScore = $this->calculateCompatibilityScore($applicant, $jobOffer);
             $scoredCandidates[] = [
@@ -718,19 +732,19 @@ class MatchingService
                 'reasons' => $compatibilityScore['reasons']
             ];
         }
-        
+
         // Trier par score de compatibilité décroissant
-        usort($scoredCandidates, function($a, $b) {
+        usort($scoredCandidates, function ($a, $b) {
             return $b['score'] <=> $a['score'];
         });
-        
+
         // Limiter le nombre de résultats
         return array_slice($scoredCandidates, 0, $limit);
     }
 
     /**
      * Récupère un applicant depuis son ID, avec gestion d'erreur appropriée
-     * 
+     *
      * @param int $applicantId
      * @return Applicant
      * @throws \LogicException Si l'applicant n'existe pas
@@ -738,11 +752,11 @@ class MatchingService
     public function getApplicantById(int $applicantId): Applicant
     {
         $applicant = $this->entityManager->getRepository(Applicant::class)->find($applicantId);
-        
+
         if (!$applicant) {
             throw new \LogicException('Candidat non trouvé');
         }
-        
+
         return $applicant;
     }
-} 
+}

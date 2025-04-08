@@ -73,4 +73,4 @@ class SupportTicketType extends AbstractType
             'data_class' => SupportTicket::class,
         ]);
     }
-} 
+}

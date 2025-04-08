@@ -18,13 +18,13 @@ final class Version20240701000002 extends AbstractMigration
     {
         // Add logo_url column
         $this->addSql('ALTER TABLE job_offer ADD logo_url VARCHAR(255) DEFAULT NULL');
-        
+
         // Add image column
         $this->addSql('ALTER TABLE job_offer ADD image VARCHAR(255) DEFAULT NULL');
-        
+
         // Add company_name column
         $this->addSql('ALTER TABLE job_offer ADD company_name VARCHAR(255) DEFAULT NULL');
-        
+
         // Add company_description column
         $this->addSql('ALTER TABLE job_offer ADD company_description LONGTEXT DEFAULT NULL');
     }
@@ -37,4 +37,4 @@ final class Version20240701000002 extends AbstractMigration
         $this->addSql('ALTER TABLE job_offer DROP company_name');
         $this->addSql('ALTER TABLE job_offer DROP company_description');
     }
-} 
+}

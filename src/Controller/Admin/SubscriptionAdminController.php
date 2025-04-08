@@ -66,7 +66,7 @@ class SubscriptionAdminController extends AbstractController
             ->setAction($this->generateUrl('admin_subscription_delete', ['id' => $subscription->getId()]))
             ->setMethod('POST')
             ->getForm();
-            
+
         return $this->render('admin/subscription/show.html.twig', [
             'subscription' => $subscription,
             'delete_form' => $deleteForm,
@@ -102,7 +102,7 @@ class SubscriptionAdminController extends AbstractController
     #[Route('/{id}', name: 'delete', methods: ['POST'])]
     public function delete(Request $request, Subscription $subscription): Response
     {
-        if ($this->isCsrfTokenValid('delete'.$subscription->getId(), $request->request->get('_token'))) {
+        if ($this->isCsrfTokenValid('delete' . $subscription->getId(), $request->request->get('_token'))) {
             $this->entityManager->remove($subscription);
             $this->entityManager->flush();
 
@@ -111,4 +111,4 @@ class SubscriptionAdminController extends AbstractController
 
         return $this->redirectToRoute('admin_subscription_index');
     }
-} 
+}

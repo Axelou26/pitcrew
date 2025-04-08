@@ -18,14 +18,14 @@ class SearchController extends AbstractController
     {
         $query = $request->query->get('q', '');
         $users = [];
-        
+
         if ($query) {
             $users = $userRepository->searchUsers($query, $this->getUser());
         }
-        
+
         return $this->render('search/index.html.twig', [
             'query' => $query,
             'users' => $users,
         ]);
     }
-} 
+}

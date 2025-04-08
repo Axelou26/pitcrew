@@ -47,4 +47,4 @@ class SubscriptionRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
-} 
+}

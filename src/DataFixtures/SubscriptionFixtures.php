@@ -16,12 +16,14 @@ class SubscriptionFixtures extends Fixture
         $basic->setPrice(0);
         $basic->setDuration(30); // 30 jours
         $basic->setFeatures([
-            'Publication de 2 offres d\'emploi par mois',
-            'Accès aux candidatures de base',
+            'Publication limitée d\'offres (3 max)',
+            'Accès basique aux candidatures',
             'Messagerie limitée',
-            'Profil entreprise standard'
+            'Profil entreprise standard',
+            'Pas d\'accès complet aux CV',
+            'Pas de statistiques'
         ]);
-        $basic->setMaxJobOffers(2);
+        $basic->setMaxJobOffers(3);
         $basic->setIsActive(true);
         $manager->persist($basic);
         $this->addReference('subscription-basic', $basic);
@@ -51,11 +53,10 @@ class SubscriptionFixtures extends Fixture
         $business->setDuration(30); // 30 jours
         $business->setFeatures([
             'Tout ce qui est inclus dans Premium',
-            'Mise en avant des offres pendant 7 jours',
             'Recherche avancée de candidats',
-            'Recommandations automatiques de candidats',
-            'Statistiques détaillées et rapports',
-            'Badge "Entreprise Vérifiée"',
+            'Recommandations automatiques',
+            'Statistiques détaillées',
+            'Badge "Entreprise vérifiée"',
             'Support prioritaire'
         ]);
         $business->setMaxJobOffers(null); // illimité
@@ -65,4 +66,4 @@ class SubscriptionFixtures extends Fixture
 
         $manager->flush();
     }
-} 
+}

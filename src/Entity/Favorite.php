@@ -7,7 +7,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: FavoriteRepository::class)]
 #[ORM\UniqueConstraint(
-    name: "unique_favorite", 
+    name: "unique_favorite",
     columns: ["user_id", "job_offer_id", "candidate_id", "type"]
 )]
 class Favorite

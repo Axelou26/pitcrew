@@ -127,4 +127,4 @@ class InterviewType extends AbstractType
             'job_offer_id' => null,
         ]);
     }
-} 
+}

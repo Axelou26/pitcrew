@@ -60,4 +60,4 @@ class ConversationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
-} 
+}

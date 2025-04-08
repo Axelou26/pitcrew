@@ -27,7 +27,7 @@ class ApplicantExperienceType extends AbstractType
             ])
             ->add('education', TextareaType::class, [
                 'label' => 'Formation',
-                'required' => false, 
+                'required' => false,
                 'attr' => ['rows' => 4],
                 'help' => 'Indiquez vos diplômes, formations et certifications.',
             ])
@@ -65,4 +65,4 @@ class ApplicantExperienceType extends AbstractType
             'data_class' => Applicant::class,
         ]);
     }
-} 
+}

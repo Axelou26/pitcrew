@@ -45,18 +45,18 @@ class NotifyExpiringSubscriptionsCommand extends Command
 
         try {
             $expiringSubscriptions = $this->recruiterSubscriptionRepository->findExpiringSubscriptions();
-            
+
             if (empty($expiringSubscriptions)) {
                 $io->info('Aucun abonnement n\'expire dans les 7 prochains jours.');
                 return Command::SUCCESS;
             }
-            
+
             $io->info(sprintf('Envoi de notifications pour %d abonnements expirant bientôt...', count($expiringSubscriptions)));
-            
+
             foreach ($expiringSubscriptions as $subscription) {
                 $user = $subscription->getRecruiter();
                 $daysLeft = (new \DateTime())->diff($subscription->getEndDate())->days;
-                
+
                 // Créer une notification dans l'application
                 $this->notificationService->createNotification(
                     $user,
@@ -65,17 +65,18 @@ class NotifyExpiringSubscriptionsCommand extends Command
                     'subscription_expiring',
                     'app_subscription_manage'
                 );
-                
+
                 // Envoyer un email de rappel
                 $this->emailService->sendSubscriptionExpirationReminder($user, $subscription);
-                
-                $io->text(sprintf('Notification envoyée à %s pour l\'abonnement %s expirant dans %d jours',
+
+                $io->text(sprintf(
+                    'Notification envoyée à %s pour l\'abonnement %s expirant dans %d jours',
                     $user->getEmail(),
                     $subscription->getSubscription()->getName(),
                     $daysLeft
                 ));
             }
-            
+
             $io->success('Toutes les notifications ont été envoyées avec succès.');
             return Command::SUCCESS;
         } catch (\Exception $e) {
@@ -83,4 +84,4 @@ class NotifyExpiringSubscriptionsCommand extends Command
             return Command::FAILURE;
         }
     }
-} 
+}

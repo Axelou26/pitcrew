@@ -43,7 +43,7 @@ class PostVoter extends Voter
         /** @var Post $post */
         $post = $subject;
 
-        return match($attribute) {
+        return match ($attribute) {
             self::POST_EDIT => $this->canEdit($post, $user),
             self::POST_DELETE => $this->canDelete($post, $user),
             default => false,
@@ -61,4 +61,4 @@ class PostVoter extends Voter
         // Seul l'auteur du post peut le supprimer
         return $post->getAuthor() === $user;
     }
-} 
+}

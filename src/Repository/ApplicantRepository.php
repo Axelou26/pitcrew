@@ -96,10 +96,10 @@ class ApplicantRepository extends ServiceEntityRepository
     public function findMatchingCandidates($jobOffer): array
     {
         $qb = $this->createQueryBuilder('a');
-        
+
         // Récupérer les compétences requises de l'offre
         $requiredSkills = $jobOffer->getRequiredSkills();
-        
+
         if (!empty($requiredSkills)) {
             foreach ($requiredSkills as $index => $skill) {
                 $paramName = 'skill' . $index;
@@ -107,7 +107,7 @@ class ApplicantRepository extends ServiceEntityRepository
                    ->setParameter($paramName, '%' . $skill . '%');
             }
         }
-        
+
         return $qb->getQuery()->getResult();
     }
-} 
+}

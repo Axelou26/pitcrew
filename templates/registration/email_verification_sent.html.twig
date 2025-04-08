@@ -1,0 +1,38 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Vérification de l'email{% endblock %}
+
+{% block body %}
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h1 class="h3 mb-4">Vérifiez votre email</h1>
+                        
+                        <div class="mb-4">
+                            <i class="bi bi-envelope-check text-success" style="font-size: 4rem;"></i>
+                        </div>
+                        
+                        <p class="lead">
+                            Un email de confirmation a été envoyé à votre adresse email.
+                            Veuillez cliquer sur le lien dans l'email pour activer votre compte.
+                        </p>
+                        
+                        <p class="text-muted">
+                            Si vous n'avez pas reçu l'email, vérifiez votre dossier spam ou
+                            <a href="{{ path('app_resend_verification_email') }}">cliquez ici pour renvoyer l'email</a>.
+                        </p>
+                        
+                        <div class="mt-4">
+                            <a href="{{ path('app_login') }}" class="btn btn-primary">
+                                <i class="bi bi-arrow-left me-2"></i>
+                                Retour à la page de connexion
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %} 

@@ -18,7 +18,7 @@ final class Version20240701000000 extends AbstractMigration
     {
         // Update the required_skills column to JSON type
         $this->addSql('ALTER TABLE job_offer CHANGE required_skills required_skills JSON NOT NULL');
-        
+
         // Set default empty array for all existing records
         $this->addSql('UPDATE job_offer SET required_skills = \'[]\'');
     }
@@ -28,4 +28,4 @@ final class Version20240701000000 extends AbstractMigration
         // Revert back to ARRAY type
         $this->addSql('ALTER TABLE job_offer CHANGE required_skills required_skills LONGTEXT NOT NULL COMMENT \'(DC2Type:array)\'');
     }
-} 
+}
