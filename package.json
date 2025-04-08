@@ -1,24 +1,42 @@
 {
-    "name": "pitcrew",
-    "version": "1.0.0",
-    "private": true,
-    "description": "PitCrew - Plateforme de recrutement",
-    "scripts": {
-        "dev": "vite",
-        "build": "echo \"No build step required\"",
-        "watch": "vite build --watch",
-        "test": "echo \"No test specified\""
-    },
-    "dependencies": {
-        "@popperjs/core": "^2.11.8",
-        "bootstrap": "^5.3.2",
-        "bootstrap-icons": "^1.11.3"
-    },
-    "devDependencies": {
-        "@symfony/webpack-encore": "^4.5.0",
-        "@vitejs/plugin-vue": "^4.5.0",
-        "sass": "^1.69.5",
-        "vite": "^4.5.1",
-        "vite-plugin-symfony": "^4.0.0"
-    }
+  "name": "pitcrew",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PitCrew - Plateforme de recrutement",
+  "engines": {
+    "node": "^20.0.0",
+    "npm": "^10.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "watch": "vite build --watch",
+    "test": "echo \"No test specified\"",
+    "lint": "eslint . --ext .js,.vue"
+  },
+  "dependencies": {
+    "@popperjs/core": "^2.11.8",
+    "bootstrap": "^5.3.2",
+    "bootstrap-icons": "^1.11.3"
+  },
+  "devDependencies": {
+    "@symfony/webpack-encore": "^4.5.0",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "sass": "^1.69.5",
+    "vite": "^6.2.5",
+    "vite-plugin-symfony": "^8.0.2"
+  },
+  "main": "vite.config.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "keywords": [
+    "recruitment",
+    "symfony",
+    "vue",
+    "vite"
+  ],
+  "author": "PitCrew Team",
+  "license": "ISC"
 }
