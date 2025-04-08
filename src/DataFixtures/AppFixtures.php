@@ -420,12 +420,10 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
                 $post = new Post();
                 $randomIndex = array_rand($postTitles);
                 $post->setTitle($postTitles[$randomIndex]);
-                $post
-                    ->setContent(
-                        $postContents[$randomIndex] . 
-                        "\n\nQu'en pensez-vous? Partagez vos expériences dans ce domaine! " .
-                        "#F1 #Motorsport #CarrièreF1"
-                    );
+                $content = $postContents[$randomIndex];
+                $content .= "\n\nQu'en pensez-vous? Partagez vos expériences dans ce domaine! ";
+                $content .= "#F1 #Motorsport #CarrièreF1";
+                $post->setContent($content);
                 $post->setAuthor($user);
 
                 $manager->persist($post);
