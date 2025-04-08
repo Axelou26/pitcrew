@@ -37,7 +37,9 @@ class CreateJobOfferCommand extends Command
 
         $jobOffer = new JobOffer();
         $jobOffer->setTitle('Développeur PHP Symfony');
-        $jobOffer->setDescription('Nous recherchons un développeur PHP Symfony expérimenté pour rejoindre notre équipe.');
+        $jobOffer
+            ->setDescription('Nous recherchons un développeur PHP Symfony expérimenté pour rejoindre notre équipe
+                .');
         $jobOffer->setContractType('CDI');
         $jobOffer->setLocation('Paris');
         $jobOffer->setSalary(45000);

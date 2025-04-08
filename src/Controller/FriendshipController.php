@@ -33,8 +33,12 @@ class FriendshipController extends AbstractController
     }
 
     #[Route('/send/{id}', name: 'app_friendship_send')]
-    public function send($id, Request $request, EntityManagerInterface $entityManager, FriendshipRepository $friendshipRepository): Response
-    {
+    public function send(
+        $id,
+        Request $request,
+        EntityManagerInterface $entityManager,
+        FriendshipRepository $friendshipRepository
+    ) {
         $requester = $this->getUser();
 
         // Récupérer l'utilisateur destinataire par son ID
@@ -100,7 +104,10 @@ class FriendshipController extends AbstractController
         $friendship->accept();
         $entityManager->flush();
 
-        $this->addFlash('success', 'Vous êtes maintenant ami avec ' . $friendship->getRequester()->getFullName() . '.');
+        $this
+            ->addFlash('success', 'Vous êtes maintenant ami avec ' . $friendship
+            ->getRequester()
+            ->getFullName() . '.');
 
         return $this->redirect($request->headers->get('referer', $this->generateUrl('app_friendship_requests')));
     }
@@ -139,8 +146,12 @@ class FriendshipController extends AbstractController
     }
 
     #[Route('/remove/{id}', name: 'app_friendship_remove')]
-    public function remove($id, Request $request, EntityManagerInterface $entityManager, FriendshipRepository $friendshipRepository): Response
-    {
+    public function remove(
+        $id,
+        Request $request,
+        EntityManagerInterface $entityManager,
+        FriendshipRepository $friendshipRepository
+    ) {
         $user = $this->getUser();
 
         // Récupérer l'utilisateur ami par son ID

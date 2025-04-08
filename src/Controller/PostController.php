@@ -381,7 +381,13 @@ class PostController extends AbstractController
         return $this->redirectToRoute('app_home');
     }
 
-    #[Route('/post/comment/{id}/reply', name: 'app_post_comment_reply', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
+    #[Route(
+        '/post/comment/{id}/reply',
+        name: 'app_post_comment_reply',
+        methods: ['GET',
+        'POST'],
+        requirements: ['id' => '\d+']
+    )
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function replyToComment(
         PostComment $parentComment,

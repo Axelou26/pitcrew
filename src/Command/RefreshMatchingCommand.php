@@ -35,7 +35,10 @@ class RefreshMatchingCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addOption('job-offer', null, InputOption::VALUE_REQUIRED, 'ID de l\'offre d\'emploi spécifique à traiter')
+
+
+                    
+                       ->addOption('job-offer', null, InputOption::VALUE_REQUIRED, 'ID de l\'offre d\'emploi spécifique à traiter')
             ->addOption('applicant', null, InputOption::VALUE_REQUIRED, 'ID du candidat spécifique à traiter')
             ->addOption('limit', null, InputOption::VALUE_REQUIRED, 'Nombre d\'éléments à traiter', 10)
             ->addOption('dump', null, InputOption::VALUE_NONE, 'Affiche des informations détaillées sur le matching');
@@ -118,7 +121,9 @@ class RefreshMatchingCommand extends Command
         $candidates = $this->entityManager->getRepository(Applicant::class)->findAll();
         $offers = $this->entityManager->getRepository(JobOffer::class)->findBy(['isActive' => true]);
 
-        $io->writeln(sprintf('Trouvé %d candidat(s) et %d offre(s) d\'emploi active(s).', count($candidates), count($offers)));
+        $io
+            ->writeln(sprintf('Trouvé %d candidat(s) et %d offre(s) d\'emploi active(s)
+                .', count($candidates), count($offers)));
 
         $progressBar = $io->createProgressBar(count($candidates));
         $progressBar->start();

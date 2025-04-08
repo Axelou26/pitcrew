@@ -41,64 +41,67 @@ class RecommendationService
     public function getRecommendedPosts(User $user, int $limit = 10): array
     {
         // Utiliser le cache pour les recommandations
-        return $this->cache->get('recommended_posts_' . $user->getId(), function (ItemInterface $item) use ($user, $limit) {
-            $item->expiresAfter(300); // Cache pour 5 minutes
+        return $this
+            ->cache
+            ->get('recommended_posts_' . $user
+            ->getId(), function (ItemInterface $item) use ($user, $limit) {
+                $item->expiresAfter(300); // Cache pour 5 minutes
 
             // Récupérer les IDs des amis
-            $friendIds = $this->getFriendIds($user);
+                $friendIds = $this->getFriendIds($user);
 
             // Récupérer les hashtags d'intérêt
-            $interests = $this->getUserInterestsAndHashtags($user);
+                $interests = $this->getUserInterestsAndHashtags($user);
 
             // Construire la requête
-            $qb = $this->entityManager->createQueryBuilder();
-            $qb->select('DISTINCT p')
-               ->from('App\Entity\Post', 'p')
-               ->leftJoin('p.author', 'a')
-               ->leftJoin('p.hashtags', 'h');
+                $qb = $this->entityManager->createQueryBuilder();
+                $qb->select('DISTINCT p')
+                ->from('App\Entity\Post', 'p')
+                ->leftJoin('p.author', 'a')
+                ->leftJoin('p.hashtags', 'h');
 
             // Créer une condition OR pour les différents critères
-            $orX = $qb->expr()->orX();
-            $orX->add($qb->expr()->eq('a.id', ':userId'));
+                $orX = $qb->expr()->orX();
+                $orX->add($qb->expr()->eq('a.id', ':userId'));
 
-            if (!empty($friendIds)) {
-                $orX->add($qb->expr()->in('a.id', ':friendIds'));
-                $qb->setParameter('friendIds', $friendIds);
-            }
+                if (!empty($friendIds)) {
+                    $orX->add($qb->expr()->in('a.id', ':friendIds'));
+                    $qb->setParameter('friendIds', $friendIds);
+                }
 
-            if (!empty($interests)) {
-                $orX->add($qb->expr()->in('h.name', ':interests'));
-                $qb->setParameter('interests', $interests);
-            }
+                if (!empty($interests)) {
+                    $orX->add($qb->expr()->in('h.name', ':interests'));
+                    $qb->setParameter('interests', $interests);
+                }
 
-            $qb->where($orX)
-               ->setParameter('userId', $user->getId())
-               ->orderBy('p.createdAt', 'DESC')
-               ->addOrderBy('p.likesCounter', 'DESC')
-               ->setMaxResults($limit * 2);
+                $qb->where($orX)
+                ->setParameter('userId', $user->getId())
+                ->orderBy('p.createdAt', 'DESC')
+                ->addOrderBy('p.likesCounter', 'DESC')
+                ->setMaxResults($limit * 2);
 
-            $posts = $qb->getQuery()->getResult();
+                $posts = $qb->getQuery()->getResult();
 
             // Calculer un score pour chaque post
-            $scoredPosts = [];
-            foreach ($posts as $post) {
-                $score = $this->calculatePostScore($post, $user);
-                $scoredPosts[] = [
+                $scoredPosts = [];
+                foreach ($posts as $post) {
+                    $score = $this->calculatePostScore($post, $user);
+                    $scoredPosts[] = [
                     'post' => $post,
                     'score' => $score
-                ];
-            }
+                    ];
+                }
 
             // Trier par score
-            usort($scoredPosts, function ($a, $b) {
-                return $b['score'] <=> $a['score'];
-            });
+                usort($scoredPosts, function ($a, $b) {
+                    return $b['score'] <=> $a['score'];
+                });
 
             // Retourner uniquement les posts
-            return array_slice(array_map(function ($item) {
-                return $item['post'];
-            }, $scoredPosts), 0, $limit);
-        });
+                return array_slice(array_map(function ($item) {
+                    return $item['post'];
+                }, $scoredPosts), 0, $limit);
+            });
     }
 
     /**
@@ -234,60 +237,63 @@ class RecommendationService
      */
     private function getPersonalizedRecommendations(User $user, int $limit): array
     {
-        return $this->cache->get('personalized_recommendations_' . $user->getId(), function (ItemInterface $item) use ($user, $limit) {
-            $item->expiresAfter(900); // Cache pour 15 minutes
+        return $this
+            ->cache
+            ->get('personalized_recommendations_' . $user
+            ->getId(), function (ItemInterface $item) use ($user, $limit) {
+                $item->expiresAfter(900); // Cache pour 15 minutes
 
-            try {
-                // Récupérer les données nécessaires en une seule requête
-                $qb = $this->entityManager->createQueryBuilder();
-                $qb->select('p', 'a', 'h', 'l', 'c')
-                   ->from('App\Entity\Post', 'p')
-                   ->leftJoin('p.author', 'a')
-                   ->leftJoin('p.hashtags', 'h')
-                   ->leftJoin('p.likes', 'l')
-                   ->leftJoin('p.comments', 'c')
-                   ->where('p.author != :userId')
-                   ->andWhere($qb->expr()->orX(
+                try {
+                    // Récupérer les données nécessaires en une seule requête
+                    $qb = $this->entityManager->createQueryBuilder();
+                    $qb->select('p', 'a', 'h', 'l', 'c')
+                       ->from('App\Entity\Post', 'p')
+                       ->leftJoin('p.author', 'a')
+                       ->leftJoin('p.hashtags', 'h')
+                       ->leftJoin('p.likes', 'l')
+                       ->leftJoin('p.comments', 'c')
+                       ->where('p.author != :userId')
+                       ->andWhere($qb->expr()->orX(
                        // Posts avec hashtags d'intérêt
-                       'h.name IN (:interests)',
-                       // Posts des utilisateurs avec qui l'utilisateur interagit
-                       'p.author IN (:interactedUsers)',
-                       // Posts populaires récents
-                       'p.likesCounter >= :minLikes AND p.createdAt >= :recentDate'
-                   ))
-                   ->setParameter('userId', $user->getId())
-                   ->setParameter('interests', $this->getUserInterestsAndHashtags($user))
-                   ->setParameter('interactedUsers', $this->getFrequentlyInteractedUsers($user))
-                   ->setParameter('minLikes', 5)
-                   ->setParameter('recentDate', new \DateTime('-7 days'))
-                   ->orderBy('p.createdAt', 'DESC')
-                   ->addOrderBy('p.likesCounter', 'DESC')
-                   ->setMaxResults($limit * 2);
+                           'h.name IN (:interests)',
+                           // Posts des utilisateurs avec qui l'utilisateur interagit
+                           'p.author IN (:interactedUsers)',
+                           // Posts populaires récents
+                           'p.likesCounter >= :minLikes AND p.createdAt >= :recentDate'
+                       ))
+                       ->setParameter('userId', $user->getId())
+                       ->setParameter('interests', $this->getUserInterestsAndHashtags($user))
+                       ->setParameter('interactedUsers', $this->getFrequentlyInteractedUsers($user))
+                       ->setParameter('minLikes', 5)
+                       ->setParameter('recentDate', new \DateTime('-7 days'))
+                       ->orderBy('p.createdAt', 'DESC')
+                       ->addOrderBy('p.likesCounter', 'DESC')
+                       ->setMaxResults($limit * 2);
 
-                $posts = $qb->getQuery()->getResult();
+                    $posts = $qb->getQuery()->getResult();
 
-                // Calculer les scores et trier
-                $scoredPosts = [];
-                foreach ($posts as $post) {
-                    $score = $this->calculateRecommendationScore($post, $user);
-                    $scoredPosts[] = [
-                        'post' => $post,
-                        'score' => $score
-                    ];
+                    // Calculer les scores et trier
+                    $scoredPosts = [];
+                    foreach ($posts as $post) {
+                        $score = $this->calculateRecommendationScore($post, $user);
+                        $scoredPosts[] = [
+                            'post' => $post,
+                            'score' => $score
+                        ];
+                    }
+
+                    usort($scoredPosts, function ($a, $b) {
+                        return $b['score'] <=> $a['score'];
+                    });
+
+                    // Retourner les meilleurs posts
+                    return array_slice(array_map(function ($item) {
+                        return $item['post'];
+                    }, $scoredPosts), 0, $limit);
+                } catch (\Exception $e) {
+                    return [];
                 }
-
-                usort($scoredPosts, function ($a, $b) {
-                    return $b['score'] <=> $a['score'];
-                });
-
-                // Retourner les meilleurs posts
-                return array_slice(array_map(function ($item) {
-                    return $item['post'];
-                }, $scoredPosts), 0, $limit);
-            } catch (\Exception $e) {
-                return [];
-            }
-        });
+            });
     }
 
     /**
@@ -327,36 +333,42 @@ class RecommendationService
      */
     private function getFrequentlyInteractedUsers(User $user): array
     {
-        return $this->cache->get('frequently_interacted_users_' . $user->getId(), function (ItemInterface $item) use ($user) {
-            $item->expiresAfter(1800); // Cache pour 30 minutes
+        return $this
+            ->cache
+            ->get('frequently_interacted_users_' . $user
+            ->getId(), function (ItemInterface $item) use ($user) {
+                $item->expiresAfter(1800); // Cache pour 30 minutes
 
-            try {
-                // Récupérer les utilisateurs avec qui l'utilisateur interagit en une seule requête
-                $qb = $this->entityManager->createQueryBuilder();
-                $qb->select('DISTINCT u.id')
+                try {
+                    // Récupérer les utilisateurs avec qui l'utilisateur interagit en une seule requête
+                    $qb = $this->entityManager->createQueryBuilder();
+                    $qb->select('DISTINCT u.id')
                     ->from('App\Entity\User', 'u')
                     ->leftJoin('App\Entity\PostLike', 'pl', 'WITH', 'pl.user = :userId AND pl.post MEMBER OF u.posts')
-                    ->leftJoin('App\Entity\PostComment', 'pc', 'WITH', 'pc.author = :userId AND pc.post MEMBER OF u.posts')
+
+
+                            ->leftJoin('App\Entity\PostComment', 'pc', 'WITH', 'pc
+                                .author = :userId AND pc.post MEMBER OF u.posts')
                     ->leftJoin(
                         'App\Entity\Friendship',
                         'f',
                         'WITH',
                         '(f.user = :userId AND f.friend = u) OR (f.user = u AND f.friend = :userId)'
                     )
-                    ->where('u != :userId')
-                    ->andWhere($qb->expr()->orX(
-                        'pl.id IS NOT NULL',
-                        'pc.id IS NOT NULL',
-                        'f.id IS NOT NULL'
-                    ))
-                    ->setParameter('userId', $user->getId());
+                        ->where('u != :userId')
+                        ->andWhere($qb->expr()->orX(
+                            'pl.id IS NOT NULL',
+                            'pc.id IS NOT NULL',
+                            'f.id IS NOT NULL'
+                        ))
+                        ->setParameter('userId', $user->getId());
 
-                $result = $qb->getQuery()->getScalarResult();
-                return array_column($result, 'id');
-            } catch (\Exception $e) {
-                return [];
-            }
-        });
+                    $result = $qb->getQuery()->getScalarResult();
+                    return array_column($result, 'id');
+                } catch (\Exception $e) {
+                    return [];
+                }
+            });
     }
 
     /**
@@ -447,8 +459,14 @@ class RecommendationService
             }
 
             $suggestedUser->isFriend = $friendship && $friendship->getStatus() === 'accepted';
-            $suggestedUser->hasPendingRequestFrom = $friendship && $friendship->getStatus() === 'pending' && $friendship->getUser() === $user;
-            $suggestedUser->hasPendingRequestTo = $friendship && $friendship->getStatus() === 'pending' && $friendship->getUser() === $suggestedUser;
+            $suggestedUser
+                ->hasPendingRequestFrom = $friendship && $friendship
+                ->getStatus() === 'pending' && $friendship
+                ->getUser() === $user;
+            $suggestedUser
+                ->hasPendingRequestTo = $friendship && $friendship
+                ->getStatus() === 'pending' && $friendship
+                ->getUser() === $suggestedUser;
             if ($suggestedUser->hasPendingRequestTo) {
                 $suggestedUser->pendingRequestId = $friendship->getId();
             }

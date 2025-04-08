@@ -42,8 +42,14 @@ class MatchingTestCommand extends Command
             ->addOption('job-offer', 'j', InputOption::VALUE_REQUIRED, 'ID de l\'offre d\'emploi')
             ->addOption('list-applicants', null, InputOption::VALUE_NONE, 'Liste tous les candidats')
             ->addOption('list-offers', null, InputOption::VALUE_NONE, 'Liste toutes les offres d\'emploi actives')
-            ->addOption('find-candidates', null, InputOption::VALUE_REQUIRED, 'Trouve les meilleurs candidats pour une offre (ID)')
-            ->addOption('find-offers', null, InputOption::VALUE_REQUIRED, 'Trouve les meilleures offres pour un candidat (ID)')
+
+
+                    
+                       ->addOption('find-candidates', null, InputOption::VALUE_REQUIRED, 'Trouve les meilleurs candidats pour une offre (ID)')
+
+
+                    
+                       ->addOption('find-offers', null, InputOption::VALUE_REQUIRED, 'Trouve les meilleures offres pour un candidat (ID)')
         ;
     }
 

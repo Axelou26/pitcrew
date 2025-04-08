@@ -117,8 +117,11 @@ class JobOfferController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_job_offer_show', methods: ['GET'])]
-    public function show(string $id, JobOfferRepository $jobOfferRepository, FavoriteRepository $favoriteRepository): Response
-    {
+    public function show(
+        string $id,
+        JobOfferRepository $jobOfferRepository,
+        FavoriteRepository $favoriteRepository
+    ) {
         $jobOffer = $jobOfferRepository->find($id);
 
         if (!$jobOffer) {
@@ -209,8 +212,12 @@ class JobOfferController extends AbstractController
 
     #[Route('/{id}/delete', name: 'app_job_offer_delete', methods: ['POST'])]
     #[IsGranted('ROLE_RECRUTEUR')]
-    public function delete(Request $request, string $id, JobOfferRepository $jobOfferRepository, EntityManagerInterface $entityManager): Response
-    {
+    public function delete(
+        Request $request,
+        string $id,
+        JobOfferRepository $jobOfferRepository,
+        EntityManagerInterface $entityManager
+    ) {
         $jobOffer = $jobOfferRepository->find($id);
 
         if (!$jobOffer) {

@@ -41,7 +41,7 @@ class JobApplicationType extends AbstractType
                             'application/pdf',
                             'application/x-pdf',
                         ],
-                        'maxSizeMessage' => 'Le fichier est trop volumineux. La taille maximale autorisée est {{ limit }}',
+                        'maxSizeMessage' => 'Le fichier est trop volumineux. La taille maximale autorisée est {{ l...',
                         'mimeTypesMessage' => 'Seuls les fichiers PDF sont acceptés',
                         'notFoundMessage' => 'Le fichier n\'a pas été trouvé',
                         'notReadableMessage' => 'Le fichier n\'est pas lisible',

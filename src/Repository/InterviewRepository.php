@@ -77,8 +77,12 @@ class InterviewRepository extends ServiceEntityRepository
     /**
      * Vérifie les conflits d'horaire pour un utilisateur
      */
-    public function hasScheduleConflict(User $user, \DateTime $startTime, \DateTime $endTime, ?int $excludeInterviewId = null): bool
-    {
+    public function hasScheduleConflict(
+        User $user,
+        \DateTime $startTime,
+        \DateTime $endTime,
+        ?int $excludeInterviewId = null
+    ) {
         $qb = $this->createQueryBuilder('i')
             ->where('i.status = :status')
             ->andWhere('i.scheduledAt < :endTime')

@@ -29,7 +29,10 @@ class RecruiterSubscriptionType extends AbstractType
                 'label' => 'Recruteur',
                 'class' => Recruiter::class,
                 'choice_label' => function (Recruiter $recruiter) {
-                    return sprintf('%s %s (%s)', $recruiter->getFirstName(), $recruiter->getLastName(), $recruiter->getEmail());
+                    return sprintf('%s %s (%s)', $recruiter
+                        ->getFirstName(), $recruiter
+                        ->getLastName(), $recruiter
+                        ->getEmail());
                 },
                 'required' => true,
                 'placeholder' => 'Sélectionner un recruteur',

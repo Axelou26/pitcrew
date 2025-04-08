@@ -28,7 +28,10 @@ class FriendshipRepository extends ServiceEntityRepository
     public function findBetweenUsers(User $user1, User $user2): ?Friendship
     {
         return $this->createQueryBuilder('f')
-            ->where('(f.requester = :user1 AND f.addressee = :user2) OR (f.requester = :user2 AND f.addressee = :user1)')
+
+
+                    ->where('(f
+                        .requester = :user1 AND f.addressee = :user2) OR (f.requester = :user2 AND f.addressee = :user1)')
             ->setParameter('user1', $user1)
             ->setParameter('user2', $user2)
             ->getQuery()
@@ -41,7 +44,10 @@ class FriendshipRepository extends ServiceEntityRepository
     public function findAcceptedBetweenUsers(User $user1, User $user2): ?Friendship
     {
         return $this->createQueryBuilder('f')
-            ->where('(f.requester = :user1 AND f.addressee = :user2) OR (f.requester = :user2 AND f.addressee = :user1)')
+
+
+                    ->where('(f
+                        .requester = :user1 AND f.addressee = :user2) OR (f.requester = :user2 AND f.addressee = :user1)')
             ->andWhere('f.status = :status')
             ->setParameter('user1', $user1)
             ->setParameter('user2', $user2)
@@ -62,7 +68,9 @@ class FriendshipRepository extends ServiceEntityRepository
         if ($directional) {
             $qb->where('f.requester = :user1 AND f.addressee = :user2');
         } else {
-            $qb->where('(f.requester = :user1 AND f.addressee = :user2) OR (f.requester = :user2 AND f.addressee = :user1)');
+            $qb
+                ->where('(f
+                    .requester = :user1 AND f.addressee = :user2) OR (f.requester = :user2 AND f.addressee = :user1)');
         }
 
         $qb->andWhere('f.status = :status')

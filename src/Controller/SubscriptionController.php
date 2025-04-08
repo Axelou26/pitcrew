@@ -91,9 +91,13 @@ class SubscriptionController extends AbstractController
                 $newSubscription->setPaymentStatus('test_mode');
                 $entityManager->flush();
 
-                $this->addFlash('success', 'Votre abonnement ' . $subscription->getName() . ' a été activé en mode test !');
+                $this
+                    ->addFlash('success', 'Votre abonnement ' . $subscription
+                    ->getName() . ' a été activé en mode test !');
             } else {
-                $this->addFlash('success', 'Votre abonnement ' . $subscription->getName() . ' a été activé avec succès !');
+                $this
+                    ->addFlash('success', 'Votre abonnement ' . $subscription
+                    ->getName() . ' a été activé avec succès !');
             }
 
             return $this->redirectToRoute('app_dashboard');
@@ -161,9 +165,13 @@ class SubscriptionController extends AbstractController
 
         // Message différent selon qu'il s'agit d'un nouvel abonnement ou d'un changement
         if ($isChange) {
-            $this->addFlash('success', 'Votre abonnement a été mis à jour avec succès vers ' . $subscription->getName() . ' !');
+            $this
+                ->addFlash('success', 'Votre abonnement a été mis à jour avec succès vers ' . $subscription
+                ->getName() . ' !');
         } else {
-            $this->addFlash('success', 'Votre abonnement ' . $subscription->getName() . ' a été activé avec succès !');
+            $this
+                ->addFlash('success', 'Votre abonnement ' . $subscription
+                ->getName() . ' a été activé avec succès !');
         }
 
         return $this->redirectToRoute('app_dashboard');
@@ -292,7 +300,8 @@ class SubscriptionController extends AbstractController
                 }
 
                 // Trouver l'abonnement par son ID Stripe
-                $recruiterSubscription = $recruiterSubscriptionRepository->findOneBy(['stripeSubscriptionId' => $stripeSubscriptionId]);
+                $recruiterSubscription = $recruiterSubscriptionRepository
+                    ->findOneBy(['stripeSubscriptionId' => $stripeSubscriptionId]);
 
                 if ($recruiterSubscription) {
                     // Prolonger l'abonnement existant
@@ -316,7 +325,8 @@ class SubscriptionController extends AbstractController
                 $stripeSubscriptionId = $stripeSubscription->id;
 
                 // Trouver l'abonnement par son ID Stripe
-                $recruiterSubscription = $recruiterSubscriptionRepository->findOneBy(['stripeSubscriptionId' => $stripeSubscriptionId]);
+                $recruiterSubscription = $recruiterSubscriptionRepository
+                    ->findOneBy(['stripeSubscriptionId' => $stripeSubscriptionId]);
 
                 if ($recruiterSubscription) {
                     // Marquer l'abonnement comme annulé
@@ -327,7 +337,9 @@ class SubscriptionController extends AbstractController
                     $entityManager->flush();
 
                     // Envoyer un email de confirmation d'annulation
-                    $emailService->sendSubscriptionCancellationConfirmation($recruiterSubscription->getRecruiter(), $recruiterSubscription);
+                    $emailService
+                        ->sendSubscriptionCancellationConfirmation($recruiterSubscription
+                        ->getRecruiter(), $recruiterSubscription);
                 }
                 break;
 
@@ -409,9 +421,13 @@ class SubscriptionController extends AbstractController
         $emailService->sendSubscriptionConfirmation($this->getUser(), $recruiterSubscription);
 
         if ($this->stripeService->isOfflineMode()) {
-            $this->addFlash('success', '[MODE HORS LIGNE] Votre abonnement ' . $subscription->getName() . ' a été activé avec succès !');
+            $this
+                ->addFlash('success', '[MODE HORS LIGNE] Votre abonnement ' . $subscription
+                ->getName() . ' a été activé avec succès !');
         } else {
-            $this->addFlash('success', '[MODE TEST] Votre abonnement ' . $subscription->getName() . ' a été activé avec succès !');
+            $this
+                ->addFlash('success', '[MODE TEST] Votre abonnement ' . $subscription
+                ->getName() . ' a été activé avec succès !');
         }
 
         return $this->redirectToRoute('app_dashboard');

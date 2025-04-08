@@ -124,8 +124,11 @@ class SubscriptionService
     /**
      * Crée un nouvel abonnement pour un recruteur
      */
-    public function createSubscription(Recruiter $recruiter, string $subscriptionLevel, array $options = []): ?RecruiterSubscription
-    {
+    public function createSubscription(
+        Recruiter $recruiter,
+        string $subscriptionLevel,
+        array $options = []
+    ) {
         if (!SubscriptionFeatures::isValidSubscriptionLevel($subscriptionLevel)) {
             throw new \InvalidArgumentException('Niveau d\'abonnement invalide');
         }

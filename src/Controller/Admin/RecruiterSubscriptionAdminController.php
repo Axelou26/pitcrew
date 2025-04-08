@@ -63,7 +63,11 @@ class RecruiterSubscriptionAdminController extends AbstractController
     public function show(RecruiterSubscription $recruiterSubscription): Response
     {
         $deleteForm = $this->createFormBuilder()
-            ->setAction($this->generateUrl('admin_recruiter_subscription_delete', ['id' => $recruiterSubscription->getId()]))
+
+
+                    ->setAction($this
+                    ->generateUrl('admin_recruiter_subscription_delete', ['id' => $recruiterSubscription
+                    ->getId()]))
             ->setMethod('POST')
             ->getForm();
 
@@ -88,7 +92,11 @@ class RecruiterSubscriptionAdminController extends AbstractController
         }
 
         $deleteForm = $this->createFormBuilder()
-            ->setAction($this->generateUrl('admin_recruiter_subscription_delete', ['id' => $recruiterSubscription->getId()]))
+
+
+                    ->setAction($this
+                    ->generateUrl('admin_recruiter_subscription_delete', ['id' => $recruiterSubscription
+                    ->getId()]))
             ->setMethod('POST')
             ->getForm();
 

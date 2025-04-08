@@ -241,8 +241,10 @@ class MessageController extends AbstractController
     }
 
     #[Route('/get-recipients', name: 'app_message_get_recipients', methods: ['GET'])]
-    public function getRecipients(UserRepository $userRepository, FriendshipRepository $friendshipRepository): JsonResponse
-    {
+    public function getRecipients(
+        UserRepository $userRepository,
+        FriendshipRepository $friendshipRepository
+    ) {
         $currentUser = $this->getUser();
 
         try {

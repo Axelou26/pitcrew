@@ -368,7 +368,8 @@ class MatchingService
         $experienceLocation = $experience['location'] ?? '';
 
         // Concaténer tous les champs d'expérience pour une analyse plus complète
-        $experienceFullText = $experienceTitle . ' ' . $experienceDescription . ' ' . $experienceCompany . ' ' . $experienceLocation;
+        $experienceFullText = $experienceTitle 
+            . ' ' . $experienceDescription . ' ' . $experienceCompany . ' ' . $experienceLocation;
 
         // 1. Vérification par mots-clés entre le titre de l'expérience et le titre du poste
         if ($this->hasCommonKeywords($experienceTitle, $jobTitle, 2)) {
@@ -413,7 +414,8 @@ class MatchingService
         $educationLocation = $education['location'] ?? '';
 
         // Concaténer tous les champs d'éducation pour une analyse plus complète
-        $educationFullText = $educationDegree . ' ' . $educationInstitution . ' ' . $educationDescription . ' ' . $educationLocation;
+        $educationFullText = $educationDegree 
+            . ' ' . $educationInstitution . ' ' . $educationDescription . ' ' . $educationLocation;
 
         // 1. Vérification par mots-clés entre le diplôme et le titre du poste
         if ($this->hasCommonKeywords($educationDegree, $jobTitle, 1)) {
@@ -505,7 +507,24 @@ class MatchingService
     private function extractKeywords(string $text): array
     {
         // Liste des mots vides en français
-        $stopWords = ['le', 'la', 'les', 'un', 'une', 'des', 'et', 'ou', 'de', 'du', 'en', 'à', 'au', 'aux', 'par', 'pour'];
+        $stopWords = [
+              'le',
+              'la',
+              'les',
+              'un',
+              'une',
+              'des',
+              'et',
+              'ou',
+              'de',
+              'du',
+              'en',
+              'à',
+              'au',
+              'aux',
+              'par',
+            'pour'
+        ];
 
         // Nettoyage et tokenisation
         $text = strtolower($text);
@@ -631,14 +650,10 @@ class MatchingService
         if ($jobIsRemote && $userPreferredRemote) {
             $score = 5;
             $details[] = 'Compatibilité parfaite avec le travail à distance';
-        }
-        // Si le poste est dans la même ville que celle préférée par le candidat
-        elseif (!empty($userPreferredLocation) && stripos($jobLocation, $userPreferredLocation) !== false) {
+        } else if (!empty($userPreferredLocation) && stripos($jobLocation, $userPreferredLocation) !== false) {
             $score = 5;
             $details[] = 'Localisation idéale: ' . $jobLocation;
-        }
-        // Score par défaut si aucune localisation n'est spécifiée
-        else {
+        } else {
             $score = 3;
             $details[] = 'Compatibilité de localisation moyenne';
         }

@@ -65,9 +65,13 @@ class SupportController extends AbstractController
 
             // Message différent selon le niveau de priorité
             if ($hasPrioritySupport) {
-                $this->addFlash('success', 'Votre demande a été soumise et sera traitée en priorité par notre équipe.');
+                $this
+                    ->addFlash('success', 'Votre demande a été soumise et sera traitée en priorité par notre équipe
+                        .');
             } else {
-                $this->addFlash('success', 'Votre demande a été soumise. Notre équipe y répondra dans les meilleurs délais.');
+                $this
+                    ->addFlash('success', 'Votre demande a été soumise
+                        . Notre équipe y répondra dans les meilleurs délais.');
             }
 
             return $this->redirectToRoute('app_support_index');

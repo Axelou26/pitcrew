@@ -35,7 +35,10 @@ class NotifyExpiringSubscriptionsCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setHelp('Cette commande envoie des notifications aux utilisateurs dont l\'abonnement expire dans les 7 prochains jours. Elle est conçue pour être exécutée quotidiennement via un cron job.');
+
+
+                    ->setHelp('Cette commande envoie des notifications aux utilisateurs dont l\'abonnement expire dans les 7 prochains jours
+                        . Elle est conçue pour être exécutée quotidiennement via un cron job.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -51,7 +54,9 @@ class NotifyExpiringSubscriptionsCommand extends Command
                 return Command::SUCCESS;
             }
 
-            $io->info(sprintf('Envoi de notifications pour %d abonnements expirant bientôt...', count($expiringSubscriptions)));
+            $io
+                ->info(sprintf('Envoi de notifications pour %d abonnements expirant bientôt
+                    ...', count($expiringSubscriptions)));
 
             foreach ($expiringSubscriptions as $subscription) {
                 $user = $subscription->getRecruiter();
@@ -60,7 +65,9 @@ class NotifyExpiringSubscriptionsCommand extends Command
                 // Créer une notification dans l'application
                 $this->notificationService->createNotification(
                     $user,
-                    'Votre abonnement ' . $subscription->getSubscription()->getName() . ' expire dans ' . $daysLeft . ' jours',
+                    'Votre abonnement ' . $subscription
+                        ->getSubscription()
+                        ->getName() . ' expire dans ' . $daysLeft . ' jours',
                     'Renouvelez votre abonnement pour continuer à profiter de tous les avantages.',
                     'subscription_expiring',
                     'app_subscription_manage'

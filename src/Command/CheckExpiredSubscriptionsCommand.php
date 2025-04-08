@@ -26,7 +26,10 @@ class CheckExpiredSubscriptionsCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setHelp('Cette commande vérifie les abonnements expirés et met à jour leur statut. Elle est conçue pour être exécutée quotidiennement via un cron job.');
+
+
+                    ->setHelp('Cette commande vérifie les abonnements expirés et met à jour leur statut
+                        . Elle est conçue pour être exécutée quotidiennement via un cron job.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -41,7 +44,9 @@ class CheckExpiredSubscriptionsCommand extends Command
 
             return Command::SUCCESS;
         } catch (\Exception $e) {
-            $io->error('Une erreur est survenue lors de la vérification des abonnements expirés : ' . $e->getMessage());
+            $io
+                ->error('Une erreur est survenue lors de la vérification des abonnements expirés : ' . $e
+                ->getMessage());
             return Command::FAILURE;
         }
     }

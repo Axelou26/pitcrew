@@ -63,7 +63,10 @@ class FixHashtagsCommand extends Command
 
                 $io->progressAdvance();
             } catch (\Exception $e) {
-                $io->error('Erreur lors de la mise à jour du hashtag #' . $hashtag->getName() . ': ' . $e->getMessage());
+                $io
+                    ->error('Erreur lors de la mise à jour du hashtag #' . $hashtag
+                    ->getName() . ': ' . $e
+                    ->getMessage());
             }
         }
 

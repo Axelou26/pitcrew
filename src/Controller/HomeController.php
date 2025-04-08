@@ -24,41 +24,51 @@ class HomeController extends AbstractController
      * Page d'accueil
      */
     #[Route('/', name: 'app_home')]
-    public function index(PostRepository $postRepository, UserRepository $userRepository, HashtagRepository $hashtagRepository, JobOfferRepository $jobOfferRepository, CacheInterface $cache): Response
-    {
+    public function index(
+        PostRepository $postRepository,
+        UserRepository $userRepository,
+        HashtagRepository $hashtagRepository,
+        JobOfferRepository $jobOfferRepository,
+        CacheInterface $cache
+    ) {
         // Récupérer les données en parallèle avec le cache
-        $data = $cache->get('homepage_data_' . ($this->getUser() ? $this->getUser()->getId() : 'anonymous'), function (ItemInterface $item) use ($postRepository, $userRepository, $hashtagRepository, $jobOfferRepository) {
-            $item->expiresAfter(300); // Cache pour 5 minutes
+        $data = $cache
+            ->get('homepage_data_' . ($this
+            ->getUser() ? $this
+            ->getUser()
+            
+               ->getId() : 'anonymous'), function (ItemInterface $item) use ($postRepository, $userRepository, $hashtagRepository, $jobOfferRepository) {
+                $item->expiresAfter(300); // Cache pour 5 minutes
 
-            $user = $this->getUser();
-            $data = [];
+                $user = $this->getUser();
+                $data = [];
 
             // Récupérer les offres d'emploi actives
-            $data['activeJobOffers'] = $jobOfferRepository->findActiveJobOffers(5);
+                $data['activeJobOffers'] = $jobOfferRepository->findActiveJobOffers(5);
 
-            if ($user) {
-                // Récupérer les posts recommandés
-                $data['recommendedPosts'] = $postRepository->findRecentPosts(10);
+                if ($user) {
+                    // Récupérer les posts recommandés
+                    $data['recommendedPosts'] = $postRepository->findRecentPosts(10);
 
-                // Récupérer les utilisateurs suggérés
-                $data['suggestedUsers'] = $userRepository->findSuggestedUsers($user, 5);
+                    // Récupérer les utilisateurs suggérés
+                    $data['suggestedUsers'] = $userRepository->findSuggestedUsers($user, 5);
 
-                // Récupérer les hashtags tendance
-                $data['trendingHashtags'] = $hashtagRepository->findTrendingHashtags(10);
+                    // Récupérer les hashtags tendance
+                    $data['trendingHashtags'] = $hashtagRepository->findTrendingHashtags(10);
 
-                // Statistiques
-                $data['stats'] = [
+                    // Statistiques
+                    $data['stats'] = [
                     'recruiters' => $userRepository->count(['roles' => ['ROLE_RECRUITER']]),
                     'applicants' => $userRepository->count(['roles' => ['ROLE_APPLICANT']])
-                ];
-            } else {
-                // Pour les utilisateurs non connectés
-                $data['recentPosts'] = $postRepository->findRecentPosts(10);
-                $data['trendingHashtags'] = $hashtagRepository->findTrendingHashtags(10);
-            }
+                    ];
+                } else {
+                    // Pour les utilisateurs non connectés
+                    $data['recentPosts'] = $postRepository->findRecentPosts(10);
+                    $data['trendingHashtags'] = $hashtagRepository->findTrendingHashtags(10);
+                }
 
-            return $data;
-        });
+                return $data;
+            });
 
         return $this->render('home/index.html.twig', $data);
     }

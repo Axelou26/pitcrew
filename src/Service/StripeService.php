@@ -114,7 +114,9 @@ class StripeService
                     'currency' => 'eur',
                     'product_data' => [
                         'name' => 'Abonnement ' . $subscription->getName(),
-                        'description' => 'Abonnement ' . $subscription->getName() . ' pour ' . $subscription->getDuration() . ' jours',
+        'description' => 'Abonnement ' . $subscription
+                            ->getName() . ' pour ' . $subscription
+                            ->getDuration() . ' jours',
                         'metadata' => [
                             'subscription_id' => $subscription->getId()
                         ]
@@ -284,7 +286,9 @@ class StripeService
                 'subscription_id' => $subscription->getId()
             ], UrlGeneratorInterface::ABSOLUTE_URL);
 
-            $cancelUrl = $this->urlGenerator->generate('app_subscription_cancel', [], UrlGeneratorInterface::ABSOLUTE_URL);
+            $cancelUrl = $this
+                ->urlGenerator
+                ->generate('app_subscription_cancel', [], UrlGeneratorInterface::ABSOLUTE_URL);
 
             $sessionParams = [
                 'customer' => $stripeCustomerId,

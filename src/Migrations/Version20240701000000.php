@@ -26,6 +26,8 @@ final class Version20240701000000 extends AbstractMigration
     public function down(Schema $schema): void
     {
         // Revert back to ARRAY type
-        $this->addSql('ALTER TABLE job_offer CHANGE required_skills required_skills LONGTEXT NOT NULL COMMENT \'(DC2Type:array)\'');
+        $this
+            
+               ->addSql('ALTER TABLE job_offer CHANGE required_skills required_skills LONGTEXT NOT NULL COMMENT \'(DC2Type:array)\'');
     }
 }

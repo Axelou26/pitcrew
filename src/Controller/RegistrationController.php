@@ -169,8 +169,12 @@ class RegistrationController extends AbstractController
             }
 
             // Créer la session de paiement avec les URLs spécifiques à l'inscription
-            $successUrl = $this->urlGenerator->generate('app_register_subscription_success', [], UrlGeneratorInterface::ABSOLUTE_URL);
-            $cancelUrl = $this->urlGenerator->generate('app_register_subscription_cancel', [], UrlGeneratorInterface::ABSOLUTE_URL);
+            $successUrl = $this
+                ->urlGenerator
+                ->generate('app_register_subscription_success', [], UrlGeneratorInterface::ABSOLUTE_URL);
+            $cancelUrl = $this
+                ->urlGenerator
+                ->generate('app_register_subscription_cancel', [], UrlGeneratorInterface::ABSOLUTE_URL);
 
             // Déterminer le prix en centimes
             $priceInCents = (int)($subscription->getPrice() * 100);
@@ -183,7 +187,9 @@ class RegistrationController extends AbstractController
                         'currency' => 'eur',
                         'product_data' => [
                             'name' => 'Abonnement ' . $subscription->getName(),
-                            'description' => 'Abonnement ' . $subscription->getName() . ' pour ' . $subscription->getDuration() . ' jours',
+            'description' => 'Abonnement ' . $subscription
+                                ->getName() . ' pour ' . $subscription
+                                ->getDuration() . ' jours',
                             'metadata' => [
                                 'subscription_id' => $subscription->getId()
                             ]
@@ -296,7 +302,9 @@ class RegistrationController extends AbstractController
                 } else {
                     $session->remove('registration_user_id');
                     $session->remove('registration_user_type');
-                    $this->addFlash('success', 'Votre compte et votre abonnement gratuit ont été activés avec succès !');
+                    $this
+                        
+                           ->addFlash('success', 'Votre compte et votre abonnement gratuit ont été activés avec succès !');
                 }
 
                 return $this->redirectToRoute('app_login');

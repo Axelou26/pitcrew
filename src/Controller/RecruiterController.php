@@ -45,7 +45,9 @@ class RecruiterController extends AbstractController
                 $this->addFlash('error', 'Vous devez avoir un abonnement actif pour publier des offres d\'emploi.');
                 return $this->redirectToRoute('app_subscription_plans');
             } else {
-                $this->addFlash('error', 'Vous avez atteint la limite de publication d\'offres pour votre abonnement actuel.');
+                $this
+                    ->addFlash('error', 'Vous avez atteint la limite de publication d\'offres pour votre abonnement actuel
+                        .');
                 return $this->redirectToRoute('app_subscription_manage');
             }
         }

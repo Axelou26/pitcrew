@@ -116,8 +116,10 @@ class PostRepository extends ServiceEntityRepository
      */
     public function findByHashtag(Hashtag $hashtag): array
     {
-        return $this->getCachedResult(sprintf(self::CACHE_KEY_POSTS_BY_HASHTAG, $hashtag->getId()), function () use ($hashtag): array {
-            $qb = $this->createQueryBuilder('p')
+        return $this
+            ->getCachedResult(sprintf(self::CACHE_KEY_POSTS_BY_HASHTAG, $hashtag
+            ->getId()), function () use ($hashtag): array {
+                $qb = $this->createQueryBuilder('p')
                 ->select('p', 'a', 'l', 'c', 'h', 's')
                 ->leftJoin('p.author', 'a')
                 ->leftJoin('p.likes', 'l')
@@ -128,8 +130,8 @@ class PostRepository extends ServiceEntityRepository
                 ->setParameter('hashtag', $hashtag)
                 ->orderBy('p.createdAt', 'DESC');
 
-            return $qb->getQuery()->getResult();
-        });
+                return $qb->getQuery()->getResult();
+            });
     }
 
     /**
@@ -138,8 +140,10 @@ class PostRepository extends ServiceEntityRepository
      */
     public function findByMentionedUser(User $user): array
     {
-        return $this->getCachedResult(sprintf(self::CACHE_KEY_POSTS_BY_MENTION, $user->getId()), function () use ($user): array {
-            $qb = $this->createQueryBuilder('p')
+        return $this
+            ->getCachedResult(sprintf(self::CACHE_KEY_POSTS_BY_MENTION, $user
+            ->getId()), function () use ($user): array {
+                $qb = $this->createQueryBuilder('p')
                 ->select('p', 'a', 'l', 'c', 'h', 's')
                 ->leftJoin('p.author', 'a')
                 ->leftJoin('p.likes', 'l')
@@ -150,8 +154,8 @@ class PostRepository extends ServiceEntityRepository
                 ->setParameter('userId', $user->getId())
                 ->orderBy('p.createdAt', 'DESC');
 
-            return $qb->getQuery()->getResult();
-        });
+                return $qb->getQuery()->getResult();
+            });
     }
 
     /**
@@ -160,8 +164,9 @@ class PostRepository extends ServiceEntityRepository
      */
     public function search(string $query): array
     {
-        return $this->getCachedResult(sprintf(self::CACHE_KEY_SEARCH_POSTS, md5($query)), function () use ($query): array {
-            $qb = $this->createQueryBuilder('p')
+        return $this
+            ->getCachedResult(sprintf(self::CACHE_KEY_SEARCH_POSTS, md5($query)), function () use ($query): array {
+                $qb = $this->createQueryBuilder('p')
                 ->select('p', 'a', 'l', 'c', 'h', 's')
                 ->leftJoin('p.author', 'a')
                 ->leftJoin('p.likes', 'l')
@@ -173,8 +178,8 @@ class PostRepository extends ServiceEntityRepository
                 ->orderBy('p.createdAt', 'DESC')
                 ->setMaxResults(50);
 
-            return $qb->getQuery()->getResult();
-        });
+                return $qb->getQuery()->getResult();
+            });
     }
 
     /**
@@ -183,8 +188,10 @@ class PostRepository extends ServiceEntityRepository
      */
     public function findPostsForFeed(User $user): array
     {
-        return $this->getCachedResult(sprintf(self::CACHE_KEY_FEED_POSTS, $user->getId()), function () use ($user): array {
-            $qb = $this->createQueryBuilder('p')
+        return $this
+            ->getCachedResult(sprintf(self::CACHE_KEY_FEED_POSTS, $user
+            ->getId()), function () use ($user): array {
+                $qb = $this->createQueryBuilder('p')
                 ->select('p', 'a', 'l', 'c', 'h', 's')
                 ->leftJoin('p.author', 'a')
                 ->leftJoin('p.likes', 'l')
@@ -197,8 +204,8 @@ class PostRepository extends ServiceEntityRepository
                 ->setParameter('friends', $user->getFriends())
                 ->orderBy('p.createdAt', 'DESC');
 
-            return $qb->getQuery()->getResult();
-        });
+                return $qb->getQuery()->getResult();
+            });
     }
 
     /**
@@ -239,8 +246,9 @@ class PostRepository extends ServiceEntityRepository
      */
     public function findRecentWithAuthors(int $limit): array
     {
-        return $this->getCachedResult(sprintf(self::CACHE_KEY_RECENT_WITH_AUTHORS, $limit), function () use ($limit): array {
-            $qb = $this->createQueryBuilder('p')
+        return $this
+            ->getCachedResult(sprintf(self::CACHE_KEY_RECENT_WITH_AUTHORS, $limit), function () use ($limit): array {
+                $qb = $this->createQueryBuilder('p')
                 ->select('p', 'a', 'l', 'c', 'h', 's')
                 ->leftJoin('p.author', 'a')
                 ->leftJoin('p.likes', 'l')
@@ -250,7 +258,7 @@ class PostRepository extends ServiceEntityRepository
                 ->orderBy('p.createdAt', 'DESC')
                 ->setMaxResults($limit);
 
-            return $qb->getQuery()->getResult();
-        });
+                return $qb->getQuery()->getResult();
+            });
     }
 }

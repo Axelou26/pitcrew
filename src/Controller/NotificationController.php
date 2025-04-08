@@ -55,8 +55,11 @@ class NotificationController extends AbstractController
     }
 
     #[Route('/{id}/mark-as-read', name: 'app_notification_mark_as_read', methods: ['POST'])]
-    public function markAsRead(Notification $notification, EntityManagerInterface $entityManager, Request $request): Response
-    {
+    public function markAsRead(
+        Notification $notification,
+        EntityManagerInterface $entityManager,
+        Request $request
+    ) {
         // Vérifier que la notification appartient à l'utilisateur connecté
         if ($notification->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à accéder à cette notification.');
@@ -77,8 +80,11 @@ class NotificationController extends AbstractController
     }
 
     #[Route('/mark-all-as-read', name: 'app_notification_mark_all_as_read', methods: ['POST'])]
-    public function markAllAsRead(NotificationRepository $notificationRepository, EntityManagerInterface $entityManager, Request $request): Response
-    {
+    public function markAllAsRead(
+        NotificationRepository $notificationRepository,
+        EntityManagerInterface $entityManager,
+        Request $request
+    ) {
         $user = $this->getUser();
         $unreadNotifications = $notificationRepository->findBy(['user' => $user, 'isRead' => false]);
 

@@ -37,7 +37,10 @@ class InterviewType extends AbstractType
         $builder
             ->add('title', TextType::class, [
                 'label' => 'Titre de l\'entretien',
-                'attr' => ['class' => 'form-control', 'placeholder' => 'Exemple: Entretien pour le poste de Mécanicien F1']
+                'attr' => [
+                    'class' => 'form-control',
+                    'placeholder' => 'Exemple: Entretien pour le poste de Mécanicien F1'
+                ]
             ])
             ->add('scheduledAt', DateTimeType::class, [
                 'label' => 'Date et heure',

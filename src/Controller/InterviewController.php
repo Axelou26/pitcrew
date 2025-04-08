@@ -111,7 +111,9 @@ class InterviewController extends AbstractController
     ): Response {
         // Vérifier que l'offre appartient au recruteur connecté
         if ($jobOffer->getRecruiter() !== $this->getUser()) {
-            throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à planifier des entretiens pour cette offre.');
+            throw $this
+                ->createAccessDeniedException('Vous n\'êtes pas autorisé à planifier des entretiens pour cette offre
+                    .');
         }
 
         $interview = new Interview();
@@ -307,7 +309,8 @@ class InterviewController extends AbstractController
     {
         // Vérifier que l'offre appartient au recruteur connecté
         if ($jobOffer->getRecruiter() !== $this->getUser()) {
-            throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à voir les entretiens pour cette offre.');
+            throw $this
+                ->createAccessDeniedException('Vous n\'êtes pas autorisé à voir les entretiens pour cette offre.');
         }
 
         $interviews = $this->interviewRepository->findInterviewsForJobOffer($jobOffer->getId());
