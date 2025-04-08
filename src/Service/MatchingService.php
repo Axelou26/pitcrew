@@ -19,7 +19,9 @@ class MatchingService
         private readonly EntityManagerInterface $entityManager,
         private readonly UserRepository $userRepository,
         private readonly JobOfferRepository $jobOfferRepository
-    ) {}
+    )
+    {
+    }
 
     /**
      * Calcule un score de compatibilité entre un candidat et une offre d'emploi
@@ -165,10 +167,10 @@ class MatchingService
         }
 
         // Correspondance partielle pour les acronymes et abréviations
-        if (
-            (strlen($skill1) <= 5 && strpos($skill2, $skill1) === 0) ||
-            (strlen($skill2) <= 5 && strpos($skill1, $skill2) === 0)
-        ) {
+        if (strlen($skill1) <= 5 && strpos($skill2, $skill1) === 0) {
+            return true;
+        }
+        if (strlen($skill2) <= 5 && strpos($skill1, $skill2) === 0) {
             return true;
         }
 
@@ -251,11 +253,14 @@ class MatchingService
     private function filterRecentExperiences(array $experiences): array
     {
         $now = new \DateTime();
-        return array_filter($experiences, function($experience) use ($now) {
-            $endDate = $experience['endDate'] ?? $now;
-            $interval = $endDate->diff($now);
-            return $interval->y <= 5;
-        });
+        return array_filter(
+            $experiences,
+            function ($experience) use ($now) {
+                $endDate = $experience['endDate'] ?? $now;
+                $interval = $endDate->diff($now);
+                return $interval->y <= 5;
+            }
+        );
     }
 
     /**
@@ -288,13 +293,13 @@ class MatchingService
     private function calculateExperienceYears(array $experience): float
     {
         try {
-            $startDate = $experience['startDate'] instanceof DateTime ? 
-                $experience['startDate'] : 
-                new DateTime($experience['startDate'] ?? 'now');
-                
-            $endDate = $experience['endDate'] instanceof DateTime ? 
-                $experience['endDate'] : 
-                new DateTime($experience['endDate'] ?? 'now');
+            $startDate = $experience['startDate'] instanceof DateTime
+                ? $experience['startDate']
+                : new DateTime($experience['startDate'] ?? 'now');
+
+            $endDate = $experience['endDate'] instanceof DateTime
+                ? $experience['endDate']
+                : new DateTime($experience['endDate'] ?? 'now');
 
             if ($startDate > $endDate) {
                 throw new RuntimeException('La date de début ne peut pas être postérieure à la date de fin');
@@ -312,8 +317,6 @@ class MatchingService
      */
     private function calculateSoftSkillsScore(Applicant $applicant, JobOffer $jobOffer): array
     {
-        // Dans un cas réel, on extrairait les soft skills de la description de l'offre
-        // Pour cette démo, on utilise une liste de soft skills communs dans le sport automobile
         $jobSoftSkillsList = $this->extractSoftSkillsFromJobDescription($jobOffer->getDescription());
         $candidateSoftSkills = $applicant->getSoftSkills() ?? [];
 
@@ -404,9 +407,9 @@ class MatchingService
         $jobLocation = $jobOffer->getLocation();
 
         // Extrait la préférence de l'utilisateur (à récupérer d'un champ préférences)
-        $user = $applicant; // Cast to User object
+        $user = $applicant;
         $userPreferredLocation = $user->getCity() ?? '';
-        $userPreferredRemote = true; // Par défaut on suppose que le remote est accepté
+        $userPreferredRemote = true;
 
         $details = [];
         $score = 0;
