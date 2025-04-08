@@ -7,6 +7,7 @@ use App\Entity\JobOffer;
 use App\Form\JobApplicationType;
 use App\Repository\JobApplicationRepository;
 use App\Service\NotificationService;
+use App\Service\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
