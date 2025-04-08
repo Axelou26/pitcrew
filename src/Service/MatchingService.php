@@ -368,7 +368,7 @@ class MatchingService
         $experienceLocation = $experience['location'] ?? '';
 
         // Concaténer tous les champs d'expérience pour une analyse plus complète
-        $experienceFullText = $experienceTitle 
+        $experienceFullText = $experienceTitle
             . ' ' . $experienceDescription . ' ' . $experienceCompany . ' ' . $experienceLocation;
 
         // 1. Vérification par mots-clés entre le titre de l'expérience et le titre du poste
@@ -414,7 +414,7 @@ class MatchingService
         $educationLocation = $education['location'] ?? '';
 
         // Concaténer tous les champs d'éducation pour une analyse plus complète
-        $educationFullText = $educationDegree 
+        $educationFullText = $educationDegree
             . ' ' . $educationInstitution . ' ' . $educationDescription . ' ' . $educationLocation;
 
         // 1. Vérification par mots-clés entre le diplôme et le titre du poste
@@ -650,7 +650,7 @@ class MatchingService
         if ($jobIsRemote && $userPreferredRemote) {
             $score = 5;
             $details[] = 'Compatibilité parfaite avec le travail à distance';
-        } else if (!empty($userPreferredLocation) && stripos($jobLocation, $userPreferredLocation) !== false) {
+        } elseif (!empty($userPreferredLocation) && stripos($jobLocation, $userPreferredLocation) !== false) {
             $score = 5;
             $details[] = 'Localisation idéale: ' . $jobLocation;
         } else {

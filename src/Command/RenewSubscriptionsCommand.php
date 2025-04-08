@@ -39,10 +39,10 @@ class RenewSubscriptionsCommand extends Command
     protected function configure(): void
     {
         $this
-
-
-                    ->setHelp('Cette commande vérifie les abonnements qui arrivent à expiration dans les prochaines 24 heures et les renouvelle automatiquement si l\'option de renouvellement automatique est activée
-                        .');
+            ->setHelp(
+                'Cette commande vérifie les abonnements qui arrivent à expiration dans les prochaines 24 heures ' .
+                'et les renouvelle automatiquement si l\'option de renouvellement automatique est activée.'
+            );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -113,9 +113,10 @@ class RenewSubscriptionsCommand extends Command
                         $renewedCount++;
                         $io->text('<info>Abonnement renouvelé avec succès</info>');
                     } else {
-                        $io
-                            
-                               ->text('<comment>Impossible de renouveler automatiquement - Pas de moyen de paiement enregistré</comment>');
+                        $io->text(
+                            '<comment>Impossible de renouveler automatiquement - ' .
+                            'Pas de moyen de paiement enregistré</comment>'
+                        );
 
                         // Envoyer un rappel d'expiration
                         $this->emailService->sendSubscriptionExpirationReminder($user, $subscription);

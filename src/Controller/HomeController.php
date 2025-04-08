@@ -2,16 +2,16 @@
 
 namespace App\Controller;
 
+use App\Repository\HashtagRepository;
+use App\Repository\JobOfferRepository;
 use App\Repository\PostRepository;
 use App\Repository\UserRepository;
-use App\Repository\JobOfferRepository;
-use App\Repository\FriendshipRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Cache\CacheItem;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
-use App\Repository\HashtagRepository;
 
 class HomeController extends AbstractController
 {
@@ -30,20 +30,16 @@ class HomeController extends AbstractController
         HashtagRepository $hashtagRepository,
         JobOfferRepository $jobOfferRepository,
         CacheInterface $cache
-    ) {
-        // Récupérer les données en parallèle avec le cache
-        $data = $cache
-            ->get('homepage_data_' . ($this
-            ->getUser() ? $this
-            ->getUser()
-            
-               ->getId() : 'anonymous'), function (ItemInterface $item) use ($postRepository, $userRepository, $hashtagRepository, $jobOfferRepository) {
+    ): Response {
+        $data = $cache->get(
+            'homepage_data_' . ($this->getUser() ? $this->getUser()->getId() : 'anonymous'),
+            function (ItemInterface $item) use ($postRepository, $userRepository, $hashtagRepository, $jobOfferRepository) {
                 $item->expiresAfter(300); // Cache pour 5 minutes
 
                 $user = $this->getUser();
                 $data = [];
 
-            // Récupérer les offres d'emploi actives
+                // Récupérer les offres d'emploi actives
                 $data['activeJobOffers'] = $jobOfferRepository->findActiveJobOffers(5);
 
                 if ($user) {
@@ -58,8 +54,8 @@ class HomeController extends AbstractController
 
                     // Statistiques
                     $data['stats'] = [
-                    'recruiters' => $userRepository->count(['roles' => ['ROLE_RECRUITER']]),
-                    'applicants' => $userRepository->count(['roles' => ['ROLE_APPLICANT']])
+                        'recruiters' => $userRepository->count(['roles' => ['ROLE_RECRUITER']]),
+                        'applicants' => $userRepository->count(['roles' => ['ROLE_APPLICANT']])
                     ];
                 } else {
                     // Pour les utilisateurs non connectés
@@ -68,7 +64,8 @@ class HomeController extends AbstractController
                 }
 
                 return $data;
-            });
+            }
+        );
 
         return $this->render('home/index.html.twig', $data);
     }

@@ -303,8 +303,10 @@ class RegistrationController extends AbstractController
                     $session->remove('registration_user_id');
                     $session->remove('registration_user_type');
                     $this
-                        
-                           ->addFlash('success', 'Votre compte et votre abonnement gratuit ont été activés avec succès !');
+                        ->addFlash(
+                            'success',
+                            'Votre compte et votre abonnement gratuit ont été activés avec succès !'
+                        );
                 }
 
                 return $this->redirectToRoute('app_login');

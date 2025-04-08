@@ -113,68 +113,170 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
         $applicantData = [
             [
                 'email' => 'candidat1@exemple.com',
-                'firstName' => 'Julien',
-                'lastName' => 'Robert',
-                'jobTitle' => 'Mécanicien F1 Senior',
-                'description' => 'Mécanicien passionné avec 8 ans d\'expérience dans les stands F1. Spécialiste...',
-                'technicalSkills' => ['Mécanique de précision', 'Systèmes hydrauliques', 'Aérodynamique', 'Maintenance préventive', 'Diagnostic rapide'],
-                'softSkills' => ['Travail d\'équipe', 'Résistance au stress', 'Communication', 'Précision', 'Résolution de problèmes'],
+                'firstName' => 'Thomas',
+                'lastName' => 'Dubois',
+                'jobTitle' => 'Mécanicien F1',
+                'description' => 'Mécanicien passionné avec 8 ans d\'expérience dans les stands F1. ' .
+                    'Spécialiste des interventions rapides et de la maintenance préventive.',
+                'technicalSkills' => [
+                    'Mécanique de précision',
+                    'Systèmes hydrauliques',
+                    'Aérodynamique',
+                    'Maintenance préventive',
+                    'Diagnostic rapide'
+                ],
+                'softSkills' => [
+                    'Travail d\'équipe',
+                    'Résistance au stress',
+                    'Communication',
+                    'Précision',
+                    'Résolution de problèmes'
+                ],
                 'city' => 'Marseille',
-                'bio' => 'Mécanicien passionné de sports automobiles depuis l\'enfance. J\'ai commencé ma carrière...',
-                'experience' => "2015-2020 : Mécanicien principal, Team AlphaTauri F1\n2012-2015 : Mécanicien jun...",
-                'education' => "2008-2010 : BTS Maintenance des véhicules, option véhicules de compétition\n2006-..."
+                'bio' => 'Mécanicien passionné de sports automobiles depuis l\'enfance. ' .
+                    'J\'ai commencé ma carrière dans les compétitions locales avant de rejoindre la F1.',
+                'experience' => implode("\n", [
+                    '2015-2020 : Mécanicien principal, Team AlphaTauri F1',
+                    '2012-2015 : Mécanicien junior, Alpine F1 Team'
+                ]),
+                'education' => implode("\n", [
+                    '2008-2010 : BTS Maintenance des véhicules, option véhicules de compétition',
+                    '2006-2008 : Bac Pro Maintenance des véhicules'
+                ])
             ],
             [
                 'email' => 'candidat2@exemple.com',
                 'firstName' => 'Emma',
                 'lastName' => 'Moreau',
                 'jobTitle' => 'Ingénieure Aérodynamique',
-                'description' => 'Ingénieure aérodynamique spécialisée dans la simulation CFD et l\'optimisatio...',
-                'technicalSkills' => ['CFD', 'Simulation numérique', 'Conception aérodynamique', 'MATLAB', 'SolidWorks', 'Analyse de données'],
-                'softSkills' => ['Esprit analytique', 'Innovation', 'Travail en équipe', 'Présentation', 'Capacité d\'adaptation'],
+                'description' => 'Ingénieure aérodynamique spécialisée dans la simulation CFD ' .
+                    'et l\'optimisation des performances aérodynamiques en F1.',
+                'technicalSkills' => [
+                    'CFD',
+                    'Simulation numérique',
+                    'Conception aérodynamique',
+                    'MATLAB',
+                    'SolidWorks',
+                    'Analyse de données'
+                ],
+                'softSkills' => [
+                    'Esprit analytique',
+                    'Innovation',
+                    'Travail en équipe',
+                    'Présentation',
+                    'Capacité d\'adaptation'
+                ],
                 'city' => 'Bordeaux',
-                'bio' => 'Ingénieure passionnée par l\'aérodynamique et la performance. Docteur en mécanique de...',
-                'experience' => "2018-2023 : Ingénieure aérodynamique senior, Alpine F1 Team\n2015-2018 : Ingéni...",
-                'education' => "2010-2013 : Doctorat en mécanique des fluides, École Polytechnique\n2008-2010 : Ma..."
+                'bio' => 'Ingénieure passionnée par l\'aérodynamique et la performance. ' .
+                    'Docteur en mécanique des fluides avec expérience en soufflerie.',
+                'experience' => implode("\n", [
+                    '2018-2023 : Ingénieure aérodynamique senior, Alpine F1 Team',
+                    '2015-2018 : Ingénieure simulation, Ferrari F1'
+                ]),
+                'education' => implode("\n", [
+                    '2010-2013 : Doctorat en mécanique des fluides, École Polytechnique',
+                    '2008-2010 : Master en aérodynamique, ISAE-SUPAERO'
+                ])
             ],
             [
                 'email' => 'candidat3@exemple.com',
                 'firstName' => 'Lucas',
                 'lastName' => 'Richard',
                 'jobTitle' => 'Technicien Composite',
-                'description' => 'Technicien spécialisé dans la fabrication et la réparation de pièces en maté...',
-                'technicalSkills' => ['Fabrication composite', 'Carbone préimprégné', 'Moulage sous vide', 'Réparation structurelle', 'Tests non destructifs'],
-                'softSkills' => ['Minutie', 'Attention aux détails', 'Gestion du temps', 'Auto-formation', 'Résistance à la pression'],
+                'description' => 'Technicien spécialisé dans la fabrication et la réparation ' .
+                    'de pièces en matériaux composites pour la F1.',
+                'technicalSkills' => [
+                    'Fabrication composite',
+                    'Carbone préimprégné',
+                    'Moulage sous vide',
+                    'Réparation structurelle',
+                    'Tests non destructifs'
+                ],
+                'softSkills' => [
+                    'Minutie',
+                    'Attention aux détails',
+                    'Gestion du temps',
+                    'Auto-formation',
+                    'Résistance à la pression'
+                ],
                 'city' => 'Silverstone',
-                'bio' => 'Technicien composite avec 6 ans d\'expérience dans le développement et la fabrication d...',
-                'experience' => "2017-2023 : Technicien composite senior, McLaren Racing\n2014-2017 : Technicien co...",
-                'education' => "2010-2012 : BTS Mise en œuvre des matériaux composites\n2008-2010 : Baccalauréat ..."
+                'bio' => 'Technicien composite avec 6 ans d\'expérience dans le développement ' .
+                    'et la fabrication de pièces pour la F1.',
+                'experience' => implode("\n", [
+                    '2017-2023 : Technicien composite senior, McLaren Racing',
+                    '2014-2017 : Technicien composite, Williams Racing'
+                ]),
+                'education' => implode("\n", [
+                    '2010-2012 : BTS Mise en œuvre des matériaux composites',
+                    '2008-2010 : Bac Pro Plasturgie'
+                ])
             ],
             [
                 'email' => 'candidat4@exemple.com',
                 'firstName' => 'Chloé',
                 'lastName' => 'Lambert',
                 'jobTitle' => 'Ingénieure Données',
-                'description' => 'Ingénieure spécialisée dans l\'analyse de données télémétriques et la stra...',
-                'technicalSkills' => ['Télémétrie', 'Python', 'MATLAB', 'Machine Learning', 'Visualisation de données', 'SQL'],
-                'softSkills' => ['Analyse critique', 'Communication technique', 'Travail sous pression', 'Multitâche', 'Adaptabilité'],
+                'description' => 'Ingénieure spécialisée dans l\'analyse de données télémétriques ' .
+                    'et la stratégie de course en F1.',
+                'technicalSkills' => [
+                    'Télémétrie',
+                    'Python',
+                    'MATLAB',
+                    'Machine Learning',
+                    'Visualisation de données',
+                    'SQL'
+                ],
+                'softSkills' => [
+                    'Analyse critique',
+                    'Communication technique',
+                    'Travail sous pression',
+                    'Multitâche',
+                    'Adaptabilité'
+                ],
                 'city' => 'Milan',
-                'bio' => 'Ingénieure en données avec formation en statistiques avancées et IA. Passionnée par l...',
-                'experience' => "2019-2023 : Ingénieure données, Haas F1 Team\n2016-2019 : Analyste performance, ...",
-                'education' => "2012-2014 : Master en ingénierie des données, Politecnico di Milano\n2009-2012 : L..."
+                'bio' => 'Ingénieure en données avec formation en statistiques avancées et IA. ' .
+                    'Passionnée par l\'analyse de performance en sport automobile.',
+                'experience' => implode("\n", [
+                    '2019-2023 : Ingénieure données, Haas F1 Team',
+                    '2016-2019 : Analyste performance, Alfa Romeo Racing'
+                ]),
+                'education' => implode("\n", [
+                    '2012-2014 : Master en ingénierie des données, Politecnico di Milano',
+                    '2009-2012 : Licence en mathématiques appliquées'
+                ])
             ],
             [
                 'email' => 'candidat5@exemple.com',
                 'firstName' => 'Maxime',
                 'lastName' => 'Girard',
                 'jobTitle' => 'Chef Mécanicien',
-                'description' => 'Chef mécanicien expérimenté, responsable de la coordination d\'équipes techni...',
-                'technicalSkills' => ['Coordination d\'équipe', 'Gestion technique', 'Diagnostic avancé', 'Mécanique de précision', 'Systèmes électroniques embarqués'],
-                'softSkills' => ['Leadership', 'Prise de décision', 'Gestion de crise', 'Communication', 'Organisation'],
+                'description' => 'Chef mécanicien expérimenté, responsable de la coordination ' .
+                    'd\'équipes techniques en F1.',
+                'technicalSkills' => [
+                    'Coordination d\'équipe',
+                    'Gestion technique',
+                    'Diagnostic avancé',
+                    'Mécanique de précision',
+                    'Systèmes électroniques embarqués'
+                ],
+                'softSkills' => [
+                    'Leadership',
+                    'Prise de décision',
+                    'Gestion de crise',
+                    'Communication',
+                    'Organisation'
+                ],
                 'city' => 'Barcelone',
-                'bio' => 'Chef mécanicien avec 12 ans d\'expérience en F1 et endurance. J\'ai dirigé des équipe...',
-                'experience' => "2018-2023 : Chef mécanicien, Aston Martin F1\n2015-2018 : Mécanicien senior, Toy...",
-                'education' => "2008-2010 : Ingénierie en mécanique automobile, ESTACA\n2005-2008 : BTS Maintenanc..."
+                'bio' => 'Chef mécanicien avec 12 ans d\'expérience en F1 et endurance. ' .
+                    'Expert en gestion d\'équipe et optimisation des performances.',
+                'experience' => implode("\n", [
+                    '2018-2023 : Chef mécanicien, Aston Martin F1',
+                    '2015-2018 : Mécanicien senior, Toyota Gazoo Racing'
+                ]),
+                'education' => implode("\n", [
+                    '2008-2010 : Ingénierie en mécanique automobile, ESTACA',
+                    '2005-2008 : BTS Maintenance des véhicules'
+                ])
             ]
         ];
 

@@ -28,10 +28,10 @@ class ConversationRepository extends ServiceEntityRepository
     public function findBetweenUsers(User $user1, User $user2): ?Conversation
     {
         return $this->createQueryBuilder('c')
-
-
-                    ->where('(c
-                        .participant1 = :user1 AND c.participant2 = :user2) OR (c.participant1 = :user2 AND c.participant2 = :user1)')
+            ->where(
+                '(c.participant1 = :user1 AND c.participant2 = :user2) OR ' .
+                '(c.participant1 = :user2 AND c.participant2 = :user1)'
+            )
             ->setParameter('user1', $user1)
             ->setParameter('user2', $user2)
             ->getQuery()
@@ -57,10 +57,10 @@ class ConversationRepository extends ServiceEntityRepository
     public function findConversationBetweenUsers(User $user1, User $user2): ?Conversation
     {
         return $this->createQueryBuilder('c')
-
-
-                    ->where('(c
-                        .participant1 = :user1 AND c.participant2 = :user2) OR (c.participant1 = :user2 AND c.participant2 = :user1)')
+            ->where(
+                '(c.participant1 = :user1 AND c.participant2 = :user2) OR ' .
+                '(c.participant1 = :user2 AND c.participant2 = :user1)'
+            )
             ->setParameter('user1', $user1)
             ->setParameter('user2', $user2)
             ->getQuery()
