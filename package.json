@@ -2,10 +2,12 @@
     "name": "pitcrew",
     "version": "1.0.0",
     "private": true,
+    "description": "PitCrew - Plateforme de recrutement",
     "scripts": {
         "dev": "vite",
-        "build": "vite build",
-        "watch": "vite build --watch"
+        "build": "echo \"No build step required\"",
+        "watch": "vite build --watch",
+        "test": "echo \"No test specified\""
     },
     "dependencies": {
         "@popperjs/core": "^2.11.8",

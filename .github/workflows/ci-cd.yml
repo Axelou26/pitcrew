@@ -52,6 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # PHP Setup
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -61,6 +62,7 @@ jobs:
       - name: Install PHP Dependencies
         run: composer install --no-progress
 
+      # Node.js Setup
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -68,37 +70,82 @@ jobs:
           cache: 'npm'
 
       - name: Install Node.js Dependencies
-        run: npm ci
+        run: |
+          npm ci
+        working-directory: ${{ github.workspace }}
 
-      - name: Security Check
+      # Security Checks
+      - name: PHP Security Check
         uses: symfonycorp/security-checker-action@v4
-        
-      - name: Run Snyk to check for vulnerabilities
+        id: security-check
+        continue-on-error: true
+
+      # Snyk Analysis
+      - name: Run Snyk PHP Analysis
         uses: snyk/actions/php@master
+        id: snyk-php
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --severity-threshold=high --all-projects --package-manager=composer
-          
-      - name: Upload Snyk report
+
+      - name: Run Snyk Node.js Analysis
+        uses: snyk/actions/node@master
+        id: snyk-node
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+      # Reports Upload
+      - name: Upload Snyk PHP Report
         uses: github/codeql-action/upload-sarif@v2
-        if: always()
+        if: always() && steps.snyk-php.outcome == 'success'
         with:
           sarif_file: snyk.sarif
-          
+          category: snyk-php
+
+      - name: Upload Snyk Node.js Report
+        uses: github/codeql-action/upload-sarif@v2
+        if: always() && steps.snyk-node.outcome == 'success'
+        with:
+          sarif_file: snyk.sarif
+          category: snyk-node
+
+      # OWASP Check
       - name: Run OWASP Dependency-Check
         uses: dependency-check/Dependency-Check_Action@main
         with:
           project: 'PitCrew'
           path: '.'
           format: 'HTML'
-          
-      - name: Upload dependency check report
+          args: >
+            --suppression suppression.xml
+            --failOnCVSS 7
+            --enableRetired
+
+      - name: Upload Security Reports
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: Dependency Check Report
-          path: reports
+          name: Security Reports
+          path: |
+            reports
+            snyk.sarif
+          retention-days: 30
+
+      # Status Check
+      - name: Check Security Status
+        if: always()
+        run: |
+          if [ "${{ steps.security-check.outcome }}" == "failure" ] || \
+             [ "${{ steps.snyk-php.outcome }}" == "failure" ] || \
+             [ "${{ steps.snyk-node.outcome }}" == "failure" ]; then
+            echo "Security vulnerabilities found!"
+            exit 1
+          fi
 
   tests:
     name: Tests & Coverage
@@ -192,7 +239,9 @@ jobs:
     needs: [quality, security, tests, performance]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
-    environment: production
+    environment: 
+      name: production
+      url: ${{ secrets.PRODUCTION_URL }}
     
     steps:
       - uses: actions/checkout@v4
@@ -239,8 +288,8 @@ jobs:
             
       - name: Run Smoke Tests
         run: |
-          curl --fail https://${{ secrets.PRODUCTION_URL }}/health
-          curl --fail https://${{ secrets.PRODUCTION_URL }}/api/health
+          curl --fail ${{ secrets.PRODUCTION_URL }}/health
+          curl --fail ${{ secrets.PRODUCTION_URL }}/api/health
           
       - name: Notify Slack
         if: always()
