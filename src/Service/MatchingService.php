@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 use App\Entity\User;
@@ -8,32 +10,42 @@ use App\Entity\JobOffer;
 use App\Repository\UserRepository;
 use App\Repository\JobOfferRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use RuntimeException;
+use DateTime;
 
 class MatchingService
 {
-    private $entityManager;
-    private $userRepository;
-    private $jobOfferRepository;
-
     public function __construct(
-        EntityManagerInterface $entityManager,
-        UserRepository $userRepository,
-        JobOfferRepository $jobOfferRepository
-    ) {
-        $this->entityManager = $entityManager;
-        $this->userRepository = $userRepository;
-        $this->jobOfferRepository = $jobOfferRepository;
-    }
+        private readonly EntityManagerInterface $entityManager,
+        private readonly UserRepository $userRepository,
+        private readonly JobOfferRepository $jobOfferRepository
+    ) {}
 
     /**
      * Calcule un score de compatibilité entre un candidat et une offre d'emploi
      *
      * @param Applicant $applicant
      * @param JobOffer $jobOffer
-     * @return array Score détaillé avec les raisons
+     * @return array{
+     *     score: int,
+     *     reasons: array<array{
+     *         category: string,
+     *         score: int|float,
+     *         maxScore: int|float,
+     *         matches?: array<string>,
+     *         details?: array<string>
+     *     }>,
+     *     applicant: int,
+     *     jobOffer: int
+     * }
+     * @throws RuntimeException Si les données requises sont manquantes
      */
     public function calculateCompatibilityScore(Applicant $applicant, JobOffer $jobOffer): array
     {
+        if (!$applicant->getId() || !$jobOffer->getId()) {
+            throw new RuntimeException('L\'applicant et l\'offre d\'emploi doivent avoir des IDs valides');
+        }
+
         $score = 0;
         $maxScore = 0;
         $reasons = [];
@@ -50,14 +62,14 @@ class MatchingService
         ];
 
         // Expérience professionnelle (poids: 30%)
-        $experienceScore = $this->calculateExperienceScore($applicant, $jobOffer);
-        $score += $experienceScore['score'] * 0.3;
-        $maxScore += $experienceScore['maxScore'] * 0.3;
+        $experienceScore = $this->calculateExperienceScore($applicant->getWorkExperience(), $jobOffer);
+        $score += $experienceScore * 0.3;
+        $maxScore += 100 * 0.3;
         $reasons[] = [
             'category' => 'Expérience professionnelle',
-            'score' => $experienceScore['score'],
-            'maxScore' => $experienceScore['maxScore'],
-            'details' => $experienceScore['details']
+            'score' => $experienceScore,
+            'maxScore' => 100,
+            'details' => []
         ];
 
         // Soft skills (poids: 20%)
@@ -83,7 +95,7 @@ class MatchingService
         ];
 
         // Normalisation du score final (0-100%)
-        $normalizedScore = ($maxScore > 0) ? round(($score / $maxScore) * 100) : 0;
+        $normalizedScore = $this->normalizeScore($score, $maxScore);
 
         return [
             'score' => $normalizedScore,
@@ -95,6 +107,8 @@ class MatchingService
 
     /**
      * Calcule le score basé sur les compétences techniques
+     * 
+     * @return array{score: int, maxScore: int, matches: array<string>}
      */
     private function calculateTechnicalSkillsScore(Applicant $applicant, JobOffer $jobOffer): array
     {
@@ -109,9 +123,12 @@ class MatchingService
         $matchCount = 0;
 
         foreach ($requiredSkills as $skill) {
+            if (empty($skill)) continue;
+            
             $found = false;
             foreach ($candidateSkills as $candidateSkill) {
-                // Recherche fuzzy pour tenir compte des variations d'orthographe
+                if (empty($candidateSkill)) continue;
+                
                 if ($this->isSimilarSkill($skill, $candidateSkill)) {
                     $found = true;
                     $matches[] = $skill;
@@ -123,13 +140,13 @@ class MatchingService
             }
         }
 
-        $maxScore = count($requiredSkills);
+        $maxScore = count(array_filter($requiredSkills));
         $score = $matchCount;
 
         return [
             'score' => $score,
             'maxScore' => $maxScore,
-            'matches' => $matches
+            'matches' => array_unique($matches)
         ];
     }
 
@@ -168,378 +185,126 @@ class MatchingService
     /**
      * Calcule le score basé sur l'expérience professionnelle
      */
-    private function calculateExperienceScore(Applicant $applicant, JobOffer $jobOffer): array
+    private function calculateExperienceScore(array $experiences, JobOffer $jobOffer): float
     {
-        $workExperience = $applicant->getWorkExperience() ?? [];
-        $educationHistory = $applicant->getEducationHistory() ?? [];
-
-        // Si pas d'expérience ni d'éducation, score minimal
-        if (empty($workExperience) && empty($educationHistory)) {
-            return [
-                'score' => 0,
-                'maxScore' => 5,
-                'details' => ['Aucune expérience professionnelle ni formation renseignée']
-            ];
-        }
-
-        // Évaluation de la pertinence des expériences
         $score = 0;
-        $details = [];
+        $relevantExperiences = $this->findRelevantExperiences($experiences, $jobOffer);
+        $experienceScore = $this->calculateBaseExperienceScore($relevantExperiences);
+        $bonusScore = $this->calculateExperienceBonusScore($relevantExperiences, $jobOffer);
+        
+        return min(100, $experienceScore + $bonusScore);
+    }
 
-        // Nombre total d'années d'expérience
-        $totalYearsExperience = 0;
-        $relevantExperienceCount = 0;
-        $relevantYearsExperience = 0;
-        $mostRecentExperiences = [];
-
-        // Trier les expériences par date (de la plus récente à la plus ancienne)
-        usort($workExperience, function ($a, $b) {
-            $endDateA = $a['endDate'] ?? 'present';
-            $endDateB = $b['endDate'] ?? 'present';
-
-            // Si une des dates est "present", elle est plus récente
-            if ($endDateA === 'present' && $endDateB !== 'present') {
-                return -1;
+    /**
+     * @param array<string, mixed> $experiences
+     */
+    private function findRelevantExperiences(array $experiences, JobOffer $jobOffer): array
+    {
+        $relevantExperiences = [];
+        $jobKeywords = $this->extractKeywords($jobOffer->getTitle() . ' ' . $jobOffer->getDescription());
+        
+        foreach ($experiences as $experience) {
+            if ($this->isExperienceRelevant($experience, $jobKeywords)) {
+                $relevantExperiences[] = $experience;
             }
-            if ($endDateA !== 'present' && $endDateB === 'present') {
-                return 1;
-            }
+        }
+        
+        return $relevantExperiences;
+    }
 
-            // Sinon, comparer les dates de fin
-            try {
-                $dateA = $endDateA === 'present' ? new \DateTime() : new \DateTime($endDateA);
-                $dateB = $endDateB === 'present' ? new \DateTime() : new \DateTime($endDateB);
-                return $dateB <=> $dateA; // Ordre décroissant
-            } catch (\Exception $e) {
-                return 0;
-            }
+    /**
+     * @param array<string, mixed> $relevantExperiences
+     */
+    private function calculateBaseExperienceScore(array $relevantExperiences): float
+    {
+        $score = 0;
+        $totalYears = 0;
+        
+        foreach ($relevantExperiences as $experience) {
+            $years = $this->calculateExperienceYears($experience);
+            $totalYears += $years;
+            $score += $years * 10;
+        }
+        
+        return min(70, $score);
+    }
+
+    /**
+     * @param array<string, mixed> $experience
+     * @param array<string> $jobKeywords
+     */
+    private function isExperienceRelevant(array $experience, array $jobKeywords): bool
+    {
+        $experienceKeywords = $this->extractKeywords(
+            $experience['title'] . ' ' . 
+            $experience['description'] . ' ' . 
+            $experience['company']
+        );
+        
+        return count(array_intersect($jobKeywords, $experienceKeywords)) > 0;
+    }
+
+    /**
+     * @param array<string, mixed> $experiences
+     * @return array<string, mixed>
+     */
+    private function filterRecentExperiences(array $experiences): array
+    {
+        $now = new \DateTime();
+        return array_filter($experiences, function($experience) use ($now) {
+            $endDate = $experience['endDate'] ?? $now;
+            $interval = $endDate->diff($now);
+            return $interval->y <= 5;
         });
-
-        // Limiter à 5 expériences maximum pour l'analyse
-        $workExperience = array_slice($workExperience, 0, 5);
-
-        foreach ($workExperience as $experience) {
-            // Calcul de la durée de l'expérience
-            $duration = isset($experience['startDate'], $experience['endDate'])
-                ? $this->calculateExperienceDuration($experience['startDate'], $experience['endDate'])
-                : 0;
-
-            $totalYearsExperience += $duration;
-
-            // Vérification de la pertinence par rapport au poste
-            $isRelevant = $this->isRelevantExperience($experience, $jobOffer);
-
-            if ($isRelevant) {
-                $relevantExperienceCount++;
-                $relevantYearsExperience += $duration;
-
-                // Ajouter plus de détails sur l'expérience pertinente
-                $expDetails = [];
-                if (!empty($experience['title'])) {
-                    $expDetails[] = $experience['title'];
-                }
-                if (!empty($experience['company'])) {
-                    $expDetails[] = 'chez ' . $experience['company'];
-                }
-                if ($duration > 0) {
-                    $expDetails[] = sprintf('(%.1f ans)', $duration);
-                }
-
-                $details[] = 'Expérience pertinente: ' . implode(' ', $expDetails);
-
-                // Garder trace des expériences pertinentes les plus récentes
-                $mostRecentExperiences[] = $experience;
-            }
-        }
-
-        // Évaluation des formations pertinentes
-        $relevantEducationCount = 0;
-        $educationScore = 0;
-
-        foreach ($educationHistory as $education) {
-            $isRelevant = $this->isRelevantEducation($education, $jobOffer);
-
-            if ($isRelevant) {
-                $relevantEducationCount++;
-
-                // Ajouter plus de détails sur la formation pertinente
-                $eduDetails = [];
-                if (!empty($education['degree'])) {
-                    $eduDetails[] = $education['degree'];
-                }
-                if (!empty($education['institution'])) {
-                    $eduDetails[] = 'à ' . $education['institution'];
-                }
-
-                $details[] = 'Formation pertinente: ' . implode(' ', $eduDetails);
-            }
-        }
-
-        // Calculer le score basé sur plusieurs facteurs
-
-        // 1. Score basé sur les années d'expérience totale (max 1.5 points)
-        $yearsScore = min(1.5, $totalYearsExperience / 3);
-
-        // 2. Score basé sur les années d'expérience pertinente (max 2 points)
-        $relevantYearsScore = min(2, $relevantYearsExperience / 2);
-
-        // 3. Score basé sur le nombre d'expériences pertinentes (max 1 point)
-        $relevantCountScore = min(1, $relevantExperienceCount / 2);
-
-        // 4. Bonus pour formation pertinente (max 0.5 point)
-        $educationBonus = min(0.5, $relevantEducationCount * 0.25);
-
-        // 5. Bonus pour expérience récente dans le domaine (max 0.5 point)
-        $recentExperienceBonus = 0;
-        if (!empty($mostRecentExperiences)) {
-            $mostRecent = $mostRecentExperiences[0];
-            $endDate = $mostRecent['endDate'] ?? '';
-
-            // Si l'expérience est en cours ou s'est terminée il y a moins de 2 ans
-            if ($endDate === 'present') {
-                $recentExperienceBonus = 0.5;
-            } else {
-                try {
-                    $end = new \DateTime($endDate);
-                    $now = new \DateTime();
-                    $yearsSinceEnd = $now->diff($end)->y;
-
-                    if ($yearsSinceEnd <= 2) {
-                        $recentExperienceBonus = 0.5;
-                    } elseif ($yearsSinceEnd <= 5) {
-                        $recentExperienceBonus = 0.25;
-                    }
-                } catch (\Exception $e) {
-                    // En cas d'erreur de format de date, pas de bonus
-                }
-            }
-        }
-
-        // Score total (max 5 points)
-        $score = $yearsScore + $relevantYearsScore + $relevantCountScore + $recentExperienceBonus + $educationBonus;
-        $score = min(5, $score); // Plafonnement à 5
-
-        // Ajouter un résumé au début de la liste de détails
-        if ($relevantExperienceCount > 0 || $relevantEducationCount > 0) {
-            $summaryParts = [];
-
-            if ($relevantExperienceCount > 0) {
-                $summaryParts[] = sprintf(
-                    '%d expérience(s) pertinente(s) totalisant %.1f an(s)',
-                    $relevantExperienceCount,
-                    $relevantYearsExperience
-                );
-            }
-
-            if ($relevantEducationCount > 0) {
-                $summaryParts[] = sprintf(
-                    '%d formation(s) pertinente(s)',
-                    $relevantEducationCount
-                );
-            }
-
-            array_unshift($details, implode(' et ', $summaryParts));
-        } else {
-            array_unshift($details, sprintf(
-                'Expérience générale de %.1f an(s) sans correspondance directe avec le poste',
-                $totalYearsExperience
-            ));
-        }
-
-        return [
-            'score' => $score,
-            'maxScore' => 5,
-            'details' => $details
-        ];
     }
 
     /**
-     * Vérifie si une expérience est pertinente pour l'offre d'emploi
+     * @param array<string, mixed> $experience
      */
-    private function isRelevantExperience(array $experience, JobOffer $jobOffer): bool
+    private function calculateSingleExperienceBonus(array $experience, JobOffer $jobOffer): float
     {
-        $jobTitle = $jobOffer->getTitle();
-        $jobDescription = $jobOffer->getDescription();
-        $requiredSkills = $jobOffer->getRequiredSkills();
-
-        $experienceTitle = $experience['title'] ?? '';
-        $experienceDescription = $experience['description'] ?? '';
-        $experienceCompany = $experience['company'] ?? '';
-        $experienceLocation = $experience['location'] ?? '';
-
-        // Concaténer tous les champs d'expérience pour une analyse plus complète
-        $experienceFullText = $experienceTitle
-            . ' ' . $experienceDescription . ' ' . $experienceCompany . ' ' . $experienceLocation;
-
-        // 1. Vérification par mots-clés entre le titre de l'expérience et le titre du poste
-        if ($this->hasCommonKeywords($experienceTitle, $jobTitle, 2)) {
-            return true;
+        $bonus = 0;
+        $experienceKeywords = $this->extractKeywords(
+            $experience['title'] . ' ' . $experience['description']
+        );
+        $jobKeywords = $this->extractKeywords(
+            $jobOffer->getTitle() . ' ' . $jobOffer->getDescription()
+        );
+        
+        $matchingKeywords = count(array_intersect($experienceKeywords, $jobKeywords));
+        $bonus += $matchingKeywords * 2;
+        
+        if ($this->isSimilarSkill($experience['title'], $jobOffer->getTitle())) {
+            $bonus += 10;
         }
-
-        // 2. Vérification par mots-clés entre la description de l'expérience et la description du poste
-        if ($this->hasCommonKeywords($experienceDescription, $jobDescription, 3)) {
-            return true;
-        }
-
-        // 3. Vérification des compétences requises dans tous les champs d'expérience
-        foreach ($requiredSkills as $skill) {
-            if (stripos($experienceFullText, $skill) !== false) {
-                return true;
-            }
-        }
-
-        // 4. Vérification des secteurs d'activité (ex: F1, automobile, sport)
-        $jobSectors = $this->extractSectors($jobTitle . ' ' . $jobDescription);
-        $experienceSectors = $this->extractSectors($experienceFullText);
-
-        if (!empty(array_intersect($jobSectors, $experienceSectors))) {
-            return true;
-        }
-
-        return false;
+        
+        return $bonus;
     }
 
     /**
-     * Vérifie si une formation est pertinente pour l'offre d'emploi
+     * @param array<string, mixed> $experience
+     * @throws RuntimeException Si les dates sont invalides
      */
-    private function isRelevantEducation(array $education, JobOffer $jobOffer): bool
-    {
-        $jobTitle = $jobOffer->getTitle();
-        $jobDescription = $jobOffer->getDescription();
-        $requiredSkills = $jobOffer->getRequiredSkills();
-
-        $educationDegree = $education['degree'] ?? '';
-        $educationInstitution = $education['institution'] ?? '';
-        $educationDescription = $education['description'] ?? '';
-        $educationLocation = $education['location'] ?? '';
-
-        // Concaténer tous les champs d'éducation pour une analyse plus complète
-        $educationFullText = $educationDegree
-            . ' ' . $educationInstitution . ' ' . $educationDescription . ' ' . $educationLocation;
-
-        // 1. Vérification par mots-clés entre le diplôme et le titre du poste
-        if ($this->hasCommonKeywords($educationDegree, $jobTitle, 1)) {
-            return true;
-        }
-
-        // 2. Vérification par mots-clés entre la description de la formation et la description du poste
-        if ($this->hasCommonKeywords($educationDescription, $jobDescription, 2)) {
-            return true;
-        }
-
-        // 3. Vérification des compétences requises dans tous les champs de formation
-        foreach ($requiredSkills as $skill) {
-            if (stripos($educationFullText, $skill) !== false) {
-                return true;
-            }
-        }
-
-        // 4. Vérification des secteurs d'activité (ex: F1, automobile, sport)
-        $jobSectors = $this->extractSectors($jobTitle . ' ' . $jobDescription);
-        $educationSectors = $this->extractSectors($educationFullText);
-
-        if (!empty(array_intersect($jobSectors, $educationSectors))) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Extrait les secteurs d'activité potentiels d'un texte
-     */
-    private function extractSectors(string $text): array
-    {
-        $sectors = [
-            'f1', 'formule 1', 'sport automobile', 'motorsport', 'grand prix', 'course automobile',
-            'automobile', 'auto', 'voiture', 'racing', 'rallye', 'circuit',
-            'sport', 'sportif', 'competition', 'équipe sportive', 'team',
-            'ingénierie', 'mécanique', 'technique', 'technologie', 'aérodynamique',
-            'logistique', 'composite', 'industrie'
-        ];
-
-        $foundSectors = [];
-        foreach ($sectors as $sector) {
-            if (stripos($text, $sector) !== false) {
-                $foundSectors[] = $sector;
-            }
-        }
-
-        return $foundSectors;
-    }
-
-    /**
-     * Vérifie si deux textes ont des mots-clés en commun
-     * @param string $text1 Premier texte à comparer
-     * @param string $text2 Second texte à comparer
-     * @param int $minCommonCount Nombre minimum de mots-clés communs requis
-     * @return bool
-     */
-    private function hasCommonKeywords(string $text1, string $text2, int $minCommonCount = 1): bool
-    {
-        $keywords1 = $this->extractKeywords($text1);
-        $keywords2 = $this->extractKeywords($text2);
-
-        $common = array_intersect($keywords1, $keywords2);
-
-        return count($common) >= $minCommonCount;
-    }
-
-    /**
-     * Calcule la durée d'une expérience en années
-     */
-    private function calculateExperienceDuration(string $startDate, string $endDate): float
+    private function calculateExperienceYears(array $experience): float
     {
         try {
-            $start = new \DateTime($startDate);
-            $end = $endDate === 'present' ? new \DateTime() : new \DateTime($endDate);
+            $startDate = $experience['startDate'] instanceof DateTime ? 
+                $experience['startDate'] : 
+                new DateTime($experience['startDate'] ?? 'now');
+                
+            $endDate = $experience['endDate'] instanceof DateTime ? 
+                $experience['endDate'] : 
+                new DateTime($experience['endDate'] ?? 'now');
 
-            $interval = $end->diff($start);
+            if ($startDate > $endDate) {
+                throw new RuntimeException('La date de début ne peut pas être postérieure à la date de fin');
+            }
+
+            $interval = $startDate->diff($endDate);
             return $interval->y + ($interval->m / 12);
         } catch (\Exception $e) {
-            return 0;
+            throw new RuntimeException('Erreur lors du calcul de la durée d\'expérience: ' . $e->getMessage());
         }
-    }
-
-    /**
-     * Extrait les mots-clés significatifs d'un texte
-     */
-    private function extractKeywords(string $text): array
-    {
-        // Liste des mots vides en français
-        $stopWords = [
-              'le',
-              'la',
-              'les',
-              'un',
-              'une',
-              'des',
-              'et',
-              'ou',
-              'de',
-              'du',
-              'en',
-              'à',
-              'au',
-              'aux',
-              'par',
-            'pour'
-        ];
-
-        // Nettoyage et tokenisation
-        $text = strtolower($text);
-        $text = preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $text);
-        $words = preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY);
-
-        // Filtrage des mots courts et des mots vides
-        $keywords = [];
-        foreach ($words as $word) {
-            if (strlen($word) > 3 && !in_array($word, $stopWords)) {
-                $keywords[] = $word;
-            }
-        }
-
-        return array_unique($keywords);
     }
 
     /**
@@ -666,71 +431,58 @@ class MatchingService
     }
 
     /**
-     * Applique le cast de User vers Applicant si nécessaire
+     * @throws RuntimeException
      */
     private function ensureApplicant($user): Applicant
     {
-        // Si c'est déjà un Applicant, on le retourne directement
-        if ($user instanceof Applicant) {
-            return $user;
+        if (!$user instanceof User) {
+            throw new RuntimeException('Invalid user provided');
         }
-
-        // Si c'est un User, on vérifie qu'il a le rôle ROLE_POSTULANT
-        if (!($user instanceof User) || !in_array('ROLE_POSTULANT', $user->getRoles())) {
-            throw new \LogicException('L\'utilisateur doit avoir le rôle ROLE_POSTULANT');
+        $applicant = $user->getApplicant();
+        if (!$applicant instanceof Applicant) {
+            throw new RuntimeException('User is not an applicant');
         }
-
-        // On récupère l'entité Applicant correspondante via l'EntityManager
-        $applicant = $this->entityManager->getRepository(Applicant::class)->find($user->getId());
-
-        if (!$applicant) {
-            throw new \LogicException('Impossible de trouver l\'entité Applicant correspondante');
-        }
-
         return $applicant;
     }
 
     /**
-     * Trouve les meilleures offres d'emploi pour un candidat
-     *
-     * @param User|Applicant $user
-     * @param int $limit Nombre maximum d'offres à retourner
-     * @return array
+     * @return array<array{jobOffer: JobOffer, score: int, reasons: array}>
+     * @throws RuntimeException Si l'utilisateur n'est pas un candidat valide
      */
     public function findBestJobOffersForCandidate($user, int $limit = 5): array
     {
-        // On s'assure d'avoir un objet Applicant
-        $applicant = $this->ensureApplicant($user);
-
-        // Récupérer toutes les offres d'emploi actives
-        $activeJobOffers = $this->jobOfferRepository->findBy(['isActive' => true]);
-
-        // Calculer le score de compatibilité pour chaque offre
-        $scoredOffers = [];
-        foreach ($activeJobOffers as $jobOffer) {
-            $compatibilityScore = $this->calculateCompatibilityScore($applicant, $jobOffer);
-            $scoredOffers[] = [
-                'jobOffer' => $jobOffer,
-                'score' => $compatibilityScore['score'],
-                'reasons' => $compatibilityScore['reasons']
-            ];
+        if ($limit < 1) {
+            throw new RuntimeException('La limite doit être supérieure à 0');
         }
 
-        // Trier par score de compatibilité décroissant
-        usort($scoredOffers, function ($a, $b) {
-            return $b['score'] <=> $a['score'];
-        });
+        $applicant = $this->ensureApplicant($user);
+        $activeJobOffers = $this->jobOfferRepository->findBy(['isActive' => true]);
 
-        // Limiter le nombre de résultats
+        if (empty($activeJobOffers)) {
+            return [];
+        }
+
+        $scoredOffers = [];
+        foreach ($activeJobOffers as $jobOffer) {
+            try {
+                $compatibilityScore = $this->calculateCompatibilityScore($applicant, $jobOffer);
+                $scoredOffers[] = [
+                    'jobOffer' => $jobOffer,
+                    'score' => $compatibilityScore['score'],
+                    'reasons' => $compatibilityScore['reasons']
+                ];
+            } catch (RuntimeException $e) {
+                // Log l'erreur mais continue avec les autres offres
+                continue;
+            }
+        }
+
+        usort($scoredOffers, fn($a, $b) => $b['score'] <=> $a['score']);
         return array_slice($scoredOffers, 0, $limit);
     }
 
     /**
-     * Trouve les meilleurs candidats pour une offre d'emploi
-     *
-     * @param JobOffer $jobOffer
-     * @param int $limit Nombre maximum de candidats à retourner
-     * @return array
+     * @return array<array{applicant: Applicant, score: int}>
      */
     public function findBestCandidatesForJobOffer(JobOffer $jobOffer, int $limit = 10): array
     {
@@ -758,20 +510,90 @@ class MatchingService
     }
 
     /**
-     * Récupère un applicant depuis son ID, avec gestion d'erreur appropriée
-     *
-     * @param int $applicantId
-     * @return Applicant
-     * @throws \LogicException Si l'applicant n'existe pas
+     * @throws RuntimeException
      */
     public function getApplicantById(int $applicantId): Applicant
     {
         $applicant = $this->entityManager->getRepository(Applicant::class)->find($applicantId);
-
-        if (!$applicant) {
-            throw new \LogicException('Candidat non trouvé');
+        if (!$applicant instanceof Applicant) {
+            throw new RuntimeException(sprintf('Applicant with ID %d not found', $applicantId));
         }
-
         return $applicant;
+    }
+
+    /**
+     * Calcule le score bonus basé sur l'expérience professionnelle récente
+     * 
+     * @param array<string, mixed> $relevantExperiences
+     */
+    private function calculateExperienceBonusScore(array $relevantExperiences, JobOffer $jobOffer): float
+    {
+        $score = 0;
+        $recentExperiences = $this->filterRecentExperiences($relevantExperiences);
+        
+        foreach ($recentExperiences as $experience) {
+            $score += $this->calculateSingleExperienceBonus($experience, $jobOffer);
+        }
+        
+        return min(30, $score);
+    }
+
+    /**
+     * Extrait les mots-clés d'un texte
+     * 
+     * @return array<string>
+     */
+    private function extractKeywords(string $text): array
+    {
+        // Convertir en minuscules et supprimer la ponctuation
+        $text = mb_strtolower($text);
+        $text = preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $text);
+
+        // Diviser en mots
+        $words = preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY);
+
+        // Filtrer les mots courts et les mots vides
+        $stopWords = ['le', 'la', 'les', 'un', 'une', 'des', 'et', 'ou', 'de', 'du', 'en', 'dans'];
+        $words = array_filter($words, function($word) use ($stopWords) {
+            return strlen($word) > 2 && !in_array($word, $stopWords);
+        });
+
+        return array_values(array_unique($words));
+    }
+
+    /**
+     * Vérifie si une expérience est récente (moins de 5 ans)
+     */
+    private function isRecentExperience(array $experience): bool
+    {
+        $now = new DateTime();
+        $endDate = $experience['endDate'] ?? $now;
+        $interval = $endDate->diff($now);
+        return $interval->y <= 5;
+    }
+
+    /**
+     * Normalise un score entre 0 et 100
+     */
+    private function normalizeScore(float $score, float $maxScore): int
+    {
+        if ($maxScore <= 0) {
+            return 0;
+        }
+        return (int)round(($score / $maxScore) * 100);
+    }
+
+    /**
+     * @return array<string>
+     */
+    private function getDefaultSoftSkills(): array
+    {
+        return [
+            'communication',
+            'travail d\'équipe',
+            'adaptabilité',
+            'résolution de problèmes',
+            'organisation'
+        ];
     }
 }
