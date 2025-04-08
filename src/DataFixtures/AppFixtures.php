@@ -332,28 +332,27 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
                 $title = $jobTitles[array_rand($jobTitles)];
                 $jobOffer->setTitle($title . " - Position {$j}");
                 $jobOffer
-                    ->setDescription("Nous recherchons un professionnel expérimenté pour rejoindre notre équipe de Formule 1.
-                
-Responsabilités:
-- Travailler sur les voitures pendant et entre les courses
-- Collaborer avec les ingénieurs pour optimiser les performances
-- Assurer la maintenance et les réparations rapides pendant les courses
-- Participer aux tests et au développement
-
-Profil recherché:
-- Expérience en " . strtolower($title) . " de haut niveau
-- Connaissance des règlements F1
-- Capacité à travailler sous pression
-- Disponibilité pour voyager à l'international
-- Anglais courant obligatoire
-- Capacité à s'intégrer dans une équipe soudée
-
-Nous offrons:
-- Un environnement de travail stimulant au sein d'une équipe passionnée
-- Des opportunités de développement professionnel
-- La possibilité de voyager sur les circuits du monde entier
-- Un package salarial compétitif
-- Des avantages sociaux attractifs");
+                    ->setDescription(
+                        "Nous recherchons un professionnel expérimenté pour rejoindre notre équipe de Formule 1.\n\n" .
+                        "Responsabilités:\n" .
+                        "- Travailler sur les voitures pendant et entre les courses\n" .
+                        "- Collaborer avec les ingénieurs pour optimiser les performances\n" .
+                        "- Assurer la maintenance et les réparations rapides pendant les courses\n" .
+                        "- Participer aux tests et au développement\n\n" .
+                        "Profil recherché:\n" .
+                        "- Expérience en " . strtolower($title) . " de haut niveau\n" .
+                        "- Connaissance des règlements F1\n" .
+                        "- Capacité à travailler sous pression\n" .
+                        "- Disponibilité pour voyager à l'international\n" .
+                        "- Anglais courant obligatoire\n" .
+                        "- Capacité à s'intégrer dans une équipe soudée\n\n" .
+                        "Nous offrons:\n" .
+                        "- Un environnement de travail stimulant au sein d'une équipe passionnée\n" .
+                        "- Des opportunités de développement professionnel\n" .
+                        "- La possibilité de voyager sur les circuits du monde entier\n" .
+                        "- Un package salarial compétitif\n" .
+                        "- Des avantages sociaux attractifs"
+                    );
 
                 $jobOffer->setCompany($recruiter->getCompanyName());
                 $jobOffer->setContractType($contractTypes[array_rand($contractTypes)]);
