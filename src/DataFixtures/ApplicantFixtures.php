@@ -94,7 +94,10 @@ class ApplicantFixtures extends Fixture
                 'city' => 'Le Mans',
                 'bio' => 'Passionné de sport automobile depuis mon plus jeune âge',
                 'experience' => "2018-2023 : Mécanicien F3 @ Prema Racing\n2016-2018 : Mécanicien F4 @ FFSA Academy",
-                'education' => "2014-2016 : BTS Maintenance des Véhicules @ Lycée Le Mans Sud, Le Mans\n2011-2014 : Bac Pro Maintenance des Véhicules @ Lycée Le Mans Sud, Le Mans"
+                'education' => implode("\n", [
+                    "2014-2016 : BTS Maintenance des Véhicules @ Lycée Le Mans Sud, Le Mans",
+                    "2011-2014 : Bac Pro Maintenance des Véhicules @ Lycée Le Mans Sud, Le Mans"
+                ])
             ],
             [
                 'email' => 'candidat2@exemple.fr',
@@ -106,8 +109,14 @@ class ApplicantFixtures extends Fixture
                 'softSkills' => ['Analyse', 'Innovation', 'Communication'],
                 'city' => 'Viry-Châtillon',
                 'bio' => 'Passionnée par l\'innovation en sport automobile',
-                'experience' => "2020-2023 : Ingénieure Aéro @ Dallara\n2019-2020 : Stagiaire Aéro @ Alpine F1",
-                'education' => "2017-2019 : Master en Aérodynamique @ ISAE-SUPAERO, Toulouse\n2014-2017 : Diplôme d'Ingénieur @ École Centrale Paris, Paris"
+                'experience' => implode("\n", [
+                    "2020-2023 : Ingénieure Aéro @ Dallara",
+                    "2019-2020 : Stagiaire Aéro @ Alpine F1"
+                ]),
+                'education' => implode("\n", [
+                    "2017-2019 : Master en Aérodynamique @ ISAE-SUPAERO, Toulouse",
+                    "2014-2017 : Diplôme d'Ingénieur @ École Centrale Paris, Paris"
+                ])
             ],
             [
                 'email' => 'candidat3@exemple.fr',
@@ -119,8 +128,14 @@ class ApplicantFixtures extends Fixture
                 'softSkills' => ['Analyse', 'Précision', 'Adaptabilité'],
                 'city' => 'Monaco',
                 'bio' => 'Passionnée par l\'analyse de données dans le sport automobile',
-                'experience' => "2019-2023 : Data Engineer @ Ferrari F1\n2017-2019 : Junior Data Analyst @ Mercedes F1",
-                'education' => "2015-2017 : Master en Science des Données @ École Polytechnique, Paris\n2012-2015 : Licence en Mathématiques @ Sorbonne Université, Paris"
+                'experience' => implode("\n", [
+                    "2019-2023 : Data Engineer @ Ferrari F1",
+                    "2017-2019 : Junior Data Analyst @ Mercedes F1"
+                ]),
+                'education' => implode("\n", [
+                    "2015-2017 : Master en Science des Données @ École Polytechnique, Paris",
+                    "2012-2015 : Licence en Mathématiques @ Sorbonne Université, Paris"
+                ])
             ],
             [
                 'email' => 'candidat4@exemple.fr',
@@ -132,8 +147,14 @@ class ApplicantFixtures extends Fixture
                 'softSkills' => ['Minutie', 'Organisation', 'Autonomie'],
                 'city' => 'Magny-Cours',
                 'bio' => 'Spécialiste des matériaux composites dans le sport automobile',
-                'experience' => "2020-2023 : Technicien Composite @ Alpine F1\n2018-2020 : Technicien Composite @ ART Grand Prix",
-                'education' => "2016-2018 : BTS Composites et Plastiques @ ISPA, Alençon\n2013-2016 : Bac Pro Plastiques et Composites @ Lycée Technique, Alençon"
+                'experience' => implode("\n", [
+                    "2020-2023 : Technicien Composite @ Alpine F1",
+                    "2018-2020 : Technicien Composite @ ART Grand Prix"
+                ]),
+                'education' => implode("\n", [
+                    "2016-2018 : BTS Composites et Plastiques @ ISPA, Alençon",
+                    "2013-2016 : Bac Pro Plastiques et Composites @ Lycée Technique, Alençon"
+                ])
             ],
             [
                 'email' => 'candidat5@exemple.fr',
@@ -145,8 +166,14 @@ class ApplicantFixtures extends Fixture
                 'softSkills' => ['Leadership', 'Gestion du stress', 'Communication'],
                 'city' => 'Silverstone',
                 'bio' => 'Passionnée par la stratégie et la performance en course',
-                'experience' => "2021-2023 : Performance Engineer @ Aston Martin F1\n2019-2021 : Junior Engineer @ Williams Racing",
-                'education' => "2017-2019 : Master en Ingénierie Automobile @ Cranfield University, UK\n2014-2017 : Diplôme d'Ingénieur @ ESTACA, Paris"
+                'experience' => implode("\n", [
+                    "2021-2023 : Performance Engineer @ Aston Martin F1",
+                    "2019-2021 : Junior Engineer @ Williams Racing"
+                ]),
+                'education' => implode("\n", [
+                    "2017-2019 : Master en Ingénierie Automobile @ Cranfield University, UK",
+                    "2014-2017 : Diplôme d'Ingénieur @ ESTACA, Paris"
+                ])
             ]
         ];
     }

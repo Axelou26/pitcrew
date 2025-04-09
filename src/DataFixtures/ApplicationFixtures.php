@@ -27,7 +27,9 @@ class ApplicationFixtures extends Fixture implements DependentFixtureInterface
             $manager,
             'applicant_0',
             'job_offer_0',
-            'Passionné de sport automobile depuis mon plus jeune âge, j\'ai 5 ans d\'expérience en tant que mécanicien de compétition. J\'ai travaillé sur différents championnats (F4, F3) et je souhaite maintenant évoluer en F1.',
+            'Passionné de sport automobile depuis mon plus jeune âge, j\'ai 5 ans d\'expérience en tant que ' .
+            'mécanicien de compétition. J\'ai travaillé sur différents championnats (F4, F3) et je souhaite ' .
+            'maintenant évoluer en F1.',
             new DateTimeImmutable('-5 days')
         );
 
@@ -35,7 +37,8 @@ class ApplicationFixtures extends Fixture implements DependentFixtureInterface
             $manager,
             'applicant_0',
             'job_offer_3',
-            'Ma formation en matériaux composites et mon expérience en F3 me permettent de maîtriser parfaitement les techniques de fabrication et de réparation des pièces en carbone.',
+            'Ma formation en matériaux composites et mon expérience en F3 me permettent de maîtriser ' .
+            'parfaitement les techniques de fabrication et de réparation des pièces en carbone.',
             new DateTimeImmutable('-2 days')
         );
 
@@ -44,7 +47,8 @@ class ApplicationFixtures extends Fixture implements DependentFixtureInterface
             $manager,
             'applicant_1',
             'job_offer_1',
-            'Ingénieur en mécanique spécialisé en aérodynamique, je souhaite mettre mes compétences en analyse de données et simulation CFD au service de votre équipe.',
+            'Ingénieur en mécanique spécialisé en aérodynamique, je souhaite mettre mes compétences ' .
+            'en analyse de données et simulation CFD au service de votre équipe.',
             new DateTimeImmutable('-3 days')
         );
 
@@ -52,7 +56,8 @@ class ApplicationFixtures extends Fixture implements DependentFixtureInterface
             $manager,
             'applicant_1',
             'job_offer_4',
-            'Mon expérience en analyse de données de course et en développement Python serait un atout pour votre équipe de télémétrie.',
+            'Mon expérience en analyse de données de course et en développement Python serait un atout ' .
+            'pour votre équipe de télémétrie.',
             new DateTimeImmutable('-1 day')
         );
 

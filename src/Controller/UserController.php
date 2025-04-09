@@ -13,10 +13,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/user')]
 class UserController extends AbstractController
 {
-    #[Route('/{userId}/profile', name: 'app_user_profile', requirements: ["userId" => "\d+"])]
+    #[Route('/{userId}/profile', name: 'app_user_profile', requirements: ['userId' => '\d+'])]
     #[Route('/u/{username}', name: 'app_user_profile_by_username')]
-    public function profile(EntityManagerInterface $entityManager, ?int $userId = null, ?string $username = null): Response
-    {
+    public function profile(
+        EntityManagerInterface $entityManager,
+        ?int $userId = null,
+        ?string $username = null
+    ): Response {
         // Récupérer l'utilisateur par son ID ou son nom d'utilisateur
         $userRepository = $entityManager->getRepository(User::class);
 

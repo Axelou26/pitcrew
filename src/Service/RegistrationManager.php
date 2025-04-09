@@ -192,7 +192,11 @@ class RegistrationManager
                     'currency' => 'eur',
                     'product_data' => [
                         'name' => 'Abonnement ' . $subscription->getName(),
-                        'description' => 'Abonnement ' . $subscription->getName() . ' pour ' . $subscription->getDuration() . ' jours',
+                        'description' => sprintf(
+                            'Abonnement %s pour %s jours',
+                            $subscription->getName(),
+                            $subscription->getDuration()
+                        ),
                         'metadata' => [
                             'subscription_id' => $subscription->getId()
                         ]

@@ -63,7 +63,10 @@ class FriendshipRepository extends ServiceEntityRepository
     public function findPendingRequestBetween(User $user1, User $user2): ?Friendship
     {
         return $this->createQueryBuilder('f')
-            ->where('(f.requester = :user1 AND f.addressee = :user2) OR (f.requester = :user2 AND f.addressee = :user1)')
+            ->where(
+                '(f.requester = :user1 AND f.addressee = :user2) OR ' .
+                '(f.requester = :user2 AND f.addressee = :user1)'
+            )
             ->andWhere('f.status = :status')
             ->setParameter('user1', $user1)
             ->setParameter('user2', $user2)

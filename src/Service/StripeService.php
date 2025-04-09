@@ -136,7 +136,11 @@ class StripeService implements PaymentServiceInterface
                     'currency' => 'eur',
                     'product_data' => [
                         'name' => 'Abonnement ' . $subscription->getName(),
-                        'description' => 'Abonnement ' . $subscription->getName() . ' pour ' . $subscription->getDuration() . ' jours',
+                        'description' => sprintf(
+                            'Abonnement %s pour %s jours',
+                            $subscription->getName(),
+                            $subscription->getDuration()
+                        ),
                         'metadata' => [
                             'subscription_id' => $subscription->getId()
                         ]
@@ -209,8 +213,11 @@ class StripeService implements PaymentServiceInterface
         return $this->generateUrl('app_subscription_cancel', [], UrlGeneratorInterface::ABSOLUTE_URL);
     }
 
-    private function generateUrl(string $route, array $parameters = [], int $referenceType = UrlGeneratorInterface::ABSOLUTE_PATH): string
-    {
+    private function generateUrl(
+        string $route,
+        array $parameters = [],
+        int $referenceType = UrlGeneratorInterface::ABSOLUTE_PATH
+    ): string {
         return $this->params->get('router')->generate($route, $parameters, $referenceType);
     }
 }

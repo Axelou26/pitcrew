@@ -102,7 +102,10 @@ class JobApplicationController extends AbstractController
 
                 return $this->redirectToRoute('app_job_application_index');
             } catch (\Exception $e) {
-                $this->addFlash('error', 'Une erreur est survenue lors du traitement de votre candidature : ' . $e->getMessage());
+                $this->addFlash(
+                    'error',
+                    'Une erreur est survenue lors du traitement de votre candidature : ' . $e->getMessage()
+                );
                 return $this->redirectToRoute(
                     'app_job_application_new',
                     ['id' => $jobOffer->getId()]

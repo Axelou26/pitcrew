@@ -50,8 +50,14 @@ class JobOfferFixtures extends Fixture implements DependentFixtureInterface
         return [
             [
                 'title' => 'Mécanicien F1',
-                'description' => 'Nous recherchons un mécanicien expérimenté pour rejoindre notre équipe de Formule 1. Vous serez responsable de la maintenance et de la préparation des voitures de course.',
-                'requiredSkills' => ['Mécanique de compétition', 'Hydraulique', 'Électronique embarquée', 'Composite'],
+                'description' => 'Nous recherchons un mécanicien expérimenté pour rejoindre notre équipe de F1. ' .
+                    'Vous serez responsable de la maintenance et de la préparation des voitures.',
+                'requiredSkills' => [
+                    'Mécanique de compétition',
+                    'Hydraulique',
+                    'Électronique embarquée',
+                    'Composite'
+                ],
                 'location' => 'Viry-Châtillon',
                 'isRemote' => false,
                 'salary' => 40000,
@@ -61,8 +67,14 @@ class JobOfferFixtures extends Fixture implements DependentFixtureInterface
             ],
             [
                 'title' => 'Ingénieur Performance',
-                'description' => 'Rejoignez notre équipe en tant qu\'ingénieur performance pour analyser et optimiser les performances de nos voitures de course.',
-                'requiredSkills' => ['Analyse de données', 'Simulation', 'MATLAB', 'CFD'],
+                'description' => 'Rejoignez notre équipe en tant qu\'ingénieur performance pour optimiser ' .
+                    'les performances de nos voitures de course.',
+                'requiredSkills' => [
+                    'Analyse de données',
+                    'Simulation',
+                    'MATLAB',
+                    'CFD'
+                ],
                 'location' => 'Le Mans',
                 'isRemote' => false,
                 'salary' => 55000,
@@ -72,8 +84,14 @@ class JobOfferFixtures extends Fixture implements DependentFixtureInterface
             ],
             [
                 'title' => 'Chef d\'équipe Stand',
-                'description' => 'Nous cherchons un chef d\'équipe expérimenté pour gérer notre équipe de stand pendant les courses.',
-                'requiredSkills' => ['Management d\'équipe', 'Gestion de stress', 'Stratégie de course', 'Réglementation FIA'],
+                'description' => 'Nous cherchons un chef d\'équipe expérimenté pour gérer notre équipe de stand ' .
+                    'pendant les courses.',
+                'requiredSkills' => [
+                    'Management d\'équipe',
+                    'Gestion de stress',
+                    'Stratégie de course',
+                    'Réglementation FIA'
+                ],
                 'location' => 'Magny-Cours',
                 'isRemote' => false,
                 'salary' => 48000,
@@ -83,8 +101,13 @@ class JobOfferFixtures extends Fixture implements DependentFixtureInterface
             ],
             [
                 'title' => 'Technicien Composite',
-                'description' => 'Expert en matériaux composites pour la fabrication et la réparation de pièces de carrosserie.',
-                'requiredSkills' => ['Fibre de carbone', 'Moulage', 'Réparation composite', 'Contrôle qualité'],
+                'description' => 'Expert en fabrication et réparation de pièces en matériaux composites.',
+                'requiredSkills' => [
+                    'Fibre de carbone',
+                    'Moulage',
+                    'Réparation composite',
+                    'Contrôle qualité'
+                ],
                 'location' => 'Stuttgart',
                 'isRemote' => false,
                 'salary' => 35000,
@@ -95,7 +118,12 @@ class JobOfferFixtures extends Fixture implements DependentFixtureInterface
             [
                 'title' => 'Ingénieur Télémétrie',
                 'description' => 'Analyse en temps réel des données de course et optimisation des performances.',
-                'requiredSkills' => ['Télémétrie', 'Python', 'Analyse de données', 'Communication radio'],
+                'requiredSkills' => [
+                    'Télémétrie',
+                    'Python',
+                    'Analyse de données',
+                    'Communication radio'
+                ],
                 'location' => 'Prague',
                 'isRemote' => true,
                 'salary' => 58000,

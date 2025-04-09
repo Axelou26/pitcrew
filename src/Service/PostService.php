@@ -38,8 +38,10 @@ class PostService
         return match ($criteria->getType()) {
             PostSearchCriteria::TYPE_SEARCH => $this->postRepository->search($criteria->getQuery()),
             PostSearchCriteria::TYPE_FEED => $this->postRepository->findPostsForFeed($criteria->getUser()),
-            PostSearchCriteria::TYPE_HASHTAGS => $this->postRepository->findRecentPostsWithHashtags($criteria->getFromDate()),
-            PostSearchCriteria::TYPE_MENTIONS => $this->postRepository->findByMentionedUser($criteria->getUser()),
+            PostSearchCriteria::TYPE_HASHTAGS =>
+                $this->postRepository->findRecentPostsWithHashtags($criteria->getFromDate()),
+            PostSearchCriteria::TYPE_MENTIONS =>
+                $this->postRepository->findByMentionedUser($criteria->getUser()),
             default => throw new \InvalidArgumentException('Type de recherche invalide'),
         };
     }

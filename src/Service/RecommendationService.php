@@ -346,8 +346,18 @@ class RecommendationService
                     $queryBuilder = $this->entityManager->createQueryBuilder();
                     $queryBuilder->select('DISTINCT u.id')
                         ->from('App\Entity\User', 'u')
-                        ->leftJoin('App\Entity\PostLike', 'pl', 'WITH', 'pl.user = :userId AND pl.post MEMBER OF u.posts')
-                        ->leftJoin('App\Entity\PostComment', 'pc', 'WITH', 'pc.author = :userId AND pc.post MEMBER OF u.posts')
+                        ->leftJoin(
+                            'App\Entity\PostLike',
+                            'pl',
+                            'WITH',
+                            'pl.user = :userId AND pl.post MEMBER OF u.posts'
+                        )
+                        ->leftJoin(
+                            'App\Entity\PostComment',
+                            'pc',
+                            'WITH',
+                            'pc.author = :userId AND pc.post MEMBER OF u.posts'
+                        )
                         ->leftJoin(
                             'App\Entity\Friendship',
                             'f',

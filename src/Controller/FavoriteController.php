@@ -28,7 +28,9 @@ class FavoriteController extends AbstractController
 
         $isRecruiter = $user->isRecruiter();
         $template = $isRecruiter ? 'favorite/recruiter_favorites.html.twig' : 'favorite/candidate_favorites.html.twig';
-        $favorites = $isRecruiter ? $favoriteRepository->findFavoriteCandidates($user) : $favoriteRepository->findFavoriteJobOffers($user);
+        $favorites = $isRecruiter
+            ? $favoriteRepository->findFavoriteCandidates($user)
+            : $favoriteRepository->findFavoriteJobOffers($user);
 
         return $this->render($template, [
             'favorites' => $favorites,

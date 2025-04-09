@@ -308,7 +308,9 @@ class MatchingTestCommand extends Command
             return;
         }
 
-        $ioStyle->section(sprintf('Meilleures offres pour %s %s', $applicant->getFirstName(), $applicant->getLastName()));
+        $ioStyle->section(
+            sprintf('Meilleures offres pour %s %s', $applicant->getFirstName(), $applicant->getLastName())
+        );
 
         $rows = [];
         foreach ($offers as $index => $offer) {

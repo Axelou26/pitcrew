@@ -71,7 +71,8 @@ class RecruiterFixtures extends Fixture implements DependentFixtureInterface
                 'firstName' => 'Jean',
                 'lastName' => 'Dupont',
                 'companyName' => 'Alpine F1 Team',
-                'companyDescription' => 'Écurie de Formule 1 basée à Enstone (UK) et Viry-Châtillon, représentant les couleurs françaises en F1',
+                'companyDescription' => 'Écurie de Formule 1 basée à Enstone (UK) et Viry-Châtillon, ' .
+                    'représentant les couleurs françaises en F1',
                 'city' => 'Viry-Châtillon',
                 'subscriptionReference' => 'subscription-business'
             ],
