@@ -8,14 +8,18 @@ use App\Service\EmailValidationService;
 
 class EmailValidator extends ConstraintValidator
 {
-    private EmailValidationService $emailValidationSrv;
+    private EmailValidationService $emailValidationService;
 
-    public function __construct(EmailValidationService $emailValidationSrv)
+    public function __construct(EmailValidationService $emailValidationService)
     {
-        $this->emailValidationSrv = $emailValidationSrv;
+        $this->emailValidationService = $emailValidationService;
     }
 
-    public function validate($value, Constraint $constraint)
+    /**
+     * @param mixed $value
+     * @param Constraint $constraint
+     */
+    public function validate($value, Constraint $constraint): void
     {
         if (null === $value || '' === $value) {
             return;
@@ -27,7 +31,7 @@ class EmailValidator extends ConstraintValidator
             return;
         }
 
-        $errors = $this->emailValidationSrv->getValidationErrors($value);
+        $errors = $this->emailValidationService->getValidationErrors($value);
         if (!empty($errors)) {
             foreach ($errors as $error) {
                 $this->context->buildViolation($error)
