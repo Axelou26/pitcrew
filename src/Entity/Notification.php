@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\NotificationRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use DateTimeImmutable;
 
 #[ORM\Entity(repositoryClass: NotificationRepository::class)]
 class Notification
@@ -18,6 +19,9 @@ class Notification
     public const TYPE_FRIEND_REQUEST = 'friend_request';
     public const TYPE_APPLICATION = 'application';
 
+    /**
+     * @SuppressWarnings("PHPMD.ShortVariable")
+     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -37,7 +41,7 @@ class Notification
     private ?bool $isRead = false;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $createdAt = null;
+    private ?DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $link = null;
@@ -56,7 +60,7 @@ class Notification
 
     public function __construct()
     {
-        $this->createdAt = new \DateTimeImmutable();
+        $this->createdAt = new DateTimeImmutable();
         $this->isRead = false;
     }
 
@@ -113,7 +117,7 @@ class Notification
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->createdAt;
     }

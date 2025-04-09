@@ -26,17 +26,13 @@ class FavoriteController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
-        if ($user->isRecruiter()) {
-            $favoriteCandidates = $favoriteRepository->findFavoriteCandidates($user);
-            return $this->render('favorite/recruiter_favorites.html.twig', [
-                'favorites' => $favoriteCandidates,
-            ]);
-        } else {
-            $favoriteJobOffers = $favoriteRepository->findFavoriteJobOffers($user);
-            return $this->render('favorite/candidate_favorites.html.twig', [
-                'favorites' => $favoriteJobOffers,
-            ]);
-        }
+        $isRecruiter = $user->isRecruiter();
+        $template = $isRecruiter ? 'favorite/recruiter_favorites.html.twig' : 'favorite/candidate_favorites.html.twig';
+        $favorites = $isRecruiter ? $favoriteRepository->findFavoriteCandidates($user) : $favoriteRepository->findFavoriteJobOffers($user);
+
+        return $this->render($template, [
+            'favorites' => $favorites,
+        ]);
     }
 
     #[Route('/job-offer/{id}/toggle', name: 'app_favorites_toggle_job_offer')]
@@ -51,43 +47,44 @@ class FavoriteController extends AbstractController
         $user = $this->getUser();
 
         // Vérifier si l'offre est déjà en favoris
-        $isAlreadyFavorite = $favoriteRepository->isJobOfferFavorite($user, $jobOffer);
+        $favorite = $favoriteRepository->findOneBy([
+            'user' => $user,
+            'jobOffer' => $jobOffer,
+            'type' => Favorite::TYPE_JOB_OFFER
+        ]);
 
-        if ($isAlreadyFavorite) {
-            // Supprimer des favoris
-            $favorite = $favoriteRepository->findOneBy([
-                'user' => $user,
-                'jobOffer' => $jobOffer,
-                'type' => Favorite::TYPE_JOB_OFFER
-            ]);
+        $isFavorite = (bool) $favorite;
+        $message = $isFavorite ? 'Offre retirée des favoris' : 'Offre ajoutée aux favoris';
 
-            if ($favorite) {
-                $entityManager->remove($favorite);
-                $entityManager->flush();
-            }
-
-            $message = 'Offre retirée des favoris';
-            $isFavorite = false;
-        } else {
-            // Ajouter aux favoris
-            $favorite = new Favorite();
-            $favorite->setUser($user)
-                ->setJobOffer($jobOffer)
-                ->setType(Favorite::TYPE_JOB_OFFER);
-
-            $entityManager->persist($favorite);
+        if ($isFavorite) {
+            $entityManager->remove($favorite);
             $entityManager->flush();
 
-            $message = 'Offre ajoutée aux favoris';
-            $isFavorite = true;
+            if ($request->isXmlHttpRequest()) {
+                return new JsonResponse([
+                    'success' => true,
+                    'message' => $message,
+                    'isFavorite' => false // Now it's not favorite
+                ]);
+            }
+            $this->addFlash('success', $message);
+            return $this->redirectToRoute('app_job_offer_show', ['id' => $jobOffer->getId()]);
         }
+
+        // If not favorite, create and persist
+        $favorite = new Favorite();
+        $favorite->setUser($user)
+            ->setJobOffer($jobOffer)
+            ->setType(Favorite::TYPE_JOB_OFFER);
+        $entityManager->persist($favorite);
+        $entityManager->flush();
 
         // Si c'est une requête AJAX
         if ($request->isXmlHttpRequest()) {
             return new JsonResponse([
                 'success' => true,
                 'message' => $message,
-                'isFavorite' => $isFavorite
+                'isFavorite' => true // Now it is favorite
             ]);
         }
 
@@ -99,7 +96,7 @@ class FavoriteController extends AbstractController
     #[Route('/candidate/{id}/toggle', name: 'app_favorites_toggle_candidate')]
     #[IsGranted('ROLE_RECRUTEUR')]
     public function toggleCandidateFavorite(
-        $id,
+        int $candidateId,
         FavoriteRepository $favoriteRepository,
         EntityManagerInterface $entityManager,
         Request $request
@@ -109,7 +106,7 @@ class FavoriteController extends AbstractController
 
         // Récupérer le candidat par son ID
         $userRepository = $entityManager->getRepository(User::class);
-        $candidate = $userRepository->find($id);
+        $candidate = $userRepository->find($candidateId);
 
         // Vérifier si l'utilisateur existe
         if (!$candidate) {
@@ -123,43 +120,44 @@ class FavoriteController extends AbstractController
         }
 
         // Vérifier si le candidat est déjà en favoris
-        $isAlreadyFavorite = $favoriteRepository->isCandidateFavorite($user, $candidate);
+        $favorite = $favoriteRepository->findOneBy([
+            'user' => $user,
+            'candidate' => $candidate,
+            'type' => Favorite::TYPE_CANDIDATE
+        ]);
 
-        if ($isAlreadyFavorite) {
-            // Supprimer des favoris
-            $favorite = $favoriteRepository->findOneBy([
-                'user' => $user,
-                'candidate' => $candidate,
-                'type' => Favorite::TYPE_CANDIDATE
-            ]);
+        $isFavorite = (bool) $favorite;
+        $message = $isFavorite ? 'Candidat retiré des favoris' : 'Candidat ajouté aux favoris';
 
-            if ($favorite) {
-                $entityManager->remove($favorite);
-                $entityManager->flush();
-            }
-
-            $message = 'Candidat retiré des favoris';
-            $isFavorite = false;
-        } else {
-            // Ajouter aux favoris
-            $favorite = new Favorite();
-            $favorite->setUser($user)
-                ->setCandidate($candidate)
-                ->setType(Favorite::TYPE_CANDIDATE);
-
-            $entityManager->persist($favorite);
+        if ($isFavorite) {
+            $entityManager->remove($favorite);
             $entityManager->flush();
 
-            $message = 'Candidat ajouté aux favoris';
-            $isFavorite = true;
+            if ($request->isXmlHttpRequest()) {
+                return new JsonResponse([
+                    'success' => true,
+                    'message' => $message,
+                    'isFavorite' => false // Now it's not favorite
+                ]);
+            }
+            $this->addFlash('success', $message);
+            return $this->redirectToRoute('app_user_profile', ['id' => $candidate->getId()]);
         }
+
+        // If not favorite, create and persist
+        $favorite = new Favorite();
+        $favorite->setUser($user)
+            ->setCandidate($candidate)
+            ->setType(Favorite::TYPE_CANDIDATE);
+        $entityManager->persist($favorite);
+        $entityManager->flush();
 
         // Si c'est une requête AJAX
         if ($request->isXmlHttpRequest()) {
             return new JsonResponse([
                 'success' => true,
                 'message' => $message,
-                'isFavorite' => $isFavorite
+                'isFavorite' => true // Now it is favorite
             ]);
         }
 

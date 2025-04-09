@@ -6,6 +6,7 @@ use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Exception;
 
 class FileUploader
 {
@@ -39,7 +40,7 @@ class FileUploader
         try {
             $file->move($targetDirectory, $fileName);
         } catch (FileException $e) {
-            throw new \Exception('Une erreur est survenue lors du téléchargement du fichier : ' . $e->getMessage());
+            throw new Exception('Une erreur est survenue lors du téléchargement du fichier : ' . $e->getMessage());
         }
 
         return $fileName;

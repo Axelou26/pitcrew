@@ -34,16 +34,16 @@ class FriendshipController extends AbstractController
 
     #[Route('/send/{id}', name: 'app_friendship_send')]
     public function send(
-        $id,
+        int $addresseeId,
         Request $request,
         EntityManagerInterface $entityManager,
         FriendshipRepository $friendshipRepository
-    ) {
+    ): Response {
         $requester = $this->getUser();
 
         // Récupérer l'utilisateur destinataire par son ID
         $userRepository = $entityManager->getRepository(User::class);
-        $addressee = $userRepository->find($id);
+        $addressee = $userRepository->find($addresseeId);
 
         // Vérifier si l'utilisateur existe
         if (!$addressee) {
@@ -61,24 +61,25 @@ class FriendshipController extends AbstractController
         $existingFriendship = $friendshipRepository->findBetweenUsers($requester, $addressee);
 
         if ($existingFriendship) {
+            $message = 'Une demande d\'amitié a déjà été traitée avec cet utilisateur.';
             if ($existingFriendship->isPending()) {
-                $this->addFlash('info', 'Une demande d\'amitié est déjà en cours avec cet utilisateur.');
+                $message = 'Une demande d\'amitié est déjà en cours avec cet utilisateur.';
             } elseif ($existingFriendship->isAccepted()) {
-                $this->addFlash('info', 'Vous êtes déjà ami avec cet utilisateur.');
-            } else {
-                $this->addFlash('info', 'Une demande d\'amitié a déjà été traitée avec cet utilisateur.');
+                $message = 'Vous êtes déjà ami avec cet utilisateur.';
             }
-        } else {
-            // Créer une nouvelle demande d'amitié
-            $friendship = new Friendship();
-            $friendship->setRequester($requester);
-            $friendship->setAddressee($addressee);
-
-            $entityManager->persist($friendship);
-            $entityManager->flush();
-
-            $this->addFlash('success', 'Votre demande d\'amitié a été envoyée.');
+            $this->addFlash('info', $message);
+            return $this->redirect($request->headers->get('referer', $this->generateUrl('app_home')));
         }
+
+        // Créer une nouvelle demande d'amitié
+        $friendship = new Friendship();
+        $friendship->setRequester($requester);
+        $friendship->setAddressee($addressee);
+
+        $entityManager->persist($friendship);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Votre demande d\'amitié a été envoyée.');
 
         return $this->redirect($request->headers->get('referer', $this->generateUrl('app_home')));
     }
@@ -147,16 +148,16 @@ class FriendshipController extends AbstractController
 
     #[Route('/remove/{id}', name: 'app_friendship_remove')]
     public function remove(
-        $id,
+        int $friendId,
         Request $request,
         EntityManagerInterface $entityManager,
         FriendshipRepository $friendshipRepository
-    ) {
+    ): Response {
         $user = $this->getUser();
 
         // Récupérer l'utilisateur ami par son ID
         $userRepository = $entityManager->getRepository(User::class);
-        $friend = $userRepository->find($id);
+        $friend = $userRepository->find($friendId);
 
         // Vérifier si l'utilisateur existe
         if (!$friend) {

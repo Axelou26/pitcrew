@@ -8,6 +8,9 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: WorkExperienceRepository::class)]
 class WorkExperience
 {
+    /**
+     * @SuppressWarnings("PHPMD.ShortVariable")
+     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]

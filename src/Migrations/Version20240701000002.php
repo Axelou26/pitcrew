@@ -14,6 +14,9 @@ final class Version20240701000002 extends AbstractMigration
         return 'Add logo and image fields to job_offer table';
     }
 
+    /**
+     * @SuppressWarnings("PHPMD.ShortMethodName")
+     */
     public function up(Schema $schema): void
     {
         // Add logo_url column

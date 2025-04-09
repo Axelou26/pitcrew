@@ -34,17 +34,17 @@ class CheckExpiredSubscriptionsCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
-        $io->title('Vérification des abonnements expirés');
+        $ioStyle = new SymfonyStyle($input, $output);
+        $ioStyle->title('Vérification des abonnements expirés');
 
         try {
-            $io->info('Début de la vérification...');
+            $ioStyle->info('Début de la vérification...');
             $this->subscriptionService->checkExpiredSubscriptions();
-            $io->success('Les abonnements expirés ont été mis à jour avec succès.');
+            $ioStyle->success('Les abonnements expirés ont été mis à jour avec succès.');
 
             return Command::SUCCESS;
         } catch (\Exception $e) {
-            $io
+            $ioStyle
                 ->error('Une erreur est survenue lors de la vérification des abonnements expirés : ' . $e
                 ->getMessage());
             return Command::FAILURE;

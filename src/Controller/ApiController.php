@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use DateTime;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
@@ -12,10 +13,12 @@ use Doctrine\ORM\EntityManagerInterface;
 class ApiController extends AbstractController
 {
     private EntityManagerInterface $entityManager;
+    private string $appEnv;
 
-    public function __construct(EntityManagerInterface $entityManager)
+    public function __construct(EntityManagerInterface $entityManager, string $kernelEnvironment)
     {
         $this->entityManager = $entityManager;
+        $this->appEnv = $kernelEnvironment;
     }
 
     #[Route('/posts', name: 'posts', methods: ['GET'])]
@@ -34,10 +37,10 @@ class ApiController extends AbstractController
 
             return new JsonResponse([
                 'status' => 'healthy',
-                'timestamp' => (new \DateTime())->format('c'),
+                'timestamp' => (new DateTime())->format('c'),
                 'database' => 'connected',
                 'php_version' => PHP_VERSION,
-                'symfony_environment' => $_ENV['APP_ENV'] ?? 'unknown'
+                'symfony_environment' => $this->appEnv
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([

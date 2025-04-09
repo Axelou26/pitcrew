@@ -17,20 +17,20 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class SubscriptionAdminController extends AbstractController
 {
     private EntityManagerInterface $entityManager;
-    private SubscriptionRepository $subscriptionRepository;
+    private SubscriptionRepository $subRepo;
 
     public function __construct(
         EntityManagerInterface $entityManager,
-        SubscriptionRepository $subscriptionRepository
+        SubscriptionRepository $subRepo
     ) {
         $this->entityManager = $entityManager;
-        $this->subscriptionRepository = $subscriptionRepository;
+        $this->subRepo = $subRepo;
     }
 
     #[Route('/', name: 'index', methods: ['GET'])]
     public function index(): Response
     {
-        $subscriptions = $this->subscriptionRepository->findAll();
+        $subscriptions = $this->subRepo->findAll();
 
         return $this->render('admin/subscription/index.html.twig', [
             'subscriptions' => $subscriptions,

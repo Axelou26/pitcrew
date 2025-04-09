@@ -7,6 +7,7 @@ use App\Entity\User;
 use App\Repository\InterviewRepository;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use DateTime;
 
 class VideoConferenceService
 {
@@ -83,7 +84,7 @@ class VideoConferenceService
      */
     public function isInterviewActive(Interview $interview): bool
     {
-        $now = new \DateTime();
+        $now = new DateTime();
         $scheduledTime = $interview->getScheduledAt();
 
         // Entretien actif si on est dans la fenêtre de 15 minutes avant à 1 heure après
@@ -99,7 +100,7 @@ class VideoConferenceService
      */
     public function endInterview(Interview $interview): void
     {
-        $interview->setEndedAt(new \DateTime());
+        $interview->setEndedAt(new DateTime());
         $interview->setStatus('completed');
         $this->interviewRepository->save($interview, true);
 

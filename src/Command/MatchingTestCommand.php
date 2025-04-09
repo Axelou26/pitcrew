@@ -58,29 +58,31 @@ class MatchingTestCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
+        $ioStyle = new SymfonyStyle($input, $output);
 
         // Option: Liste tous les candidats
         if ($input->getOption('list-applicants')) {
-            $this->listApplicants($io);
+            $this->listApplicants($ioStyle);
             return Command::SUCCESS;
         }
 
         // Option: Liste toutes les offres d'emploi
         if ($input->getOption('list-offers')) {
-            $this->listJobOffers($io);
+            $this->listJobOffers($ioStyle);
             return Command::SUCCESS;
         }
 
         // Option: Trouve les meilleurs candidats pour une offre
-        if ($offerId = $input->getOption('find-candidates')) {
-            $this->findBestCandidatesForJobOffer($io, (int)$offerId);
+        $offerId = $input->getOption('find-candidates');
+        if ($offerId) {
+            $this->findBestCandidatesForJobOffer($ioStyle, (int)$offerId);
             return Command::SUCCESS;
         }
 
         // Option: Trouve les meilleures offres pour un candidat
-        if ($applicantId = $input->getOption('find-offers')) {
-            $this->findBestOffersForCandidate($io, (int)$applicantId);
+        $applicantId = $input->getOption('find-offers');
+        if ($applicantId) {
+            $this->findBestOffersForCandidate($ioStyle, (int)$applicantId);
             return Command::SUCCESS;
         }
 
@@ -89,24 +91,24 @@ class MatchingTestCommand extends Command
         $jobOfferId = $input->getOption('job-offer');
 
         if ($applicantId && $jobOfferId) {
-            $this->showCompatibilityScore($io, (int)$applicantId, (int)$jobOfferId);
+            $this->showCompatibilityScore($ioStyle, (int)$applicantId, (int)$jobOfferId);
             return Command::SUCCESS;
         }
 
         // Si aucune option n'est fournie, afficher l'aide
-        $io->comment("Aucune option spécifiée. Utilisez --help pour voir les options disponibles.");
+        $ioStyle->comment("Aucune option spécifiée. Utilisez --help pour voir les options disponibles.");
         return Command::SUCCESS;
     }
 
     /**
      * Liste tous les candidats (utilisateurs avec le rôle ROLE_POSTULANT)
      */
-    private function listApplicants(SymfonyStyle $io): void
+    private function listApplicants(SymfonyStyle $ioStyle): void
     {
         $applicants = $this->userRepository->findByRole('ROLE_POSTULANT');
 
         if (empty($applicants)) {
-            $io->warning('Aucun candidat trouvé dans la base de données.');
+            $ioStyle->warning('Aucun candidat trouvé dans la base de données.');
             return;
         }
 
@@ -123,23 +125,23 @@ class MatchingTestCommand extends Command
             }
         }
 
-        $io->section('Liste des candidats');
-        $io->table(
+        $ioStyle->section('Liste des candidats');
+        $ioStyle->table(
             ['ID', 'Nom', 'Email', 'Compétences', 'Ville'],
             $rows
         );
-        $io->success(sprintf('%d candidats trouvés.', count($rows)));
+        $ioStyle->success(sprintf('%d candidats trouvés.', count($rows)));
     }
 
     /**
      * Liste toutes les offres d'emploi actives
      */
-    private function listJobOffers(SymfonyStyle $io): void
+    private function listJobOffers(SymfonyStyle $ioStyle): void
     {
         $jobOffers = $this->jobOfferRepository->findBy(['isActive' => true]);
 
         if (empty($jobOffers)) {
-            $io->warning('Aucune offre d\'emploi active trouvée dans la base de données.');
+            $ioStyle->warning('Aucune offre d\'emploi active trouvée dans la base de données.');
             return;
         }
 
@@ -154,85 +156,119 @@ class MatchingTestCommand extends Command
             ];
         }
 
-        $io->section('Liste des offres d\'emploi actives');
-        $io->table(
+        $ioStyle->section('Liste des offres d\'emploi actives');
+        $ioStyle->table(
             ['ID', 'Titre', 'Entreprise', 'Localisation', 'Compétences requises'],
             $rows
         );
-        $io->success(sprintf('%d offres trouvées.', count($rows)));
+        $ioStyle->success(sprintf('%d offres trouvées.', count($rows)));
     }
 
     /**
      * Affiche le score de compatibilité entre un candidat et une offre d'emploi
      */
-    private function showCompatibilityScore(SymfonyStyle $io, int $applicantId, int $jobOfferId): void
+    private function showCompatibilityScore(SymfonyStyle $ioStyle, int $applicantId, int $jobOfferId): void
     {
-        $applicant = $this->userRepository->find($applicantId);
-        $jobOffer = $this->jobOfferRepository->find($jobOfferId);
-
-        if (!$applicant || !($applicant instanceof Applicant)) {
-            $io->error('Candidat non trouvé ou l\'utilisateur n\'est pas un candidat.');
+        $applicant = $this->findApplicant($ioStyle, $applicantId);
+        if (!$applicant) {
             return;
         }
 
+        $jobOffer = $this->findJobOffer($ioStyle, $jobOfferId);
         if (!$jobOffer) {
-            $io->error('Offre d\'emploi non trouvée.');
             return;
         }
 
         $score = $this->matchingService->calculateCompatibilityScore($applicant, $jobOffer);
+        $this->displayCompatibilityScore($ioStyle, $applicant, $jobOffer, $score);
+    }
 
-        $io->section(sprintf(
+    private function findApplicant(SymfonyStyle $ioStyle, int $applicantId): ?Applicant
+    {
+        $applicant = $this->userRepository->find($applicantId);
+        if (!$applicant || !($applicant instanceof Applicant)) {
+            $ioStyle->error('Candidat non trouvé ou l\'utilisateur n\'est pas un candidat.');
+            return null;
+        }
+        return $applicant;
+    }
+
+    private function findJobOffer(SymfonyStyle $ioStyle, int $jobOfferId): ?JobOffer
+    {
+        $jobOffer = $this->jobOfferRepository->find($jobOfferId);
+        if (!$jobOffer) {
+            $ioStyle->error('Offre d\'emploi non trouvée.');
+            return null;
+        }
+        return $jobOffer;
+    }
+
+    private function displayCompatibilityScore(
+        SymfonyStyle $ioStyle,
+        Applicant $applicant,
+        JobOffer $jobOffer,
+        array $score
+    ): void {
+        $ioStyle->section(sprintf(
             'Score de compatibilité entre %s %s et %s',
             $applicant->getFirstName(),
             $applicant->getLastName(),
             $jobOffer->getTitle()
         ));
 
-        $io->success(sprintf('Score global: %d%%', $score['score']));
+        $ioStyle->success(sprintf('Score global: %d%%', $score['score']));
+        $this->displayScoreDetails($ioStyle, $score['reasons']);
+    }
 
-        $io->section('Détails par catégorie:');
-        foreach ($score['reasons'] as $reason) {
-            $io->writeln(sprintf(
-                '<info>%s</info>: %d/%d (%d%%)',
-                $reason['category'],
-                $reason['score'],
-                $reason['maxScore'],
-                $reason['maxScore'] > 0 ? round(($reason['score'] / $reason['maxScore']) * 100) : 0
-            ));
-
-            if (isset($reason['matches']) && !empty($reason['matches'])) {
-                $io->writeln('  Correspondances: ' . implode(', ', $reason['matches']));
-            }
-
-            if (isset($reason['details']) && !empty($reason['details'])) {
-                $io->writeln('  Détails: ' . implode(', ', $reason['details']));
-            }
-
-            $io->newLine();
+    private function displayScoreDetails(SymfonyStyle $ioStyle, array $reasons): void
+    {
+        $ioStyle->section('Détails par catégorie:');
+        foreach ($reasons as $reason) {
+            $this->displayReasonDetails($ioStyle, $reason);
         }
+    }
+
+    private function displayReasonDetails(SymfonyStyle $ioStyle, array $reason): void
+    {
+        $ioStyle->writeln(sprintf(
+            '<info>%s</info>: %d/%d (%d%%)',
+            $reason['category'],
+            $reason['score'],
+            $reason['maxScore'],
+            $reason['maxScore'] > 0 ? round(($reason['score'] / $reason['maxScore']) * 100) : 0
+        ));
+
+        if (isset($reason['matches']) && !empty($reason['matches'])) {
+            $ioStyle->writeln('  Correspondances: ' . implode(', ', $reason['matches']));
+        }
+
+        if (isset($reason['details']) && !empty($reason['details'])) {
+            $ioStyle->writeln('  Détails: ' . implode(', ', $reason['details']));
+        }
+
+        $ioStyle->newLine();
     }
 
     /**
      * Trouve les meilleurs candidats pour une offre d'emploi
      */
-    private function findBestCandidatesForJobOffer(SymfonyStyle $io, int $jobOfferId): void
+    private function findBestCandidatesForJobOffer(SymfonyStyle $ioStyle, int $jobOfferId): void
     {
         $jobOffer = $this->jobOfferRepository->find($jobOfferId);
 
         if (!$jobOffer) {
-            $io->error('Offre d\'emploi non trouvée.');
+            $ioStyle->error('Offre d\'emploi non trouvée.');
             return;
         }
 
         $candidates = $this->matchingService->findBestCandidatesForJobOffer($jobOffer);
 
         if (empty($candidates)) {
-            $io->warning('Aucun candidat compatible trouvé pour cette offre.');
+            $ioStyle->warning('Aucun candidat compatible trouvé pour cette offre.');
             return;
         }
 
-        $io->section(sprintf('Meilleurs candidats pour "%s"', $jobOffer->getTitle()));
+        $ioStyle->section(sprintf('Meilleurs candidats pour "%s"', $jobOffer->getTitle()));
 
         $rows = [];
         foreach ($candidates as $index => $candidate) {
@@ -245,34 +281,34 @@ class MatchingTestCommand extends Command
             ];
         }
 
-        $io->table(
+        $ioStyle->table(
             ['#', 'ID', 'Nom', 'Score', 'Compétences clés'],
             $rows
         );
 
-        $io->success(sprintf('%d candidats trouvés.', count($candidates)));
+        $ioStyle->success(sprintf('%d candidats trouvés.', count($candidates)));
     }
 
     /**
      * Trouve les meilleures offres pour un candidat
      */
-    private function findBestOffersForCandidate(SymfonyStyle $io, int $applicantId): void
+    private function findBestOffersForCandidate(SymfonyStyle $ioStyle, int $applicantId): void
     {
         $applicant = $this->userRepository->find($applicantId);
 
         if (!$applicant || !($applicant instanceof Applicant)) {
-            $io->error('Candidat non trouvé ou l\'utilisateur n\'est pas un candidat.');
+            $ioStyle->error('Candidat non trouvé ou l\'utilisateur n\'est pas un candidat.');
             return;
         }
 
         $offers = $this->matchingService->findBestJobOffersForCandidate($applicant);
 
         if (empty($offers)) {
-            $io->warning('Aucune offre d\'emploi compatible trouvée pour ce candidat.');
+            $ioStyle->warning('Aucune offre d\'emploi compatible trouvée pour ce candidat.');
             return;
         }
 
-        $io->section(sprintf('Meilleures offres pour %s %s', $applicant->getFirstName(), $applicant->getLastName()));
+        $ioStyle->section(sprintf('Meilleures offres pour %s %s', $applicant->getFirstName(), $applicant->getLastName()));
 
         $rows = [];
         foreach ($offers as $index => $offer) {
@@ -286,12 +322,12 @@ class MatchingTestCommand extends Command
             ];
         }
 
-        $io->table(
+        $ioStyle->table(
             ['#', 'ID', 'Titre', 'Entreprise', 'Score', 'Localisation'],
             $rows
         );
 
-        $io->success(sprintf('%d offres trouvées.', count($offers)));
+        $ioStyle->success(sprintf('%d offres trouvées.', count($offers)));
     }
 
     /**

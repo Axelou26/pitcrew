@@ -2,13 +2,19 @@
 
 namespace App\Entity;
 
+use App\Entity\Recruiter;
 use App\Repository\RecruiterSubscriptionRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use DateTime;
+use DateTimeInterface;
 
 #[ORM\Entity(repositoryClass: RecruiterSubscriptionRepository::class)]
 class RecruiterSubscription
 {
+    /**
+     * @SuppressWarnings("PHPMD.ShortVariable")
+     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -23,10 +29,10 @@ class RecruiterSubscription
     private ?Subscription $subscription = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
-    private ?\DateTimeInterface $startDate = null;
+    private ?DateTimeInterface $startDate = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
-    private ?\DateTimeInterface $endDate = null;
+    private ?DateTimeInterface $endDate = null;
 
     #[ORM\Column]
     private ?bool $isActive = null;
@@ -75,24 +81,24 @@ class RecruiterSubscription
         return $this;
     }
 
-    public function getStartDate(): ?\DateTimeInterface
+    public function getStartDate(): ?DateTimeInterface
     {
         return $this->startDate;
     }
 
-    public function setStartDate(\DateTimeInterface $startDate): static
+    public function setStartDate(DateTimeInterface $startDate): static
     {
         $this->startDate = $startDate;
 
         return $this;
     }
 
-    public function getEndDate(): ?\DateTimeInterface
+    public function getEndDate(): ?DateTimeInterface
     {
         return $this->endDate;
     }
 
-    public function setEndDate(\DateTimeInterface $endDate): static
+    public function setEndDate(DateTimeInterface $endDate): static
     {
         $this->endDate = $endDate;
 
@@ -155,7 +161,7 @@ class RecruiterSubscription
      */
     public function isValid(): bool
     {
-        return $this->isActive && $this->endDate > new \DateTime();
+        return $this->isActive && $this->endDate > new DateTime();
     }
 
     /**
@@ -167,7 +173,7 @@ class RecruiterSubscription
             return false;
         }
 
-        $now = new \DateTime();
+        $now = new DateTime();
         $diff = $this->endDate->diff($now);
 
         return $diff->days <= 7 && $this->endDate > $now;

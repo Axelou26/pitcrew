@@ -5,10 +5,17 @@ namespace App\Entity;
 use App\Repository\ApplicationRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
+use DateTimeImmutable;
+use InvalidArgumentException;
 
 #[ORM\Entity(repositoryClass: ApplicationRepository::class)]
+#[ORM\HasLifecycleCallbacks]
 class Application
 {
+    /**
+     * @SuppressWarnings("PHPMD.ShortVariable")
+     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -16,10 +23,12 @@ class Application
 
     #[ORM\ManyToOne(inversedBy: 'applications')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotBlank]
     private ?Applicant $applicant = null;
 
     #[ORM\ManyToOne(inversedBy: 'applications')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotBlank]
     private ?JobOffer $jobOffer = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
@@ -29,17 +38,18 @@ class Application
     private ?string $cvFilename = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    private ?string $recommendationLetterFilename = null;
+    private ?string $recLetterFilename = null;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $createdAt = null;
+    private ?DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(length: 20)]
     private string $status = 'pending';
 
-    public function __construct()
+    #[ORM\PrePersist]
+    public function setCreatedAtValue(): void
     {
-        $this->createdAt = new \DateTimeImmutable();
+        $this->createdAt = new DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -91,23 +101,23 @@ class Application
         return $this;
     }
 
-    public function getRecommendationLetterFilename(): ?string
+    public function getRecLetterFilename(): ?string
     {
-        return $this->recommendationLetterFilename;
+        return $this->recLetterFilename;
     }
 
-    public function setRecommendationLetterFilename(?string $recommendationLetterFilename): static
+    public function setRecLetterFilename(?string $recLetterFilename): static
     {
-        $this->recommendationLetterFilename = $recommendationLetterFilename;
+        $this->recLetterFilename = $recLetterFilename;
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    public function setCreatedAt(DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
         return $this;
@@ -121,7 +131,7 @@ class Application
     public function setStatus(string $status): static
     {
         if (!in_array($status, ['pending', 'accepted', 'rejected'])) {
-            throw new \InvalidArgumentException('Invalid status');
+            throw new InvalidArgumentException('Invalid status');
         }
         $this->status = $status;
         return $this;

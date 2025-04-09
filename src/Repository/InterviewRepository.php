@@ -6,6 +6,7 @@ use App\Entity\Interview;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use DateTime;
 
 /**
  * @extends ServiceEntityRepository<Interview>
@@ -22,22 +23,18 @@ class InterviewRepository extends ServiceEntityRepository
      */
     public function findUpcomingInterviewsForUser(User $user): array
     {
-        $qb = $this->createQueryBuilder('i')
+        $queryBuilder = $this->createQueryBuilder('i')
             ->where('i.scheduledAt > :now')
             ->andWhere('i.status = :status')
-            ->setParameter('now', new \DateTime())
+            ->setParameter('now', new DateTime())
             ->setParameter('status', 'scheduled')
             ->orderBy('i.scheduledAt', 'ASC');
 
-        if (in_array('ROLE_RECRUTEUR', $user->getRoles())) {
-            $qb->andWhere('i.recruiter = :user')
-                ->setParameter('user', $user);
-        } else {
-            $qb->andWhere('i.applicant = :user')
-                ->setParameter('user', $user);
-        }
+        $userRoleField = in_array('ROLE_RECRUTEUR', $user->getRoles()) ? 'recruiter' : 'applicant';
+        $queryBuilder->andWhere('i.' . $userRoleField . ' = :user')
+           ->setParameter('user', $user);
 
-        return $qb->getQuery()->getResult();
+        return $queryBuilder->getQuery()->getResult();
     }
 
     /**
@@ -45,20 +42,16 @@ class InterviewRepository extends ServiceEntityRepository
      */
     public function findPastInterviewsForUser(User $user): array
     {
-        $qb = $this->createQueryBuilder('i')
+        $queryBuilder = $this->createQueryBuilder('i')
             ->where('i.scheduledAt < :now')
-            ->setParameter('now', new \DateTime())
+            ->setParameter('now', new DateTime())
             ->orderBy('i.scheduledAt', 'DESC');
 
-        if (in_array('ROLE_RECRUTEUR', $user->getRoles())) {
-            $qb->andWhere('i.recruiter = :user')
-                ->setParameter('user', $user);
-        } else {
-            $qb->andWhere('i.applicant = :user')
-                ->setParameter('user', $user);
-        }
+        $userRoleField = in_array('ROLE_RECRUTEUR', $user->getRoles()) ? 'recruiter' : 'applicant';
+        $queryBuilder->andWhere('i.' . $userRoleField . ' = :user')
+            ->setParameter('user', $user);
 
-        return $qb->getQuery()->getResult();
+        return $queryBuilder->getQuery()->getResult();
     }
 
     /**
@@ -79,32 +72,30 @@ class InterviewRepository extends ServiceEntityRepository
      */
     public function hasScheduleConflict(
         User $user,
-        \DateTime $startTime,
-        \DateTime $endTime,
+        DateTime $startTime,
+        DateTime $endTime,
         ?int $excludeInterviewId = null
     ) {
-        $qb = $this->createQueryBuilder('i')
+        $queryBuilder = $this->createQueryBuilder('i')
             ->where('i.status = :status')
             ->andWhere('i.scheduledAt < :endTime')
-            ->andWhere('DATE_ADD(i.scheduledAt, 1, \'HOUR\') > :startTime')
+            ->andWhere('i.scheduledAt >= :oneHourBeforeEndTime')
+            ->andWhere('i.scheduledAt < :endTime')
             ->setParameter('status', 'scheduled')
             ->setParameter('startTime', $startTime)
-            ->setParameter('endTime', $endTime);
+            ->setParameter('endTime', $endTime)
+            ->setParameter('oneHourBeforeEndTime', (clone $endTime)->modify('-1 hour'));
 
-        if (in_array('ROLE_RECRUTEUR', $user->getRoles())) {
-            $qb->andWhere('i.recruiter = :user')
-                ->setParameter('user', $user);
-        } else {
-            $qb->andWhere('i.applicant = :user')
-                ->setParameter('user', $user);
-        }
+        $userRoleField = in_array('ROLE_RECRUTEUR', $user->getRoles()) ? 'recruiter' : 'applicant';
+        $queryBuilder->andWhere('i.' . $userRoleField . ' = :user')
+           ->setParameter('user', $user);
 
         if ($excludeInterviewId) {
-            $qb->andWhere('i.id != :excludeId')
+            $queryBuilder->andWhere('i.id != :excludeId')
                 ->setParameter('excludeId', $excludeInterviewId);
         }
 
-        return count($qb->getQuery()->getResult()) > 0;
+        return count($queryBuilder->getQuery()->getResult()) > 0;
     }
 
     public function save(Interview $entity, bool $flush = false): void

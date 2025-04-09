@@ -5,46 +5,51 @@ namespace App\Entity;
 use App\Repository\ConversationRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\Mapping as ORM;
+use DateTimeImmutable;
 
 #[ORM\Entity(repositoryClass: ConversationRepository::class)]
 class Conversation
 {
+    /**
+     * @SuppressWarnings("PHPMD.ShortVariable")
+     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\ManyToOne]
+    #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $participant1 = null;
 
-    #[ORM\ManyToOne]
+    #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $participant2 = null;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $createdAt = null;
+    private ?DateTimeImmutable $createdAt = null;
 
-    #[ORM\Column]
-    private ?\DateTimeImmutable $updatedAt = null;
+    #[ORM\Column(nullable: true)]
+    private ?DateTimeImmutable $updatedAt = null;
 
     #[ORM\OneToMany(mappedBy: 'conversation', targetEntity: Message::class, orphanRemoval: true)]
     #[ORM\OrderBy(['createdAt' => 'ASC'])]
     private Collection $messages;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $lastMessageAt = null;
+    private ?DateTimeImmutable $lastMessageAt = null;
 
     #[ORM\ManyToOne]
     private ?JobApplication $jobApplication = null;
 
     public function __construct()
     {
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
         $this->messages = new ArrayCollection();
-        $this->lastMessageAt = new \DateTimeImmutable();
+        $this->createdAt = new DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
+        $this->lastMessageAt = new DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -74,23 +79,23 @@ class Conversation
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    public function setCreatedAt(DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
         return $this;
     }
 
-    public function getUpdatedAt(): ?\DateTimeImmutable
+    public function getUpdatedAt(): ?DateTimeImmutable
     {
         return $this->updatedAt;
     }
 
-    public function setUpdatedAt(\DateTimeImmutable $updatedAt): static
+    public function setUpdatedAt(DateTimeImmutable $updatedAt): static
     {
         $this->updatedAt = $updatedAt;
         return $this;
@@ -109,7 +114,7 @@ class Conversation
         if (!$this->messages->contains($message)) {
             $this->messages->add($message);
             $message->setConversation($this);
-            $this->lastMessageAt = new \DateTimeImmutable();
+            $this->lastMessageAt = new DateTimeImmutable();
         }
         return $this;
     }
@@ -124,12 +129,12 @@ class Conversation
         return $this;
     }
 
-    public function getLastMessageAt(): ?\DateTimeImmutable
+    public function getLastMessageAt(): ?DateTimeImmutable
     {
         return $this->lastMessageAt;
     }
 
-    public function setLastMessageAt(\DateTimeImmutable $lastMessageAt): static
+    public function setLastMessageAt(DateTimeImmutable $lastMessageAt): static
     {
         $this->lastMessageAt = $lastMessageAt;
         return $this;
@@ -176,8 +181,8 @@ class Conversation
             return null;
         }
 
-        $criteria = \Doctrine\Common\Collections\Criteria::create()
-            ->orderBy(['createdAt' => \Doctrine\Common\Collections\Criteria::DESC])
+        $criteria = Criteria::create()
+            ->orderBy(['createdAt' => Criteria::DESC])
             ->setMaxResults(1);
 
         return $this->messages->matching($criteria)->first();

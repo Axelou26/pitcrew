@@ -14,6 +14,9 @@ final class Version20240701000001 extends AbstractMigration
         return 'Add optional_skills column to job_offer table';
     }
 
+    /**
+     * @SuppressWarnings("PHPMD.ShortMethodName")
+     */
     public function up(Schema $schema): void
     {
         // Add the optional_skills column as JSON

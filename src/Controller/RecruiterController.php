@@ -24,7 +24,7 @@ class RecruiterController extends AbstractController
     #[Route('/dashboard', name: 'app_recruiter_dashboard')]
     public function dashboard(
         JobOfferRepository $jobOfferRepository,
-        JobApplicationRepository $jobApplicationRepository,
+        JobApplicationRepository $jobAppRepo,
         SubscriptionService $subscriptionService
     ): Response {
         // Au lieu de rendre un template qui n'existe pas, on redirige vers le dashboard général
@@ -41,17 +41,13 @@ class RecruiterController extends AbstractController
         if (!$subscriptionService->canPostJobOffer($this->getUser())) {
             $activeSubscription = $subscriptionService->getActiveSubscription($this->getUser());
 
-            if (!$activeSubscription) {
-                $this->addFlash('error', 'Vous devez avoir un abonnement actif pour publier des offres d\'emploi.');
-                return $this->redirectToRoute('app_subscription_plans');
-            } else {
-                $this
-                    ->addFlash(
-                        'error',
-                        'Vous avez atteint la limite de publication d\'offres pour votre abonnement actuel.'
-                    );
-                return $this->redirectToRoute('app_subscription_manage');
-            }
+            $message = $activeSubscription
+                ? 'Vous avez atteint la limite de publication d\'offres pour votre abonnement actuel.'
+                : 'Vous devez avoir un abonnement actif pour publier des offres d\'emploi.';
+            $route = $activeSubscription ? 'app_subscription_manage' : 'app_subscription_plans';
+
+            $this->addFlash('error', $message);
+            return $this->redirectToRoute($route);
         }
 
         $jobOffer = new JobOffer();
@@ -136,11 +132,11 @@ class RecruiterController extends AbstractController
         $query = $request->query->get('q');
         $skills = $request->query->all('skills');
 
-        if ($query || !empty($skills)) {
-            $candidates = $applicantRepository->searchBySkillsAndKeywords($skills, $query);
-        } else {
-            $candidates = $applicantRepository->findAll();
-        }
+        // Utiliser une condition unique pour déterminer la recherche
+        $hasSearchCriteria = $query || !empty($skills);
+        $candidates = $hasSearchCriteria
+            ? $applicantRepository->searchBySkillsAndKeywords($skills, $query)
+            : $applicantRepository->findAll();
 
         return $this->render('recruiter/candidates.html.twig', [
             'candidates' => $candidates,

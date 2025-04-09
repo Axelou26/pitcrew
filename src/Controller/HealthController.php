@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use DateTime;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -12,13 +13,17 @@ class HealthController extends AbstractController
 {
     private EntityManagerInterface $entityManager;
     private CacheItemPoolInterface $cache;
+    private string $kernelEnvironment;
 
     public function __construct(
         EntityManagerInterface $entityManager,
-        CacheItemPoolInterface $cache
-    ) {
+        CacheItemPoolInterface $cache,
+        string $kernelEnvironment
+        )
+    {
         $this->entityManager = $entityManager;
         $this->cache = $cache;
+        $this->kernelEnvironment = $kernelEnvironment;
     }
 
     #[Route('/health', name: 'app_health')]
@@ -28,8 +33,8 @@ class HealthController extends AbstractController
         $checks = [
             'database' => true,
             'cache' => true,
-            'timestamp' => (new \DateTime())->format('c'),
-            'environment' => $_ENV['APP_ENV'] ?? 'unknown'
+            'timestamp' => (new DateTime())->format('c'),
+            'environment' => $this->kernelEnvironment
         ];
 
         try {

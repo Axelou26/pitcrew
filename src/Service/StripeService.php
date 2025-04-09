@@ -14,39 +14,56 @@ use Stripe\Customer;
 use Stripe\Stripe;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Routing\Generator\UrlGenerator;
+use Psr\Log\LoggerInterface;
+use Stripe\StripeClient;
+use stdClass;
+use Exception;
 
 class StripeService
 {
     private bool $isTestMode;
     private bool $isOfflineMode;
+    private $stripe;
+    private $params;
+    private $entityManager;
+    private $subscriptionService;
+    private $emailService;
+    private $logger;
 
     public function __construct(
-        private readonly ParameterBagInterface $params,
-        private readonly EntityManagerInterface $entityManager,
-        private readonly UrlGeneratorInterface $urlGenerator,
-        private readonly SubscriptionService $subscriptionService
+        ParameterBagInterface $params,
+        EntityManagerInterface $entityManager,
+        SubscriptionService $subscriptionService,
+        EmailService $emailService,
+        LoggerInterface $logger
     ) {
+        $this->params = $params;
+        $this->entityManager = $entityManager;
+        $this->subscriptionService = $subscriptionService;
+        $this->emailService = $emailService;
+        $this->logger = $logger;
+
         // Vérifier si le mode hors ligne est activé
         $this->isOfflineMode = filter_var($this->params->get('stripe_offline_mode', false), FILTER_VALIDATE_BOOLEAN);
 
         // Initialiser Stripe avec la clé API seulement si pas en mode hors ligne
+        $this->isTestMode = $this->isOfflineMode; // Par défaut, mode test si hors ligne
         if (!$this->isOfflineMode) {
             try {
                 $stripeKey = $this->params->get('stripe_secret_key');
                 if (!is_string($stripeKey)) {
                     throw new RuntimeException('Invalid Stripe secret key');
                 }
-                Stripe::setApiKey($stripeKey);
+                $this->stripe = new StripeClient($stripeKey);
                 // Détecter si nous sommes en mode test basé sur la clé API
                 $this->isTestMode = str_starts_with($stripeKey, 'sk_test_');
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // En cas d'erreur, passer automatiquement en mode hors ligne
                 $this->isOfflineMode = true;
-                $this->isTestMode = true;
+                $this->isTestMode = true; // Mode test si hors ligne
             }
-        } else {
-            // En mode hors ligne, considérer comme mode test également
-            $this->isTestMode = true;
         }
     }
 
@@ -70,102 +87,75 @@ class StripeService
      * Crée une session de paiement Stripe pour un abonnement
      * @throws \Stripe\Exception\ApiErrorException
      */
-    public function createCheckoutSession(User $user, Subscription $subscription): Session|\stdClass
+    public function createCheckoutSession(User $user, Subscription $subscription): \Stripe\Checkout\Session
     {
-        // Si on est en mode hors ligne, retourner directement une session simulée
-        if ($this->isOfflineMode) {
-            return $this->createOfflineCheckoutSession($user, $subscription);
-        }
+        try {
+            // Créer ou récupérer le client Stripe
+            $stripeCustomerId = $user->getStripeCustomerId();
 
-        // Créer ou récupérer le client Stripe
-        $stripeCustomerId = $user->getStripeCustomerId();
+            if (!$stripeCustomerId) {
+                $customer = $this->stripe->customers->create([
+                    'email' => $user->getEmail(),
+                    'name' => $user->getFullName(),
+                    'metadata' => [
+                        'user_id' => $user->getId()
+                    ]
+                ]);
 
-        if (!$stripeCustomerId) {
-            $customer = Customer::create([
-                'email' => $user->getEmail() ?? '',
-                'name' => $user->getFullName(),
-                'metadata' => [
-                    'user_id' => (string) $user->getId()
-                ]
-            ]);
+                $stripeCustomerId = $customer->id;
+                $user->setStripeCustomerId($stripeCustomerId);
+                $this->entityManager->persist($user);
+                $this->entityManager->flush();
+            }
 
-            $stripeCustomerId = $customer->id;
-            $user->setStripeCustomerId($stripeCustomerId);
-            $this->entityManager->persist($user);
-            $this->entityManager->flush();
-        }
+            // Créer la session de paiement
+            $successUrl = $this->generateUrl('app_subscription_success', [], UrlGeneratorInterface::ABSOLUTE_URL);
+            $cancelUrl = $this->generateUrl('app_subscription_cancel', [], UrlGeneratorInterface::ABSOLUTE_URL);
 
-        // Créer la session de paiement
-        $successUrl = $this->urlGenerator->generate('app_subscription_success', [
-            'subscription_id' => $subscription->getId()
-        ], UrlGeneratorInterface::ABSOLUTE_URL);
+            // Déterminer le prix en centimes
+            $priceInCents = (int)($subscription->getPrice() * 100);
 
-        $cancelUrl = $this->urlGenerator->generate('app_subscription_cancel', [], UrlGeneratorInterface::ABSOLUTE_URL);
-
-        // Déterminer le prix en centimes
-        $priceInCents = (int) ($subscription->getPrice() * 100);
-
-        $sessionParams = [
-            'customer' => $stripeCustomerId,
-            'payment_method_types' => ['card'],
-            'line_items' => [[
-                'price_data' => [
-                    'currency' => 'eur',
-                    'product_data' => [
-                        'name' => 'Abonnement ' . $subscription->getName(),
-                        'description' => sprintf(
-                            'Abonnement %s pour %d jours',
-                            $subscription->getName(),
-                            $subscription->getDuration()
-                        ),
-                        'metadata' => [
-                            'subscription_id' => (string) $subscription->getId()
-                        ]
+            $sessionParams = [
+                'customer' => $stripeCustomerId,
+                'payment_method_types' => ['card'],
+                'line_items' => [[
+                    'price_data' => [
+                        'currency' => 'eur',
+                        'product_data' => [
+                            'name' => 'Abonnement ' . $subscription->getName(),
+                            'description' => 'Abonnement ' . $subscription->getName() . ' pour ' . $subscription->getDuration() . ' jours',
+                            'metadata' => [
+                                'subscription_id' => $subscription->getId()
+                            ]
+                        ],
+                        'unit_amount' => $priceInCents,
                     ],
-                    'unit_amount' => $priceInCents,
-                ],
-                'quantity' => 1,
-            ]],
-            'mode' => 'payment',
-            'success_url' => $successUrl,
-            'cancel_url' => $cancelUrl,
-            'metadata' => [
-                'user_id' => (string) $user->getId(),
-                'subscription_id' => (string) $subscription->getId()
-            ]
-        ];
-
-        // En mode test, ajoutez des paramètres spécifiques pour faciliter les tests
-        if ($this->isTestMode) {
-            $sessionParams['payment_intent_data'] = [
-                'description' => '[TEST] Abonnement ' . $subscription->getName(),
+                    'quantity' => 1,
+                ]],
+                'mode' => 'payment',
+                'success_url' => $successUrl,
+                'cancel_url' => $cancelUrl,
                 'metadata' => [
-                    'is_test' => 'true',
-                    'subscription_id' => (string) $subscription->getId(),
-                    'user_id' => (string) $user->getId()
+                    'user_id' => $user->getId(),
+                    'subscription_id' => $subscription->getId()
                 ]
             ];
-        }
 
-        try {
-            return Session::create($sessionParams);
+            return $this->stripe->checkout->sessions->create($sessionParams);
         } catch (\Exception $e) {
-            // En cas d'erreur, passer en mode hors ligne et retourner une session simulée
-            $this->isOfflineMode = true;
-            return $this->createOfflineCheckoutSession($user, $subscription);
+            $this->logger->error('Erreur lors de la création de la session de paiement : ' . $e->getMessage());
+            throw $e;
         }
     }
 
     /**
      * Crée une session de paiement simulée quand le mode hors ligne est activé
      */
-    private function createOfflineCheckoutSession(User $user, Subscription $subscription): \stdClass
+    private function createOfflineCheckoutSession(User $user, Subscription $subscription): stdClass
     {
-        $successUrl = $this->urlGenerator->generate('app_subscription_success', [
-            'subscription_id' => $subscription->getId()
-        ], UrlGeneratorInterface::ABSOLUTE_URL);
+        $successUrl = $this->generateUrl('app_subscription_success', [], UrlGeneratorInterface::ABSOLUTE_URL);
 
-        $fakeSession = new \stdClass();
+        $fakeSession = new stdClass();
         $fakeSession->id = 'offline_' . uniqid();
         $fakeSession->url = $successUrl;
         $fakeSession->is_offline_session = true;
@@ -222,13 +212,11 @@ class StripeService
     public function createTestCheckoutSession(User $user, Subscription $subscription): array
     {
         if (!$this->isTestMode && !$this->isOfflineMode) {
-            throw new \Exception('Cette méthode ne peut être utilisée qu\'en mode test ou hors ligne');
+            throw new Exception('Cette méthode ne peut être utilisée qu\'en mode test ou hors ligne');
         }
 
         // Générer une URL de succès directe
-        $successUrl = $this->urlGenerator->generate('app_subscription_success', [
-            'subscription_id' => $subscription->getId()
-        ], UrlGeneratorInterface::ABSOLUTE_URL);
+        $successUrl = $this->generateUrl('app_subscription_success', [], UrlGeneratorInterface::ABSOLUTE_URL);
 
         // Retourner un faux objet de session
         return [
@@ -241,23 +229,14 @@ class StripeService
     /**
      * Crée un abonnement récurrent avec Stripe
      */
-    public function createRecurringSubscription(User $user, Subscription $subscription): string
+    public function createRecurringSubscription(User $user, Subscription $subscription): \Stripe\Checkout\Session
     {
-        // Si on est en mode hors ligne, retourner directement une URL de succès
-        if ($this->isOfflineMode) {
-            $successUrl = $this->urlGenerator->generate('app_subscription_success', [
-                'subscription_id' => $subscription->getId()
-            ], UrlGeneratorInterface::ABSOLUTE_URL);
-
-            return $successUrl;
-        }
-
         try {
             // Créer ou récupérer le client Stripe
             $stripeCustomerId = $user->getStripeCustomerId();
 
             if (!$stripeCustomerId) {
-                $customer = Customer::create([
+                $customer = $this->stripe->customers->create([
                     'email' => $user->getEmail(),
                     'name' => $user->getFullName(),
                     'metadata' => [
@@ -271,37 +250,33 @@ class StripeService
                 $this->entityManager->flush();
             }
 
-            // Créer un produit pour l'abonnement s'il n'existe pas déjà
-            $productName = 'Abonnement ' . $subscription->getName();
-            $product = \Stripe\Product::create([
-                'name' => $productName,
+            // Créer le produit dans Stripe
+            $product = $this->stripe->products->create([
+                'name' => 'Abonnement ' . $subscription->getName(),
+                'description' => 'Abonnement ' . $subscription->getName() . ' pour ' . $subscription->getDuration() . ' jours',
                 'metadata' => [
                     'subscription_id' => $subscription->getId()
                 ]
             ]);
 
-            // Créer un prix pour l'abonnement
-            $price = \Stripe\Price::create([
-                'product' => $product->id,
-                'unit_amount' => $subscription->getPrice() * 100, // en centimes
+            // Créer le prix dans Stripe
+            $price = $this->stripe->prices->create([
+                'unit_amount' => (int)($subscription->getPrice() * 100),
                 'currency' => 'eur',
                 'recurring' => [
                     'interval' => 'month',
                     'interval_count' => 1
-                ]
+                ],
+                'product' => $product->id,
             ]);
 
-            // Créer une session de paiement pour l'abonnement récurrent
-            $successUrl = $this->urlGenerator->generate('app_subscription_success', [
-                'subscription_id' => $subscription->getId()
-            ], UrlGeneratorInterface::ABSOLUTE_URL);
-
-            $cancelUrl = $this
-                ->urlGenerator
-                ->generate('app_subscription_cancel', [], UrlGeneratorInterface::ABSOLUTE_URL);
+            // Créer la session de paiement
+            $successUrl = $this->generateUrl('app_subscription_success', [], UrlGeneratorInterface::ABSOLUTE_URL);
+            $cancelUrl = $this->generateUrl('app_subscription_cancel', [], UrlGeneratorInterface::ABSOLUTE_URL);
 
             $sessionParams = [
                 'customer' => $stripeCustomerId,
+                'payment_method_types' => ['card'],
                 'line_items' => [[
                     'price' => $price->id,
                     'quantity' => 1,
@@ -315,51 +290,30 @@ class StripeService
                 ]
             ];
 
-            // En mode test, ajoutez des paramètres spécifiques
-            if ($this->isTestMode) {
-                $sessionParams['metadata']['is_test'] = 'true';
-            }
-
-            $session = Session::create($sessionParams);
-
-            return $session->url;
-        } catch (\Exception $e) {
-            // En cas d'erreur, passer en mode hors ligne et retourner une URL de succès directe
-            $this->isOfflineMode = true;
-
-            $successUrl = $this->urlGenerator->generate('app_subscription_success', [
-                'subscription_id' => $subscription->getId()
-            ], UrlGeneratorInterface::ABSOLUTE_URL);
-
-            return $successUrl;
+            return $this->stripe->checkout->sessions->create($sessionParams);
+        } catch (Exception $e) {
+            $this->logger->error('Erreur lors de la création de l\'abonnement récurrent : ' . $e->getMessage());
+            throw $e;
         }
     }
 
     /**
      * Annule un abonnement récurrent dans Stripe
      */
-    public function cancelRecurringSubscription(RecruiterSubscription $subscription): bool
+    public function cancelRecurringSubscription(RecruiterSubscription $subscription): void
     {
-        // Si en mode hors ligne, simuler une annulation réussie
-        if ($this->isOfflineMode) {
-            return true;
-        }
-
-        $stripeSubscriptionId = $subscription->getStripeSubscriptionId();
-
-        if (!$stripeSubscriptionId) {
-            return false;
-        }
-
         try {
-            $stripeSubscription = \Stripe\Subscription::retrieve($stripeSubscriptionId);
-            $stripeSubscription->cancel();
-
-            return true;
-        } catch (\Exception $e) {
-            // En cas d'erreur, on passe en mode hors ligne et on simule un succès
-            $this->isOfflineMode = true;
-            return true;
+            if ($subscription->getStripeSubscriptionId()) {
+                $this->stripe->subscriptions->cancel($subscription->getStripeSubscriptionId());
+            }
+        } catch (Exception $e) {
+            $this->logger->error('Erreur lors de l\'annulation de l\'abonnement : ' . $e->getMessage());
+            throw $e;
         }
+    }
+
+    private function generateUrl(string $route, array $parameters = [], int $referenceType = UrlGeneratorInterface::ABSOLUTE_PATH): string
+    {
+        return $this->generateUrl('app_subscription_success', [], UrlGeneratorInterface::ABSOLUTE_URL);
     }
 }

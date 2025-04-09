@@ -6,6 +6,7 @@ use App\Entity\RecruiterSubscription;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use DateTime;
 
 /**
  * @extends ServiceEntityRepository<RecruiterSubscription>
@@ -33,7 +34,7 @@ class RecruiterSubscriptionRepository extends ServiceEntityRepository
             ->andWhere('rs.endDate > :now')
             ->setParameter('recruiter', $recruiter)
             ->setParameter('active', true)
-            ->setParameter('now', new \DateTime())
+            ->setParameter('now', new DateTime())
             ->orderBy('rs.endDate', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
@@ -45,8 +46,8 @@ class RecruiterSubscriptionRepository extends ServiceEntityRepository
      */
     public function findExpiringSubscriptions(): array
     {
-        $now = new \DateTime();
-        $sevenDaysLater = (new \DateTime())->modify('+7 days');
+        $now = new DateTime();
+        $sevenDaysLater = (new DateTime())->modify('+7 days');
 
         return $this->createQueryBuilder('rs')
             ->andWhere('rs.isActive = :active')
@@ -70,7 +71,7 @@ class RecruiterSubscriptionRepository extends ServiceEntityRepository
             ->andWhere('rs.isActive = :active')
             ->andWhere('rs.endDate < :now')
             ->setParameter('active', true)
-            ->setParameter('now', new \DateTime())
+            ->setParameter('now', new DateTime())
             ->orderBy('rs.endDate', 'ASC')
             ->getQuery()
             ->getResult();
@@ -90,7 +91,7 @@ class RecruiterSubscriptionRepository extends ServiceEntityRepository
             ->andWhere('s.name = :name')
             ->setParameter('recruiter', $recruiter)
             ->setParameter('active', true)
-            ->setParameter('now', new \DateTime())
+            ->setParameter('now', new DateTime())
             ->setParameter('name', $subscriptionName)
             ->getQuery()
             ->getSingleScalarResult();

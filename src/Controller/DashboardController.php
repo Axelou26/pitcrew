@@ -23,7 +23,7 @@ class DashboardController extends AbstractController
     #[Route('', name: 'app_dashboard')]
     public function index(
         JobOfferRepository $jobOfferRepository,
-        JobApplicationRepository $jobApplicationRepository,
+        JobApplicationRepository $jobAppRepo,
         InterviewRepository $interviewRepository
     ): Response {
         // Pour les recruteurs
@@ -38,12 +38,13 @@ class DashboardController extends AbstractController
             foreach ($allOffers as $offer) {
                 if ($offer->getIsActive()) {
                     $activeOffers[] = $offer;
-                } else {
-                    $expiredOffers[] = $offer;
+                    continue; // Offer is active, move to next iteration
                 }
+                // If not active, it's expired
+                $expiredOffers[] = $offer;
             }
 
-            $applications = $jobApplicationRepository->findByRecruiter($this->getUser());
+            $applications = $jobAppRepo->findByRecruiter($this->getUser());
             $recentApplications = array_slice($applications, 0, 5); // Récupère les 5 candidatures les plus récentes
             $totalApplications = count($applications);
 
@@ -61,7 +62,7 @@ class DashboardController extends AbstractController
 
         // Pour les postulants
         if ($this->isGranted('ROLE_POSTULANT')) {
-            $applications = $jobApplicationRepository->findBy(['applicant' => $this->getUser()]);
+            $applications = $jobAppRepo->findBy(['applicant' => $this->getUser()]);
 
             // Récupérer les entretiens à venir pour le candidat
             $upcomingInterviews = $interviewRepository->findUpcomingInterviewsForUser($this->getUser());
@@ -106,7 +107,7 @@ class DashboardController extends AbstractController
 
     #[Route('/applicant', name: 'app_dashboard_applicant')]
     public function applicantDashboard(
-        JobApplicationRepository $jobApplicationRepository,
+        JobApplicationRepository $jobAppRepo,
         PostRepository $postRepository,
         MatchingService $matchingService
     ): Response {
@@ -114,7 +115,7 @@ class DashboardController extends AbstractController
         $user = $this->getUser();
 
         try {
-            $applications = $jobApplicationRepository->findBy(['applicant' => $user], ['createdAt' => 'DESC']);
+            $applications = $jobAppRepo->findBy(['applicant' => $user], ['createdAt' => 'DESC']);
             $posts = $postRepository->findBy(['author' => $user], ['createdAt' => 'DESC'], 5);
 
             // Récupérer les offres recommandées

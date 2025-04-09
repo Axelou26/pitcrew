@@ -9,6 +9,8 @@ use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\Query\QueryException;
 use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\ORM\QueryBuilder;
+use DateTime;
 
 /**
  * @extends ServiceEntityRepository<JobOffer>
@@ -26,18 +28,82 @@ class JobOfferRepository extends ServiceEntityRepository
     }
 
     /**
-     * @return array<int, JobOffer>
+     * @return JobOffer[]
      */
-    public function findActiveOffers(): array
+    public function findActiveOffers(int $limit = 10): array
     {
         return $this->createQueryBuilder('j')
-            ->where('j.isActive = :active')
-            ->andWhere('j.expiresAt > :now OR j.expiresAt IS NULL')
+            ->andWhere('j.isActive = :active')
+            ->andWhere('j.isPublished = :published')
             ->setParameter('active', true)
-            ->setParameter('now', new \DateTime())
+            ->setParameter('published', true)
+            ->orderBy('j.createdAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return JobOffer[]
+     */
+    public function findByRecruiter(User $recruiter): array
+    {
+        return $this->createQueryBuilder('j')
+            ->andWhere('j.recruiter = :recruiter')
+            ->setParameter('recruiter', $recruiter)
             ->orderBy('j.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * @return JobOffer[]
+     */
+  
+    private function applySearchCriteria(QueryBuilder $qb, array $criteria): void
+    {
+        if (!empty($criteria['location'])) {
+            $qb->andWhere('j.location LIKE :location')
+                ->setParameter('location', '%' . $criteria['location'] . '%');
+        }
+
+        if (!empty($criteria['contractType'])) {
+            $qb->andWhere('j.contractType = :contractType')
+                ->setParameter('contractType', $criteria['contractType']);
+        }
+
+        if (!empty($criteria['experienceLevel'])) {
+            $qb->andWhere('j.experienceLevel = :experienceLevel')
+                ->setParameter('experienceLevel', $criteria['experienceLevel']);
+        }
+
+        if (!empty($criteria['minSalary'])) {
+            $qb->andWhere('j.salary >= :minSalary')
+                ->setParameter('minSalary', $criteria['minSalary']);
+        }
+
+        if (!empty($criteria['keyword'])) {
+            $qb->andWhere('j.title LIKE :keyword OR j.description LIKE :keyword OR j.requiredSkills LIKE :keyword')
+                ->setParameter('keyword', '%' . $criteria['keyword'] . '%');
+        }
+    }
+
+    public function save(JobOffer $jobOffer, bool $flush = false): void
+    {
+        $this->getEntityManager()->persist($jobOffer);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+    }
+
+    public function remove(JobOffer $jobOffer, bool $flush = false): void
+    {
+        $this->getEntityManager()->remove($jobOffer);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
     }
 
     /**
@@ -45,28 +111,28 @@ class JobOfferRepository extends ServiceEntityRepository
      */
     public function search(?string $query = null, ?string $location = null, ?string $contractType = null): array
     {
-        $qb = $this->createQueryBuilder('j')
+        $queryBuilder = $this->createQueryBuilder('j')
             ->where('j.isActive = :active')
             ->andWhere('j.expiresAt > :now OR j.expiresAt IS NULL')
             ->setParameter('active', true)
-            ->setParameter('now', new \DateTime());
+            ->setParameter('now', new DateTime());
 
         if ($query) {
-            $qb->andWhere('j.title LIKE :query OR j.description LIKE :query')
+            $queryBuilder->andWhere('j.title LIKE :query OR j.description LIKE :query')
                 ->setParameter('query', '%' . $query . '%');
         }
 
         if ($location) {
-            $qb->andWhere('j.location LIKE :location')
+            $queryBuilder->andWhere('j.location LIKE :location')
                 ->setParameter('location', '%' . $location . '%');
         }
 
         if ($contractType) {
-            $qb->andWhere('j.contractType = :contractType')
+            $queryBuilder->andWhere('j.contractType = :contractType')
                 ->setParameter('contractType', $contractType);
         }
 
-        return $qb->orderBy('j.createdAt', 'DESC')
+        return $queryBuilder->orderBy('j.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
     }
@@ -76,7 +142,7 @@ class JobOfferRepository extends ServiceEntityRepository
      */
     public function findSimilarOffers(JobOffer $jobOffer, int $limit = 3): array
     {
-        $qb = $this->createQueryBuilder('j')
+        $queryBuilder = $this->createQueryBuilder('j')
             ->where('j.id != :currentId')
             ->andWhere('j.isActive = :active')
             ->andWhere('j.expiresAt > :now OR j.expiresAt IS NULL');
@@ -85,7 +151,7 @@ class JobOfferRepository extends ServiceEntityRepository
         $parameters = [
             'currentId' => $jobOffer->getId(),
             'active' => true,
-            'now' => new \DateTime()
+            'now' => new DateTime()
         ];
 
         // Score de similarité basé sur plusieurs critères
@@ -133,13 +199,13 @@ class JobOfferRepository extends ServiceEntityRepository
         // Calculer le score total
         $scoreExpr = implode(' + ', $conditions);
 
-        $qb->select('j, (' . $scoreExpr . ') as HIDDEN score')
+        $queryBuilder->select('j, (' . $scoreExpr . ') as HIDDEN score')
            ->setParameters($parameters)
            ->orderBy('score', 'DESC')
            ->addOrderBy('j.createdAt', 'DESC')
            ->setMaxResults($limit);
 
-        return $qb->getQuery()->getResult();
+        return $queryBuilder->getQuery()->getResult();
     }
 
     /**
@@ -150,7 +216,7 @@ class JobOfferRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('j')
             ->where('j.expiresAt <= :now')
             ->andWhere('j.expiresAt IS NOT NULL')
-            ->setParameter('now', new \DateTime())
+            ->setParameter('now', new DateTime())
             ->orderBy('j.expiresAt', 'ASC')
             ->getQuery()
             ->getResult();
@@ -166,7 +232,7 @@ class JobOfferRepository extends ServiceEntityRepository
             ->where('j.isActive = :active')
             ->andWhere('j.expiresAt > :now OR j.expiresAt IS NULL')
             ->setParameter('active', true)
-            ->setParameter('now', new \DateTime())
+            ->setParameter('now', new DateTime())
             ->getQuery()
             ->getSingleScalarResult();
 
@@ -179,46 +245,33 @@ class JobOfferRepository extends ServiceEntityRepository
      */
     public function searchOffers(?string $query = null, array $filters = []): array
     {
-        $qb = $this->createQueryBuilder('j')
+        $queryBuilder = $this->createQueryBuilder('j')
             ->where('j.expiresAt > :now OR j.expiresAt IS NULL')
-            ->setParameter('now', new \DateTime());
+            ->setParameter('now', new DateTime());
 
         if ($query) {
-            $qb->andWhere('j.title LIKE :query OR j.description LIKE :query OR j.location LIKE :query')
+            $queryBuilder->andWhere('j.title LIKE :query OR j.description LIKE :query OR j.location LIKE :query')
                 ->setParameter('query', '%' . $query . '%');
         }
 
         if (!empty($filters)) {
             if (!empty($filters['contractType'])) {
-                $qb->andWhere('j.contractType = :contractType')
+                $queryBuilder->andWhere('j.contractType = :contractType')
                     ->setParameter('contractType', $filters['contractType']);
             }
 
             if (!empty($filters['location'])) {
-                $qb->andWhere('j.location LIKE :location')
+                $queryBuilder->andWhere('j.location LIKE :location')
                     ->setParameter('location', '%' . $filters['location'] . '%');
             }
 
             if (!empty($filters['minSalary'])) {
-                $qb->andWhere('j.salary >= :minSalary')
+                $queryBuilder->andWhere('j.salary >= :minSalary')
                     ->setParameter('minSalary', $filters['minSalary']);
             }
         }
 
-        return $qb->orderBy('j.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
-    }
-
-    /**
-     * @return array<int, JobOffer>
-     */
-    public function findByRecruiter(User $recruiter): array
-    {
-        return $this->createQueryBuilder('j')
-            ->andWhere('j.recruiter = :recruiter')
-            ->setParameter('recruiter', $recruiter)
-            ->orderBy('j.createdAt', 'DESC')
+        return $queryBuilder->orderBy('j.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
     }
@@ -226,7 +279,7 @@ class JobOfferRepository extends ServiceEntityRepository
     /**
      * @throws QueryException
      */
-    public function countJobOffersByUserAndDateRange(User $user, \DateTime $startDate, \DateTime $endDate): int
+    public function countJobOffersByUserAndDateRange(User $user, DateTime $startDate, DateTime $endDate): int
     {
         $result = $this->createQueryBuilder('j')
             ->select('COUNT(j.id)')

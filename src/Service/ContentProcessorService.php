@@ -33,26 +33,40 @@ class ContentProcessorService
     }
 
     /**
-     * Traite le contenu d'un post pour extraire les hashtags et les mentions
-     *
-     * @param Post $post Le post à traiter
-     * @param bool $isUpdate S'il s'agit d'une mise à jour (true) ou d'une création (false)
-     * @return void
+     * Traite le contenu d'un nouveau post
      */
-    public function processPostContent(Post $post, bool $isUpdate = false): void
+    public function processNewPostContent(Post $post): void
     {
-        // Vérifier si le contenu est vide
+        $this->processContentInternal($post, false);
+    }
+
+    /**
+     * Traite le contenu d'un post mis à jour
+     */
+    public function processUpdatedPostContent(Post $post): void
+    {
+        $this->processContentInternal($post, true);
+    }
+
+    /**
+     * Logique interne de traitement du contenu
+     */
+    private function processContentInternal(Post $post, bool $isUpdate): void
+    {
         if (!$post->getContent() || trim($post->getContent()) === '') {
-            $this->logger->info('Contenu vide, rien à traiter', [
-                'post_id' => $post->getId()
-            ]);
-            return; // Ne rien faire si le contenu est vide
+            $this->logger->info('Contenu vide, rien à traiter', ['post_id' => $post->getId()]);
+            return;
         }
 
         try {
-            // Traiter les hashtags
-            $this->processHashtags($post, $isUpdate);
-
+            // Traiter les hashtags en premier (condition inversée pour éviter le else)
+            if (!$isUpdate) {
+                $this->processNewHashtags($post);
+            }
+            if ($isUpdate) {
+                $this->processUpdatedHashtags($post);
+            }
+            
             // Traiter les mentions
             $this->processMentions($post);
 
@@ -62,8 +76,6 @@ class ContentProcessorService
                 'mentions_count' => count($post->getMentions() ?? [])
             ]);
         } catch (\Throwable $e) {
-            // Logger l'erreur mais ne pas la laisser remonter
-            // pour éviter de bloquer la création du post
             $this->logger->error('Erreur lors du traitement du contenu: ' . $e->getMessage(), [
                 'post_id' => $post->getId(),
                 'exception' => get_class($e),
@@ -73,64 +85,72 @@ class ContentProcessorService
     }
 
     /**
-     * Traite les hashtags d'un post
-     *
-     * @param Post $post Le post à traiter
-     * @param bool $isUpdate S'il s'agit d'une mise à jour
-     * @return void
+     * Traite les hashtags d'un nouveau post
      */
-    private function processHashtags(Post $post, bool $isUpdate = false): void
+    private function processNewHashtags(Post $post): void
     {
-        // Supprimer les anciens hashtags si c'est une mise à jour
-        if ($isUpdate) {
-            foreach ($post->getHashtags()->toArray() as $existingHashtag) {
-                $post->removeHashtag($existingHashtag);
-
-                // Si la méthode decrementUsageCount existe
-                if (method_exists($existingHashtag, 'decrementUsageCount')) {
-                    $existingHashtag->decrementUsageCount();
-                }
-            }
-        }
-
-        // Extraire les hashtags du contenu
         $hashtagNames = $post->extractHashtags();
-
         if (empty($hashtagNames)) {
-            return; // Pas de hashtags à traiter
+            return;
+        }
+        foreach ($hashtagNames as $name) {
+            $this->processHashtag($post, $name);
+        }
+    }
+
+    /**
+     * Traite les hashtags d'un post mis à jour
+     */
+    private function processUpdatedHashtags(Post $post): void
+    {
+        $this->removeExistingHashtags($post);
+        $this->processNewHashtags($post); // Réutilise la logique d'ajout
+    }
+
+    private function removeExistingHashtags(Post $post): void
+    {
+        foreach ($post->getHashtags()->toArray() as $existingHashtag) {
+            $post->removeHashtag($existingHashtag);
+
+            if (method_exists($existingHashtag, 'decrementUsageCount')) {
+                $existingHashtag->decrementUsageCount();
+            }
+        }
+    }
+
+    private function processHashtag(Post $post, string $name): void
+    {
+        try {
+            $name = trim($name);
+            if (empty($name)) {
+                return;
+            }
+
+            $hashtag = $this->getOrCreateHashtag($name);
+            $this->updateHashtagUsage($hashtag);
+            $post->addHashtag($hashtag);
+        } catch (\Throwable $e) {
+            $this->logger->warning('Erreur lors du traitement du hashtag #' . $name . ': ' . $e->getMessage());
+        }
+    }
+
+    private function getOrCreateHashtag(string $name): Hashtag
+    {
+        $hashtag = $this->hashtagRepository->findOneBy(['name' => $name]);
+
+        if (!$hashtag) {
+            $hashtag = new Hashtag();
+            $hashtag->setName($name);
+            $this->entityManager->persist($hashtag);
         }
 
-        // Ajouter chaque hashtag
-        foreach ($hashtagNames as $name) {
-            try {
-                // Nettoyage du nom de hashtag
-                $name = trim($name);
-                if (empty($name)) {
-                    continue;
-                }
+        return $hashtag;
+    }
 
-                // Rechercher si le hashtag existe déjà
-                $hashtag = $this->hashtagRepository->findOneBy(['name' => $name]);
-
-                // S'il n'existe pas, le créer
-                if (!$hashtag) {
-                    $hashtag = new Hashtag();
-                    $hashtag->setName($name);
-                    $this->entityManager->persist($hashtag);
-                }
-
-                // Incrémenter le compteur d'utilisation si la méthode existe
-                if (method_exists($hashtag, 'incrementUsageCount')) {
-                    $hashtag->incrementUsageCount();
-                }
-
-                // Associer le hashtag au post
-                $post->addHashtag($hashtag);
-            } catch (\Throwable $e) {
-                $this->logger->warning('Erreur lors du traitement du hashtag #' . $name . ': ' . $e->getMessage());
-                // Continuer avec les autres hashtags
-                continue;
-            }
+    private function updateHashtagUsage(Hashtag $hashtag): void
+    {
+        if (method_exists($hashtag, 'incrementUsageCount')) {
+            $hashtag->incrementUsageCount();
         }
     }
 

@@ -22,9 +22,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class MessageController extends AbstractController
 {
     #[Route('/', name: 'app_message_index', methods: ['GET'])]
-    public function index(ConversationRepository $conversationRepository): Response
+    public function index(ConversationRepository $convRepo): Response
     {
-        $conversations = $conversationRepository->findConversationsForUser($this->getUser());
+        $conversations = $convRepo->findConversationsForUser($this->getUser());
 
         return $this->render('message/index.html.twig', [
             'conversations' => $conversations,
@@ -35,7 +35,7 @@ class MessageController extends AbstractController
     public function conversation(
         Conversation $conversation,
         MessageRepository $messageRepository,
-        ConversationRepository $conversationRepository,
+        ConversationRepository $convRepo,
         EntityManagerInterface $entityManager
     ): Response {
         // Vérifier que l'utilisateur fait partie de la conversation
@@ -47,7 +47,7 @@ class MessageController extends AbstractController
         }
 
         // Récupérer toutes les conversations de l'utilisateur
-        $conversations = $conversationRepository->findConversationsForUser($this->getUser());
+        $conversations = $convRepo->findConversationsForUser($this->getUser());
 
         // Marquer les messages comme lus
         $unreadMessages = $messageRepository->findUnreadMessagesInConversation(
@@ -105,16 +105,16 @@ class MessageController extends AbstractController
         ]);
     }
 
-    #[Route('/start/{id}', name: 'app_message_start', methods: ['GET', 'POST'])]
+    #[Route('/start/{conversationId}', name: 'app_message_start', methods: ['GET', 'POST'])]
     public function startConversation(
         Request $request,
-        $id,
+        int $conversationId,
         UserRepository $userRepository,
-        ConversationRepository $conversationRepository,
+        ConversationRepository $convRepo,
         EntityManagerInterface $entityManager
     ): Response {
         // Trouver l'utilisateur par son ID
-        $otherUser = $userRepository->find($id);
+        $otherUser = $userRepository->find($conversationId);
 
         // Vérifier si l'utilisateur existe
         if (!$otherUser) {
@@ -138,7 +138,7 @@ class MessageController extends AbstractController
         }
 
         // Vérifier si une conversation existe déjà
-        $conversation = $conversationRepository->findConversationBetweenUsers(
+        $conversation = $convRepo->findConversationBetweenUsers(
             $this->getUser(),
             $otherUser
         );
@@ -180,7 +180,7 @@ class MessageController extends AbstractController
     public function newConversation(
         Request $request,
         UserRepository $userRepository,
-        ConversationRepository $conversationRepository,
+        ConversationRepository $convRepo,
         EntityManagerInterface $entityManager
     ): Response {
         $recipientId = $request->request->get('recipient');
@@ -213,7 +213,7 @@ class MessageController extends AbstractController
         }
 
         // Vérifier si une conversation existe déjà
-        $conversation = $conversationRepository->findConversationBetweenUsers(
+        $conversation = $convRepo->findConversationBetweenUsers(
             $this->getUser(),
             $recipient
         );

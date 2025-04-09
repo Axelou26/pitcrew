@@ -22,21 +22,21 @@ class SupportTicketRepository extends ServiceEntityRepository
      */
     public function findByStatusAndPriority(array $criteria): array
     {
-        $qb = $this->createQueryBuilder('t')
+        $queryBuilder = $this->createQueryBuilder('t')
             ->orderBy('t.priority', 'DESC')
             ->addOrderBy('t.createdAt', 'ASC');
 
         if (isset($criteria['status'])) {
-            $qb->andWhere('t.status = :status')
+            $queryBuilder->andWhere('t.status = :status')
                ->setParameter('status', $criteria['status']);
         }
 
         if (isset($criteria['priority'])) {
-            $qb->andWhere('t.priority = :priority')
+            $queryBuilder->andWhere('t.priority = :priority')
                ->setParameter('priority', $criteria['priority']);
         }
 
-        return $qb->getQuery()->getResult();
+        return $queryBuilder->getQuery()->getResult();
     }
 
     /**

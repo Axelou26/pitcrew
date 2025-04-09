@@ -18,10 +18,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class NotificationController extends AbstractController
 {
     #[Route('/', name: 'app_notification_index', methods: ['GET'])]
-    public function index(NotificationRepository $notificationRepository): Response
+    public function index(NotificationRepository $notifRepo): Response
     {
         $user = $this->getUser();
-        $notifications = $notificationRepository->findBy(['user' => $user], ['createdAt' => 'DESC']);
+        $notifications = $notifRepo->findBy(['user' => $user], ['createdAt' => 'DESC']);
 
         return $this->render('notification/index.html.twig', [
             'notifications' => $notifications,
@@ -29,9 +29,9 @@ class NotificationController extends AbstractController
     }
 
     #[Route('/unread', name: 'app_notification_unread', methods: ['GET'])]
-    public function unread(NotificationRepository $notificationRepository): Response
+    public function unread(NotificationRepository $notifRepo): Response
     {
-        $notifications = $notificationRepository->findUnreadByUser($this->getUser());
+        $notifications = $notifRepo->findUnreadByUser($this->getUser());
 
         return $this->render('notification/unread.html.twig', [
             'notifications' => $notifications,
@@ -39,17 +39,17 @@ class NotificationController extends AbstractController
     }
 
     #[Route('/count', name: 'app_notification_count', methods: ['GET'])]
-    public function count(NotificationRepository $notificationRepository): JsonResponse
+    public function count(NotificationRepository $notifRepo): JsonResponse
     {
-        $count = $notificationRepository->countUnreadByUser($this->getUser());
+        $count = $notifRepo->countUnreadByUser($this->getUser());
 
         return $this->json(['count' => $count]);
     }
 
     #[Route('/api/notifications/count', name: 'app_api_notification_count', methods: ['GET'])]
-    public function apiCount(NotificationRepository $notificationRepository): JsonResponse
+    public function apiCount(NotificationRepository $notifRepo): JsonResponse
     {
-        $count = $notificationRepository->countUnreadByUser($this->getUser());
+        $count = $notifRepo->countUnreadByUser($this->getUser());
 
         return $this->json(['count' => $count]);
     }
@@ -81,12 +81,12 @@ class NotificationController extends AbstractController
 
     #[Route('/mark-all-as-read', name: 'app_notification_mark_all_as_read', methods: ['POST'])]
     public function markAllAsRead(
-        NotificationRepository $notificationRepository,
+        NotificationRepository $notifRepo,
         EntityManagerInterface $entityManager,
         Request $request
     ) {
         $user = $this->getUser();
-        $unreadNotifications = $notificationRepository->findBy(['user' => $user, 'isRead' => false]);
+        $unreadNotifications = $notifRepo->findBy(['user' => $user, 'isRead' => false]);
 
         foreach ($unreadNotifications as $notification) {
             $notification->setIsRead(true);

@@ -8,6 +8,7 @@ use App\Form\InterviewType;
 use App\Repository\InterviewRepository;
 use App\Repository\JobOfferRepository;
 use App\Service\VideoConferenceService;
+use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,14 +19,14 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/interviews')]
 class InterviewController extends AbstractController
 {
-    private $videoConferenceService;
+    private $videoConfService;
     private $interviewRepository;
 
     public function __construct(
-        VideoConferenceService $videoConferenceService,
+        VideoConferenceService $videoConfService,
         InterviewRepository $interviewRepository
     ) {
-        $this->videoConferenceService = $videoConferenceService;
+        $this->videoConfService = $videoConfService;
         $this->interviewRepository = $interviewRepository;
     }
 
@@ -88,7 +89,7 @@ class InterviewController extends AbstractController
             $entityManager->flush();
 
             // Création de la salle de visioconférence
-            $this->videoConferenceService->createRoom($interview);
+            $this->videoConfService->createRoom($interview);
 
             $this->addFlash('success', 'L\'entretien a été planifié avec succès.');
             return $this->redirectToRoute('app_interviews_index');
@@ -156,7 +157,7 @@ class InterviewController extends AbstractController
             $entityManager->flush();
 
             // Création de la salle de visioconférence
-            $this->videoConferenceService->createRoom($interview);
+            $this->videoConfService->createRoom($interview);
 
             $this->addFlash('success', 'L\'entretien a été planifié avec succès.');
             return $this->redirectToRoute('app_job_offer_show', ['id' => $jobOffer->getId()]);
@@ -177,15 +178,15 @@ class InterviewController extends AbstractController
         $user = $this->getUser();
 
         // Vérifier que l'utilisateur est autorisé à voir cet entretien
-        if (!$this->videoConferenceService->canAccessRoom($interview, $user)) {
+        if (!$this->videoConfService->canAccessRoom($interview, $user)) {
             throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à voir cet entretien.');
         }
 
         // Vérifier si l'entretien est actif et rediriger directement vers la salle si c'est le cas
-        $isActive = $this->videoConferenceService->isInterviewActive($interview);
+        $isActive = $this->videoConfService->isInterviewActive($interview);
         if ($isActive && !$interview->isCancelled()) {
             // Générer un token pour l'accès à la salle
-            $token = $this->videoConferenceService->generateRoomToken($interview);
+            $token = $this->videoConfService->generateRoomToken($interview);
 
             // Rediriger vers la salle d'entretien
             return $this->redirectToRoute('app_interview_room', [
@@ -210,12 +211,12 @@ class InterviewController extends AbstractController
         $token = $request->query->get('token');
 
         // Vérifier que l'utilisateur est autorisé à accéder à cet entretien
-        if (!$this->videoConferenceService->canAccessRoom($interview, $user)) {
+        if (!$this->videoConfService->canAccessRoom($interview, $user)) {
             throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à accéder à cette salle.');
         }
 
         // Vérifier la validité du token
-        if (!$this->videoConferenceService->validateRoomToken($interview, $token)) {
+        if (!$this->videoConfService->validateRoomToken($interview, $token)) {
             throw $this->createAccessDeniedException('Lien d\'accès invalide.');
         }
 
@@ -226,7 +227,7 @@ class InterviewController extends AbstractController
         }
 
         // Vérifier que l'entretien est actif
-        $now = new \DateTime();
+        $now = new DateTime();
         $scheduledTime = $interview->getScheduledAt();
         $earliestJoin = (clone $scheduledTime)->modify('-15 minutes');
         $latestJoin = (clone $scheduledTime)->modify('+1 hour');
@@ -248,7 +249,7 @@ class InterviewController extends AbstractController
         }
 
         // Obtenir la configuration pour le client
-        $clientConfig = $this->videoConferenceService->getClientConfig($interview, $user);
+        $clientConfig = $this->videoConfService->getClientConfig($interview, $user);
 
         return $this->render('interview/room.html.twig', [
             'interview' => $interview,
@@ -270,7 +271,7 @@ class InterviewController extends AbstractController
         }
 
         if ($this->isCsrfTokenValid('cancel' . $interview->getId(), $request->request->get('_token'))) {
-            $this->videoConferenceService->cancelInterview($interview);
+            $this->videoConfService->cancelInterview($interview);
 
             $this->addFlash('success', 'L\'entretien a été annulé avec succès.');
         }
@@ -292,7 +293,7 @@ class InterviewController extends AbstractController
         }
 
         if ($this->isCsrfTokenValid('end' . $interview->getId(), $request->request->get('_token'))) {
-            $this->videoConferenceService->endInterview($interview);
+            $this->videoConfService->endInterview($interview);
 
             $this->addFlash('success', 'L\'entretien a été terminé avec succès.');
         }
@@ -330,7 +331,7 @@ class InterviewController extends AbstractController
         $user = $this->getUser();
 
         // Vérifier que l'utilisateur est autorisé à accéder à cet entretien
-        if (!$this->videoConferenceService->canAccessRoom($interview, $user)) {
+        if (!$this->videoConfService->canAccessRoom($interview, $user)) {
             throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à accéder à cette salle.');
         }
 
@@ -341,7 +342,7 @@ class InterviewController extends AbstractController
         }
 
         // Générer un token pour l'accès à la salle
-        $token = $this->videoConferenceService->generateRoomToken($interview);
+        $token = $this->videoConfService->generateRoomToken($interview);
 
         // Rediriger vers la salle d'entretien
         return $this->redirectToRoute('app_interview_room', [

@@ -10,6 +10,9 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: SubscriptionRepository::class)]
 class Subscription
 {
+    /**
+     * @SuppressWarnings("PHPMD.ShortVariable")
+     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -34,11 +37,11 @@ class Subscription
     private ?bool $isActive = true;
 
     #[ORM\OneToMany(mappedBy: 'subscription', targetEntity: RecruiterSubscription::class)]
-    private Collection $recruiterSubscriptions;
+    private Collection $recruiterSubs;
 
     public function __construct()
     {
-        $this->recruiterSubscriptions = new ArrayCollection();
+        $this->recruiterSubs = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -126,28 +129,33 @@ class Subscription
      */
     public function getRecruiterSubscriptions(): Collection
     {
-        return $this->recruiterSubscriptions;
+        return $this->recruiterSubs;
     }
 
-    public function addRecruiterSubscription(RecruiterSubscription $recruiterSubscription): static
+    public function addRecruiterSubscription(RecruiterSubscription $recruiterSub): static
     {
-        if (!$this->recruiterSubscriptions->contains($recruiterSubscription)) {
-            $this->recruiterSubscriptions->add($recruiterSubscription);
-            $recruiterSubscription->setSubscription($this);
+        if (!$this->recruiterSubs->contains($recruiterSub)) {
+            $this->recruiterSubs->add($recruiterSub);
+            $recruiterSub->setSubscription($this);
         }
 
         return $this;
     }
 
-    public function removeRecruiterSubscription(RecruiterSubscription $recruiterSubscription): static
+    public function removeRecruiterSubscription(RecruiterSubscription $recruiterSub): static
     {
-        if ($this->recruiterSubscriptions->removeElement($recruiterSubscription)) {
+        if ($this->recruiterSubs->removeElement($recruiterSub)) {
             // set the owning side to null (unless already changed)
-            if ($recruiterSubscription->getSubscription() === $this) {
-                $recruiterSubscription->setSubscription(null);
+            if ($recruiterSub->getSubscription() === $this) {
+                $recruiterSub->setSubscription(null);
             }
         }
 
         return $this;
+    }
+
+    public function __toString(): string
+    {
+        return $this->name;
     }
 }

@@ -116,127 +116,70 @@ class JobOfferController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'app_job_offer_show', methods: ['GET'])]
-    public function show(
-        string $id,
-        JobOfferRepository $jobOfferRepository,
-        FavoriteRepository $favoriteRepository
-    ) {
-        $jobOffer = $jobOfferRepository->find($id);
+    #[Route('/job-offer/{offerId}', name: 'app_job_offer_show')]
+    public function show(int $offerId): Response
+    {
+        $jobOffer = $this->jobOfferRepository->find($offerId);
 
         if (!$jobOffer) {
-            throw $this->createNotFoundException('L\'offre d\'emploi demandée n\'existe pas.');
-        }
-
-        // Récupérer les offres similaires
-        $similarOffers = $jobOfferRepository->findSimilarOffers($jobOffer, 3);
-
-        // Vérifier si l'offre est dans les favoris de l'utilisateur connecté
-        $isFavorite = false;
-        if ($this->getUser() && !$this->getUser()->isRecruiter()) {
-            $isFavorite = $favoriteRepository->isJobOfferFavorite($this->getUser(), $jobOffer);
+            throw $this->createNotFoundException('Offre d\'emploi non trouvée');
         }
 
         return $this->render('job_offer/show.html.twig', [
-            'offer' => $jobOffer,
-            'similarOffers' => $similarOffers,
-            'is_favorite' => $isFavorite
+            'jobOffer' => $jobOffer
         ]);
     }
 
-    #[Route('/{id}/edit', name: 'app_job_offer_edit', methods: ['GET', 'POST'])]
-    #[IsGranted('ROLE_RECRUTEUR')]
-    public function edit(
-        Request $request,
-        string $id,
-        JobOfferRepository $jobOfferRepository,
-        EntityManagerInterface $entityManager,
-        FileUploader $fileUploader
-    ): Response {
-        $jobOffer = $jobOfferRepository->find($id);
+    #[Route('/job-offer/{offerId}/edit', name: 'app_job_offer_edit')]
+    public function edit(int $offerId, Request $request): Response
+    {
+        $jobOffer = $this->jobOfferRepository->find($offerId);
 
         if (!$jobOffer) {
-            throw $this->createNotFoundException('L\'offre d\'emploi demandée n\'existe pas.');
+            throw $this->createNotFoundException('Offre d\'emploi non trouvée');
         }
 
         // Vérifier que l'utilisateur est bien le propriétaire de l'offre
         if ($jobOffer->getRecruiter() !== $this->getUser()) {
-            throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à modifier cette offre.');
+            throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à modifier cette offre');
         }
 
         $form = $this->createForm(JobOfferType::class, $jobOffer);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // Gestion du logo
-            $logoFile = $form->get('logoFile')->getData();
-            if ($logoFile) {
-                try {
-                    $newLogoFilename = $fileUploader->upload(
-                        $logoFile,
-                        'logos_directory',
-                        $jobOffer->getLogoUrl()
-                    );
-                    $jobOffer->setLogoUrl($newLogoFilename);
-                } catch (\Exception $e) {
-                    $this->addFlash('error', $e->getMessage());
-                }
-            }
-
-            // Gestion de l'image
-            $imageFile = $form->get('imageFile')->getData();
-            if ($imageFile) {
-                try {
-                    $newImageFilename = $fileUploader->upload(
-                        $imageFile,
-                        'job_images_directory',
-                        $jobOffer->getImage()
-                    );
-                    $jobOffer->setImage($newImageFilename);
-                } catch (\Exception $e) {
-                    $this->addFlash('error', $e->getMessage());
-                }
-            }
-
-            $entityManager->flush();
-
-            $this->addFlash('success', 'L\'offre d\'emploi a été mise à jour avec succès !');
-            return $this->redirectToRoute('app_job_offer_show', ['id' => $jobOffer->getId()]);
+            $this->entityManager->flush();
+            $this->addFlash('success', 'Offre d\'emploi modifiée avec succès');
+            return $this->redirectToRoute('app_job_offer_show', ['offerId' => $jobOffer->getId()]);
         }
 
         return $this->render('job_offer/edit.html.twig', [
             'form' => $form->createView(),
-            'offer' => $jobOffer,
+            'jobOffer' => $jobOffer
         ]);
     }
 
-    #[Route('/{id}/delete', name: 'app_job_offer_delete', methods: ['POST'])]
-    #[IsGranted('ROLE_RECRUTEUR')]
-    public function delete(
-        Request $request,
-        string $id,
-        JobOfferRepository $jobOfferRepository,
-        EntityManagerInterface $entityManager
-    ) {
-        $jobOffer = $jobOfferRepository->find($id);
+    #[Route('/job-offer/{offerId}/delete', name: 'app_job_offer_delete', methods: ['POST'])]
+    public function delete(int $offerId, Request $request): Response
+    {
+        $jobOffer = $this->jobOfferRepository->find($offerId);
 
         if (!$jobOffer) {
-            throw $this->createNotFoundException('L\'offre d\'emploi demandée n\'existe pas.');
+            throw $this->createNotFoundException('Offre d\'emploi non trouvée');
         }
 
         // Vérifier que l'utilisateur est bien le propriétaire de l'offre
         if ($jobOffer->getRecruiter() !== $this->getUser()) {
-            throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à supprimer cette offre.');
+            throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à supprimer cette offre');
         }
 
-        if ($this->isCsrfTokenValid('delete' . $jobOffer->getId(), $request->request->get('_token'))) {
-            $entityManager->remove($jobOffer);
-            $entityManager->flush();
-
-            $this->addFlash('success', 'L\'offre d\'emploi a été supprimée avec succès !');
+        if ($this->isCsrfTokenValid('delete'.$offerId, $request->request->get('_token'))) {
+            $this->entityManager->remove($jobOffer);
+            $this->entityManager->flush();
+            $this->addFlash('success', 'Offre d\'emploi supprimée avec succès');
         }
 
-        return $this->redirectToRoute('app_profile_index');
+        return $this->redirectToRoute('app_recruiter_dashboard');
     }
 
     #[Route('/recherche', name: 'app_job_offer_search', methods: ['GET'])]

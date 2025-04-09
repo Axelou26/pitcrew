@@ -9,6 +9,8 @@ use Symfony\Component\Mime\Email;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Twig\Environment;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Mime\Address;
+use Symfony\Component\Mime\TemplatedEmail;
 
 class EmailService
 {
@@ -43,37 +45,21 @@ class EmailService
      */
     public function sendSubscriptionConfirmation(User $user, RecruiterSubscription $subscription): void
     {
-        $invoiceUrl = $this->urlGenerator->generate('app_subscription_invoice', [
-            'id' => $subscription->getId()
-        ], UrlGeneratorInterface::ABSOLUTE_URL);
-
-        $email = (new Email())
-            ->from(sprintf('"%s" <%s>', $this->senderName, $this->senderEmail))
-            ->to($user->getEmail())
-            ->subject('Confirmation de votre abonnement ' . $subscription->getSubscription()->getName())
-            ->html(
-                $this->twig->render('emails/subscription_confirmation.html.twig', [
-                    'user' => $user,
-                    'subscription' => $subscription,
-                    'invoiceUrl' => $invoiceUrl
-                ])
-            );
-
-        try {
-            $this->mailer->send($email);
-        } catch (\Exception $e) {
-            // En mode développement, on log simplement l'erreur au lieu de la propager
-            if ($this->isDevMode) {
-                $this->logger->info('Email non envoyé (mode développement): {subject}', [
-                    'subject' => $email->getSubject(),
-                    'to' => $email->getTo(),
-                    'error' => $e->getMessage()
-                ]);
-            } else {
-                // En production, on propage l'erreur
-                throw $e;
-            }
+        if (!$user->getEmail()) {
+            return;
         }
+
+        $email = (new TemplatedEmail())
+            ->from(new Address($this->senderEmail, $this->senderName))
+            ->to(new Address($user->getEmail(), $user->getFullName()))
+            ->subject('Confirmation de votre abonnement')
+            ->htmlTemplate('emails/subscription/confirmation.html.twig')
+            ->context([
+                'user' => $user,
+                'subscription' => $subscription
+            ]);
+
+        $this->sendEmail($email);
     }
 
     /**
@@ -81,35 +67,22 @@ class EmailService
      */
     public function sendSubscriptionExpirationReminder(User $user, RecruiterSubscription $subscription): void
     {
-        $manageUrl = $this->urlGenerator->generate('app_subscription_manage', [], UrlGeneratorInterface::ABSOLUTE_URL);
-        $daysLeft = (new \DateTime())->diff($subscription->getEndDate())->days;
-
-        $email = (new Email())
-            ->from(sprintf('"%s" <%s>', $this->senderName, $this->senderEmail))
-            ->to($user->getEmail())
-            ->subject('Votre abonnement expire bientôt')
-            ->html(
-                $this->twig->render('emails/subscription_expiration.html.twig', [
-                    'user' => $user,
-                    'subscription' => $subscription,
-                    'daysLeft' => $daysLeft,
-                    'manageUrl' => $manageUrl
-                ])
-            );
-
-        try {
-            $this->mailer->send($email);
-        } catch (\Exception $e) {
-            if ($this->isDevMode) {
-                $this->logger->info('Email non envoyé (mode développement): {subject}', [
-                    'subject' => $email->getSubject(),
-                    'to' => $email->getTo(),
-                    'error' => $e->getMessage()
-                ]);
-            } else {
-                throw $e;
-            }
+        if (!$user->getEmail()) {
+            return;
         }
+
+        $email = (new TemplatedEmail())
+            ->from(new Address($this->senderEmail, $this->senderName))
+            ->to(new Address($user->getEmail(), $user->getFullName()))
+            ->subject('Votre abonnement expire bientôt')
+            ->htmlTemplate('emails/subscription/expiration_reminder.html.twig')
+            ->context([
+                'user' => $user,
+                'subscription' => $subscription,
+                'expirationDate' => $subscription->getEndDate()->format('d/m/Y')
+            ]);
+
+        $this->sendEmail($email);
     }
 
     /**
@@ -117,33 +90,22 @@ class EmailService
      */
     public function sendSubscriptionCancellationConfirmation(User $user, RecruiterSubscription $subscription): void
     {
-        $plansUrl = $this->urlGenerator->generate('app_subscription_plans', [], UrlGeneratorInterface::ABSOLUTE_URL);
-
-        $email = (new Email())
-            ->from(sprintf('"%s" <%s>', $this->senderName, $this->senderEmail))
-            ->to($user->getEmail())
-            ->subject('Confirmation d\'annulation de votre abonnement')
-            ->html(
-                $this->twig->render('emails/subscription_cancellation.html.twig', [
-                    'user' => $user,
-                    'subscription' => $subscription,
-                    'plansUrl' => $plansUrl
-                ])
-            );
-
-        try {
-            $this->mailer->send($email);
-        } catch (\Exception $e) {
-            if ($this->isDevMode) {
-                $this->logger->info('Email non envoyé (mode développement): {subject}', [
-                    'subject' => $email->getSubject(),
-                    'to' => $email->getTo(),
-                    'error' => $e->getMessage()
-                ]);
-            } else {
-                throw $e;
-            }
+        if (!$user->getEmail()) {
+            return;
         }
+
+        $email = (new TemplatedEmail())
+            ->from(new Address($this->senderEmail, $this->senderName))
+            ->to(new Address($user->getEmail(), $user->getFullName()))
+            ->subject('Confirmation d\'annulation de votre abonnement')
+            ->htmlTemplate('emails/subscription/cancellation.html.twig')
+            ->context([
+                'user' => $user,
+                'subscription' => $subscription,
+                'endDate' => $subscription->getEndDate()->format('d/m/Y')
+            ]);
+
+        $this->sendEmail($email);
     }
 
     /**
@@ -151,67 +113,66 @@ class EmailService
      */
     public function sendPaymentReceipt(User $user, RecruiterSubscription $subscription): void
     {
-        $invoiceUrl = $this->urlGenerator->generate('app_subscription_invoice', [
-            'id' => $subscription->getId()
-        ], UrlGeneratorInterface::ABSOLUTE_URL);
-
-        $email = (new Email())
-            ->from(sprintf('"%s" <%s>', $this->senderName, $this->senderEmail))
-            ->to($user->getEmail())
-            ->subject('Reçu de paiement - Abonnement ' . $subscription->getSubscription()->getName())
-            ->html(
-                $this->twig->render('emails/payment_receipt.html.twig', [
-                    'user' => $user,
-                    'subscription' => $subscription,
-                    'invoiceUrl' => $invoiceUrl
-                ])
-            );
-
-        try {
-            $this->mailer->send($email);
-        } catch (\Exception $e) {
-            if ($this->isDevMode) {
-                $this->logger->info('Email non envoyé (mode développement): {subject}', [
-                    'subject' => $email->getSubject(),
-                    'to' => $email->getTo(),
-                    'error' => $e->getMessage()
-                ]);
-            } else {
-                throw $e;
-            }
+        if (!$user->getEmail()) {
+            return;
         }
+
+        $email = (new TemplatedEmail())
+            ->from(new Address($this->senderEmail, $this->senderName))
+            ->to(new Address($user->getEmail(), $user->getFullName()))
+            ->subject('Reçu de paiement')
+            ->htmlTemplate('emails/subscription/payment_receipt.html.twig')
+            ->context([
+                'user' => $user,
+                'subscription' => $subscription,
+                'amount' => $subscription->getSubscription()->getPrice(),
+                'date' => $subscription->getStartDate()->format('d/m/Y')
+            ]);
+
+        $this->sendEmail($email);
     }
 
     /**
      * Envoie une notification d'échec de paiement
      */
-    public function sendPaymentFailedNotification(User $user): void
+    public function sendPaymentFailedNotification(User $user, RecruiterSubscription $subscription): void
     {
-        $manageUrl = $this->urlGenerator->generate('app_subscription_manage', [], UrlGeneratorInterface::ABSOLUTE_URL);
+        if (!$user->getEmail()) {
+            return;
+        }
 
-        $email = (new Email())
-            ->from(sprintf('"%s" <%s>', $this->senderName, $this->senderEmail))
-            ->to($user->getEmail())
-            ->subject('Échec de paiement pour votre abonnement')
-            ->html(
-                $this->twig->render('emails/payment_failed.html.twig', [
-                    'user' => $user,
-                    'manageUrl' => $manageUrl
-                ])
-            );
+        $email = (new TemplatedEmail())
+            ->from(new Address($this->senderEmail, $this->senderName))
+            ->to(new Address($user->getEmail(), $user->getFullName()))
+            ->subject('Échec du paiement')
+            ->htmlTemplate('emails/subscription/payment_failed.html.twig')
+            ->context([
+                'user' => $user,
+                'subscription' => $subscription,
+                'amount' => $subscription->getSubscription()->getPrice()
+            ]);
 
+        $this->sendEmail($email);
+    }
+
+    /**
+     * Méthode privée pour envoyer l'email et gérer les erreurs.
+     */
+    private function sendEmail(TemplatedEmail $email): void
+    {
         try {
             $this->mailer->send($email);
         } catch (\Exception $e) {
             if ($this->isDevMode) {
                 $this->logger->info('Email non envoyé (mode développement): {subject}', [
                     'subject' => $email->getSubject(),
-                    'to' => $email->getTo(),
+                    'to' => implode(', ', array_map(fn($addr) => $addr->toString(), $email->getTo())),
                     'error' => $e->getMessage()
                 ]);
-            } else {
-                throw $e;
+                return; // Sortir en mode dev après log
             }
+            // En production, on propage l'erreur
+            throw $e;
         }
     }
 }

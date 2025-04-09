@@ -15,8 +15,10 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Bundle\SecurityBundle\Security;
+use DateTime;
+use App\Form\Type\InterviewTypeInterface;
 
-class InterviewType extends AbstractType
+class InterviewType extends AbstractType implements InterviewTypeInterface
 {
     private $security;
     private $userRepository;
@@ -60,7 +62,7 @@ class InterviewType extends AbstractType
 
         // Si c'est un recruteur, on ajoute le champ pour sélectionner un candidat
         if (in_array('ROLE_RECRUTEUR', $this->security->getUser()->getRoles())) {
-            // Si une offre d'emploi est fournie via les options, on affiche uniquement les candidats de cette offre
+            // Si un job_offer_id est fourni dans les options, on filtre les candidats
             if (isset($options['job_offer_id']) && $options['job_offer_id']) {
                 $jobOfferId = $options['job_offer_id'];
                 $builder->add('applicant', EntityType::class, [
@@ -81,8 +83,10 @@ class InterviewType extends AbstractType
                     'placeholder' => 'Sélectionnez un candidat',
                     'attr' => ['class' => 'form-control']
                 ]);
-            } else {
-                // Sinon on affiche tous les candidats
+            }
+
+            // Sinon (si job_offer_id n'est pas fourni), on affiche tous les candidats
+            if (!isset($options['job_offer_id']) || !$options['job_offer_id']) {
                 $builder->add('applicant', EntityType::class, [
                     'class' => User::class,
                     'choice_label' => function (User $user) {
@@ -111,7 +115,7 @@ class InterviewType extends AbstractType
                             ->where('j.recruiter = :recruiter')
                             ->andWhere('j.expiresAt > :now')
                             ->setParameter('recruiter', $user)
-                            ->setParameter('now', new \DateTime())
+                            ->setParameter('now', new DateTime())
                             ->orderBy('j.title', 'ASC');
                     },
                     'label' => 'Offre d\'emploi associée',

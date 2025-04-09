@@ -46,7 +46,7 @@ jobs:
       - name: Code Quality Checks
         run: |
           vendor/bin/phpcs --standard=PSR12 src/
-          vendor/bin/phpmd src/ text cleancode,codesize,controversial,design,naming
+          vendor/bin/phpmd src/ text .github/phpmd.xml
           
       - name: Security Check
         uses: symfonycorp/security-checker-action@v4

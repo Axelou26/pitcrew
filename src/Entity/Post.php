@@ -3,37 +3,41 @@
 namespace App\Entity;
 
 use App\Repository\PostRepository;
+use App\Entity\Trait\PostReactionsTrait;
+use App\Entity\Trait\PostCommentsTrait;
+use App\Entity\Trait\PostSharesTrait;
+use App\Entity\Trait\PostTaggingTrait;
+use App\Entity\Trait\PostMentionsTrait;
+use App\Entity\Trait\PostReactionCountsTrait;
+use App\Entity\Trait\PostCountersTrait;
+use App\Entity\Trait\PostBasicTrait;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use DateTimeImmutable;
 
 #[ORM\Entity(repositoryClass: PostRepository::class)]
+#[ORM\Table(name: 'post')]
+#[ORM\HasLifecycleCallbacks]
 class Post
 {
+    use PostReactionsTrait;
+    use PostCommentsTrait;
+    use PostSharesTrait;
+    use PostTaggingTrait;
+    use PostMentionsTrait;
+    use PostReactionCountsTrait;
+    use PostCountersTrait;
+    use PostBasicTrait;
+
+    /**
+     * @SuppressWarnings("PHPMD.ShortVariable")
+     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
+    #[ORM\Column(type: 'integer')]
     private ?int $id = null;
-
-    #[ORM\Column(length: 255)]
-    private ?string $title = null;
-
-    #[ORM\Column(type: 'text')]
-    private ?string $content = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $image = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $imageName = null;
-
-    #[ORM\Column]
-    private ?\DateTimeImmutable $createdAt = null;
-
-    #[ORM\ManyToOne(inversedBy: 'posts')]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?User $author = null;
 
     #[ORM\OneToMany(mappedBy: 'post', targetEntity: PostLike::class, orphanRemoval: true)]
     private Collection $likes;
@@ -44,27 +48,12 @@ class Post
     #[ORM\OneToMany(mappedBy: 'post', targetEntity: PostShare::class, orphanRemoval: true)]
     private Collection $shares;
 
-    #[ORM\Column(options: ["default" => 0])]
-    private int $likesCounter = 0;
-
-    #[ORM\Column(options: ["default" => 0])]
-    private int $commentsCounter = 0;
-
-    #[ORM\Column(options: ["default" => 0])]
-    private int $sharesCounter = 0;
-
     #[ORM\ManyToMany(targetEntity: Hashtag::class, inversedBy: 'posts')]
     private Collection $hashtags;
 
-    #[ORM\Column(type: Types::JSON)]
-    private ?array $mentions = [];
-
-    #[ORM\Column(type: Types::JSON)]
-    private ?array $reactionCounts = [];
-
     public function __construct()
     {
-        $this->createdAt = new \DateTimeImmutable();
+        $this->createdAt = new DateTimeImmutable();
         $this->likes = new ArrayCollection();
         $this->comments = new ArrayCollection();
         $this->shares = new ArrayCollection();
@@ -73,13 +62,7 @@ class Post
         $this->commentsCounter = 0;
         $this->sharesCounter = 0;
         $this->mentions = [];
-        $this->reactionCounts = [
-            PostLike::REACTION_LIKE => 0,
-            PostLike::REACTION_CONGRATS => 0,
-            PostLike::REACTION_INTERESTING => 0,
-            PostLike::REACTION_SUPPORT => 0,
-            PostLike::REACTION_ENCOURAGING => 0
-        ];
+        $this->reactionCounts = $this->initializeReactionCounts();
     }
 
     public function getId(): ?int
@@ -131,7 +114,7 @@ class Post
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->createdAt;
     }
@@ -337,47 +320,23 @@ class Post
         return $this->hashtags;
     }
 
-    public function addHashtag(Hashtag $hashtag, bool $updateOtherSide = true): static
+    public function addHashtag(Hashtag $hashtag): self
     {
         if (!$this->hashtags->contains($hashtag)) {
             $this->hashtags->add($hashtag);
-            if ($updateOtherSide) {
-                $hashtag->addPost($this, false);
-            }
+            $hashtag->getPosts()->add($this);
         }
 
         return $this;
     }
 
-    public function removeHashtag(Hashtag $hashtag, bool $updateOtherSide = true): static
+    public function removeHashtag(Hashtag $hashtag): self
     {
         if ($this->hashtags->removeElement($hashtag)) {
-            if ($updateOtherSide) {
-                $hashtag->removePost($this, false);
-            }
+            $hashtag->getPosts()->removeElement($this);
         }
 
         return $this;
-    }
-
-    /**
-     * Extrait les hashtags du contenu
-     *
-     * @return array Les hashtags extraits du contenu
-     */
-    public function extractHashtags(): array
-    {
-        if ($this->content === null || trim($this->content) === '') {
-            return [];
-        }
-
-        try {
-            preg_match_all('/#([a-zA-Z0-9_]+)/', $this->content, $matches);
-            return array_unique($matches[1] ?? []);
-        } catch (\Throwable $e) {
-            // En cas d'erreur avec preg_match_all, retourner un tableau vide
-            return [];
-        }
     }
 
     /**
@@ -410,26 +369,6 @@ class Post
     }
 
     /**
-     * Extrait les mentions (@username) du contenu
-     *
-     * @return array Les noms d'utilisateur mentionnés
-     */
-    public function extractMentions(): array
-    {
-        if ($this->content === null || trim($this->content) === '') {
-            return [];
-        }
-
-        try {
-            preg_match_all('/@([a-zA-Z0-9_]+)/', $this->content, $matches);
-            return array_unique($matches[1] ?? []);
-        } catch (\Throwable $e) {
-            // En cas d'erreur avec preg_match_all, retourner un tableau vide
-            return [];
-        }
-    }
-
-    /**
      * @return array
      */
     public function getReactionCounts(): ?array
@@ -438,26 +377,12 @@ class Post
     }
 
     /**
-     * Met à jour les compteurs de réactions
+     * @param array|null $reactionCounts
      */
-    public function updateReactionCounts(): void
+    public function setReactionCounts(?array $reactionCounts): static
     {
-        $counts = [
-            PostLike::REACTION_LIKE => 0,
-            PostLike::REACTION_CONGRATS => 0,
-            PostLike::REACTION_INTERESTING => 0,
-            PostLike::REACTION_SUPPORT => 0,
-            PostLike::REACTION_ENCOURAGING => 0
-        ];
-
-        foreach ($this->likes as $like) {
-            $type = $like->getReactionType();
-            if (isset($counts[$type])) {
-                $counts[$type]++;
-            }
-        }
-
-        $this->reactionCounts = $counts;
+        $this->reactionCounts = $reactionCounts;
+        return $this;
     }
 
     /**

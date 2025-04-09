@@ -196,6 +196,34 @@ class NotificationService
      */
     public function notifyPostLike(PostLike $like): void
     {
+        $post = $this->validatePostLike($like);
+        $author = $post->getAuthor();
+        $user = $like->getUser();
+
+        if ($author === $user) {
+            return;
+        }
+
+        try {
+            $notification = $this->createPostLikeNotification($like);
+            $this->entityManager->persist($notification);
+            $this->entityManager->flush();
+
+            $this->logger->info('Notification de like créée', [
+                'post_id' => $post->getId(),
+                'reaction_type' => $like->getReactionType()
+            ]);
+        } catch (\Throwable $e) {
+            $this->logger->error('Erreur lors de la création d\'une notification de like', [
+                'error' => $e->getMessage(),
+                'post_id' => $post->getId(),
+                'user_id' => $user->getId()
+            ]);
+        }
+    }
+
+    private function validatePostLike(PostLike $like): Post
+    {
         $post = $like->getPost();
         if (!$post) {
             throw new RuntimeException('Post not found for like');
@@ -211,69 +239,45 @@ class NotificationService
             throw new RuntimeException('User not found for like');
         }
 
-        if ($author === $user) {
-            // Ne pas notifier l'auteur s'il aime son propre post
-            return;
-        }
+        return $post;
+    }
 
-        try {
-            $notification = new Notification();
-            $notification->setUser($author);
-            $notification->setType(Notification::TYPE_LIKE);
-            $notification->setEntityType('post');
-            $notification->setEntityId($post->getId());
-            $notification->setActorId($user->getId());
+    private function createPostLikeNotification(PostLike $like): Notification
+    {
+        $post = $like->getPost();
+        $notification = new Notification();
+        $notification->setUser($post->getAuthor());
+        $notification->setType(Notification::TYPE_LIKE);
+        $notification->setEntityType('post');
+        $notification->setEntityId($post->getId());
+        $notification->setActorId($like->getUser()->getId());
+        $notification->setTitle('Nouvelle réaction');
+        $notification->setMessage($this->getReactionMessage($like->getReactionType()));
+        $notification->setIsRead(false);
+        $notification->setLink($this->generatePostLink($post));
 
-            // Titre standard
-            $notification->setTitle('Nouvelle réaction');
+        return $notification;
+    }
 
-            // Message personnalisé en fonction du type de réaction
-            $reactionType = $like->getReactionType();
-            $message = 'A réagi à votre publication';
+    private function getReactionMessage(string $reactionType): string
+    {
+        return match ($reactionType) {
+            PostLike::REACTION_LIKE => 'A aimé votre publication',
+            PostLike::REACTION_CONGRATS => 'A félicité votre publication',
+            PostLike::REACTION_INTERESTING => 'Trouve votre publication intéressante',
+            PostLike::REACTION_SUPPORT => 'Soutient votre publication',
+            PostLike::REACTION_ENCOURAGING => 'Encourage votre publication',
+            default => 'A réagi à votre publication'
+        };
+    }
 
-            switch ($reactionType) {
-                case PostLike::REACTION_LIKE:
-                    $message = 'A aimé votre publication';
-                    break;
-                case PostLike::REACTION_CONGRATS:
-                    $message = 'A félicité votre publication';
-                    break;
-                case PostLike::REACTION_INTERESTING:
-                    $message = 'Trouve votre publication intéressante';
-                    break;
-                case PostLike::REACTION_SUPPORT:
-                    $message = 'Soutient votre publication';
-                    break;
-                case PostLike::REACTION_ENCOURAGING:
-                    $message = 'Encourage votre publication';
-                    break;
-            }
-
-            $notification->setMessage($message);
-            $notification->setIsRead(false);
-
-            // Générer le lien vers le post
-            $link = $this->urlGenerator->generate(
-                'app_post_show',
-                ['id' => $post->getId()],
-                UrlGeneratorInterface::ABSOLUTE_URL
-            );
-            $notification->setLink($link);
-
-            $this->entityManager->persist($notification);
-            $this->entityManager->flush();
-
-            $this->logger->info('Notification de like créée', [
-                'post_id' => $post->getId(),
-                'reaction_type' => $reactionType
-            ]);
-        } catch (\Throwable $e) {
-            $this->logger->error('Erreur lors de la création d\'une notification de like', [
-                'error' => $e->getMessage(),
-                'post_id' => $post->getId(),
-                'user_id' => $user->getId()
-            ]);
-        }
+    private function generatePostLink(Post $post): string
+    {
+        return $this->urlGenerator->generate(
+            'app_post_show',
+            ['id' => $post->getId()],
+            UrlGeneratorInterface::ABSOLUTE_URL
+        );
     }
 
     /**

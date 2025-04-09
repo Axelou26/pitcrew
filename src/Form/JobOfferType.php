@@ -3,6 +3,7 @@
 namespace App\Form;
 
 use App\Entity\JobOffer;
+use App\Form\Type\JobOfferTypeInterface;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
@@ -15,8 +16,9 @@ use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\File;
+use DateTime;
 
-class JobOfferType extends AbstractType
+class JobOfferType extends AbstractType implements JobOfferTypeInterface
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
@@ -108,7 +110,7 @@ class JobOfferType extends AbstractType
                 'label' => 'Date d\'expiration',
                 'required' => false,
                 'widget' => 'single_text',
-                'attr' => ['min' => (new \DateTime())->format('Y-m-d')],
+                'attr' => ['min' => (new DateTime())->format('Y-m-d')],
             ])
             ->add('contactEmail', TextType::class, [
                 'label' => 'Email de contact',

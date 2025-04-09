@@ -16,16 +16,16 @@ class AdminDashboardController extends AbstractController
 {
     private UserRepository $userRepository;
     private JobOfferRepository $jobOfferRepository;
-    private RecruiterSubscriptionRepository $recruiterSubscriptionRepository;
+    private RecruiterSubscriptionRepository $recruiterSubRepo;
 
     public function __construct(
         UserRepository $userRepository,
         JobOfferRepository $jobOfferRepository,
-        RecruiterSubscriptionRepository $recruiterSubscriptionRepository
+        RecruiterSubscriptionRepository $recruiterSubRepo
     ) {
         $this->userRepository = $userRepository;
         $this->jobOfferRepository = $jobOfferRepository;
-        $this->recruiterSubscriptionRepository = $recruiterSubscriptionRepository;
+        $this->recruiterSubRepo = $recruiterSubRepo;
     }
 
     #[Route('', name: 'index')]
@@ -33,12 +33,12 @@ class AdminDashboardController extends AbstractController
     {
         $usersCount = $this->userRepository->count([]);
         $jobOffersCount = $this->jobOfferRepository->count([]);
-        $activeSubscriptionsCount = $this->recruiterSubscriptionRepository->count(['isActive' => true]);
+        $activeSubCount = $this->recruiterSubRepo->count(['isActive' => true]);
 
         return $this->render('admin/dashboard.html.twig', [
             'usersCount' => $usersCount,
             'jobOffersCount' => $jobOffersCount,
-            'activeSubscriptionsCount' => $activeSubscriptionsCount,
+            'activeSubscriptionsCount' => $activeSubCount,
         ]);
     }
 }

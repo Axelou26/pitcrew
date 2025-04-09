@@ -58,57 +58,18 @@ class FriendshipRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve une demande d'amitié en attente entre deux utilisateurs
-     * @param bool $directional Si true, cherche uniquement les demandes de user1 vers user2
+     * Trouve une demande d'amitié en attente entre deux utilisateurs (peu importe la direction)
      */
-    public function findPendingRequestBetweenUsers(User $user1, User $user2, bool $directional = false): ?Friendship
+    public function findPendingRequestBetween(User $user1, User $user2): ?Friendship
     {
-        $qb = $this->createQueryBuilder('f');
-
-        if ($directional) {
-            $qb->where('f.requester = :user1 AND f.addressee = :user2');
-        } else {
-            $qb
-                ->where('(f
-                    .requester = :user1 AND f.addressee = :user2) OR (f.requester = :user2 AND f.addressee = :user1)');
-        }
-
-        $qb->andWhere('f.status = :status')
+        return $this->createQueryBuilder('f')
+            ->where('(f.requester = :user1 AND f.addressee = :user2) OR (f.requester = :user2 AND f.addressee = :user1)')
+            ->andWhere('f.status = :status')
             ->setParameter('user1', $user1)
             ->setParameter('user2', $user2)
-            ->setParameter('status', Friendship::STATUS_PENDING);
-
-        return $qb->getQuery()->getOneOrNullResult();
-    }
-
-    /**
-     * Trouve toutes les demandes d'amitié en attente reçues par un utilisateur
-     */
-    public function findPendingRequestsReceived(User $user): array
-    {
-        return $this->createQueryBuilder('f')
-            ->where('f.addressee = :user')
-            ->andWhere('f.status = :status')
-            ->setParameter('user', $user)
             ->setParameter('status', Friendship::STATUS_PENDING)
-            ->orderBy('f.createdAt', 'DESC')
             ->getQuery()
-            ->getResult();
-    }
-
-    /**
-     * Trouve toutes les demandes d'amitié en attente envoyées par un utilisateur
-     */
-    public function findPendingRequestsSent(User $user): array
-    {
-        return $this->createQueryBuilder('f')
-            ->where('f.requester = :user')
-            ->andWhere('f.status = :status')
-            ->setParameter('user', $user)
-            ->setParameter('status', Friendship::STATUS_PENDING)
-            ->orderBy('f.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
+            ->getOneOrNullResult();
     }
 
     /**
@@ -126,11 +87,11 @@ class FriendshipRepository extends ServiceEntityRepository
 
         $friends = [];
         foreach ($friendships as $friendship) {
-            if ($friendship->getRequester() === $user) {
-                $friends[] = $friendship->getAddressee();
-            } else {
-                $friends[] = $friendship->getRequester();
+            $friend = $friendship->getRequester();
+            if ($friend === $user) {
+                $friend = $friendship->getAddressee();
             }
+            $friends[] = $friend;
         }
 
         return $friends;

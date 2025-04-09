@@ -4,6 +4,8 @@ namespace App\Entity;
 
 use App\Repository\PostLikeRepository;
 use Doctrine\ORM\Mapping as ORM;
+use DateTimeImmutable;
+use InvalidArgumentException;
 
 #[ORM\Entity(repositoryClass: PostLikeRepository::class)]
 #[ORM\UniqueConstraint(
@@ -26,6 +28,9 @@ class PostLike
         self::REACTION_ENCOURAGING => '💪',
     ];
 
+    /**
+     * @SuppressWarnings("PHPMD.ShortVariable")
+     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -40,14 +45,14 @@ class PostLike
     private ?Post $post = null;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $createdAt = null;
+    private ?DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(length: 20)]
     private string $reactionType = self::REACTION_LIKE;
 
     public function __construct()
     {
-        $this->createdAt = new \DateTimeImmutable();
+        $this->createdAt = new DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -77,12 +82,12 @@ class PostLike
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): static
+    public function setCreatedAt(DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
         return $this;
@@ -96,7 +101,7 @@ class PostLike
     public function setReactionType(string $reactionType): static
     {
         if (!array_key_exists($reactionType, self::REACTIONS)) {
-            throw new \InvalidArgumentException('Type de réaction invalide');
+            throw new InvalidArgumentException('Type de réaction invalide');
         }
         $this->reactionType = $reactionType;
         return $this;

@@ -20,7 +20,7 @@ class MessageRepository extends ServiceEntityRepository
      */
     public function findUnreadMessagesGroupedByConversation(User $user): array
     {
-        $qb = $this->createQueryBuilder('m')
+        $queryBuilder = $this->createQueryBuilder('m')
             ->join('m.conversation', 'c')
             ->where('m.recipient = :user')
             ->andWhere('m.isRead = :isRead')
@@ -28,7 +28,7 @@ class MessageRepository extends ServiceEntityRepository
             ->setParameter('isRead', false)
             ->orderBy('m.createdAt', 'DESC');
 
-        $unreadMessages = $qb->getQuery()->getResult();
+        $unreadMessages = $queryBuilder->getQuery()->getResult();
 
         // Group messages by conversation
         $conversations = [];

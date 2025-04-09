@@ -6,6 +6,7 @@ use App\Entity\Application;
 use App\Entity\JobOffer;
 use App\Form\ApplicationType;
 use App\Service\FileUploader;
+use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -98,7 +99,7 @@ class ApplicantController extends AbstractController
         $application->setApplicant($this->getUser());
         $application->setJobOffer($jobOffer);
         $application->setStatus('pending');
-        $application->setCreatedAt(new \DateTime());
+        $application->setCreatedAt(new DateTime());
 
         $form = $this->createForm(ApplicationType::class, $application);
         $form->handleRequest($request);
@@ -129,13 +130,11 @@ class ApplicantController extends AbstractController
     {
         $applicant = $this->getUser();
 
-        if ($applicant->getFavoriteOffers()->contains($jobOffer)) {
-            $applicant->removeFavoriteOffer($jobOffer);
-            $message = 'Offre retirée des favoris.';
-        } else {
-            $applicant->addFavoriteOffer($jobOffer);
-            $message = 'Offre ajoutée aux favoris.';
-        }
+        $isFavorite = $applicant->getFavoriteOffers()->contains($jobOffer);
+        $message = $isFavorite ? 'Offre retirée des favoris.' : 'Offre ajoutée aux favoris.';
+        $action = $isFavorite ? 'removeFavoriteOffer' : 'addFavoriteOffer';
+
+        $applicant->$action($jobOffer);
 
         $entityManager->flush();
         $this->addFlash('success', $message);

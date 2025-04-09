@@ -42,30 +42,20 @@ class HomeController extends AbstractController
                 $item->expiresAfter(300); // Cache pour 5 minutes
 
                 $user = $this->getUser();
-                $data = [];
-
-                // Récupérer les offres d'emploi actives
-                $data['activeJobOffers'] = $jobOfferRepository->findActiveJobOffers(5);
+                $data = [
+                    'activeJobOffers' => $jobOfferRepository->findActiveJobOffers(5),
+                    'trendingHashtags' => $hashtagRepository->findTrendingHashtags(10),
+                    'recentPosts' => $postRepository->findRecentPosts(10)
+                ];
 
                 if ($user) {
-                    // Récupérer les posts recommandés
                     $data['recommendedPosts'] = $postRepository->findRecentPosts(10);
-
-                    // Récupérer les utilisateurs suggérés
                     $data['suggestedUsers'] = $userRepository->findSuggestedUsers($user, 5);
-
-                    // Récupérer les hashtags tendance
-                    $data['trendingHashtags'] = $hashtagRepository->findTrendingHashtags(10);
-
-                    // Statistiques
                     $data['stats'] = [
                         'recruiters' => $userRepository->count(['roles' => ['ROLE_RECRUITER']]),
                         'applicants' => $userRepository->count(['roles' => ['ROLE_APPLICANT']])
                     ];
-                } else {
-                    // Pour les utilisateurs non connectés
-                    $data['recentPosts'] = $postRepository->findRecentPosts(10);
-                    $data['trendingHashtags'] = $hashtagRepository->findTrendingHashtags(10);
+                    unset($data['recentPosts']); // On n'affiche pas les posts récents pour les utilisateurs connectés
                 }
 
                 return $data;

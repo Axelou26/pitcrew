@@ -6,6 +6,7 @@ use App\Entity\Application;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use DateTime;
 
 /**
  * @extends ServiceEntityRepository<Application>
@@ -76,7 +77,7 @@ class ApplicationRepository extends ServiceEntityRepository
      */
     public function getStatistics(User $recruiter): array
     {
-        $qb = $this->createQueryBuilder('a')
+        $queryBuilder = $this->createQueryBuilder('a')
             ->select('COUNT(a.id) as total')
             ->addSelect('SUM(CASE WHEN a.status = :pending THEN 1 ELSE 0 END) as pending')
             ->addSelect('SUM(CASE WHEN a.status = :accepted THEN 1 ELSE 0 END) as accepted')
@@ -89,7 +90,7 @@ class ApplicationRepository extends ServiceEntityRepository
             ->setParameter('rejected', 'rejected')
             ->getQuery();
 
-        return $qb->getSingleResult();
+        return $queryBuilder->getSingleResult();
     }
 
     /**
@@ -97,7 +98,7 @@ class ApplicationRepository extends ServiceEntityRepository
      */
     public function findRecentApplications(User $recruiter, int $days = 7): array
     {
-        $date = new \DateTime();
+        $date = new DateTime();
         $date->modify('-' . $days . ' days');
 
         return $this->createQueryBuilder('a')

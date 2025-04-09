@@ -1,44 +1,60 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\DataFixtures;
 
 use App\Entity\Post;
-use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use DateTimeImmutable;
 
-class PostFixtures extends Fixture
+class PostFixtures extends Fixture implements DependentFixtureInterface
 {
-    private UserPasswordHasherInterface $passwordHasher;
-
-    public function __construct(UserPasswordHasherInterface $passwordHasher)
+    public function getDependencies(): array
     {
-        $this->passwordHasher = $passwordHasher;
+        return [
+            ApplicantFixtures::class,
+        ];
     }
 
-    public function load(ObjectManager $manager)
+    public function load(ObjectManager $manager): void
     {
-        // Création d'un utilisateur
-        $user = new User();
-        $user->setEmail('test@example.com');
-        $user->setPassword($this->passwordHasher->hashPassword($user, 'password'));
-        $user->setFirstName('Test');
-        $user->setLastName('User');
-        $user->setRoles(['ROLE_USER']);
-        $user->setIsVerified(true);
-        $manager->persist($user);
-        $manager->flush();
-
-        // Création des posts
-        for ($i = 1; $i <= 10; $i++) {
+        foreach ($this->getPostData() as $index => $data) {
             $post = new Post();
-            $post->setTitle('Post ' . $i);
-            $post->setContent('Contenu du post ' . $i . '. Lorem ipsum dolor sit amet, consectetur adipiscing elit.');
-            $post->setAuthor($user);
+            $post->setTitle($data['title'])
+                ->setContent($data['content'])
+                ->setAuthor($this->getReference(ApplicantFixtures::APPLICANT_REFERENCE_PREFIX . ($index % 2)))
+                ->setCreatedAt(new DateTimeImmutable())
+                ->setIsPublished(true);
+
             $manager->persist($post);
         }
 
         $manager->flush();
+    }
+
+    private function getPostData(): array
+    {
+        return [
+            [
+                'title' => 'Mon expérience en tant que développeur Full Stack',
+                'content' => 'Voici mon retour d\'expérience après 5 ans en tant que développeur Full Stack...'
+            ],
+            [
+                'title' => 'Les tendances UX/UI en 2024',
+                'content' => 'Découvrez les dernières tendances en matière de design d\'interface...'
+            ],
+            [
+                'title' => 'Comment réussir son entretien technique',
+                'content' => 'Conseils et astuces pour bien se préparer à un entretien technique...'
+            ],
+            [
+                'title' => 'Les meilleures pratiques en développement web',
+                'content' => 'Guide des bonnes pratiques pour un code propre et maintenable...'
+            ],
+            // Ajoutez d'autres posts selon vos besoins
+        ];
     }
 }

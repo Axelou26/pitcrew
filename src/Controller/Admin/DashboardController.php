@@ -29,6 +29,9 @@ class DashboardController extends AbstractDashboardController
             ->setFaviconPath('favicon.ico');
     }
 
+    /**
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     */
     public function configureMenuItems(): iterable
     {
         yield MenuItem::linkToDashboard('Dashboard', 'fa fa-home');

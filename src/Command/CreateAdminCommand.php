@@ -11,6 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use DateTimeImmutable;
 
 #[AsCommand(
     name: 'app:create-admin',
@@ -41,7 +42,7 @@ class CreateAdminCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
+        $ioStyle = new SymfonyStyle($input, $output);
         $email = $input->getArgument('email');
         $password = $input->getArgument('password');
         $firstName = $input->getArgument('firstName');
@@ -50,7 +51,7 @@ class CreateAdminCommand extends Command
         // Vérifier si l'utilisateur existe déjà
         $existingUser = $this->entityManager->getRepository(User::class)->findOneBy(['email' => $email]);
         if ($existingUser) {
-            $io->error(sprintf('Un utilisateur avec l\'email "%s" existe déjà.', $email));
+            $ioStyle->error(sprintf('Un utilisateur avec l\'email "%s" existe déjà.', $email));
             return Command::FAILURE;
         }
 
@@ -61,12 +62,12 @@ class CreateAdminCommand extends Command
         $user->setFirstName($firstName);
         $user->setLastName($lastName);
         $user->setRoles(['ROLE_USER', 'ROLE_ADMIN']);
-        $user->setCreatedAt(new \DateTimeImmutable());
+        $user->setCreatedAt(new DateTimeImmutable());
 
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
-        $io->success(sprintf('Administrateur "%s" créé avec succès !', $email));
+        $ioStyle->success(sprintf('Administrateur "%s" créé avec succès !', $email));
 
         return Command::SUCCESS;
     }

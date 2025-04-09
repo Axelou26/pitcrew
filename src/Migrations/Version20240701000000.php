@@ -14,6 +14,9 @@ final class Version20240701000000 extends AbstractMigration
         return 'Fix required_skills column type in job_offer table';
     }
 
+    /**
+     * @SuppressWarnings("PHPMD.ShortMethodName")
+     */
     public function up(Schema $schema): void
     {
         // Update the required_skills column to JSON type

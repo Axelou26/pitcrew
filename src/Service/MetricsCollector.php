@@ -148,12 +148,12 @@ class MetricsCollector
         $this->metrics['memory_usage_bytes']->set($memoryUsage);
 
         // CPU (si disponible)
+        $cpuLoad = 0;
         if (function_exists('sys_getloadavg')) {
             $load = sys_getloadavg();
-            $this->metrics['cpu_usage']->set($load[0]);
-        } else {
-            $this->metrics['cpu_usage']->set(0);
+            $cpuLoad = $load[0];
         }
+        $this->metrics['cpu_usage']->set($cpuLoad);
     }
 
     public function updateBusinessMetrics(

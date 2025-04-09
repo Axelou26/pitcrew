@@ -17,35 +17,35 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class RecruiterSubscriptionAdminController extends AbstractController
 {
     private EntityManagerInterface $entityManager;
-    private RecruiterSubscriptionRepository $recruiterSubscriptionRepository;
+    private RecruiterSubscriptionRepository $recruiterSubRepo;
 
     public function __construct(
         EntityManagerInterface $entityManager,
-        RecruiterSubscriptionRepository $recruiterSubscriptionRepository
+        RecruiterSubscriptionRepository $recruiterSubRepo
     ) {
         $this->entityManager = $entityManager;
-        $this->recruiterSubscriptionRepository = $recruiterSubscriptionRepository;
+        $this->recruiterSubRepo = $recruiterSubRepo;
     }
 
     #[Route('/', name: 'index', methods: ['GET'])]
     public function index(): Response
     {
-        $recruiterSubscriptions = $this->recruiterSubscriptionRepository->findAll();
+        $recruiterSubs = $this->recruiterSubRepo->findAll();
 
         return $this->render('admin/recruiter_subscription/index.html.twig', [
-            'recruiter_subscriptions' => $recruiterSubscriptions,
+            'recruiter_subscriptions' => $recruiterSubs,
         ]);
     }
 
     #[Route('/new', name: 'new', methods: ['GET', 'POST'])]
     public function new(Request $request): Response
     {
-        $recruiterSubscription = new RecruiterSubscription();
-        $form = $this->createForm(RecruiterSubscriptionType::class, $recruiterSubscription);
+        $recruiterSub = new RecruiterSubscription();
+        $form = $this->createForm(RecruiterSubscriptionType::class, $recruiterSub);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->entityManager->persist($recruiterSubscription);
+            $this->entityManager->persist($recruiterSub);
             $this->entityManager->flush();
 
             $this->addFlash('success', 'Abonnement recruteur créé avec succès.');
@@ -54,33 +54,31 @@ class RecruiterSubscriptionAdminController extends AbstractController
         }
 
         return $this->render('admin/recruiter_subscription/new.html.twig', [
-            'recruiter_subscription' => $recruiterSubscription,
+            'recruiter_subscription' => $recruiterSub,
             'form' => $form,
         ]);
     }
 
     #[Route('/{id}', name: 'show', methods: ['GET'])]
-    public function show(RecruiterSubscription $recruiterSubscription): Response
+    public function show(RecruiterSubscription $recruiterSub): Response
     {
         $deleteForm = $this->createFormBuilder()
-
-
                     ->setAction($this
-                    ->generateUrl('admin_recruiter_subscription_delete', ['id' => $recruiterSubscription
+                    ->generateUrl('admin_recruiter_subscription_delete', ['id' => $recruiterSub
                     ->getId()]))
             ->setMethod('POST')
             ->getForm();
 
         return $this->render('admin/recruiter_subscription/show.html.twig', [
-            'recruiter_subscription' => $recruiterSubscription,
+            'recruiter_subscription' => $recruiterSub,
             'delete_form' => $deleteForm,
         ]);
     }
 
     #[Route('/{id}/edit', name: 'edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, RecruiterSubscription $recruiterSubscription): Response
+    public function edit(Request $request, RecruiterSubscription $recruiterSub): Response
     {
-        $form = $this->createForm(RecruiterSubscriptionType::class, $recruiterSubscription);
+        $form = $this->createForm(RecruiterSubscriptionType::class, $recruiterSub);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -92,26 +90,24 @@ class RecruiterSubscriptionAdminController extends AbstractController
         }
 
         $deleteForm = $this->createFormBuilder()
-
-
                     ->setAction($this
-                    ->generateUrl('admin_recruiter_subscription_delete', ['id' => $recruiterSubscription
+                    ->generateUrl('admin_recruiter_subscription_delete', ['id' => $recruiterSub
                     ->getId()]))
             ->setMethod('POST')
             ->getForm();
 
         return $this->render('admin/recruiter_subscription/edit.html.twig', [
-            'recruiter_subscription' => $recruiterSubscription,
+            'recruiter_subscription' => $recruiterSub,
             'form' => $form,
             'delete_form' => $deleteForm,
         ]);
     }
 
     #[Route('/{id}', name: 'delete', methods: ['POST'])]
-    public function delete(Request $request, RecruiterSubscription $recruiterSubscription): Response
+    public function delete(Request $request, RecruiterSubscription $recruiterSub): Response
     {
-        if ($this->isCsrfTokenValid('delete' . $recruiterSubscription->getId(), $request->request->get('_token'))) {
-            $this->entityManager->remove($recruiterSubscription);
+        if ($this->isCsrfTokenValid('delete' . $recruiterSub->getId(), $request->request->get('_token'))) {
+            $this->entityManager->remove($recruiterSub);
             $this->entityManager->flush();
 
             $this->addFlash('success', 'Abonnement recruteur supprimé avec succès.');

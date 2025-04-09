@@ -16,11 +16,18 @@ class SubscriptionFeatureVoter extends Voter
 
     private $subscriptionService;
     private $logger;
+    private $features;
+    private $businessLevel;
 
-    public function __construct(SubscriptionService $subscriptionService, LoggerInterface $logger = null)
-    {
+    public function __construct(
+        SubscriptionService $subscriptionService,
+        LoggerInterface $logger = null,
+        array $features = null
+    ) {
         $this->subscriptionService = $subscriptionService;
         $this->logger = $logger;
+        $this->features = $features ?? SubscriptionFeatures::FEATURES_DESCRIPTIONS;
+        $this->businessLevel = SubscriptionFeatures::LEVEL_BUSINESS;
     }
 
     protected function supports(string $attribute, mixed $subject): bool
@@ -30,45 +37,84 @@ class SubscriptionFeatureVoter extends Voter
             return true;
         }
 
-        return array_key_exists(strtolower($attribute), SubscriptionFeatures::FEATURES_DESCRIPTIONS);
+        return array_key_exists(strtolower($attribute), $this->features);
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
     {
         $user = $token->getUser();
-
         if (!$user instanceof UserInterface) {
             return false;
         }
 
-        $feature = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $attribute));
+        $feature = $this->normalizeFeatureName($attribute);
         $activeSubscription = $this->subscriptionService->getActiveSubscription($user);
-        $subscriptionName = $activeSubscription ? strtolower($activeSubscription->getSubscription()->getName()) : null;
+        $subscriptionName = $this->getSubscriptionName($activeSubscription);
 
-        // Cas spécial pour VERIFIED_BADGE avec un User comme sujet
-        if ($feature === self::VERIFIED_BADGE_FEATURE && $subject instanceof User) {
-            if (!$subject->isRecruiter()) {
-                return false;
-            }
-
-            if ($subscriptionName === SubscriptionFeatures::LEVEL_BUSINESS) {
-                $this->logAccess($subject->getId(), $feature, true);
-                return true;
-            }
+        if ($this->isVerifiedBadgeFeature($feature, $subject)) {
+            return $this->handleVerifiedBadgeAccess($subject, $subscriptionName);
         }
 
-        if (!$subscriptionName || !SubscriptionFeatures::isValidSubscriptionLevel($subscriptionName)) {
+        return $this->handleFeatureAccess($user, $feature, $subscriptionName);
+    }
+
+    private function normalizeFeatureName(string $attribute): string
+    {
+        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $attribute));
+    }
+
+    private function getSubscriptionName(?object $subscription): ?string
+    {
+        return $subscription ? strtolower($subscription->getSubscription()->getName()) : null;
+    }
+
+    private function isVerifiedBadgeFeature(string $feature, mixed $subject): bool
+    {
+        return $feature === self::VERIFIED_BADGE_FEATURE && $subject instanceof User;
+    }
+
+    private function handleVerifiedBadgeAccess(User $subject, ?string $subscriptionName): bool
+    {
+        if (!$subject->isRecruiter()) {
+            return false;
+        }
+
+        if ($subscriptionName === $this->businessLevel) {
+            $this->logAccess($subject->getId(), self::VERIFIED_BADGE_FEATURE, true);
+            return true;
+        }
+
+        return false;
+    }
+
+    private function handleFeatureAccess(UserInterface $user, string $feature, ?string $subscriptionName): bool
+    {
+        if (!$subscriptionName || !$this->isValidSubscriptionLevel($subscriptionName)) {
             $this->logAccess($user->getId(), $feature, false, 'Aucun abonnement valide');
             return false;
         }
 
-        $hasAccess = SubscriptionFeatures::isFeatureAvailableForLevel($feature, $subscriptionName);
+        $hasAccess = $this->isFeatureAvailableForLevel($feature, $subscriptionName);
 
         if (!$hasAccess) {
             $this->logAccess($user->getId(), $feature, false, $subscriptionName);
         }
 
         return $hasAccess;
+    }
+
+    private function isValidSubscriptionLevel(string $level): bool
+    {
+        return in_array($level, array_keys($this->features));
+    }
+
+    private function isFeatureAvailableForLevel(string $feature, string $level): bool
+    {
+        if (!isset($this->features[$level])) {
+            return false;
+        }
+
+        return in_array($feature, $this->features[$level]);
     }
 
     private function getFeatures(User $user): array
@@ -80,7 +126,7 @@ class SubscriptionFeatureVoter extends Voter
         }
 
         $subscriptionName = strtolower($subscription->getSubscription()->getName());
-        return SubscriptionFeatures::getAvailableFeatures($subscriptionName);
+        return $this->features[$subscriptionName] ?? [];
     }
 
     private function logAccess(int $userId, string $feature, bool $granted, ?string $subscriptionName = null): void

@@ -11,6 +11,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use DateTimeImmutable;
 
 #[AsCommand(
     name: 'app:fix-hashtags',
@@ -35,18 +36,18 @@ class FixHashtagsCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
-        $io->title('Mise à jour des compteurs d\'utilisation des hashtags');
+        $ioStyle = new SymfonyStyle($input, $output);
+        $ioStyle->title('Mise à jour des compteurs d\'utilisation des hashtags');
 
         // Récupérer tous les hashtags
         $hashtags = $this->hashtagRepository->findAll();
 
         if (empty($hashtags)) {
-            $io->warning('Aucun hashtag trouvé dans la base de données.');
+            $ioStyle->warning('Aucun hashtag trouvé dans la base de données.');
             return Command::SUCCESS;
         }
 
-        $io->progressStart(count($hashtags));
+        $ioStyle->progressStart(count($hashtags));
 
         foreach ($hashtags as $hashtag) {
             try {
@@ -58,12 +59,12 @@ class FixHashtagsCommand extends Command
 
                 // Mettre à jour la date de dernière utilisation
                 if ($count > 0) {
-                    $hashtag->setLastUsedAt(new \DateTimeImmutable());
+                    $hashtag->setLastUsedAt(new DateTimeImmutable());
                 }
 
-                $io->progressAdvance();
+                $ioStyle->progressAdvance();
             } catch (\Exception $e) {
-                $io
+                $ioStyle
                     ->error('Erreur lors de la mise à jour du hashtag #' . $hashtag
                     ->getName() . ': ' . $e
                     ->getMessage());
@@ -73,8 +74,8 @@ class FixHashtagsCommand extends Command
         // Sauvegarder les modifications
         $this->entityManager->flush();
 
-        $io->progressFinish();
-        $io->success('Les compteurs des hashtags ont été mis à jour avec succès !');
+        $ioStyle->progressFinish();
+        $ioStyle->success('Les compteurs des hashtags ont été mis à jour avec succès !');
 
         return Command::SUCCESS;
     }

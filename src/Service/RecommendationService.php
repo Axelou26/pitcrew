@@ -10,6 +10,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\Friendship;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
+use DateTime;
+use Exception;
 
 class RecommendationService
 {
@@ -162,14 +164,14 @@ class RecommendationService
         return $this->cache->get('user_interests_' . $user->getId(), function (ItemInterface $item) use ($user) {
             $item->expiresAfter(3600); // Cache pour 1 heure
 
-            $qb = $this->entityManager->createQueryBuilder();
-            $qb->select('DISTINCT h.name')
+            $queryBuilder = $this->entityManager->createQueryBuilder();
+            $queryBuilder->select('DISTINCT h.name')
                ->from('App\Entity\Post', 'p')
                ->join('p.hashtags', 'h')
                ->where('p.author = :user')
                ->setParameter('user', $user);
 
-            $result = $qb->getQuery()->getScalarResult();
+            $result = $queryBuilder->getQuery()->getScalarResult();
             return array_column($result, 'name');
         });
     }
@@ -179,15 +181,15 @@ class RecommendationService
      */
     private function getUserPosts(User $user): array
     {
-        $qb = $this->entityManager->createQueryBuilder();
-        $qb->select('p, a')
+        $queryBuilder = $this->entityManager->createQueryBuilder();
+        $queryBuilder->select('p, a')
            ->from('App\Entity\Post', 'p')
            ->leftJoin('p.author', 'a')
            ->where('p.author = :userId')
            ->setParameter('userId', $user->getId())
            ->orderBy('p.createdAt', 'DESC');
 
-        return $qb->getQuery()->getResult();
+        return $queryBuilder->getQuery()->getResult();
     }
 
     /**
@@ -221,15 +223,15 @@ class RecommendationService
         }
 
         // Récupérer les posts des amis avec les relations chargées
-        $qb = $this->entityManager->createQueryBuilder();
-        $qb->select('p, a')
+        $queryBuilder = $this->entityManager->createQueryBuilder();
+        $queryBuilder->select('p, a')
            ->from('App\Entity\Post', 'p')
            ->leftJoin('p.author', 'a')
            ->where('p.author IN (:friendIds)')
            ->setParameter('friendIds', $friendIds)
            ->orderBy('p.createdAt', 'DESC');
 
-        return $qb->getQuery()->getResult();
+        return $queryBuilder->getQuery()->getResult();
     }
 
     /**
@@ -245,16 +247,16 @@ class RecommendationService
 
                 try {
                     // Récupérer les données nécessaires en une seule requête
-                    $qb = $this->entityManager->createQueryBuilder();
-                    $qb->select('p', 'a', 'h', 'l', 'c')
+                    $queryBuilder = $this->entityManager->createQueryBuilder();
+                    $queryBuilder->select('p', 'a', 'h', 'l', 'c')
                        ->from('App\Entity\Post', 'p')
                        ->leftJoin('p.author', 'a')
                        ->leftJoin('p.hashtags', 'h')
                        ->leftJoin('p.likes', 'l')
                        ->leftJoin('p.comments', 'c')
                        ->where('p.author != :userId')
-                       ->andWhere($qb->expr()->orX(
-                       // Posts avec hashtags d'intérêt
+                       ->andWhere($queryBuilder->expr()->orX(
+                           // Posts avec hashtags d'intérêt
                            'h.name IN (:interests)',
                            // Posts des utilisateurs avec qui l'utilisateur interagit
                            'p.author IN (:interactedUsers)',
@@ -265,12 +267,12 @@ class RecommendationService
                        ->setParameter('interests', $this->getUserInterestsAndHashtags($user))
                        ->setParameter('interactedUsers', $this->getFrequentlyInteractedUsers($user))
                        ->setParameter('minLikes', 5)
-                       ->setParameter('recentDate', new \DateTime('-7 days'))
+                       ->setParameter('recentDate', new DateTime('-7 days'))
                        ->orderBy('p.createdAt', 'DESC')
                        ->addOrderBy('p.likesCounter', 'DESC')
                        ->setMaxResults($limit * 2);
 
-                    $posts = $qb->getQuery()->getResult();
+                    $posts = $queryBuilder->getQuery()->getResult();
 
                     // Calculer les scores et trier
                     $scoredPosts = [];
@@ -341,29 +343,26 @@ class RecommendationService
 
                 try {
                     // Récupérer les utilisateurs avec qui l'utilisateur interagit en une seule requête
-                    $qb = $this->entityManager->createQueryBuilder();
-                    $qb->select('DISTINCT u.id')
-                    ->from('App\Entity\User', 'u')
-                    ->leftJoin('App\Entity\PostLike', 'pl', 'WITH', 'pl.user = :userId AND pl.post MEMBER OF u.posts')
-
-
-                            ->leftJoin('App\Entity\PostComment', 'pc', 'WITH', 'pc
-                                .author = :userId AND pc.post MEMBER OF u.posts')
-                    ->leftJoin(
-                        'App\Entity\Friendship',
-                        'f',
-                        'WITH',
-                        '(f.user = :userId AND f.friend = u) OR (f.user = u AND f.friend = :userId)'
-                    )
+                    $queryBuilder = $this->entityManager->createQueryBuilder();
+                    $queryBuilder->select('DISTINCT u.id')
+                        ->from('App\Entity\User', 'u')
+                        ->leftJoin('App\Entity\PostLike', 'pl', 'WITH', 'pl.user = :userId AND pl.post MEMBER OF u.posts')
+                        ->leftJoin('App\Entity\PostComment', 'pc', 'WITH', 'pc.author = :userId AND pc.post MEMBER OF u.posts')
+                        ->leftJoin(
+                            'App\Entity\Friendship',
+                            'f',
+                            'WITH',
+                            '(f.user = :userId AND f.friend = u) OR (f.user = u AND f.friend = :userId)'
+                        )
                         ->where('u != :userId')
-                        ->andWhere($qb->expr()->orX(
+                        ->andWhere($queryBuilder->expr()->orX(
                             'pl.id IS NOT NULL',
                             'pc.id IS NOT NULL',
                             'f.id IS NOT NULL'
                         ))
                         ->setParameter('userId', $user->getId());
 
-                    $result = $qb->getQuery()->getScalarResult();
+                    $result = $queryBuilder->getQuery()->getScalarResult();
                     return array_column($result, 'id');
                 } catch (\Exception $e) {
                     return [];
@@ -390,8 +389,8 @@ class RecommendationService
 
             try {
                 // Récupérer les IDs des amis en une seule requête
-                $qb = $this->entityManager->createQueryBuilder();
-                $friendIds = $qb->select('DISTINCT CASE 
+                $queryBuilder = $this->entityManager->createQueryBuilder();
+                $friendIds = $queryBuilder->select('DISTINCT CASE 
                         WHEN f.user = :userId THEN f.friend
                         ELSE f.user
                     END')
@@ -406,8 +405,8 @@ class RecommendationService
                 $allUserIds = array_merge([$user->getId()], array_column($friendIds, 1));
 
                 // Récupérer les posts partagés avec leurs relations en une seule requête
-                $qb = $this->entityManager->createQueryBuilder();
-                return $qb->select('p', 'a', 'l', 'c', 'h')
+                $queryBuilder = $this->entityManager->createQueryBuilder();
+                $queryBuilder->select('p', 'a', 'l', 'c', 'h')
                     ->from('App\Entity\Post', 'p')
                     ->innerJoin('p.shares', 's')
                     ->leftJoin('p.author', 'a')
@@ -427,9 +426,14 @@ class RecommendationService
 
     public function getSuggestedUsersWithFriendshipStatus(User $user, int $limit): array
     {
-        $qb = $this->entityManager->createQueryBuilder();
+        $suggestedUsers = $this->fetchSuggestedUsers($user, $limit);
+        return $this->enrichUsersWithFriendshipStatus($suggestedUsers, $user);
+    }
 
-        $suggestedUsers = $qb->select('u', 'f')
+    private function fetchSuggestedUsers(User $user, int $limit): array
+    {
+        $queryBuilder = $this->entityManager->createQueryBuilder();
+        return $queryBuilder->select('u', 'f')
             ->from('App\Entity\User', 'u')
             ->leftJoin(
                 'App\Entity\Friendship',
@@ -444,35 +448,44 @@ class RecommendationService
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
+    }
 
-        // Traiter les résultats pour définir les statuts d'amitié
+    private function enrichUsersWithFriendshipStatus(array $suggestedUsers, User $currentUser): array
+    {
         foreach ($suggestedUsers as $suggestedUser) {
-            $friendship = null;
-            foreach ($suggestedUser->getFriendships() as $f) {
-                if (
-                    ($f->getUser() === $user && $f->getFriend() === $suggestedUser) ||
-                    ($f->getUser() === $suggestedUser && $f->getFriend() === $user)
-                ) {
-                    $friendship = $f;
-                    break;
-                }
-            }
+            $friendship = $this->findFriendshipBetweenUsers($suggestedUser, $currentUser);
+            $this->setFriendshipStatus($suggestedUser, $friendship, $currentUser);
+        }
+        return $suggestedUsers;
+    }
 
-            $suggestedUser->isFriend = $friendship && $friendship->getStatus() === 'accepted';
-            $suggestedUser
-                ->hasPendingRequestFrom = $friendship && $friendship
-                ->getStatus() === 'pending' && $friendship
-                ->getUser() === $user;
-            $suggestedUser
-                ->hasPendingRequestTo = $friendship && $friendship
-                ->getStatus() === 'pending' && $friendship
-                ->getUser() === $suggestedUser;
-            if ($suggestedUser->hasPendingRequestTo) {
-                $suggestedUser->pendingRequestId = $friendship->getId();
+    private function findFriendshipBetweenUsers(User $suggestedUser, User $currentUser): ?Friendship
+    {
+        foreach ($suggestedUser->getFriendships() as $friendship) {
+            if ($this->isFriendshipBetweenUsers($friendship, $suggestedUser, $currentUser)) {
+                return $friendship;
             }
         }
+        return null;
+    }
 
-        return $suggestedUsers;
+    private function isFriendshipBetweenUsers(Friendship $friendship, User $user1, User $user2): bool
+    {
+        return ($friendship->getUser() === $user1 && $friendship->getFriend() === $user2) ||
+               ($friendship->getUser() === $user2 && $friendship->getFriend() === $user1);
+    }
+
+    private function setFriendshipStatus(User $suggestedUser, ?Friendship $friendship, User $currentUser): void
+    {
+        $suggestedUser->isFriend = $friendship && $friendship->getStatus() === 'accepted';
+        
+        $isPending = $friendship && $friendship->getStatus() === 'pending';
+        $suggestedUser->hasPendingRequestFrom = $isPending && $friendship->getUser() === $currentUser;
+        $suggestedUser->hasPendingRequestTo = $isPending && $friendship->getUser() === $suggestedUser;
+        
+        if ($suggestedUser->hasPendingRequestTo) {
+            $suggestedUser->pendingRequestId = $friendship->getId();
+        }
     }
 
     /**
@@ -486,13 +499,13 @@ class RecommendationService
         return $this->cache->get('trending_hashtags', function (ItemInterface $item) use ($limit) {
             $item->expiresAfter(300); // Cache pour 5 minutes
 
-            $qb = $this->entityManager->createQueryBuilder();
-            $qb->select('h')
+            $queryBuilder = $this->entityManager->createQueryBuilder();
+            $queryBuilder->select('h')
                ->from('App\Entity\Hashtag', 'h')
                ->orderBy('h.usageCount', 'DESC')
                ->setMaxResults($limit);
 
-            return $qb->getQuery()->getResult();
+            return $queryBuilder->getQuery()->getResult();
         });
     }
 }

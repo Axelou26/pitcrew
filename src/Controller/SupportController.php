@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\SupportTicket;
 use App\Form\SupportTicketType;
 use App\Repository\SupportTicketRepository;
+use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -16,7 +17,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class SupportController extends AbstractController
 {
     #[Route('/', name: 'app_support_index')]
-    public function index(SupportTicketRepository $supportTicketRepository): Response
+    public function index(SupportTicketRepository $ticketRepo): Response
     {
         $user = $this->getUser();
 
@@ -28,7 +29,7 @@ class SupportController extends AbstractController
         $hasPrioritySupport = $this->isGranted('PRIORITY_SUPPORT');
 
         // Récupérer les tickets de l'utilisateur
-        $userTickets = $supportTicketRepository->findBy(
+        $userTickets = $ticketRepo->findBy(
             ['user' => $user],
             ['createdAt' => 'DESC']
         );
@@ -64,15 +65,10 @@ class SupportController extends AbstractController
             $entityManager->flush();
 
             // Message différent selon le niveau de priorité
-            if ($hasPrioritySupport) {
-                $this
-                    ->addFlash('success', 'Votre demande a été soumise et sera traitée en priorité par notre équipe
-                        .');
-            } else {
-                $this
-                    ->addFlash('success', 'Votre demande a été soumise
-                        . Notre équipe y répondra dans les meilleurs délais.');
-            }
+            $message = $hasPrioritySupport
+                ? 'Votre demande a été soumise et sera traitée en priorité par notre équipe.'
+                : 'Votre demande a été soumise. Notre équipe y répondra dans les meilleurs délais.';
+            $this->addFlash('success', $message);
 
             return $this->redirectToRoute('app_support_index');
         }
@@ -119,12 +115,12 @@ class SupportController extends AbstractController
         $ticket->addReply([
             'user' => $this->getUser()->getId(),
             'content' => $content,
-            'created_at' => new \DateTime(),
+            'created_at' => new DateTime(),
         ]);
 
         // Mettre à jour le statut du ticket
         $ticket->setStatus('waiting_for_support');
-        $ticket->setUpdatedAt(new \DateTime());
+        $ticket->setUpdatedAt(new DateTime());
 
         $entityManager->flush();
 

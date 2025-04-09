@@ -11,24 +11,30 @@ use App\Repository\JobOfferRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use App\Entity\Recruiter;
+use InvalidArgumentException;
+use App\Entity\Subscription;
+use DateTime;
 
 class SubscriptionService
 {
-    private $recruiterSubscriptionRepository;
-    private $jobOfferRepository;
-    private $entityManager;
-    private $security;
+    private EntityManagerInterface $entityManager;
+    private RecruiterSubscriptionRepository $recruiterSubRepo;
+    private JobOfferRepository $jobOfferRepository;
+    private Security $security;
+    private SubscriptionFeatures $subscriptionFeatures;
 
     public function __construct(
-        RecruiterSubscriptionRepository $recruiterSubscriptionRepository,
-        JobOfferRepository $jobOfferRepository,
         EntityManagerInterface $entityManager,
-        Security $security
+        RecruiterSubscriptionRepository $recruiterSubRepo,
+        JobOfferRepository $jobOfferRepository,
+        Security $security,
+        SubscriptionFeatures $subscriptionFeatures
     ) {
-        $this->recruiterSubscriptionRepository = $recruiterSubscriptionRepository;
-        $this->jobOfferRepository = $jobOfferRepository;
         $this->entityManager = $entityManager;
+        $this->recruiterSubRepo = $recruiterSubRepo;
+        $this->jobOfferRepository = $jobOfferRepository;
         $this->security = $security;
+        $this->subscriptionFeatures = $subscriptionFeatures;
     }
 
     /**
@@ -36,7 +42,7 @@ class SubscriptionService
      */
     public function hasActiveSubscription(User $user): bool
     {
-        $subscription = $this->recruiterSubscriptionRepository->findActiveSubscription($user);
+        $subscription = $this->recruiterSubRepo->findActiveSubscription($user);
         return $subscription !== null;
     }
 
@@ -45,7 +51,7 @@ class SubscriptionService
      */
     public function getActiveSubscription(User $user): ?RecruiterSubscription
     {
-        return $this->recruiterSubscriptionRepository->findActiveSubscription($user);
+        return $this->recruiterSubRepo->findActiveSubscription($user);
     }
 
     /**
@@ -118,7 +124,7 @@ class SubscriptionService
         }
 
         $subscriptionName = strtolower($subscription->getSubscription()->getName());
-        return SubscriptionFeatures::isFeatureAvailableForLevel($feature, $subscriptionName);
+        return $this->subscriptionFeatures->isFeatureAvailableForLevel($feature, $subscriptionName);
     }
 
     /**
@@ -129,8 +135,8 @@ class SubscriptionService
         string $subscriptionLevel,
         array $options = []
     ) {
-        if (!SubscriptionFeatures::isValidSubscriptionLevel($subscriptionLevel)) {
-            throw new \InvalidArgumentException('Niveau d\'abonnement invalide');
+        if (!$this->subscriptionFeatures->isValidSubscriptionLevel($subscriptionLevel)) {
+            throw new InvalidArgumentException('Niveau d\'abonnement invalide');
         }
 
         // Annuler l'abonnement actif si il existe
@@ -139,9 +145,9 @@ class SubscriptionService
             $this->cancelSubscription($currentSubscription);
         }
 
-        $subscriptionType = new \App\Entity\Subscription();
+        $subscriptionType = new Subscription();
         $subscriptionType->setName(ucfirst($subscriptionLevel));
-        $subscriptionType->setFeatures(SubscriptionFeatures::getAvailableFeatures($subscriptionLevel));
+        $subscriptionType->setFeatures($this->subscriptionFeatures->getAvailableFeatures($subscriptionLevel));
 
         // Configurer les options de l'abonnement selon le niveau
         switch ($subscriptionLevel) {
@@ -168,36 +174,36 @@ class SubscriptionService
         $this->entityManager->flush();
 
         // Créer l'abonnement du recruteur
-        $recruiterSubscription = new RecruiterSubscription();
-        $recruiterSubscription->setRecruiter($recruiter);
-        $recruiterSubscription->setSubscription($subscriptionType);
-        $recruiterSubscription->setStartDate(new \DateTime());
+        $subscription = new RecruiterSubscription();
+        $subscription->setRecruiter($recruiter);
+        $subscription->setSubscription($subscriptionType);
+        $subscription->setStartDate(new DateTime());
 
         // Calculer la date de fin
-        $endDate = new \DateTime();
+        $endDate = new DateTime();
         $endDate->modify('+' . $subscriptionType->getDuration() . ' days');
-        $recruiterSubscription->setEndDate($endDate);
+        $subscription->setEndDate($endDate);
 
-        $recruiterSubscription->setIsActive(true);
-        $recruiterSubscription->setPaymentStatus('completed');
+        $subscription->setIsActive(true);
+        $subscription->setPaymentStatus('completed');
 
         // Définir le nombre d'offres d'emploi restantes pour l'abonnement Basic
         if ($subscriptionType->getMaxJobOffers() !== null) {
-            $recruiterSubscription->setRemainingJobOffers($subscriptionType->getMaxJobOffers());
+            $subscription->setRemainingJobOffers($subscriptionType->getMaxJobOffers());
         }
 
         // Configurer les options supplémentaires
         if (isset($options['auto_renew'])) {
-            $recruiterSubscription->setAutoRenew($options['auto_renew']);
+            $subscription->setAutoRenew($options['auto_renew']);
         }
         if (isset($options['stripe_subscription_id'])) {
-            $recruiterSubscription->setStripeSubscriptionId($options['stripe_subscription_id']);
+            $subscription->setStripeSubscriptionId($options['stripe_subscription_id']);
         }
 
-        $this->entityManager->persist($recruiterSubscription);
+        $this->entityManager->persist($subscription);
         $this->entityManager->flush();
 
-        return $recruiterSubscription;
+        return $subscription;
     }
 
     /**
@@ -217,7 +223,7 @@ class SubscriptionService
      */
     public function checkExpiredSubscriptions(): void
     {
-        $expiredSubscriptions = $this->recruiterSubscriptionRepository->findExpiredSubscriptions();
+        $expiredSubscriptions = $this->recruiterSubRepo->findExpiredSubscriptions();
 
         foreach ($expiredSubscriptions as $subscription) {
             $subscription->setIsActive(false);

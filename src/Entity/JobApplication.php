@@ -8,10 +8,14 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use DateTimeImmutable;
 
 #[ORM\Entity(repositoryClass: JobApplicationRepository::class)]
 class JobApplication
 {
+    /**
+     * @SuppressWarnings("PHPMD.ShortVariable")
+     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -44,26 +48,26 @@ class JobApplication
     private array $documents = [];
 
     #[ORM\Column(nullable: true)]
-    private ?string $resume_s3_key = null;
+    private ?string $resumeS3Key = null;
 
     #[ORM\Column(nullable: true)]
-    private ?string $resume_url = null;
+    private ?string $resumeUrl = null;
 
     #[ORM\Column(type: Types::JSON, nullable: true)]
-    private ?array $documents_s3_keys = null;
+    private ?array $documentsS3Keys = null;
 
     #[ORM\Column(type: Types::JSON, nullable: true)]
-    private ?array $documents_urls = null;
+    private ?array $documentsUrls = null;
 
     #[ORM\OneToMany(mappedBy: 'jobApplication', targetEntity: Message::class, orphanRemoval: true)]
     private Collection $messages;
 
     public function __construct()
     {
-        $this->createdAt = new \DateTimeImmutable();
+        $this->createdAt = new DateTimeImmutable();
         $this->documents = [];
-        $this->documents_s3_keys = [];
-        $this->documents_urls = [];
+        $this->documentsS3Keys = [];
+        $this->documentsUrls = [];
         $this->messages = new ArrayCollection();
     }
 
@@ -163,45 +167,45 @@ class JobApplication
 
     public function getResumeS3Key(): ?string
     {
-        return $this->resume_s3_key;
+        return $this->resumeS3Key;
     }
 
-    public function setResumeS3Key(?string $resume_s3_key): static
+    public function setResumeS3Key(?string $resumeS3Key): static
     {
-        $this->resume_s3_key = $resume_s3_key;
+        $this->resumeS3Key = $resumeS3Key;
         return $this;
     }
 
     public function getResumeUrl(): ?string
     {
-        return $this->resume_url;
+        return $this->resumeUrl;
     }
 
-    public function setResumeUrl(?string $resume_url): static
+    public function setResumeUrl(?string $resumeUrl): static
     {
-        $this->resume_url = $resume_url;
+        $this->resumeUrl = $resumeUrl;
         return $this;
     }
 
     public function getDocumentsS3Keys(): ?array
     {
-        return $this->documents_s3_keys;
+        return $this->documentsS3Keys;
     }
 
-    public function setDocumentsS3Keys(?array $documents_s3_keys): static
+    public function setDocumentsS3Keys(?array $documentsS3Keys): static
     {
-        $this->documents_s3_keys = $documents_s3_keys;
+        $this->documentsS3Keys = $documentsS3Keys;
         return $this;
     }
 
     public function getDocumentsUrls(): ?array
     {
-        return $this->documents_urls;
+        return $this->documentsUrls;
     }
 
-    public function setDocumentsUrls(?array $documents_urls): static
+    public function setDocumentsUrls(?array $documentsUrls): static
     {
-        $this->documents_urls = $documents_urls;
+        $this->documentsUrls = $documentsUrls;
         return $this;
     }
 

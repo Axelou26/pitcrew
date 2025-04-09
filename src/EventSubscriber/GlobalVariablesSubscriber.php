@@ -24,15 +24,14 @@ class GlobalVariablesSubscriber implements EventSubscriberInterface
 
     public function onKernelController(ControllerEvent $event): void
     {
-        // Ajouter le nombre de demandes d'amitié en attente comme variable globale
         $user = $this->security->getUser();
+        $pendingRequestsCount = 0;
 
         if ($user) {
             $pendingRequestsCount = count($this->friendshipRepository->findPendingRequestsReceived($user));
-            $this->twig->addGlobal('pending_friend_requests_count', $pendingRequestsCount);
-        } else {
-            $this->twig->addGlobal('pending_friend_requests_count', 0);
         }
+
+        $this->twig->addGlobal('pending_friend_requests_count', $pendingRequestsCount);
     }
 
     public static function getSubscribedEvents(): array

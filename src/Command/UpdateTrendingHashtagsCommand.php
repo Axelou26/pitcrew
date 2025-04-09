@@ -12,6 +12,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Psr\Cache\CacheItemPoolInterface;
+use DateTimeImmutable;
 
 #[AsCommand(
     name: 'app:update-trending-hashtags',
@@ -39,17 +40,17 @@ class UpdateTrendingHashtagsCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
-        $io->title('Mise à jour des hashtags tendance');
+        $ioStyle = new SymfonyStyle($input, $output);
+        $ioStyle->title('Mise à jour des hashtags tendance');
 
         // Récupérer tous les hashtags utilisés récemment (dernières 24h)
-        $now = new \DateTimeImmutable();
+        $now = new DateTimeImmutable();
         $oneDayAgo = $now->modify('-1 day');
 
         $recentPosts = $this->postRepository->findRecentPostsWithHashtags($oneDayAgo);
 
         if (empty($recentPosts)) {
-            $io->warning('Aucun post récent avec des hashtags trouvé.');
+            $ioStyle->warning('Aucun post récent avec des hashtags trouvé.');
             return Command::SUCCESS;
         }
 
@@ -57,10 +58,10 @@ class UpdateTrendingHashtagsCommand extends Command
         $hashtags = [];
         foreach ($recentPosts as $post) {
             foreach ($post->getHashtags() as $hashtag) {
-                $id = $hashtag->getId();
+                $hashtagId = $hashtag->getId();
 
-                if (!isset($hashtags[$id])) {
-                    $hashtags[$id] = [
+                if (!isset($hashtags[$hashtagId])) {
+                    $hashtags[$hashtagId] = [
                         'hashtag' => $hashtag,
                         'recentUsage' => 0,
                         'likes' => 0,
@@ -70,12 +71,12 @@ class UpdateTrendingHashtagsCommand extends Command
                 }
 
                 // Comptabiliser l'utilisation récente
-                $hashtags[$id]['recentUsage']++;
+                $hashtags[$hashtagId]['recentUsage']++;
 
                 // Ajouter les métriques d'engagement
-                $hashtags[$id]['likes'] += $post->getLikesCount();
-                $hashtags[$id]['comments'] += $post->getCommentsCounter();
-                $hashtags[$id]['shares'] += $post->getSharesCounter();
+                $hashtags[$hashtagId]['likes'] += $post->getLikesCount();
+                $hashtags[$hashtagId]['comments'] += $post->getCommentsCounter();
+                $hashtags[$hashtagId]['shares'] += $post->getSharesCounter();
             }
         }
 
@@ -89,15 +90,15 @@ class UpdateTrendingHashtagsCommand extends Command
         }
 
         // Trier les hashtags par score de tendance
-        usort($hashtags, function ($a, $b) {
-            return $b['trendingScore'] <=> $a['trendingScore'];
+        usort($hashtags, function ($hashtagA, $hashtagB) {
+            return $hashtagB['trendingScore'] <=> $hashtagA['trendingScore'];
         });
 
         // Limiter aux 20 premiers hashtags tendance
         $trendingHashtags = array_slice($hashtags, 0, 20);
 
-        $io->section('Hashtags tendance mis à jour');
-        $io->table(
+        $ioStyle->section('Hashtags tendance mis à jour');
+        $ioStyle->table(
             ['Hashtag', 'Usage récent', 'Likes', 'Commentaires', 'Partages', 'Score'],
             array_map(function ($data) {
                 return [
@@ -121,7 +122,7 @@ class UpdateTrendingHashtagsCommand extends Command
         $cacheItem->expiresAfter(3600); // Expire après 1 heure
         $this->cache->save($cacheItem);
 
-        $io->success('Les hashtags tendance ont été mis à jour et stockés en cache pour 1 heure !');
+        $ioStyle->success('Les hashtags tendance ont été mis à jour et stockés en cache pour 1 heure !');
 
         return Command::SUCCESS;
     }

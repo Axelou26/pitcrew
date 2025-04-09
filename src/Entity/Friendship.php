@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\FriendshipRepository;
 use Doctrine\ORM\Mapping as ORM;
+use DateTimeImmutable;
 
 #[ORM\Entity(repositoryClass: FriendshipRepository::class)]
 #[ORM\Table(name: 'friendship')]
@@ -13,6 +14,9 @@ class Friendship
     public const STATUS_ACCEPTED = 'accepted';
     public const STATUS_DECLINED = 'declined';
 
+    /**
+     * @SuppressWarnings("PHPMD.ShortVariable")
+     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -22,7 +26,7 @@ class Friendship
     #[ORM\JoinColumn(nullable: false)]
     private ?User $requester = null;
 
-    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'receivedFriendRequests')]
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'receivedRequests')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $addressee = null;
 
@@ -30,14 +34,14 @@ class Friendship
     private ?string $status = self::STATUS_PENDING;
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $createdAt = null;
+    private ?DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(nullable: true)]
-    private ?\DateTimeImmutable $updatedAt = null;
+    private ?DateTimeImmutable $updatedAt = null;
 
     public function __construct()
     {
-        $this->createdAt = new \DateTimeImmutable();
+        $this->createdAt = new DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -75,27 +79,27 @@ class Friendship
     public function setStatus(string $status): self
     {
         $this->status = $status;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): self
+    public function setCreatedAt(DateTimeImmutable $createdAt): self
     {
         $this->createdAt = $createdAt;
         return $this;
     }
 
-    public function getUpdatedAt(): ?\DateTimeImmutable
+    public function getUpdatedAt(): ?DateTimeImmutable
     {
         return $this->updatedAt;
     }
 
-    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): self
+    public function setUpdatedAt(?DateTimeImmutable $updatedAt): self
     {
         $this->updatedAt = $updatedAt;
         return $this;
@@ -119,14 +123,14 @@ class Friendship
     public function accept(): self
     {
         $this->status = self::STATUS_ACCEPTED;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
         return $this;
     }
 
     public function decline(): self
     {
         $this->status = self::STATUS_DECLINED;
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
         return $this;
     }
 }

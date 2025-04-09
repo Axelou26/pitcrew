@@ -2,8 +2,10 @@
 
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Form\ProfilePostulantType;
 use App\Form\ProfileRecruiterType;
+use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,11 +33,8 @@ class ProfileController extends AbstractController
         $user = $this->getUser();
 
         // Choisir le formulaire en fonction du type d'utilisateur
-        if ($user->isRecruiter()) {
-            $form = $this->createForm(ProfileRecruiterType::class, $user);
-        } else {
-            $form = $this->createForm(ProfilePostulantType::class, $user);
-        }
+        $formType = $user->isRecruiter() ? ProfileRecruiterType::class : ProfilePostulantType::class;
+        $form = $this->createForm($formType, $user);
 
         $form->handleRequest($request);
 
@@ -96,7 +95,7 @@ class ProfileController extends AbstractController
                 $documents[] = [
                     'filename' => $newFilename,
                     'originalName' => $uploadedFile->getClientOriginalName(),
-                    'uploadedAt' => new \DateTime(),
+                    'uploadedAt' => new DateTime(),
                 ];
                 $user->setDocuments($documents);
 

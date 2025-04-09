@@ -3,10 +3,11 @@
 namespace App\Repository;
 
 use App\Entity\Post;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
 use App\Entity\Hashtag;
 use App\Entity\User;
+use App\Repository\Trait\PostQueryTrait;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Cache\Adapter\AdapterInterface;
 use Symfony\Component\Cache\Item\ItemInterface;
 
@@ -20,6 +21,8 @@ use Symfony\Component\Cache\Item\ItemInterface;
  */
 class PostRepository extends ServiceEntityRepository
 {
+    use PostQueryTrait;
+
     private const CACHE_TTL = 300; // 5 minutes
     private const CACHE_KEY_RECENT_POSTS = 'recent_posts_%d';
     private const CACHE_KEY_ALL_POSTS = 'all_posts_ordered';
@@ -76,19 +79,13 @@ class PostRepository extends ServiceEntityRepository
      */
     public function findRecentPosts(int $limit = 10): array
     {
-        return $this->getCachedResult(sprintf(self::CACHE_KEY_RECENT_POSTS, $limit), function () use ($limit): array {
-            $qb = $this->createQueryBuilder('p')
-                ->select('p', 'a', 'l', 'c', 'h', 's')
-                ->leftJoin('p.author', 'a')
-                ->leftJoin('p.likes', 'l')
-                ->leftJoin('p.comments', 'c')
-                ->leftJoin('p.hashtags', 'h')
-                ->leftJoin('p.shares', 's')
-                ->orderBy('p.createdAt', 'DESC')
-                ->setMaxResults($limit);
-
-            return $qb->getQuery()->getResult();
-        });
+        return $this->getCachedResult(
+            sprintf(self::CACHE_KEY_RECENT_POSTS, $limit),
+            fn(): array => $this->createBasePostQuery()
+                ->setMaxResults($limit)
+                ->getQuery()
+                ->getResult()
+        );
     }
 
     /**
@@ -96,116 +93,76 @@ class PostRepository extends ServiceEntityRepository
      */
     public function findAllOrderedByDate(): array
     {
-        return $this->getCachedResult(self::CACHE_KEY_ALL_POSTS, function (): array {
-            $qb = $this->createQueryBuilder('p')
-                ->select('p', 'a', 'l', 'c', 'h', 's')
-                ->leftJoin('p.author', 'a')
-                ->leftJoin('p.likes', 'l')
-                ->leftJoin('p.comments', 'c')
-                ->leftJoin('p.hashtags', 'h')
-                ->leftJoin('p.shares', 's')
-                ->orderBy('p.createdAt', 'DESC');
-
-            return $qb->getQuery()->getResult();
-        });
+        return $this->getCachedResult(
+            self::CACHE_KEY_ALL_POSTS,
+            fn(): array => $this->createBasePostQuery()
+                ->getQuery()
+                ->getResult()
+        );
     }
 
     /**
-     * Recherche les posts contenant un hashtag spécifique
      * @return array<Post>
      */
     public function findByHashtag(Hashtag $hashtag): array
     {
-        return $this
-            ->getCachedResult(sprintf(self::CACHE_KEY_POSTS_BY_HASHTAG, $hashtag
-            ->getId()), function () use ($hashtag): array {
-                $qb = $this->createQueryBuilder('p')
-                ->select('p', 'a', 'l', 'c', 'h', 's')
-                ->leftJoin('p.author', 'a')
-                ->leftJoin('p.likes', 'l')
-                ->leftJoin('p.comments', 'c')
+        return $this->getCachedResult(
+            sprintf(self::CACHE_KEY_POSTS_BY_HASHTAG, $hashtag->getId()),
+            fn(): array => $this->createBasePostQuery()
                 ->innerJoin('p.hashtags', 'h')
-                ->leftJoin('p.shares', 's')
                 ->where('h = :hashtag')
                 ->setParameter('hashtag', $hashtag)
-                ->orderBy('p.createdAt', 'DESC');
-
-                return $qb->getQuery()->getResult();
-            });
+                ->getQuery()
+                ->getResult()
+        );
     }
 
     /**
-     * Recherche les posts mentionnant un utilisateur spécifique
      * @return array<Post>
      */
     public function findByMentionedUser(User $user): array
     {
-        return $this
-            ->getCachedResult(sprintf(self::CACHE_KEY_POSTS_BY_MENTION, $user
-            ->getId()), function () use ($user): array {
-                $qb = $this->createQueryBuilder('p')
-                ->select('p', 'a', 'l', 'c', 'h', 's')
-                ->leftJoin('p.author', 'a')
-                ->leftJoin('p.likes', 'l')
-                ->leftJoin('p.comments', 'c')
-                ->leftJoin('p.hashtags', 'h')
-                ->leftJoin('p.shares', 's')
+        return $this->getCachedResult(
+            sprintf(self::CACHE_KEY_POSTS_BY_MENTION, $user->getId()),
+            fn(): array => $this->createBasePostQuery()
                 ->where('JSON_CONTAINS(p.mentions, :userId) = 1')
                 ->setParameter('userId', $user->getId())
-                ->orderBy('p.createdAt', 'DESC');
-
-                return $qb->getQuery()->getResult();
-            });
+                ->getQuery()
+                ->getResult()
+        );
     }
 
     /**
-     * Recherche les posts avec texte libre
      * @return array<Post>
      */
     public function search(string $query): array
     {
-        return $this
-            ->getCachedResult(sprintf(self::CACHE_KEY_SEARCH_POSTS, md5($query)), function () use ($query): array {
-                $qb = $this->createQueryBuilder('p')
-                ->select('p', 'a', 'l', 'c', 'h', 's')
-                ->leftJoin('p.author', 'a')
-                ->leftJoin('p.likes', 'l')
-                ->leftJoin('p.comments', 'c')
-                ->leftJoin('p.hashtags', 'h')
-                ->leftJoin('p.shares', 's')
+        return $this->getCachedResult(
+            sprintf(self::CACHE_KEY_SEARCH_POSTS, md5($query)),
+            fn(): array => $this->createBasePostQuery()
                 ->where('p.content LIKE :query OR p.title LIKE :query')
                 ->setParameter('query', '%' . $query . '%')
-                ->orderBy('p.createdAt', 'DESC')
-                ->setMaxResults(50);
-
-                return $qb->getQuery()->getResult();
-            });
+                ->setMaxResults(50)
+                ->getQuery()
+                ->getResult()
+        );
     }
 
     /**
-     * Récupère les posts à afficher dans le fil d'actualité d'un utilisateur
      * @return array<Post>
      */
     public function findPostsForFeed(User $user): array
     {
-        return $this
-            ->getCachedResult(sprintf(self::CACHE_KEY_FEED_POSTS, $user
-            ->getId()), function () use ($user): array {
-                $qb = $this->createQueryBuilder('p')
-                ->select('p', 'a', 'l', 'c', 'h', 's')
-                ->leftJoin('p.author', 'a')
-                ->leftJoin('p.likes', 'l')
-                ->leftJoin('p.comments', 'c')
-                ->leftJoin('p.hashtags', 'h')
-                ->leftJoin('p.shares', 's')
+        return $this->getCachedResult(
+            sprintf(self::CACHE_KEY_FEED_POSTS, $user->getId()),
+            fn(): array => $this->createBasePostQuery()
                 ->where('p.author = :user')
                 ->orWhere('p.author IN (:friends)')
                 ->setParameter('user', $user)
                 ->setParameter('friends', $user->getFriends())
-                ->orderBy('p.createdAt', 'DESC');
-
-                return $qb->getQuery()->getResult();
-            });
+                ->getQuery()
+                ->getResult()
+        );
     }
 
     /**
@@ -223,19 +180,14 @@ class PostRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve les posts récents qui contiennent des hashtags
-     * @param \DateTimeInterface $fromDate Date à partir de laquelle chercher
      * @return array<Post>
      */
     public function findRecentPostsWithHashtags(\DateTimeInterface $fromDate): array
     {
-        return $this->createQueryBuilder('p')
-            ->leftJoin('p.hashtags', 'h')
-            ->leftJoin('p.author', 'a')
+        return $this->createBasePostQuery()
             ->where('p.createdAt >= :fromDate')
             ->andWhere('p.hashtags IS NOT EMPTY')
             ->setParameter('fromDate', $fromDate)
-            ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
     }

@@ -10,16 +10,16 @@ use Doctrine\ORM\EntityManagerInterface;
 class StatisticsService
 {
     private $jobOfferRepository;
-    private $jobApplicationRepository;
+    private $appRepo;
     private $entityManager;
 
     public function __construct(
         JobOfferRepository $jobOfferRepository,
-        JobApplicationRepository $jobApplicationRepository,
+        JobApplicationRepository $appRepo,
         EntityManagerInterface $entityManager
     ) {
         $this->jobOfferRepository = $jobOfferRepository;
-        $this->jobApplicationRepository = $jobApplicationRepository;
+        $this->appRepo = $appRepo;
         $this->entityManager = $entityManager;
     }
 
@@ -36,7 +36,7 @@ class StatisticsService
         $activeOffers = $this->jobOfferRepository->count(['recruiter' => $recruiter, 'isActive' => true]);
 
         // Nombre total de candidatures reçues
-        $totalApplications = $this->jobApplicationRepository->countForRecruiter($recruiter);
+        $totalApplications = $this->appRepo->countForRecruiter($recruiter);
 
         // Nombre moyen de candidatures par offre
         $averageApplications = $totalOffers > 0 ? $totalApplications / $totalOffers : 0;
@@ -92,7 +92,7 @@ class StatisticsService
     private function calculateConversionRate(User $recruiter): float
     {
         $totalViews = $this->jobOfferRepository->getTotalViewsForRecruiter($recruiter);
-        $totalApplications = $this->jobApplicationRepository->countForRecruiter($recruiter);
+        $totalApplications = $this->appRepo->countForRecruiter($recruiter);
 
         if ($totalViews > 0) {
             return round(($totalApplications / $totalViews) * 100, 1);

@@ -22,39 +22,44 @@ class EmailValidationService
 
     public function isValidEmail(string $email): bool
     {
-        if (strlen($email) > 254) {
+        if (!$this->isValidLength($email) || !$this->hasValidFormat($email)) {
             return false;
         }
 
-        if (strpos($email, ' . . ') !== false) {
+        return !$this->checkDns || $this->hasValidDomain($email);
+    }
+
+    private function isValidLength(string $email): bool
+    {
+        return strlen($email) <= 254;
+    }
+
+    private function hasValidFormat(string $email): bool
+    {
+        if (strpos($email, '..') !== false) {
             return false;
         }
 
-        if (strpos($email, ' . @') !== false || strpos($email, '@ . ') !== false) {
+        if (strpos($email, '.@') !== false || strpos($email, '@.') !== false) {
             return false;
         }
 
-        if (substr($email, -1) === ' . ') {
+        if (substr($email, -1) === '.') {
             return false;
         }
 
-        if (!preg_match(self::EMAIL_REGEX, $email)) {
+        return preg_match(self::EMAIL_REGEX, $email) === 1;
+    }
+
+    private function hasValidDomain(string $email): bool
+    {
+        $atPos = strpos($email, '@');
+        if ($atPos === false) {
             return false;
         }
 
-        // Vérification du domaine uniquement en production
-        if ($this->checkDns) {
-            $atPos = strpos($email, '@');
-            if ($atPos === false) {
-                return false;
-            }
-            $domain = substr($email, $atPos + 1);
-            if (!checkdnsrr($domain, 'MX') && !checkdnsrr($domain, 'A')) {
-                return false;
-            }
-        }
-
-        return true;
+        $domain = substr($email, $atPos + 1);
+        return checkdnsrr($domain, 'MX') || checkdnsrr($domain, 'A');
     }
 
     /**
@@ -64,7 +69,7 @@ class EmailValidationService
     {
         $errors = [];
 
-        if (strlen($email) > 254) {
+        if (!$this->isValidLength($email)) {
             $errors[] = 'L\'adresse email ne doit pas dépasser 254 caractères';
         }
 
@@ -84,14 +89,8 @@ class EmailValidationService
             $errors[] = 'Le format de l\'adresse email n\'est pas valide';
         }
 
-        if ($this->checkDns) {
-            $atPos = strpos($email, '@');
-            if ($atPos !== false) {
-                $domain = substr($email, $atPos + 1);
-                if (!checkdnsrr($domain, 'MX') && !checkdnsrr($domain, 'A')) {
-                    $errors[] = 'Le domaine de l\'adresse email n\'existe pas';
-                }
-            }
+        if ($this->checkDns && !$this->hasValidDomain($email)) {
+            $errors[] = 'Le domaine de l\'adresse email n\'existe pas';
         }
 
         return $errors;
