@@ -15,6 +15,7 @@ use App\Entity\Traits\UserProfileTrait;
 use App\Entity\Traits\UserSocialTrait;
 use App\Entity\Traits\UserDocumentsTrait;
 use App\Entity\Traits\UserProfessionalTrait;
+use App\Entity\Traits\UserPersonalTrait;
 use DateTimeImmutable;
 use DateTimeInterface;
 
@@ -33,6 +34,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     use UserSocialTrait;
     use UserDocumentsTrait;
     use UserProfessionalTrait;
+    use UserPersonalTrait;
 
     public const ROLE_POSTULANT = 'ROLE_POSTULANT';
     public const ROLE_RECRUTEUR = 'ROLE_RECRUTEUR';
@@ -40,60 +42,56 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    protected ?int $identifier = null;
+    private ?int $id = null;
 
     #[ORM\Column(length: 180, unique: true)]
     #[Assert\NotBlank]
     #[Assert\Email]
-    protected ?string $email = null;
+    private ?string $email = null;
 
     #[ORM\Column]
-    protected array $roles = [];
+    private array $roles = [];
 
     #[ORM\Column]
-    protected ?string $password = null;
+    private ?string $password = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    protected ?string $stripeCustomerId = null;
+    private ?string $stripeCustomerId = null;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
-    protected ?\DateTimeInterface $createdAt = null;
-
-    #[ORM\OneToMany(mappedBy: 'recruiter', targetEntity: JobOffer::class, orphanRemoval: true)]
-    protected Collection $jobOffers;
+    #[ORM\Column]
+    private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\OneToMany(mappedBy: 'applicant', targetEntity: JobApplication::class, orphanRemoval: true)]
-    protected Collection $applications;
+    private Collection $applications;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Notification::class, orphanRemoval: true)]
-    protected Collection $notifications;
+    private Collection $notifications;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Favorite::class, orphanRemoval: true)]
-    protected Collection $favorites;
+    private Collection $favorites;
 
     #[ORM\OneToMany(mappedBy: 'recruiter', targetEntity: RecruiterSubscription::class, orphanRemoval: true)]
-    protected Collection $subscriptions;
+    private Collection $subscriptions;
 
     #[ORM\OneToMany(mappedBy: 'recruiter', targetEntity: Interview::class)]
-    protected Collection $recruiterInterviews;
+    private Collection $recruiterInterviews;
 
     #[ORM\OneToMany(mappedBy: 'applicant', targetEntity: Interview::class)]
-    protected Collection $applicantInterviews;
+    private Collection $applicantInterviews;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Education::class, orphanRemoval: true)]
-    protected Collection $educationCollection;
+    private Collection $educationCollection;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: WorkExperience::class, orphanRemoval: true)]
-    protected Collection $workExperiences;
+    private Collection $workExperiences;
 
     #[ORM\Column(type: 'boolean')]
-    protected bool $isVerified = false;
+    private bool $isVerified = false;
 
     public function __construct()
     {
         $this->roles = ['ROLE_USER'];
         $this->createdAt = new DateTimeImmutable();
-        $this->jobOffers = new ArrayCollection();
         $this->applications = new ArrayCollection();
         $this->notifications = new ArrayCollection();
         $this->favorites = new ArrayCollection();
@@ -111,7 +109,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getId(): ?int
     {
-        return $this->identifier;
+        return $this->id;
     }
 
     public function getEmail(): ?string
@@ -206,11 +204,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     // Méthodes pour les collections restantes
-    public function getJobOffers(): Collection
-    {
-        return $this->jobOffers;
-    }
-
     public function getApplications(): Collection
     {
         return $this->applications;

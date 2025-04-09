@@ -14,8 +14,8 @@ use App\Entity\RecruiterSubscription;
 
 trait UserProfessionalTrait
 {
-    #[ORM\OneToMany(mappedBy: 'recruiter', targetEntity: JobOffer::class, orphanRemoval: true)]
-    private Collection $jobOffers;
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: JobOffer::class, cascade: ['persist', 'remove'])]
+    protected Collection $jobOffers;
 
     #[ORM\OneToMany(mappedBy: 'applicant', targetEntity: JobApplication::class, orphanRemoval: true)]
     private Collection $applications;
