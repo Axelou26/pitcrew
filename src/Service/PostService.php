@@ -16,6 +16,7 @@ use InvalidArgumentException;
 use App\Service\Post\PostContentProcessor;
 use App\Service\Post\PostImageHandler;
 use App\Service\Post\PostSearchCriteria;
+use App\Service\Criteria\PostSearchCriteria as CriteriaPostSearchCriteria;
 
 class PostService
 {
@@ -42,7 +43,7 @@ class PostService
                 $this->postRepository->findRecentPostsWithHashtags($criteria->getFromDate()),
             PostSearchCriteria::TYPE_MENTIONS =>
                 $this->postRepository->findByMentionedUser($criteria->getUser()),
-            default => throw new \InvalidArgumentException('Type de recherche invalide'),
+            default => throw new InvalidArgumentException('Type de recherche invalide'),
         };
     }
 

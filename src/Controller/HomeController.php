@@ -35,19 +35,18 @@ class HomeController extends AbstractController
         $user = $this->getUser();
 
         // Précharger les collections si l'utilisateur est connecté
+        $userStats = [
+            'posts_count' => 0,
+            'friends_count' => 0,
+            'job_offers_count' => 0
+        ];
+        
         if ($user) {
-            // Forcer le chargement des collections
             $this->entityManager->initializeObject($user);
             $userStats = [
                 'posts_count' => $user->getPosts()->count(),
                 'friends_count' => count($user->getFriends()),
                 'job_offers_count' => $user->isRecruiter() ? $user->getJobOffers()->count() : 0
-            ];
-        } else {
-            $userStats = [
-                'posts_count' => 0,
-                'friends_count' => 0,
-                'job_offers_count' => 0
             ];
         }
 
@@ -68,12 +67,11 @@ class HomeController extends AbstractController
                 'stats' => [
                     'recruiters' => $userRepository->findByRole('ROLE_RECRUITER'),
                     'applicants' => $userRepository->findByRole('ROLE_APPLICANT')
-                ]
+                ],
+                'recentPosts' => $postRepository->findRecentPosts(10)
             ];
 
-            if (!$user) {
-                $data['recentPosts'] = $postRepository->findRecentPosts(10);
-            } else {
+            if ($user) {
                 $data['recommendedPosts'] = $postRepository->findRecentPosts(10);
                 $data['suggestedUsers'] = $userRepository->findSuggestedUsers($user, 5);
             }

@@ -23,6 +23,7 @@ use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\Security;
 use Symfony\Component\Security\Core\User\UserInterface;
+use RuntimeException;
 
 class RegistrationManager
 {
@@ -71,12 +72,12 @@ class RegistrationManager
     ): array {
         $user = $this->entityManager->getRepository(User::class)->find($userId);
         if (!$user) {
-            throw new \RuntimeException('Utilisateur non trouvé');
+            throw new RuntimeException('Utilisateur non trouvé');
         }
 
         $subscription = $this->entityManager->getRepository(Subscription::class)->find($subscriptionId);
         if (!$subscription) {
-            throw new \RuntimeException('Abonnement non trouvé');
+            throw new RuntimeException('Abonnement non trouvé');
         }
 
         $recruiterSub = $this->subscriptionService->createSubscription($user, $subscription);

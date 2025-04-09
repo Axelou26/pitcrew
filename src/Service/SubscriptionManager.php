@@ -11,6 +11,7 @@ use App\Repository\SubscriptionRepository;
 use App\Repository\RecruiterSubscriptionRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use RuntimeException;
 
 class SubscriptionManager
 {
@@ -53,7 +54,7 @@ class SubscriptionManager
     ): array {
         $subscription = $this->subscriptionRepo->find($subscriptionId);
         if (!$subscription) {
-            throw new \RuntimeException('Abonnement non trouvé');
+            throw new RuntimeException('Abonnement non trouvé');
         }
 
         $isChange = $session->get('is_subscription_change', false);

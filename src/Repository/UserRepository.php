@@ -139,22 +139,24 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             $friendship = $friendshipRepository->findAcceptedBetweenUsers($currentUser, $user);
             $user->isFriend = ($friendship !== null);
 
+            // Initialiser les valeurs par défaut
+            $user->hasPendingRequestFrom = false;
+            $user->hasPendingRequestTo = false;
+            $user->pendingRequestId = null;
+
             // Vérifier les demandes d'amitié en attente
             $pendingRequest = $friendshipRepository->findPendingRequestBetween($currentUser, $user);
-            if ($pendingRequest !== null) {
-                if ($pendingRequest->getRequester() === $currentUser) {
-                    $user->hasPendingRequestFrom = true;
-                    $user->hasPendingRequestTo = false;
-                } else {
-                    $user->hasPendingRequestFrom = false;
-                    $user->hasPendingRequestTo = true;
-                    $user->pendingRequestId = $pendingRequest->getId();
-                }
-            } else {
-                $user->hasPendingRequestFrom = false;
-                $user->hasPendingRequestTo = false;
-                $user->pendingRequestId = null;
+            if (!$pendingRequest) {
+                continue;
             }
+
+            if ($pendingRequest->getRequester() === $currentUser) {
+                $user->hasPendingRequestFrom = true;
+                continue;
+            }
+
+            $user->hasPendingRequestTo = true;
+            $user->pendingRequestId = $pendingRequest->getId();
         }
 
         return $users;
