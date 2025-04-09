@@ -81,7 +81,7 @@ class UserController extends AbstractController
         }
 
         $friendshipRepository = $entityManager->getRepository(Friendship::class);
-        
+
         $friendship = $friendshipRepository->findAcceptedBetweenUsers($currentUser, $user);
         $friendshipInfo['isFriend'] = ($friendship !== null);
 

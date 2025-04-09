@@ -40,7 +40,7 @@ class HomeController extends AbstractController
             'friends_count' => 0,
             'job_offers_count' => 0
         ];
-        
+
         if ($user) {
             $this->entityManager->initializeObject($user);
             $userStats = [
