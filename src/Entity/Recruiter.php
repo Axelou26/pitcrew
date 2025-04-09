@@ -69,4 +69,12 @@ class Recruiter extends User
         $this->favoriteApplicants->removeElement($applicant);
         return $this;
     }
+
+    public function hasCandidateInFavorites(User $user): bool
+    {
+        if (!$user instanceof Applicant) {
+            return false;
+        }
+        return $this->favoriteApplicants->contains($user);
+    }
 }

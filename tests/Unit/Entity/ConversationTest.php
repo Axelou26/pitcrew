@@ -60,7 +60,7 @@ class ConversationTest extends TestCase
 
         // Test de modification des dates
         $newDate = new \DateTimeImmutable('2024-01-01 12:00:00');
-        
+
         $this->conversation->setCreatedAt($newDate);
         $this->assertEquals($newDate, $this->conversation->getCreatedAt());
 
@@ -153,7 +153,7 @@ class ConversationTest extends TestCase
     public function testConstructor(): void
     {
         $conversation = new Conversation();
-        
+
         // Vérification des valeurs par défaut
         $this->assertInstanceOf(\DateTimeImmutable::class, $conversation->getCreatedAt());
         $this->assertInstanceOf(\DateTimeImmutable::class, $conversation->getUpdatedAt());
@@ -178,4 +178,4 @@ class ConversationTest extends TestCase
 
         $this->assertSame($this->conversation, $returnedConversation);
     }
-} 
+}

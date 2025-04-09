@@ -27,7 +27,7 @@ class UserTest extends TestCase
     {
         parent::setUp();
         $this->user = new User();
-        
+
         // Mock du service de hachage de mot de passe
         $this->passwordHasher = $this->createMock(UserPasswordHasherInterface::class);
     }
@@ -47,7 +47,7 @@ class UserTest extends TestCase
         // Test d'ajout d'un rôle
         $this->user->setRoles(['ROLE_USER', 'ROLE_ADMIN']);
         $this->assertContains('ROLE_ADMIN', $this->user->getRoles());
-        
+
         // Test de suppression d'un rôle
         $this->user->setRoles(['ROLE_USER']);
         $this->assertNotContains('ROLE_ADMIN', $this->user->getRoles());
@@ -74,10 +74,10 @@ class UserTest extends TestCase
     {
         $firstName = 'John';
         $lastName = 'Doe';
-        
+
         $this->user->setFirstName($firstName);
         $this->user->setLastName($lastName);
-        
+
         $this->assertEquals($firstName, $this->user->getFirstName());
         $this->assertEquals($lastName, $this->user->getLastName());
         $this->assertEquals("$firstName $lastName", $this->user->getFullName());
@@ -162,7 +162,7 @@ class UserTest extends TestCase
     {
         $post = new Post();
         $post->setContent('Test post content');
-        
+
         // Test d'ajout d'un post
         $this->user->addPost($post);
         $this->assertCount(1, $this->user->getPosts());
@@ -179,7 +179,7 @@ class UserTest extends TestCase
     {
         $jobOffer = new JobOffer();
         $jobOffer->setTitle('Test job offer');
-        
+
         // Test d'ajout d'une offre d'emploi
         $this->user->addJobOffer($jobOffer);
         $this->assertCount(1, $this->user->getJobOffers());
@@ -195,7 +195,7 @@ class UserTest extends TestCase
     public function testApplicationsCollection(): void
     {
         $application = new JobApplication();
-        
+
         // Test d'ajout d'une candidature
         $this->user->addApplication($application);
         $this->assertCount(1, $this->user->getApplications());
@@ -210,7 +210,7 @@ class UserTest extends TestCase
     public function testNotificationsCollection(): void
     {
         $notification = new Notification();
-        
+
         // Test d'ajout d'une notification
         $this->user->addNotification($notification);
         $this->assertCount(1, $this->user->getNotifications());
@@ -226,11 +226,11 @@ class UserTest extends TestCase
     {
         $friend = new User();
         $friend->setEmail('friend@example.com');
-        
+
         $friendship = new Friendship();
         $friendship->setRequester($this->user);
         $friendship->setAddressee($friend);
-        
+
         // Test d'ajout d'une demande d'ami envoyée
         $this->user->addSentFriendRequest($friendship);
         $this->assertCount(1, $this->user->getSentFriendRequests());
@@ -291,7 +291,7 @@ class UserTest extends TestCase
         // On utilise un Recruiter au lieu d'un User simple
         $recruiter = new \App\Entity\Recruiter();
         $subscription = new \App\Entity\RecruiterSubscription();
-        
+
         // Test d'ajout d'un abonnement
         $recruiter->addSubscription($subscription);
         $this->assertCount(1, $recruiter->getSubscriptions());
@@ -306,7 +306,7 @@ class UserTest extends TestCase
     public function testFavoritesCollection(): void
     {
         $favorite = new Favorite();
-        
+
         // Test d'ajout d'un favori
         $this->user->addFavorite($favorite);
         $this->assertCount(1, $this->user->getFavorites());
@@ -333,18 +333,18 @@ class UserTest extends TestCase
     {
         $otherUser = new User();
         $otherUser->setEmail('other@example.com');
-        
+
         // Test des propriétés dynamiques de l'amitié
         $this->assertFalse($this->user->isFriend);
         $this->assertFalse($this->user->hasPendingRequestFrom);
         $this->assertFalse($this->user->hasPendingRequestTo);
         $this->assertNull($this->user->pendingRequestId);
-        
+
         // Simulation d'une demande d'ami
         $this->user->hasPendingRequestTo = true;
         $this->user->pendingRequestId = 1;
-        
+
         $this->assertTrue($this->user->hasPendingRequestTo);
         $this->assertEquals(1, $this->user->pendingRequestId);
     }
-} 
+}

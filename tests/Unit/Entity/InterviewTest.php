@@ -21,7 +21,7 @@ class InterviewTest extends TestCase
         $this->jobOffer = new JobOffer();
         $this->recruiter = new User();
         $this->applicant = new User();
-        
+
         $this->recruiter->setEmail('recruiter@example.com');
         $this->applicant->setEmail('applicant@example.com');
     }
@@ -157,4 +157,4 @@ class InterviewTest extends TestCase
 
         $this->assertSame($this->interview, $returnedInterview);
     }
-} 
+}

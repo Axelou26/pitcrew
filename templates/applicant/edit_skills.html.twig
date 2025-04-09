@@ -37,14 +37,14 @@
                 <div class="card-body p-4">
                     {{ form_start(form) }}
                         <div class="mb-4">
-                            <h5>{{ form_label(form.technicalSkills) }}</h5>
+                            <h5>{{ form_label(form.skills) }}</h5>
                             <div class="form-text mb-2">
-                                Listez vos compétences techniques (langages de programmation, technologies, outils, etc.)
+                                Listez vos compétences (techniques, personnelles, etc.)
                             </div>
                             
-                            <div class="technical-skills-collection-container mb-2" 
-                                 data-prototype="{{ form_widget(form.technicalSkills.vars.prototype)|e('html_attr') }}">
-                                {% for skill in form.technicalSkills %}
+                            <div class="skills-collection-container mb-2" 
+                                 data-prototype="{{ form_widget(form.skills.vars.prototype)|e('html_attr') }}">
+                                {% for skill in form.skills %}
                                     <div class="collection-item">
                                         {{ form_widget(skill) }}
                                         <span class="remove-item"><i class="fas fa-times"></i></span>
@@ -53,30 +53,8 @@
                             </div>
                             
                             <button type="button" class="btn btn-sm btn-outline-primary add-skill-button" 
-                                    data-collection-target="technical-skills">
-                                <i class="fas fa-plus me-1"></i> Ajouter une compétence technique
-                            </button>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <h5>{{ form_label(form.softSkills) }}</h5>
-                            <div class="form-text mb-2">
-                                Listez vos compétences personnelles (communication, travail d'équipe, adaptabilité, etc.)
-                            </div>
-                            
-                            <div class="soft-skills-collection-container mb-2" 
-                                 data-prototype="{{ form_widget(form.softSkills.vars.prototype)|e('html_attr') }}">
-                                {% for skill in form.softSkills %}
-                                    <div class="collection-item">
-                                        {{ form_widget(skill) }}
-                                        <span class="remove-item"><i class="fas fa-times"></i></span>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                            
-                            <button type="button" class="btn btn-sm btn-outline-primary add-skill-button" 
-                                    data-collection-target="soft-skills">
-                                <i class="fas fa-plus me-1"></i> Ajouter une compétence personnelle
+                                    data-collection-target="skills">
+                                <i class="fas fa-plus me-1"></i> Ajouter une compétence
                             </button>
                         </div>
                         

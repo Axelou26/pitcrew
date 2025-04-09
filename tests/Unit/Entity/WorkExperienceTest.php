@@ -63,4 +63,4 @@ class WorkExperienceTest extends TestCase
 
         $this->assertSame($this->workExperience, $returnedWorkExperience);
     }
-} 
+}

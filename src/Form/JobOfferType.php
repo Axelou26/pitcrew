@@ -17,6 +17,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\File;
 use DateTime;
+use Symfony\Component\Validator\Constraints as Assert;
 
 class JobOfferType extends AbstractType implements JobOfferTypeInterface
 {
@@ -26,6 +27,10 @@ class JobOfferType extends AbstractType implements JobOfferTypeInterface
             ->add('title', TextType::class, [
                 'label' => 'Titre du poste',
                 'attr' => ['placeholder' => 'Ex: Mécanicien F1'],
+                'required' => true,
+                'constraints' => [
+                    new Assert\NotBlank(message: 'Le titre du poste est obligatoire'),
+                ],
             ])
             ->add('description', TextareaType::class, [
                 'label' => 'Description du poste',
@@ -90,6 +95,16 @@ class JobOfferType extends AbstractType implements JobOfferTypeInterface
             ->add('isRemote', CheckboxType::class, [
                 'label' => 'Télétravail possible',
                 'required' => false,
+            ])
+            ->add('experienceLevel', ChoiceType::class, [
+                'label' => 'Niveau d\'expérience requis',
+                'choices' => [
+                    'Débutant' => 'junior',
+                    'Intermédiaire' => 'mid',
+                    'Expérimenté' => 'senior',
+                    'Expert' => 'expert'
+                ],
+                'required' => true,
             ])
             ->add('salary', MoneyType::class, [
                 'label' => 'Salaire annuel (€)',

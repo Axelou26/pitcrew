@@ -116,4 +116,4 @@ class SupportTicketTest extends TestCase
 
         $this->assertSame($this->ticket, $returnedTicket);
     }
-} 
+}

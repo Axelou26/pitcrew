@@ -27,10 +27,10 @@ trait UserSocialTrait
     private Collection $postLikes;
 
     #[ORM\OneToMany(mappedBy: 'author', targetEntity: PostComment::class, orphanRemoval: true)]
-    private Collection $postComments;
+    private Collection $comments;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: PostShare::class, orphanRemoval: true)]
-    private Collection $postShares;
+    private Collection $shares;
 
     public bool $isFriend = false;
     public bool $pendingRequestFrom = false;
@@ -43,8 +43,8 @@ trait UserSocialTrait
         $this->sentFriendRequests = new ArrayCollection();
         $this->receivedRequests = new ArrayCollection();
         $this->postLikes = new ArrayCollection();
-        $this->postComments = new ArrayCollection();
-        $this->postShares = new ArrayCollection();
+        $this->comments = new ArrayCollection();
+        $this->shares = new ArrayCollection();
     }
 
     public function getPosts(): Collection
@@ -142,13 +142,51 @@ trait UserSocialTrait
         return false;
     }
 
-    public function getPostComments(): Collection
+    public function getComments(): Collection
     {
-        return $this->postComments;
+        return $this->comments;
     }
 
-    public function getPostShares(): Collection
+    public function getShares(): Collection
     {
-        return $this->postShares;
+        return $this->shares;
     }
-} 
+
+    public function addComment(PostComment $comment): static
+    {
+        if (!$this->comments->contains($comment)) {
+            $this->comments->add($comment);
+            $comment->setAuthor($this);
+        }
+        return $this;
+    }
+
+    public function removeComment(PostComment $comment): static
+    {
+        if ($this->comments->removeElement($comment)) {
+            if ($comment->getAuthor() === $this) {
+                $comment->setAuthor(null);
+            }
+        }
+        return $this;
+    }
+
+    public function addShare(PostShare $share): static
+    {
+        if (!$this->shares->contains($share)) {
+            $this->shares->add($share);
+            $share->setUser($this);
+        }
+        return $this;
+    }
+
+    public function removeShare(PostShare $share): static
+    {
+        if ($this->shares->removeElement($share)) {
+            if ($share->getUser() === $this) {
+                $share->setUser(null);
+            }
+        }
+        return $this;
+    }
+}

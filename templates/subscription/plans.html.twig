@@ -198,104 +198,52 @@
         </div>
     </div>
     
-    {% if activeSubscription %}
+    {% if active_subscription %}
         <div class="alert alert-info mb-4">
-            <h5 class="mb-1"><i class="bi bi-info-circle me-2"></i>Vous êtes actuellement abonné au plan {{ activeSubscription.subscription.name }}</h5>
-            <p class="mb-0">Votre abonnement expire le {{ activeSubscription.endDate|date('d/m/Y') }}. Si vous changez de plan, votre abonnement actuel sera désactivé.</p>
-</div>
+            <h5 class="mb-1"><i class="bi bi-info-circle me-2"></i>Vous êtes actuellement abonné au plan {{ active_subscription.subscription.name }}</h5>
+            <p class="mb-0">Votre abonnement expire le {{ active_subscription.endDate|date('d/m/Y') }}. Si vous changez de plan, votre abonnement actuel sera désactivé.</p>
+        </div>
     {% endif %}
     
     <div class="row row-cols-1 row-cols-md-3 mb-4 text-center">
-        <!-- Plan Basic -->
-        <div class="col">
-            <div class="card h-100 mb-4 shadow-sm">
-                <div class="card-header py-3 bg-light">
-                    <h4 class="fw-normal">Basic</h4>
-                </div>
-                <div class="card-body d-flex flex-column">
-                    <h1 class="card-title">0€ <small class="text-muted fw-light">/mois</small></h1>
-                    <p class="fs-5 text-muted">Gratuit</p>
-                    <ul class="list-unstyled mt-3 mb-4 text-start">
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Publication limitée d'offres (3 max)</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Accès basique aux candidatures</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Messagerie limitée</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Profil entreprise standard</li>
-                        <li class="mb-2"><i class="bi bi-x-circle-fill text-danger me-2"></i>Pas d'accès complet aux CV</li>
-                        <li class="mb-2"><i class="bi bi-x-circle-fill text-danger me-2"></i>Pas de statistiques</li>
-                    </ul>
-                    <div class="mt-auto">
-                        <a href="{{ path('app_subscription_select', {'id': 1}) }}" class="w-100 btn btn-lg btn-outline-primary">
-                            {% if activeSubscription and activeSubscription.subscription.name == 'Basic' %}
-                                Votre plan actuel
+        {% for subscription in subscriptions %}
+            <div class="col">
+                <div class="card h-100 mb-4 shadow-sm {% if subscription.name == 'Premium' %}border-primary{% endif %}">
+                    <div class="card-header py-3 {% if subscription.name == 'Premium' %}bg-primary text-white{% else %}bg-light{% endif %}">
+                        <h4 class="fw-normal">{{ subscription.name }}</h4>
+                        {% if subscription.name == 'Premium' %}
+                            <span class="badge bg-white text-primary">Populaire</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h1 class="card-title">
+                            {% if subscription.price == 0 %}
+                                0€ <small class="text-muted fw-light">/mois</small>
                             {% else %}
-                                Choisir Basic
+                                {{ subscription.price }}€ <small class="text-muted fw-light">/{{ (subscription.duration / 30)|round }} mois</small>
                             {% endif %}
-                        </a>
+                        </h1>
+                        <p class="fs-5 text-muted">
+                            {% if subscription.price == 0 %}Gratuit{% else %}Tout ce dont vous avez besoin{% endif %}
+                        </p>
+                        <ul class="list-unstyled mt-3 mb-4 text-start">
+                            {% for feature in subscription.features %}
+                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>{{ feature }}</li>
+                            {% endfor %}
+                        </ul>
+                        <div class="mt-auto">
+                            <a href="{{ path('app_subscription_select', {'id': subscription.id}) }}" class="w-100 btn btn-lg {% if subscription.name == 'Premium' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                {% if active_subscription and active_subscription.subscription.name == subscription.name %}
+                                    Votre plan actuel
+                                {% else %}
+                                    Choisir {{ subscription.name }}
+                                {% endif %}
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Plan Premium -->
-        <div class="col">
-            <div class="card h-100 mb-4 shadow border-primary">
-                <div class="card-header py-3 bg-primary text-white">
-                    <h4 class="fw-normal">Premium</h4>
-                    <span class="badge bg-white text-primary">Populaire</span>
-                </div>
-                <div class="card-body d-flex flex-column">
-                    <h1 class="card-title">49€ <small class="text-muted fw-light">/mois</small></h1>
-                    <p class="fs-5 text-muted">Tout ce dont vous avez besoin</p>
-                    <ul class="list-unstyled mt-3 mb-4 text-start">
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Publications illimitées d'offres</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Offres mises en avant</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Accès complet aux CV des candidats</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Messagerie illimitée</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Statistiques de base</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Profil entreprise amélioré</li>
-                    </ul>
-                    <div class="mt-auto">
-                        <a href="{{ path('app_subscription_select', {'id': 2}) }}" class="w-100 btn btn-lg btn-primary">
-                            {% if activeSubscription and activeSubscription.subscription.name == 'Premium' %}
-                                Votre plan actuel
-                            {% else %}
-                                Choisir Premium
-                            {% endif %}
-                        </a>
-                    </div>
-                </div>
-            </div>
-                            </div>
-        
-        <!-- Plan Business -->
-        <div class="col">
-            <div class="card h-100 mb-4 shadow-sm">
-                <div class="card-header py-3 bg-info text-white">
-                    <h4 class="fw-normal">Business</h4>
-                    </div>
-                <div class="card-body d-flex flex-column">
-                    <h1 class="card-title">149€ <small class="text-muted fw-light">/mois</small></h1>
-                    <p class="fs-5 text-muted">Pour les entreprises exigeantes</p>
-                    <ul class="list-unstyled mt-3 mb-4 text-start">
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Tout ce qui est inclus dans Premium</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Recherche avancée de candidats</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Recommandations automatiques</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Statistiques détaillées</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Badge "Entreprise vérifiée"</li>
-                        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Support prioritaire</li>
-                    </ul>
-                    <div class="mt-auto">
-                        <a href="{{ path('app_subscription_select', {'id': 3}) }}" class="w-100 btn btn-lg btn-outline-info">
-                            {% if activeSubscription and activeSubscription.subscription.name == 'Business' %}
-                                Votre plan actuel
-                            {% else %}
-                                Choisir Business
-                            {% endif %}
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {% endfor %}
     </div>
     
     <div class="row">
@@ -363,49 +311,49 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
     </div>
-</div>
-</div>
 
     <div class="row mt-5">
         <div class="col-md-12 text-center">
             <h2 class="mb-4">Questions fréquentes</h2>
             
-                <div class="accordion" id="faqAccordion">
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="faqOne">
+            <div class="accordion" id="faqAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faqOne">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFaqOne" aria-expanded="false" aria-controls="collapseFaqOne">
                             Puis-je changer de plan à tout moment ?
-                            </button>
-                        </h2>
+                        </button>
+                    </h2>
                     <div id="collapseFaqOne" class="accordion-collapse collapse" aria-labelledby="faqOne" data-bs-parent="#faqAccordion">
-                            <div class="accordion-body">
+                        <div class="accordion-body">
                             Oui, vous pouvez passer à un plan supérieur à tout moment. Lors d'un changement de plan, votre abonnement actuel sera remplacé par le nouveau.
-                            </div>
                         </div>
                     </div>
-                    
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="faqTwo">
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faqTwo">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFaqTwo" aria-expanded="false" aria-controls="collapseFaqTwo">
                             Comment fonctionne la facturation ?
-                            </button>
-                        </h2>
+                        </button>
+                    </h2>
                     <div id="collapseFaqTwo" class="accordion-collapse collapse" aria-labelledby="faqTwo" data-bs-parent="#faqAccordion">
-                            <div class="accordion-body">
+                        <div class="accordion-body">
                             La facturation est mensuelle et automatique. Vous recevrez une facture par email à chaque renouvellement de votre abonnement.
-                            </div>
                         </div>
                     </div>
-                    
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="faqThree">
+                </div>
+                
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="faqThree">
                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFaqThree" aria-expanded="false" aria-controls="collapseFaqThree">
                             Puis-je annuler mon abonnement ?
-                            </button>
-                        </h2>
+                        </button>
+                    </h2>
                     <div id="collapseFaqThree" class="accordion-collapse collapse" aria-labelledby="faqThree" data-bs-parent="#faqAccordion">
-                            <div class="accordion-body">
+                        <div class="accordion-body">
                             Vous pouvez annuler votre abonnement à tout moment depuis votre espace de gestion d'abonnement. L'annulation prendra effet à la fin de la période de facturation en cours.
                         </div>
                     </div>

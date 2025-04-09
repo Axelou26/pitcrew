@@ -87,14 +87,16 @@ class RegistrationManager
         }
 
         $this->emailService->sendRegistrationConfirmation($user);
-        
+
         if ($subscription->getPrice() > 0) {
             $this->emailService->sendPaymentReceipt($user, $recruiterSub);
         }
 
         return [
-            'message' => sprintf('Votre compte a été créé et votre abonnement %s a été activé avec succès !', 
-                $subscription->getName())
+            'message' => sprintf(
+                'Votre compte a été créé et votre abonnement %s a été activé avec succès !',
+                $subscription->getName()
+            )
         ];
     }
 
@@ -133,7 +135,7 @@ class RegistrationManager
         try {
             $stripeCustomerId = $this->ensureStripeCustomer($user);
             $checkoutSession = $this->createRegistrationCheckoutSession($user, $subscription, $stripeCustomerId);
-            
+
             return ['redirect_url' => $checkoutSession->url];
         } catch (\Exception $e) {
             return [
@@ -208,4 +210,4 @@ class RegistrationManager
             ]
         ]);
     }
-} 
+}

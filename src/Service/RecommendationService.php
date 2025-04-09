@@ -478,11 +478,11 @@ class RecommendationService
     private function setFriendshipStatus(User $suggestedUser, ?Friendship $friendship, User $currentUser): void
     {
         $suggestedUser->isFriend = $friendship && $friendship->getStatus() === 'accepted';
-        
+
         $isPending = $friendship && $friendship->getStatus() === 'pending';
         $suggestedUser->hasPendingRequestFrom = $isPending && $friendship->getUser() === $currentUser;
         $suggestedUser->hasPendingRequestTo = $isPending && $friendship->getUser() === $suggestedUser;
-        
+
         if ($suggestedUser->hasPendingRequestTo) {
             $suggestedUser->pendingRequestId = $friendship->getId();
         }

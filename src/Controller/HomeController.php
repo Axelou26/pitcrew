@@ -12,11 +12,13 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
+use Doctrine\ORM\EntityManagerInterface;
 
 class HomeController extends AbstractController
 {
     public function __construct(
-        private CacheInterface $cache
+        private CacheInterface $cache,
+        private EntityManagerInterface $entityManager
     ) {
     }
 
@@ -28,39 +30,59 @@ class HomeController extends AbstractController
         PostRepository $postRepository,
         UserRepository $userRepository,
         HashtagRepository $hashtagRepository,
-        JobOfferRepository $jobOfferRepository,
-        CacheInterface $cache
+        JobOfferRepository $jobOfferRepository
     ): Response {
-        $data = $cache->get(
-            'homepage_data_' . ($this->getUser() ? $this->getUser()->getId() : 'anonymous'),
-            function (ItemInterface $item) use (
-                $postRepository,
-                $userRepository,
-                $hashtagRepository,
-                $jobOfferRepository
-            ) {
-                $item->expiresAfter(300); // Cache pour 5 minutes
+        $user = $this->getUser();
 
-                $user = $this->getUser();
-                $data = [
-                    'activeJobOffers' => $jobOfferRepository->findActiveJobOffers(5),
-                    'trendingHashtags' => $hashtagRepository->findTrendingHashtags(10),
-                    'recentPosts' => $postRepository->findRecentPosts(10)
-                ];
+        // Précharger les collections si l'utilisateur est connecté
+        if ($user) {
+            // Forcer le chargement des collections
+            $this->entityManager->initializeObject($user);
+            $userStats = [
+                'posts_count' => $user->getPosts()->count(),
+                'friends_count' => count($user->getFriends()),
+                'job_offers_count' => $user->isRecruiter() ? $user->getJobOffers()->count() : 0
+            ];
+        } else {
+            $userStats = [
+                'posts_count' => 0,
+                'friends_count' => 0,
+                'job_offers_count' => 0
+            ];
+        }
 
-                if ($user) {
-                    $data['recommendedPosts'] = $postRepository->findRecentPosts(10);
-                    $data['suggestedUsers'] = $userRepository->findSuggestedUsers($user, 5);
-                    $data['stats'] = [
-                        'recruiters' => $userRepository->count(['roles' => ['ROLE_RECRUITER']]),
-                        'applicants' => $userRepository->count(['roles' => ['ROLE_APPLICANT']])
-                    ];
-                    unset($data['recentPosts']); // On n'affiche pas les posts récents pour les utilisateurs connectés
-                }
+        $cacheKey = 'homepage_data_' . ($user ? $user->getId() : 'anonymous');
 
-                return $data;
+        $data = $this->cache->get($cacheKey, function (ItemInterface $item) use (
+            $postRepository,
+            $userRepository,
+            $hashtagRepository,
+            $jobOfferRepository,
+            $user
+        ) {
+            $item->expiresAfter(300); // Cache pour 5 minutes
+
+            $data = [
+                'activeJobOffers' => $jobOfferRepository->findActiveOffers(5),
+                'trendingHashtags' => $hashtagRepository->findTrending(10),
+                'stats' => [
+                    'recruiters' => $userRepository->findByRole('ROLE_RECRUITER'),
+                    'applicants' => $userRepository->findByRole('ROLE_APPLICANT')
+                ]
+            ];
+
+            if (!$user) {
+                $data['recentPosts'] = $postRepository->findRecentPosts(10);
+            } else {
+                $data['recommendedPosts'] = $postRepository->findRecentPosts(10);
+                $data['suggestedUsers'] = $userRepository->findSuggestedUsers($user, 5);
             }
-        );
+
+            return $data;
+        });
+
+        // Ajouter les statistiques de l'utilisateur aux données
+        $data['user_stats'] = $userStats;
 
         return $this->render('home/index.html.twig', $data);
     }

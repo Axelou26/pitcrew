@@ -37,10 +37,14 @@ class ProfilePostulantType extends AbstractType
                 'required' => false,
                 'attr' => ['rows' => 5],
             ])
-            ->add('education', TextareaType::class, [
+            ->add('educationCollection', CollectionType::class, [
                 'label' => 'Formation',
+                'entry_type' => EducationEntryType::class,
+                'allow_add' => true,
+                'allow_delete' => true,
+                'prototype' => true,
                 'required' => false,
-                'attr' => ['rows' => 5],
+                'by_reference' => false,
             ])
             ->add('skills', CollectionType::class, [
                 'label' => 'Compétences',

@@ -19,7 +19,7 @@ class ApplicationTest extends TestCase
         $this->application = new Application();
         $this->applicant = new Applicant();
         $this->jobOffer = new JobOffer();
-        
+
         $this->applicant->setEmail('applicant@example.com');
     }
 
@@ -78,7 +78,7 @@ class ApplicationTest extends TestCase
     {
         // Test des statuts valides
         $validStatuses = ['pending', 'accepted', 'rejected'];
-        
+
         foreach ($validStatuses as $status) {
             $this->application->setStatus($status);
             $this->assertEquals($status, $this->application->getStatus());
@@ -109,4 +109,4 @@ class ApplicationTest extends TestCase
 
         $this->assertSame($this->application, $returnedApplication);
     }
-} 
+}

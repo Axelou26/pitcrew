@@ -7,9 +7,14 @@ namespace App\Entity\Trait;
 use App\Entity\Hashtag;
 use App\Entity\User;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
 
 trait PostTaggingTrait
 {
+    #[ORM\Column(type: Types::JSON)]
+    private ?array $mentions = [];
+
     public function getHashtags(): Collection
     {
         return $this->hashtags;
@@ -51,8 +56,9 @@ trait PostTaggingTrait
 
     public function addMention(User $user): static
     {
-        if (!in_array($user->getId(), $this->mentions, true)) {
-            $this->mentions[] = $user->getId();
+        $userId = $user->getId();
+        if (!in_array($userId, $this->mentions, true)) {
+            $this->mentions[] = $userId;
         }
         return $this;
     }
@@ -62,4 +68,4 @@ trait PostTaggingTrait
         preg_match_all('/@(\w+)/', $this->content, $matches);
         return array_unique($matches[1]);
     }
-} 
+}

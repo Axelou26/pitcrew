@@ -57,4 +57,4 @@ trait PostCountersTrait
         $this->updateSharesCounter();
         $this->updateReactionCounts();
     }
-} 
+}

@@ -118,7 +118,7 @@
                                             </p>
                                     </div>
                                     <div class="d-flex flex-column gap-2">
-                                        <a href="{{ path('app_user_profile', {'id': friend.id}) }}" class="btn btn-light rounded-pill">
+                                        <a href="{{ path('app_profile_view', {'id': friend.id}) }}" class="btn btn-light rounded-pill">
                                             <i class="bi bi-person me-2"></i>Voir le profil
                                         </a>
                                         <a href="{{ path('app_message_start', {'id': friend.id}) }}" class="btn btn-primary rounded-pill">
@@ -184,7 +184,7 @@
                                 </div>
                                 <div class="flex-grow-1 ms-3">
                                     <h5 class="mb-1">
-                                        <a href="{{ path('app_user_profile', {'id': request.requester.id}) }}" class="text-decoration-none">
+                                        <a href="{{ path('app_profile_view', {'id': request.requester.id}) }}" class="text-decoration-none">
                                             {{ request.requester.fullName }}
                                         </a>
                                     </h5>
@@ -252,7 +252,7 @@
                                 </div>
                                 <div class="flex-grow-1 ms-3">
                                     <h5 class="mb-1">
-                                        <a href="{{ path('app_user_profile', {'id': request.addressee.id}) }}" class="text-decoration-none">
+                                        <a href="{{ path('app_profile_view', {'id': request.addressee.id}) }}" class="text-decoration-none">
                                             {{ request.addressee.fullName }}
                                         </a>
                                     </h5>

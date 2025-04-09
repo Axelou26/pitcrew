@@ -71,4 +71,4 @@ class PostReactionManager
 
         return 0;
     }
-} 
+}

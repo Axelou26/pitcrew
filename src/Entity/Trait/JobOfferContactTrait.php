@@ -33,4 +33,4 @@ trait JobOfferContactTrait
         $this->contactPhone = $contactPhone;
         return $this;
     }
-} 
+}

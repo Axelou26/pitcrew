@@ -66,7 +66,7 @@ class ContentProcessorService
             if ($isUpdate) {
                 $this->processUpdatedHashtags($post);
             }
-            
+
             // Traiter les mentions
             $this->processMentions($post);
 

@@ -45,6 +45,7 @@ class SubscriptionFeatures
             'standard_profile'
         ],
         self::LEVEL_PREMIUM => [
+            'post_job_offer',
             'unlimited_job_offers',
             'highlighted_offers',
             'full_cv_access',
@@ -53,6 +54,8 @@ class SubscriptionFeatures
             'enhanced_profile'
         ],
         self::LEVEL_BUSINESS => [
+            'post_job_offer',
+            'unlimited_job_offers',
             'advanced_candidate_search',
             'automatic_recommendations',
             'detailed_statistics',

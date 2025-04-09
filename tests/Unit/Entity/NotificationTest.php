@@ -129,4 +129,4 @@ class NotificationTest extends TestCase
 
         $this->assertSame($this->notification, $returnedNotification);
     }
-} 
+}

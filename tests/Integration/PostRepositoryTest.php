@@ -36,7 +36,7 @@ class PostRepositoryTest extends KernelTestCase
         }
 
         $this->entityManager->getConnection()->executeQuery('SET FOREIGN_KEY_CHECKS=0');
-        
+
         $tables = [
             'job_application',
             'job_offer',
@@ -114,7 +114,7 @@ class PostRepositoryTest extends KernelTestCase
 
         $post = $this->createTestPost($user, 'Post avec #test', 'Post avec hashtag');
         $post->addHashtag($hashtag);
-        
+
         $this->entityManager->flush();
         $this->entityManager->clear();
 
@@ -171,4 +171,4 @@ class PostRepositoryTest extends KernelTestCase
 
         parent::tearDown();
     }
-} 
+}

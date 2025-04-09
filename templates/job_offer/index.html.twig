@@ -549,14 +549,14 @@
                     </div>
                 </div>
             {% else %}
-                {% for offer in offers %}
+                {% for jobOffer in offers %}
                     <div class="col-md-6 col-lg-4 mb-4 animate-in">
                         <div class="job-card h-100 p-4">
                             <!-- Logo d'entreprise -->
                             <div class="d-flex mb-3">
-                                {% if offer.logoUrl %}
+                                {% if jobOffer.logoUrl %}
                                     <div class="company-logo">
-                                        <img src="{{ asset('uploads/logos/' ~ offer.logoUrl) }}" alt="{{ offer.company }}">
+                                        <img src="{{ asset('uploads/logos/' ~ jobOffer.logoUrl) }}" alt="{{ jobOffer.company }}">
                                     </div>
                                 {% else %}
                                     <div class="company-logo-default">
@@ -566,33 +566,33 @@
                             </div>
                             
                             <!-- Nom de l'entreprise -->
-                            <div class="job-company">{{ offer.company }}</div>
+                            <div class="job-company">{{ jobOffer.company }}</div>
                             
                             <!-- Titre du poste -->
-                            <h3 class="job-title">{{ offer.title }}</h3>
+                            <h3 class="job-title">{{ jobOffer.title }}</h3>
                             
                             <!-- Localisation -->
                             <div class="job-location">
                                 <i class="bi bi-geo-alt"></i>
-                                {{ offer.location }}
+                                {{ jobOffer.location }}
                             </div>
                             
                             <!-- Métadonnées (type de contrat, télétravail, etc.) -->
                             <div class="job-meta">
                                 <span class="job-meta-item badge-contract">
                                     <i class="bi bi-briefcase"></i>
-                                    {{ offer.contractType }}
+                                    {{ jobOffer.contractType }}
                                 </span>
                                 
-                                {% if offer.isRemote %}
+                                {% if jobOffer.isRemote %}
                                     <span class="job-meta-item badge-remote">
                                         <i class="bi bi-house"></i> Télétravail
                                     </span>
                                 {% endif %}
                                 
-                                {% if offer.salary %}
+                                {% if jobOffer.salary %}
                                     <span class="job-meta-item badge-salary">
-                                        <i class="bi bi-currency-euro"></i> {{ offer.salary|number_format(0, ',', ' ') }}
+                                        <i class="bi bi-currency-euro"></i> {{ jobOffer.salary|number_format(0, ',', ' ') }}
                                     </span>
                                 {% endif %}
                             </div>
@@ -600,11 +600,11 @@
                             <!-- Date -->
                             <div class="job-timestamp">
                                 <i class="bi bi-clock"></i>
-                                Publiée le {{ offer.createdAt|date('d/m/Y') }}
+                                Publiée le {{ jobOffer.createdAt|date('d/m/Y') }}
                             </div>
                             
                             <!-- Lien vers l'offre complète -->
-                            <a href="{{ path('app_job_offer_show', {'id': offer.id}) }}" class="stretched-link" aria-label="Voir l'offre {{ offer.title }}"></a>
+                            <a href="{{ path('app_job_offer_show', {'offerId': jobOffer.id}) }}" class="stretched-link" aria-label="Voir l'offre {{ jobOffer.title }}"></a>
                         </div>
                     </div>
                 {% endfor %}

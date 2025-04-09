@@ -34,9 +34,9 @@ class JobOffer
     #[ORM\Column]
     private ?DateTimeImmutable $createdAt = null;
 
-    #[ORM\ManyToOne(inversedBy: 'jobOffers')]
-    #[ORM\JoinColumn(nullable: true)]
-    private ?User $recruiter = null;
+    #[ORM\ManyToOne(targetEntity: Recruiter::class, inversedBy: 'jobOffers')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Recruiter $recruiter = null;
 
     #[ORM\OneToMany(mappedBy: 'jobOffer', targetEntity: JobApplication::class, orphanRemoval: true)]
     private Collection $applications;
@@ -61,12 +61,12 @@ class JobOffer
         return $this->createdAt;
     }
 
-    public function getRecruiter(): ?User
+    public function getRecruiter(): ?Recruiter
     {
         return $this->recruiter;
     }
 
-    public function setRecruiter(?User $recruiter): static
+    public function setRecruiter(?Recruiter $recruiter): static
     {
         $this->recruiter = $recruiter;
         return $this;

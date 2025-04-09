@@ -23,4 +23,4 @@ abstract class BaseScoreCalculator
     {
         return $maxScore * $weight;
     }
-} 
+}

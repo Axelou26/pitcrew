@@ -37,7 +37,15 @@ class SubscriptionFeatureVoter extends Voter
             return true;
         }
 
-        return array_key_exists(strtolower($attribute), $this->features);
+        // Vérifier si la fonctionnalité existe dans au moins un niveau d'abonnement
+        foreach (SubscriptionFeatures::SUBSCRIPTION_LEVELS as $level) {
+            $features = SubscriptionFeatures::getAvailableFeatures($level);
+            if (in_array(strtolower($attribute), array_map('strtolower', $features))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
@@ -105,16 +113,12 @@ class SubscriptionFeatureVoter extends Voter
 
     private function isValidSubscriptionLevel(string $level): bool
     {
-        return in_array($level, array_keys($this->features));
+        return in_array(strtolower($level), array_map('strtolower', SubscriptionFeatures::SUBSCRIPTION_LEVELS));
     }
 
     private function isFeatureAvailableForLevel(string $feature, string $level): bool
     {
-        if (!isset($this->features[$level])) {
-            return false;
-        }
-
-        return in_array($feature, $this->features[$level]);
+        return SubscriptionFeatures::isFeatureAvailableForLevel($feature, $level);
     }
 
     private function getFeatures(User $user): array

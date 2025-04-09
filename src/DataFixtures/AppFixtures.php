@@ -13,11 +13,11 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
     public function getDependencies(): array
     {
         return [
+            SubscriptionFixtures::class,
             RecruiterFixtures::class,
             ApplicantFixtures::class,
             JobOfferFixtures::class,
             PostFixtures::class,
-            FriendshipFixtures::class,
         ];
     }
 

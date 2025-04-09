@@ -37,11 +37,11 @@ class Subscription
     private ?bool $isActive = true;
 
     #[ORM\OneToMany(mappedBy: 'subscription', targetEntity: RecruiterSubscription::class)]
-    private Collection $recruiterSubs;
+    private Collection $recruiterSubscriptions;
 
     public function __construct()
     {
-        $this->recruiterSubs = new ArrayCollection();
+        $this->recruiterSubscriptions = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -57,7 +57,6 @@ class Subscription
     public function setName(string $name): static
     {
         $this->name = $name;
-
         return $this;
     }
 
@@ -69,7 +68,6 @@ class Subscription
     public function setPrice(float $price): static
     {
         $this->price = $price;
-
         return $this;
     }
 
@@ -81,7 +79,6 @@ class Subscription
     public function setDuration(int $duration): static
     {
         $this->duration = $duration;
-
         return $this;
     }
 
@@ -93,7 +90,6 @@ class Subscription
     public function setFeatures(array $features): static
     {
         $this->features = $features;
-
         return $this;
     }
 
@@ -105,13 +101,9 @@ class Subscription
     public function setMaxJobOffers(?int $maxJobOffers): static
     {
         $this->maxJobOffers = $maxJobOffers;
-
         return $this;
     }
 
-    /**
-     * @return bool|null
-     */
     public function getIsActive(): ?bool
     {
         return $this->isActive;
@@ -120,7 +112,6 @@ class Subscription
     public function setIsActive(bool $isActive): static
     {
         $this->isActive = $isActive;
-
         return $this;
     }
 
@@ -129,28 +120,25 @@ class Subscription
      */
     public function getRecruiterSubscriptions(): Collection
     {
-        return $this->recruiterSubs;
+        return $this->recruiterSubscriptions;
     }
 
-    public function addRecruiterSubscription(RecruiterSubscription $recruiterSub): static
+    public function addRecruiterSubscription(RecruiterSubscription $recruiterSubscription): static
     {
-        if (!$this->recruiterSubs->contains($recruiterSub)) {
-            $this->recruiterSubs->add($recruiterSub);
-            $recruiterSub->setSubscription($this);
+        if (!$this->recruiterSubscriptions->contains($recruiterSubscription)) {
+            $this->recruiterSubscriptions->add($recruiterSubscription);
+            $recruiterSubscription->setSubscription($this);
         }
-
         return $this;
     }
 
-    public function removeRecruiterSubscription(RecruiterSubscription $recruiterSub): static
+    public function removeRecruiterSubscription(RecruiterSubscription $recruiterSubscription): static
     {
-        if ($this->recruiterSubs->removeElement($recruiterSub)) {
-            // set the owning side to null (unless already changed)
-            if ($recruiterSub->getSubscription() === $this) {
-                $recruiterSub->setSubscription(null);
+        if ($this->recruiterSubscriptions->removeElement($recruiterSubscription)) {
+            if ($recruiterSubscription->getSubscription() === $this) {
+                $recruiterSubscription->setSubscription(null);
             }
         }
-
         return $this;
     }
 

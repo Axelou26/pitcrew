@@ -456,6 +456,18 @@
                         </div>
                     </div>
 
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            {{ form_label(form.experienceLevel, 'Niveau d\'expérience requis') }}
+                            {{ form_widget(form.experienceLevel) }}
+                            {{ form_errors(form.experienceLevel) }}
+                            <div class="form-hint">
+                                <i class="bi bi-briefcase me-1"></i>
+                                Sélectionnez le niveau d'expérience attendu pour ce poste
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mb-4">
                         <div class="form-check form-switch">
                             {{ form_widget(form.isRemote, {'attr': {'class': 'form-check-input'}}) }}

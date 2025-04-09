@@ -25,8 +25,8 @@ class FriendshipFixtures extends Fixture implements DependentFixtureInterface
         for ($i = 0; $i < 2; $i++) {
             for ($j = $i + 1; $j < 2; $j++) {
                 $friendship = new Friendship();
-                $friendship->setUser1($this->getReference(ApplicantFixtures::APPLICANT_REFERENCE_PREFIX . $i))
-                    ->setUser2($this->getReference(ApplicantFixtures::APPLICANT_REFERENCE_PREFIX . $j))
+                $friendship->setRequester($this->getReference(ApplicantFixtures::APPLICANT_REFERENCE_PREFIX . $i))
+                    ->setAddressee($this->getReference(ApplicantFixtures::APPLICANT_REFERENCE_PREFIX . $j))
                     ->setStatus('accepted')
                     ->setCreatedAt(new DateTimeImmutable());
 
@@ -36,4 +36,4 @@ class FriendshipFixtures extends Fixture implements DependentFixtureInterface
 
         $manager->flush();
     }
-} 
+}

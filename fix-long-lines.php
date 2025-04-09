@@ -1,6 +1,7 @@
 <?php
 
-function fixLongLines($file, $maxLength = 120) {
+function fixLongLines($file, $maxLength = 120)
+{
     $content = file_get_contents($file);
     $lines = explode("\n", $content);
     $modified = false;
@@ -12,7 +13,7 @@ function fixLongLines($file, $maxLength = 120) {
                 $indent = $matches[1];
                 $string = $matches[2];
                 $ending = $matches[3];
-                
+
                 if (strlen($string) > $maxLength - strlen($indent) - strlen($ending)) {
                     $line = $indent . substr($string, 0, $maxLength - strlen($indent) - strlen($ending) - 3) . '...' . $ending;
                     $modified = true;
@@ -24,7 +25,7 @@ function fixLongLines($file, $maxLength = 120) {
                 $object = $matches[2];
                 $operator = $matches[3];
                 $method = $matches[4];
-                
+
                 if (strlen($line) > $maxLength) {
                     $line = $indent . $object . "\n" . $indent . "    " . $operator . $method;
                     $modified = true;
@@ -36,7 +37,7 @@ function fixLongLines($file, $maxLength = 120) {
                 $var = $matches[2];
                 $equals = $matches[3];
                 $value = $matches[4];
-                
+
                 if (strlen($line) > $maxLength) {
                     $line = $indent . $var . "\n" . $indent . "    " . $equals . " " . $value;
                     $modified = true;
@@ -51,7 +52,8 @@ function fixLongLines($file, $maxLength = 120) {
     }
 }
 
-function processDirectory($dir) {
+function processDirectory($dir)
+{
     $files = new RecursiveIteratorIterator(
         new RecursiveDirectoryIterator($dir)
     );
@@ -63,4 +65,4 @@ function processDirectory($dir) {
     }
 }
 
-processDirectory(__DIR__ . '/src'); 
+processDirectory(__DIR__ . '/src');

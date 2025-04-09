@@ -92,14 +92,14 @@ class JobApplicationController extends AbstractController
             try {
                 $this->processResume($form, $application, $slugger);
                 $this->processAdditionalDocuments($form, $application, $slugger);
-                
+
                 $this->entityManager->persist($application);
                 $this->entityManager->flush();
-                
+
                 $notificationService->notifyNewApplication($application);
-                
+
                 $this->addFlash('success', 'Votre candidature a été envoyée avec succès !');
-                
+
                 return $this->redirectToRoute('app_job_application_index');
             } catch (\Exception $e) {
                 $this->addFlash('error', 'Une erreur est survenue lors du traitement de votre candidature : ' . $e->getMessage());

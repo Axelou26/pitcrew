@@ -64,7 +64,7 @@
                                     </a>
                                 </div>
                             {% else %}
-                                <a href="{{ path('app_friendship_send', {'id': user.id}) }}" class="btn btn-primary">
+                                <a href="{{ path('app_friendship_send', {'addresseeId': user.id}) }}" class="btn btn-primary">
                                     <i class="bi bi-person-plus me-2"></i>Ajouter en ami
                                 </a>
                             {% endif %}
@@ -82,7 +82,7 @@
                             {% endif %}
                             
                             <!-- Bouton Message -->
-                            <a href="{{ path('app_message_start', {'id': user.id}) }}" class="btn btn-outline-secondary">
+                            <a href="{{ path('app_message_start', {'conversationId': user.id}) }}" class="btn btn-outline-secondary">
                                 <i class="bi bi-chat-dots me-2"></i>Message
                             </a>
                         </div>

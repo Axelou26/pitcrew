@@ -48,4 +48,4 @@ trait UserDocumentsTrait
         $this->documents = $documents;
         return $this;
     }
-} 
+}

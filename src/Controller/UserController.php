@@ -59,13 +59,15 @@ class UserController extends AbstractController
             $friendshipInfo['isFriend'] = ($friendship !== null);
 
             // Vérifier si l'utilisateur courant a envoyé une demande d'amitié à cet utilisateur
-            $pendingRequest = $friendshipRepository->findPendingRequestBetweenUsers($currentUser, $user, true);
-            $friendshipInfo['hasPendingRequestFrom'] = ($pendingRequest !== null);
+            $pendingRequest = $friendshipRepository->findPendingRequestBetween($currentUser, $user);
+            if ($pendingRequest !== null && $pendingRequest->getRequester() === $currentUser) {
+                $friendshipInfo['hasPendingRequestFrom'] = true;
+            }
 
             // Vérifier si l'utilisateur a envoyé une demande d'amitié à l'utilisateur courant
-            $pendingRequestTo = $friendshipRepository->findPendingRequestBetweenUsers($user, $currentUser, true);
-            $friendshipInfo['hasPendingRequestTo'] = ($pendingRequestTo !== null);
-            if ($pendingRequestTo) {
+            $pendingRequestTo = $friendshipRepository->findPendingRequestBetween($user, $currentUser);
+            if ($pendingRequestTo !== null && $pendingRequestTo->getRequester() === $user) {
+                $friendshipInfo['hasPendingRequestTo'] = true;
                 $friendshipInfo['pendingRequestId'] = $pendingRequestTo->getId();
             }
         }

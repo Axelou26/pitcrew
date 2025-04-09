@@ -50,7 +50,7 @@ class PostInteractionService
         $comment->setPost($post);
         $comment->setAuthor($author);
         $comment->setContent($content);
-        
+
         if ($parentComment) {
             $comment->setParent($parentComment);
         }
@@ -68,7 +68,7 @@ class PostInteractionService
         $share = new PostShare();
         $share->setPost($post);
         $share->setUser($user);
-        
+
         if ($comment) {
             $share->setComment($comment);
         }
@@ -86,4 +86,4 @@ class PostInteractionService
         $this->entityManager->remove($comment);
         $this->entityManager->flush();
     }
-} 
+}

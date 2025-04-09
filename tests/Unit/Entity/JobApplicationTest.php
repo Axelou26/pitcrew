@@ -20,7 +20,7 @@ class JobApplicationTest extends TestCase
         $this->jobApplication = new JobApplication();
         $this->applicant = new User();
         $this->jobOffer = new JobOffer();
-        
+
         $this->applicant->setEmail('applicant@example.com');
         $this->jobOffer->setTitle('Test Job Offer');
     }
@@ -70,10 +70,10 @@ class JobApplicationTest extends TestCase
         // Test d'ajout de documents
         $document1 = 'portfolio.pdf';
         $document2 = 'certifications.pdf';
-        
+
         $this->jobApplication->addDocument($document1);
         $this->jobApplication->addDocument($document2);
-        
+
         $documents = $this->jobApplication->getDocuments();
         $this->assertCount(2, $documents);
         $this->assertContains($document1, $documents);
@@ -121,7 +121,7 @@ class JobApplicationTest extends TestCase
     public function testMessagesCollection(): void
     {
         $message = new Message();
-        
+
         // Test d'ajout d'un message
         $this->jobApplication->addMessage($message);
         $this->assertCount(1, $this->jobApplication->getMessages());
@@ -143,4 +143,4 @@ class JobApplicationTest extends TestCase
         $this->assertEmpty($jobApplication->getDocumentsUrls());
         $this->assertCount(0, $jobApplication->getMessages());
     }
-} 
+}

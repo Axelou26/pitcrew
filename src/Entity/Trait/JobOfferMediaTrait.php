@@ -33,4 +33,4 @@ trait JobOfferMediaTrait
         $this->image = $image;
         return $this;
     }
-} 
+}

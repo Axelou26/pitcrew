@@ -196,7 +196,7 @@
                                             </ul>
                                             
                                             <form action="{{ path('app_register_subscription') }}" method="post" class="mt-auto">
-                                                <input type="hidden" name="subscription_id" value="{{ subscription.id }}">
+                                                <input type="hidden" name="subscription" value="{{ subscription.id }}">
                                                 <button type="submit" class="btn btn-lg btn-block {% if subscription.name == 'Premium' %}btn-primary{% else %}btn-outline-primary{% endif %} w-100">
                                                     {% if is_offline_mode|default(false) %}
                                                         <i class="bi bi-lightning-fill me-1"></i> Choisir (simulation)

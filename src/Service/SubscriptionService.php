@@ -51,7 +51,21 @@ class SubscriptionService
      */
     public function getActiveSubscription(User $user): ?RecruiterSubscription
     {
-        return $this->recruiterSubRepo->findActiveSubscription($user);
+        $subscription = $this->recruiterSubRepo->findActiveSubscription($user);
+        
+        if ($subscription && $subscription->getSubscription()) {
+            // Normaliser le nom de l'abonnement pour correspondre aux constantes
+            $name = strtolower($subscription->getSubscription()->getName());
+            if ($name === 'business') {
+                $subscription->getSubscription()->setName(SubscriptionFeatures::LEVEL_BUSINESS);
+            } elseif ($name === 'premium') {
+                $subscription->getSubscription()->setName(SubscriptionFeatures::LEVEL_PREMIUM);
+            } elseif ($name === 'basic') {
+                $subscription->getSubscription()->setName(SubscriptionFeatures::LEVEL_BASIC);
+            }
+        }
+        
+        return $subscription;
     }
 
     /**

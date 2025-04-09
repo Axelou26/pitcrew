@@ -46,11 +46,11 @@ class RecruiterTest extends TestCase
     {
         $applicant = new Applicant();
         $applicant->setEmail('applicant@example.com');
-        
+
         // Test d'ajout d'un candidat aux favoris
         $this->recruiter->addFavoriteApplicant($applicant);
         $this->assertTrue($this->recruiter->getFavoriteApplicants()->contains($applicant));
-        
+
         // Test de suppression d'un candidat des favoris
         $this->recruiter->removeFavoriteApplicant($applicant);
         $this->assertFalse($this->recruiter->getFavoriteApplicants()->contains($applicant));
@@ -95,4 +95,4 @@ class RecruiterTest extends TestCase
 
         $this->assertSame($this->recruiter, $returnedRecruiter);
     }
-} 
+}

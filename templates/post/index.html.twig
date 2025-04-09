@@ -34,7 +34,7 @@
                                 {% endif %}
                             </p>
                             <div class="pt-3">
-                                <a href="{{ path('app_user_profile', {'id': app.user.id}) }}" class="btn btn-outline-primary rounded-pill w-100">
+                                <a href="{{ path('app_user_profile', {'userId': app.user.id}) }}" class="btn btn-outline-primary rounded-pill w-100">
                                     Voir mon profil
                                 </a>
                             </div>
@@ -104,12 +104,26 @@
         
         <!-- Main Content -->
         <div class="col-lg-6">
-            {% if app.user %}
+            {% if not app.user %}
+                <div class="card border-0 shadow-sm rounded-3 p-5 text-center mb-4">
+                    <i class="bi bi-pencil-square display-1 text-muted mb-3"></i>
+                    <h3 class="h4 text-muted">Connectez-vous pour publier</h3>
+                    <p class="text-muted mb-4">Rejoignez la communauté PitCrew pour partager vos expériences</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <a href="{{ path('app_login') }}" class="btn btn-primary rounded-pill px-4">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Connexion
+                        </a>
+                        <a href="{{ path('app_register') }}" class="btn btn-outline-primary rounded-pill px-4">
+                            <i class="bi bi-person-plus me-2"></i>Inscription
+                        </a>
+                    </div>
+                </div>
+            {% else %}
                 <!-- Create Post Card -->
                 <div class="card border-0 shadow-sm rounded-3 mb-3">
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center">
-                            <a href="{{ path('app_user_profile', {'id': app.user.id}) }}" class="me-2">
+                            <a href="{{ path('app_user_profile', {'userId': app.user.id}) }}" class="me-2">
                                 {% if app.user.profilePicture %}
                                     <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}" 
                                          class="rounded-circle border"
@@ -122,20 +136,42 @@
                                     </div>
                                 {% endif %}
                             </a>
-                            <a href="{{ path('app_post_new') }}" class="form-control text-start text-muted py-2 rounded-pill border-secondary bg-white">
-                                Commencer un post...
-                            </a>
+                            <input type="text" id="quick-post-content" class="form-control text-start text-muted py-2 rounded-pill border-secondary bg-white" placeholder="Commencer un post...">
                         </div>
                         <div class="d-flex justify-content-between mt-3">
-                            <a href="{{ path('app_post_new') }}" class="btn btn-light rounded-pill">
+                            <button type="button" class="btn btn-light rounded-pill" onclick="document.getElementById('quick-post-image').click()">
                                 <i class="bi bi-image text-primary me-1"></i> Photo
-                            </a>
-                            <a href="{{ path('app_post_new') }}" class="btn btn-light rounded-pill">
+                            </button>
+                            <button type="button" class="btn btn-light rounded-pill" onclick="document.getElementById('quick-post-content').focus()">
                                 <i class="bi bi-calendar-event text-success me-1"></i> Événement
-                            </a>
-                            <a href="{{ path('app_post_new') }}" class="btn btn-light rounded-pill">
+                            </button>
+                            <button type="button" class="btn btn-light rounded-pill" onclick="document.getElementById('quick-post-content').focus()">
                                 <i class="bi bi-newspaper text-danger me-1"></i> Article
-                            </a>
+                            </button>
+                        </div>
+                        
+                        <div id="quick-post-form" class="d-none mt-3">
+                            <div class="mb-3">
+                                <input type="text" id="quick-post-title" class="form-control" placeholder="Titre (optionnel)">
+                            </div>
+                            <div class="mb-3">
+                                <textarea id="quick-post-full-content" class="form-control" rows="3" placeholder="Contenu de votre publication..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <div class="input-group">
+                                    <input type="file" id="quick-post-image" class="form-control" accept="image/*">
+                                    <label class="input-group-text" for="quick-post-image">Image</label>
+                                </div>
+                                <small class="form-text text-muted">Formats acceptés : JPEG, PNG, GIF. Taille maximale : 5 Mo.</small>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <button type="button" id="quick-post-cancel" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x me-1"></i> Annuler
+                                </button>
+                                <button type="button" id="quick-post-submit" class="btn btn-primary">
+                                    <i class="bi bi-send me-1"></i> Publier
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -172,7 +208,7 @@
                         <!-- Post Header -->
                         <div class="card-header bg-white border-0 pt-3 pb-0">
                             <div class="d-flex">
-                                <a href="{{ path('app_user_profile', {'id': post.author.id}) }}" class="me-2">
+                                <a href="{{ path('app_user_profile', {'userId': post.author.id}) }}" class="me-2">
                                     {% if post.author.profilePicture %}
                                         <img src="{{ asset('uploads/profile_pictures/' ~ post.author.profilePicture) }}" 
                                              class="rounded-circle border"
@@ -187,7 +223,7 @@
                                 </a>
                                 <div class="flex-grow-1">
                                     <div class="d-flex align-items-center">
-                                        <a href="{{ path('app_user_profile', {'id': post.author.id}) }}" class="text-decoration-none text-dark">
+                                        <a href="{{ path('app_user_profile', {'userId': post.author.id}) }}" class="text-decoration-none text-dark">
                                             <h6 class="mb-0 fw-bold">{{ post.author.fullName }}</h6>
                                         </a>
                                         <div class="dropdown ms-auto">
@@ -367,7 +403,7 @@
                             {% for suggestedUser in suggestedUsers|slice(0, 5) %}
                                 <li class="list-group-item border-0 px-3 py-2">
                                     <div class="d-flex align-items-center">
-                                        <a href="{{ path('app_user_profile', {'id': suggestedUser.id}) }}" class="me-2">
+                                        <a href="{{ path('app_user_profile', {'userId': suggestedUser.id}) }}" class="me-2">
                                             {% if suggestedUser.profilePicture %}
                                                 <img src="{{ asset('uploads/profile_pictures/' ~ suggestedUser.profilePicture) }}" 
                                                      class="rounded-circle border"
@@ -381,7 +417,7 @@
                                             {% endif %}
                                         </a>
                                         <div class="flex-grow-1 me-2">
-                                            <a href="{{ path('app_user_profile', {'id': suggestedUser.id}) }}" class="text-decoration-none text-dark">
+                                            <a href="{{ path('app_user_profile', {'userId': suggestedUser.id}) }}" class="text-decoration-none text-dark">
                                                 <div class="fw-bold text-truncate" style="max-width: 150px;">{{ suggestedUser.fullName }}</div>
                                             </a>
                                             <div class="text-muted small text-truncate" style="max-width: 150px;">
@@ -402,7 +438,7 @@
                                                     <i class="bi bi-hourglass-split"></i> Demande envoyée
                                                 </button>
                                             {% else %}
-                                                <a href="{{ path('app_friendship_send', {'id': suggestedUser.id}) }}" class="btn btn-sm btn-outline-primary rounded-pill">
+                                                <a href="{{ path('app_friendship_send', {'addresseeId': suggestedUser.id}) }}" class="btn btn-sm btn-outline-primary rounded-pill">
                                                     <i class="bi bi-person-plus"></i> Ajouter
                                                 </a>
                                             {% endif %}
@@ -433,4 +469,87 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const quickPostInput = document.getElementById('quick-post-content');
+            const quickPostForm = document.getElementById('quick-post-form');
+            const quickPostTitle = document.getElementById('quick-post-title');
+            const quickPostFullContent = document.getElementById('quick-post-full-content');
+            const quickPostImage = document.getElementById('quick-post-image');
+            const quickPostSubmit = document.getElementById('quick-post-submit');
+            const quickPostCancel = document.getElementById('quick-post-cancel');
+
+            // Afficher le formulaire complet au clic sur l'input
+            quickPostInput.addEventListener('click', function() {
+                quickPostForm.classList.remove('d-none');
+                quickPostFullContent.value = quickPostInput.value;
+            });
+
+            // Masquer le formulaire au clic sur Annuler
+            quickPostCancel.addEventListener('click', function() {
+                quickPostForm.classList.add('d-none');
+                quickPostInput.value = '';
+                quickPostTitle.value = '';
+                quickPostFullContent.value = '';
+                quickPostImage.value = '';
+            });
+
+            // Gérer la soumission du formulaire
+            quickPostSubmit.addEventListener('click', async function() {
+                const formData = new FormData();
+                formData.append('title', quickPostTitle.value);
+                formData.append('content', quickPostFullContent.value);
+
+                // Ajouter l'image si présente
+                if (quickPostImage.files.length > 0) {
+                    formData.append('image', quickPostImage.files[0]);
+                }
+
+                await sendPost(formData);
+            });
+
+            async function sendPost(formData) {
+                try {
+                    const response = await fetch('{{ path('app_post_quick_create') }}', {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'same-origin',
+                        body: formData
+                    });
+
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        throw new Error('Réponse invalide du serveur');
+                    }
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            window.location.href = '{{ path('app_login') }}';
+                            return;
+                        }
+                        throw new Error(data.error || 'Une erreur est survenue');
+                    }
+                    
+                    // Réinitialiser le formulaire et recharger la page
+                    quickPostForm.classList.add('d-none');
+                    quickPostInput.value = '';
+                    quickPostTitle.value = '';
+                    quickPostFullContent.value = '';
+                    quickPostImage.value = '';
+                    window.location.reload();
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    alert(error.message || 'Une erreur est survenue lors de la création de la publication');
+                }
+            }
+        });
+    </script>
 {% endblock %} 

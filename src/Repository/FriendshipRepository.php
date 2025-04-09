@@ -105,4 +105,34 @@ class FriendshipRepository extends ServiceEntityRepository
         $friendship = $this->findAcceptedBetweenUsers($user1, $user2);
         return $friendship !== null;
     }
+
+    /**
+     * Trouve les demandes d'amitié reçues en attente
+     */
+    public function findByPendingRequestsReceived(User $user): array
+    {
+        return $this->createQueryBuilder('f')
+            ->where('f.addressee = :user')
+            ->andWhere('f.status = :status')
+            ->setParameter('user', $user)
+            ->setParameter('status', Friendship::STATUS_PENDING)
+            ->orderBy('f.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Trouve les demandes d'amitié envoyées en attente
+     */
+    public function findByPendingRequestsSent(User $user): array
+    {
+        return $this->createQueryBuilder('f')
+            ->where('f.requester = :user')
+            ->andWhere('f.status = :status')
+            ->setParameter('user', $user)
+            ->setParameter('status', Friendship::STATUS_PENDING)
+            ->orderBy('f.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

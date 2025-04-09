@@ -7,8 +7,6 @@ use App\Entity\Trait\PostReactionsTrait;
 use App\Entity\Trait\PostCommentsTrait;
 use App\Entity\Trait\PostSharesTrait;
 use App\Entity\Trait\PostTaggingTrait;
-use App\Entity\Trait\PostMentionsTrait;
-use App\Entity\Trait\PostReactionCountsTrait;
 use App\Entity\Trait\PostCountersTrait;
 use App\Entity\Trait\PostBasicTrait;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -26,8 +24,6 @@ class Post
     use PostCommentsTrait;
     use PostSharesTrait;
     use PostTaggingTrait;
-    use PostMentionsTrait;
-    use PostReactionCountsTrait;
     use PostCountersTrait;
     use PostBasicTrait;
 
@@ -61,7 +57,6 @@ class Post
         $this->likesCounter = 0;
         $this->commentsCounter = 0;
         $this->sharesCounter = 0;
-        $this->mentions = [];
         $this->reactionCounts = $this->initializeReactionCounts();
     }
 

@@ -120,4 +120,4 @@ class UserServiceTest extends TestCase
         // Exécution du test
         $this->userService->sendVerificationEmail($user);
     }
-} 
+}

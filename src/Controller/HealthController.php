@@ -19,8 +19,7 @@ class HealthController extends AbstractController
         EntityManagerInterface $entityManager,
         CacheItemPoolInterface $cache,
         string $kernelEnvironment
-        )
-    {
+    ) {
         $this->entityManager = $entityManager;
         $this->cache = $cache;
         $this->kernelEnvironment = $kernelEnvironment;

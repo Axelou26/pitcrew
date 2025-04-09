@@ -22,4 +22,4 @@ class HashtagPostRelationManager
             $post->getHashtags()->removeElement($hashtag);
         }
     }
-} 
+}

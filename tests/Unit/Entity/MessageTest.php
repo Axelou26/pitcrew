@@ -87,7 +87,7 @@ class MessageTest extends TestCase
     public function testConstructor(): void
     {
         $message = new Message();
-        
+
         // Vérification des valeurs par défaut
         $this->assertInstanceOf(\DateTimeImmutable::class, $message->getCreatedAt());
         $this->assertFalse($message->isRead());
@@ -118,4 +118,4 @@ class MessageTest extends TestCase
 
         $this->assertSame($this->message, $returnedMessage);
     }
-} 
+}

@@ -69,4 +69,4 @@ class EmailValidationServiceTest extends TestCase
             ['user@' . str_repeat('a', 255) . '.com'], // Domaine trop long
         ];
     }
-} 
+}

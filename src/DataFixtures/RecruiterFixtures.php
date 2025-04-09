@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\DataFixtures;
 
 use App\Entity\Recruiter;
+use App\Entity\RecruiterSubscription;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use DateTimeImmutable;
 
 class RecruiterFixtures extends Fixture implements DependentFixtureInterface
 {
@@ -34,14 +36,27 @@ class RecruiterFixtures extends Fixture implements DependentFixtureInterface
             $recruiter->setEmail($data['email'])
                 ->setFirstName($data['firstName'])
                 ->setLastName($data['lastName'])
-                ->setPassword($this->passwordHasher->hashPassword($recruiter, self::PASSWORD))
                 ->setCompanyName($data['companyName'])
+                ->setPassword($this->passwordHasher->hashPassword($recruiter, self::PASSWORD))
                 ->setCompanyDescription($data['companyDescription'])
                 ->setCity($data['city'])
-                ->setBio($data['bio'])
-                ->setJobTitle($data['jobTitle']);
+                ->setSkills([])
+                ->setDocuments([]);
+
+            // Créer l'abonnement du recruteur
+            $recruiterSubscription = new RecruiterSubscription();
+            $recruiterSubscription->setRecruiter($recruiter)
+                ->setSubscription($this->getReference($data['subscriptionReference']))
+                ->setStartDate(new DateTimeImmutable())
+                ->setEndDate(new DateTimeImmutable('+30 days'))
+                ->setIsActive(true)
+                ->setPaymentStatus('completed')
+                ->setRemainingJobOffers(null)
+                ->setCancelled(false)
+                ->setAutoRenew(true);
 
             $manager->persist($recruiter);
+            $manager->persist($recruiterSubscription);
             $this->addReference(self::RECRUITER_REFERENCE_PREFIX . $index, $recruiter);
         }
 
@@ -52,26 +67,50 @@ class RecruiterFixtures extends Fixture implements DependentFixtureInterface
     {
         return [
             [
-                'email' => 'recruteur1@example.com',
+                'email' => 'recruteur1@exemple.fr',
                 'firstName' => 'Jean',
                 'lastName' => 'Dupont',
-                'companyName' => 'Tech Solutions',
-                'companyDescription' => 'Une entreprise innovante dans le domaine de la tech',
-                'city' => 'Paris',
-                'bio' => 'Passionné par le recrutement tech',
-                'jobTitle' => 'Talent Acquisition Manager'
+                'companyName' => 'Alpine F1 Team',
+                'companyDescription' => 'Écurie de Formule 1 basée à Enstone (UK) et Viry-Châtillon, représentant les couleurs françaises en F1',
+                'city' => 'Viry-Châtillon',
+                'subscriptionReference' => 'subscription-business'
             ],
             [
-                'email' => 'recruteur2@example.com',
+                'email' => 'recruteur2@exemple.fr',
                 'firstName' => 'Marie',
-                'lastName' => 'Martin',
-                'companyName' => 'Digital Agency',
-                'companyDescription' => 'Agence digitale spécialisée dans le web',
-                'city' => 'Lyon',
-                'bio' => 'Expert en recrutement digital',
-                'jobTitle' => 'HR Manager'
+                'lastName' => 'Laurent',
+                'companyName' => 'Toyota Gazoo Racing',
+                'companyDescription' => 'Division compétition de Toyota, multiple vainqueur des 24h du Mans',
+                'city' => 'Le Mans',
+                'subscriptionReference' => 'subscription-premium'
             ],
-            // Ajoutez d'autres recruteurs selon vos besoins
+            [
+                'email' => 'recruteur3@exemple.fr',
+                'firstName' => 'Pierre',
+                'lastName' => 'Martin',
+                'companyName' => 'ORECA',
+                'companyDescription' => 'Constructeur et préparateur français de voitures de course',
+                'city' => 'Magny-Cours',
+                'subscriptionReference' => 'subscription-basic'
+            ],
+            [
+                'email' => 'recruteur4@exemple.fr',
+                'firstName' => 'Thomas',
+                'lastName' => 'Schmidt',
+                'companyName' => 'Porsche Motorsport',
+                'companyDescription' => 'Division sport automobile de Porsche, active en Endurance et en Formule E',
+                'city' => 'Stuttgart',
+                'subscriptionReference' => 'subscription-premium'
+            ],
+            [
+                'email' => 'recruteur5@exemple.fr',
+                'firstName' => 'Eva',
+                'lastName' => 'Novotná',
+                'companyName' => 'Praga Racing',
+                'companyDescription' => 'Constructeur de voitures de course et de karts de compétition',
+                'city' => 'Prague',
+                'subscriptionReference' => 'subscription-business'
+            ]
         ];
     }
-} 
+}

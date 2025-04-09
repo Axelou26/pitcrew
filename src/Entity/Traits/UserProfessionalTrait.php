@@ -14,7 +14,7 @@ use App\Entity\RecruiterSubscription;
 
 trait UserProfessionalTrait
 {
-    #[ORM\OneToMany(mappedBy: 'user', targetEntity: JobOffer::class, cascade: ['persist', 'remove'])]
+    #[ORM\OneToMany(mappedBy: 'recruiter', targetEntity: JobOffer::class, cascade: ['persist', 'remove'])]
     protected Collection $jobOffers;
 
     #[ORM\OneToMany(mappedBy: 'applicant', targetEntity: JobApplication::class, orphanRemoval: true)]
@@ -27,7 +27,7 @@ trait UserProfessionalTrait
     private Collection $applicantInterviews;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Education::class, orphanRemoval: true)]
-    private Collection $educationCollection;
+    private Collection $education;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: WorkExperience::class, orphanRemoval: true)]
     private Collection $workExperiences;
@@ -41,7 +41,7 @@ trait UserProfessionalTrait
         $this->applications = new ArrayCollection();
         $this->recruiterInterviews = new ArrayCollection();
         $this->applicantInterviews = new ArrayCollection();
-        $this->educationCollection = new ArrayCollection();
+        $this->education = new ArrayCollection();
         $this->workExperiences = new ArrayCollection();
         $this->subscriptions = new ArrayCollection();
     }
@@ -66,9 +66,9 @@ trait UserProfessionalTrait
         return $this->applicantInterviews;
     }
 
-    public function getEducationCollection(): Collection
+    public function getEducation(): Collection
     {
-        return $this->educationCollection;
+        return $this->education;
     }
 
     public function getWorkExperiences(): Collection
@@ -80,4 +80,23 @@ trait UserProfessionalTrait
     {
         return $this->subscriptions;
     }
-} 
+
+    public function addEducation(Education $education): static
+    {
+        if (!$this->education->contains($education)) {
+            $this->education->add($education);
+            $education->setUser($this);
+        }
+        return $this;
+    }
+
+    public function removeEducation(Education $education): static
+    {
+        if ($this->education->removeElement($education)) {
+            if ($education->getUser() === $this) {
+                $education->setUser(null);
+            }
+        }
+        return $this;
+    }
+}

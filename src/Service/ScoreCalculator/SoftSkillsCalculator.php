@@ -25,7 +25,7 @@ class SoftSkillsCalculator extends BaseScoreCalculator
         }
 
         $matchResult = $this->findMatchingSoftSkills($candidateSoftSkills, $jobSoftSkills);
-        
+
         return [
             'score' => $this->calculateWeightedScore($matchResult['score'], $matchResult['maxScore'], self::WEIGHT),
             'maxScore' => $this->calculateMaxWeightedScore($matchResult['maxScore'], self::WEIGHT),
@@ -113,4 +113,4 @@ class SoftSkillsCalculator extends BaseScoreCalculator
             'category' => 'Soft skills'
         ];
     }
-} 
+}

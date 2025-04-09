@@ -48,4 +48,4 @@ final class Version20250407163500 extends AbstractMigration
     {
         $this->addSql('DROP TABLE user');
     }
-} 
+}

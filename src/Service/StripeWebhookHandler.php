@@ -71,7 +71,7 @@ class StripeWebhookHandler
         $invoice = $data['object'];
         $subId = $invoice['subscription'];
         $customerId = $invoice['customer'];
-        
+
         $user = $this->findUserByStripeId($customerId);
         if (!$user) {
             return;
@@ -98,7 +98,7 @@ class StripeWebhookHandler
     {
         $stripeSub = $data['object'];
         $subId = $stripeSub['id'];
-        
+
         $sub = $this->recruiterSubRepo->findOneBy(['stripeSubscriptionId' => $subId]);
         if (!$sub) {
             return;
@@ -117,7 +117,7 @@ class StripeWebhookHandler
     {
         $paymentIntent = $data['object'];
         $customerId = $paymentIntent['customer'];
-        
+
         $user = $this->findUserByStripeId($customerId);
         if ($user) {
             $this->emailService->sendPaymentFailedNotification($user);
@@ -128,4 +128,4 @@ class StripeWebhookHandler
     {
         return $this->userRepository->findOneBy(['stripeCustomerId' => $stripeCustomerId]);
     }
-} 
+}

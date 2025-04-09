@@ -33,7 +33,7 @@ class LocationScoreCalculator extends BaseScoreCalculator
 
         $score = 3;
         $details[] = 'Compatibilité de localisation moyenne';
-        
+
         return $this->createResult($score, $details);
     }
 
@@ -51,4 +51,4 @@ class LocationScoreCalculator extends BaseScoreCalculator
             'category' => 'Localisation'
         ];
     }
-} 
+}

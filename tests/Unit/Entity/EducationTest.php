@@ -63,4 +63,4 @@ class EducationTest extends TestCase
 
         $this->assertSame($this->education, $returnedEducation);
     }
-} 
+}

@@ -197,4 +197,4 @@ trait JobOfferDetailsTrait
         $this->isPublished = $isPublished;
         return $this;
     }
-} 
+}

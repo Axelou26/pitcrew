@@ -37,6 +37,7 @@ class SubscriptionController extends AbstractController
 
         return $this->render('subscription/plans.html.twig', [
             'subscriptions' => $subscriptions,
+            'active_subscription' => $this->recruiterSubRepo->findActiveSubscription($this->getUser()),
             'stripe_public_key' => $this->params->get('stripe_public_key'),
             'is_test_mode' => $this->stripeService->isTestMode(),
             'is_offline_mode' => $this->stripeService->isOfflineMode()
@@ -84,7 +85,7 @@ class SubscriptionController extends AbstractController
             );
 
             $this->addFlash('success', $result['message']);
-            
+
             // Nettoyer la session
             $session->remove('pending_subscription_id');
             $session->remove('is_subscription_change');
@@ -100,7 +101,7 @@ class SubscriptionController extends AbstractController
     public function manage(): Response
     {
         return $this->render('subscription/manage.html.twig', [
-            'active_subscription' => $this->recruiterSubRepo->findActiveByUser($this->getUser()),
+            'active_subscription' => $this->recruiterSubRepo->findActiveSubscription($this->getUser()),
             'subscription_history' => $this->recruiterSubRepo->findByUser($this->getUser()),
             'available_subscriptions' => $this->subscriptionRepo->findBy(['isActive' => true], ['price' => 'ASC']),
             'stripe_public_key' => $this->params->get('stripe_public_key'),
@@ -138,7 +139,7 @@ class SubscriptionController extends AbstractController
                 $request->getContent(),
                 $request->headers->get('Stripe-Signature')
             );
-            
+
             $webhookHandler->handleEvent($event);
             return new Response('Webhook Handled', 200);
         } catch (\Exception $e) {

@@ -31,7 +31,7 @@ class UserRegistrationTest extends WebTestCase
             'user_type_form[userType]' => 'ROLE_POSTULANT'
         ]);
         $this->client->submit($form);
-        
+
         // 3. Suivre la redirection vers le formulaire d'inscription
         $this->assertResponseRedirects('/register/details');
         $crawler = $this->client->followRedirect();
@@ -49,14 +49,14 @@ class UserRegistrationTest extends WebTestCase
         ]);
 
         $this->client->submit($form);
-        
+
         // 5. Vérifier la redirection
         $this->assertResponseRedirects('/email-verification-sent');
 
         // 6. Vérification en base de données
         $userRepository = $this->entityManager->getRepository(User::class);
         $user = $userRepository->findOneByEmail('nouveau@example.com');
-        
+
         $this->assertNotNull($user);
         $this->assertFalse($user->isVerified());
         $this->assertEquals('John', $user->getFirstName());
@@ -69,13 +69,13 @@ class UserRegistrationTest extends WebTestCase
         // 1. Visite de la page d'inscription
         $crawler = $this->client->request('GET', '/register');
         $this->assertResponseIsSuccessful();
-        
+
         // 2. Sélection du type d'utilisateur
         $form = $crawler->filter('form[name="user_type_form"]')->form([
             'user_type_form[userType]' => 'ROLE_POSTULANT'
         ]);
         $this->client->submit($form);
-        
+
         // 3. Suivre la redirection vers le formulaire d'inscription
         $this->assertResponseRedirects('/register/details');
         $crawler = $this->client->followRedirect();
@@ -93,18 +93,18 @@ class UserRegistrationTest extends WebTestCase
         ]);
 
         $crawler = $this->client->submit($form);
-        
+
         // 5. Vérification des erreurs
         $this->assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
-        
+
         $errors = $crawler->filter('.invalid-feedback');
         $this->assertGreaterThan(0, $errors->count(), 'Aucun message d\'erreur trouvé');
-        
+
         // Récupérer tous les messages d'erreur
         $errorMessages = $errors->each(function ($node) {
             return trim($node->text());
         });
-        
+
         // Vérifier la présence de chaque message d'erreur
         $expectedErrors = [
             'Le prénom est obligatoire',
@@ -115,7 +115,7 @@ class UserRegistrationTest extends WebTestCase
             'Le mot de passe doit contenir au moins 8 caractères',
             'Vous devez accepter les conditions d\'utilisation'
         ];
-        
+
         foreach ($expectedErrors as $expectedError) {
             $this->assertTrue(in_array($expectedError, $errorMessages), "Le message d'erreur '$expectedError' n'a pas été trouvé");
         }
@@ -144,13 +144,13 @@ class UserRegistrationTest extends WebTestCase
             // 1. Visite de la page d'inscription
             $crawler = $this->client->request('GET', '/register');
             $this->assertResponseIsSuccessful();
-            
+
             // 2. Sélection du type d'utilisateur
             $form = $crawler->filter('form[name="user_type_form"]')->form([
                 'user_type_form[userType]' => 'ROLE_POSTULANT'
             ]);
             $this->client->submit($form);
-            
+
             // 3. Suivre la redirection vers le formulaire d'inscription
             $this->assertResponseRedirects('/register/details');
             $crawler = $this->client->followRedirect();
@@ -168,7 +168,7 @@ class UserRegistrationTest extends WebTestCase
             ]);
 
             $crawler = $this->client->submit($form);
-            
+
             // 5. Vérification des erreurs
             $this->assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
             $this->assertSelectorExists('.invalid-feedback');
@@ -179,22 +179,22 @@ class UserRegistrationTest extends WebTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
-        
+
         // Nettoyage de la base de données après les tests
         $user = $this->entityManager->getRepository(User::class)->findOneBy(['email' => 'nouveau@example.com']);
-        
+
         if ($user) {
             // Supprimer d'abord les relations d'amitié
             $this->entityManager->createQuery('DELETE FROM App\Entity\Friendship f WHERE f.requester = :user OR f.addressee = :user')
                 ->setParameter('user', $user)
                 ->execute();
-            
+
             // Puis supprimer l'utilisateur
             $this->entityManager->remove($user);
             $this->entityManager->flush();
         }
-        
+
         $this->entityManager->close();
         $this->entityManager = null;
     }
-} 
+}

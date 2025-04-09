@@ -28,7 +28,7 @@ class GlobalVariablesSubscriber implements EventSubscriberInterface
         $pendingRequestsCount = 0;
 
         if ($user) {
-            $pendingRequestsCount = count($this->friendshipRepository->findPendingRequestsReceived($user));
+            $pendingRequestsCount = count($this->friendshipRepository->findByPendingRequestsReceived($user));
         }
 
         $this->twig->addGlobal('pending_friend_requests_count', $pendingRequestsCount);

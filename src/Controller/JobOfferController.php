@@ -18,6 +18,17 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/job-offers')]
 class JobOfferController extends AbstractController
 {
+    private JobOfferRepository $jobOfferRepository;
+    private EntityManagerInterface $entityManager;
+
+    public function __construct(
+        JobOfferRepository $jobOfferRepository,
+        EntityManagerInterface $entityManager
+    ) {
+        $this->jobOfferRepository = $jobOfferRepository;
+        $this->entityManager = $entityManager;
+    }
+
     #[Route('', name: 'app_job_offer_index', methods: ['GET'])]
     public function index(Request $request, JobOfferRepository $jobOfferRepository): Response
     {
@@ -63,14 +74,12 @@ class JobOfferController extends AbstractController
 
     #[Route('/new', name: 'app_job_offer_new', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_RECRUTEUR')]
-    #[IsGranted('CREATE_JOB_OFFER')]
+    #[IsGranted('post_job_offer')]
     public function new(
         Request $request,
-        EntityManagerInterface $entityManager,
         SubscriptionService $subscriptionService,
         FileUploader $fileUploader
     ): Response {
-
         $jobOffer = new JobOffer();
         $jobOffer->setRecruiter($this->getUser());
 
@@ -103,8 +112,8 @@ class JobOfferController extends AbstractController
             // Décrémenter le nombre d'offres restantes si l'abonnement est limité
             $subscriptionService->decrementRemainingJobOffers($this->getUser());
 
-            $entityManager->persist($jobOffer);
-            $entityManager->flush();
+            $this->entityManager->persist($jobOffer);
+            $this->entityManager->flush();
 
             $this->addFlash('success', 'Votre offre d\'emploi a été créée avec succès !');
             return $this->redirectToRoute('app_job_offer_index', [], Response::HTTP_SEE_OTHER);
@@ -125,8 +134,12 @@ class JobOfferController extends AbstractController
             throw $this->createNotFoundException('Offre d\'emploi non trouvée');
         }
 
+        // Récupérer les offres similaires
+        $similarOffers = $this->jobOfferRepository->findSimilarOffers($jobOffer);
+
         return $this->render('job_offer/show.html.twig', [
-            'jobOffer' => $jobOffer
+            'jobOffer' => $jobOffer,
+            'similarOffers' => $similarOffers
         ]);
     }
 
@@ -173,7 +186,7 @@ class JobOfferController extends AbstractController
             throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à supprimer cette offre');
         }
 
-        if ($this->isCsrfTokenValid('delete'.$offerId, $request->request->get('_token'))) {
+        if ($this->isCsrfTokenValid('delete' . $offerId, $request->request->get('_token'))) {
             $this->entityManager->remove($jobOffer);
             $this->entityManager->flush();
             $this->addFlash('success', 'Offre d\'emploi supprimée avec succès');

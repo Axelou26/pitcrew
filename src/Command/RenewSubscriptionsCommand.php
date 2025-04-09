@@ -122,7 +122,6 @@ class RenewSubscriptionsCommand extends Command
 
                     $renewedCount++;
                     $ioStyle->text('<info>Abonnement renouvelé avec succès</info>');
-
                 } catch (\Exception $e) {
                     $ioStyle->error(sprintf(
                         'Erreur lors du renouvellement de l\'abonnement #%d : %s',

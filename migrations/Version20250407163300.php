@@ -31,4 +31,4 @@ final class Version20250407163300 extends AbstractMigration
     {
         $this->addSql('DROP TABLE post');
     }
-} 
+}

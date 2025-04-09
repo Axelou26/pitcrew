@@ -31,7 +31,7 @@ function fixLineLength($file, $maxLength = 120)
                 $indent = strlen($matches[1]);
                 $funcDecl = $matches[1] . ($matches[2] ? $matches[2] . ' ' : '') . 'function ' . trim(explode('(', $matches[0])[1]);
                 $params = array_map('trim', explode(',', $matches[3]));
-                
+
                 if (count($params) > 1) {
                     $newLine = $funcDecl . "(\n";
                     foreach ($params as $j => $param) {
@@ -51,7 +51,7 @@ function fixLineLength($file, $maxLength = 120)
             if (preg_match('/^(\s*)(if|elseif)\s*\((.*)\)/', $line, $matches)) {
                 $indent = strlen($matches[1]);
                 $conditions = explode('&&', $matches[3]);
-                
+
                 if (count($conditions) > 1 || strlen($line) > $maxLength) {
                     $newLine = $matches[1] . $matches[2] . " (\n";
                     foreach ($conditions as $j => $condition) {
@@ -72,22 +72,22 @@ function fixLineLength($file, $maxLength = 120)
             if (preg_match('/^(\s*).*?(\'|")(.*?)(\2)/', $line, $matches)) {
                 $indent = strlen($matches[1]);
                 $string = $matches[3];
-                
+
                 if (strlen($string) > $maxLength - $indent - 10) {
                     $words = explode(' ', $string);
                     $newLine = $matches[1] . $matches[2];
                     $currentLine = '';
-                    
+
                     foreach ($words as $word) {
                         if (strlen($currentLine . $word) > $maxLength - $indent - 10) {
-                            $newLine .= $currentLine . "' .\n" . 
+                            $newLine .= $currentLine . "' .\n" .
                                       str_repeat(' ', $indent + 4) . "'";
                             $currentLine = $word . ' ';
                         } else {
                             $currentLine .= $word . ' ';
                         }
                     }
-                    
+
                     $newLine .= $currentLine . $matches[2];
                     $lines[$i] = $newLine;
                     $modified = true;
@@ -100,7 +100,7 @@ function fixLineLength($file, $maxLength = 120)
                 $indent = strlen($matches[1]);
                 $arrayName = $matches[2];
                 $items = array_map('trim', explode(',', $matches[3]));
-                
+
                 if (count($items) > 1 || strlen($line) > $maxLength) {
                     $newLine = $matches[1] . $arrayName . "[\n";
                     foreach ($items as $j => $item) {
@@ -142,4 +142,4 @@ foreach ($files as $file) {
     }
 }
 
-echo "\nFixed $fixedFiles files!\n"; 
+echo "\nFixed $fixedFiles files!\n";

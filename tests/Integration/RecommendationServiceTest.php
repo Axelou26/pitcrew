@@ -20,7 +20,7 @@ class RecommendationServiceTest extends KernelTestCase
         $this->entityManager = $kernel->getContainer()
             ->get('doctrine')
             ->getManager();
-        
+
         $this->recommendationService = $kernel->getContainer()
             ->get(RecommendationService::class);
     }
@@ -52,7 +52,7 @@ class RecommendationServiceTest extends KernelTestCase
 
         // Tester la recommandation
         $recommendedPosts = $this->recommendationService->getRecommendedPosts($user, 5);
-        
+
         $this->assertIsArray($recommendedPosts);
         $this->assertLessThanOrEqual(5, count($recommendedPosts));
         $this->assertContains($post, $recommendedPosts);
@@ -81,7 +81,7 @@ class RecommendationServiceTest extends KernelTestCase
 
         // Tester les suggestions
         $suggestedUsers = $this->recommendationService->getSuggestedUsers($user1, 5);
-        
+
         $this->assertIsArray($suggestedUsers);
         $this->assertLessThanOrEqual(5, count($suggestedUsers));
         $this->assertContains($user2, $suggestedUsers);
@@ -128,7 +128,7 @@ class RecommendationServiceTest extends KernelTestCase
 
         // Tester les hashtags tendance
         $trendingHashtags = $this->recommendationService->getTrendingHashtags(5);
-        
+
         $this->assertIsArray($trendingHashtags);
         $this->assertLessThanOrEqual(5, count($trendingHashtags));
         $this->assertContains($hashtag1, $trendingHashtags);
@@ -141,9 +141,9 @@ class RecommendationServiceTest extends KernelTestCase
     protected function tearDown(): void
     {
         parent::tearDown();
-        
+
         if ($this->entityManager) {
             $this->entityManager->close();
         }
     }
-} 
+}

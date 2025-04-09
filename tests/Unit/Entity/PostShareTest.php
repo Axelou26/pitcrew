@@ -19,7 +19,7 @@ class PostShareTest extends TestCase
         $this->postShare = new PostShare();
         $this->user = new User();
         $this->post = new Post();
-        
+
         $this->user->setEmail('user@example.com');
     }
 
@@ -77,4 +77,4 @@ class PostShareTest extends TestCase
 
         $this->assertSame($this->postShare, $returnedPostShare);
     }
-} 
+}

@@ -15,7 +15,7 @@
                         <div class="card shadow-sm hover-shadow-md mb-4 rounded-4 border-0">
                             <div class="card-body p-4">
                                 <div class="d-flex align-items-center gap-3 mb-3">
-                                    <a href="{{ path('app_user_profile', {'id': app.user.id}) }}" class="flex-shrink-0">
+                                    <a href="{{ path('app_profile_view', {'id': app.user.id}) }}" class="flex-shrink-0">
                                         {% if app.user.profilePicture %}
                                             <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}" 
                                                  class="rounded-circle border"
@@ -81,307 +81,26 @@
                         </div>
                     {% endif %}
                     
-                    {% if posts is empty %}
-                        <div class="card shadow-sm rounded-4 border-0 p-5 text-center">
-                            <i class="bi bi-newspaper display-1 text-primary opacity-50 mb-4"></i>
-                            <h3 class="h4 fw-bold mb-3">Aucune publication disponible</h3>
-                            <p class="text-muted mb-4">Soyez le premier à partager du contenu avec la communauté</p>
-                            {% if app.user %}
-                                <div class="text-center">
-                                    <a href="{{ path('app_post_new') }}" class="btn btn-primary btn-lg rounded-pill px-5">
-                                        <i class="bi bi-plus-lg me-2"></i>Créer une publication
-                                    </a>
-                                </div>
-                            {% endif %}
-                        </div>
-                    {% else %}
-                        {% for post in posts %}
-                            {% set isSharedPost = false %}
-                            {% set sharingUser = null %}
-                            {% set originalPost = post %}
-                            
-                            {% if post.shares|length > 0 %}
-                                {% for share in post.shares %}
-                                    {% if sharingUser is null and share.createdAt > post.createdAt %}
-                                        {% set isSharedPost = true %}
-                                        {% set sharingUser = share.user %}
-                                        {% set shareComment = share.comment %}
-                                    {% endif %}
-                                {% endfor %}
-                            {% endif %}
-                            
-                            <div class="card border-0 shadow-sm rounded-3 mb-3">
-                                <!-- Post Header -->
-                                <div class="card-header bg-white border-0 pt-3 pb-0">
-                                    <div class="d-flex">
-                                        <a href="{{ path('app_user_profile', {'id': isSharedPost ? sharingUser.id : post.author.id}) }}" class="me-2">
-                                            {% if isSharedPost and sharingUser.profilePicture %}
-                                                <img src="{{ asset('uploads/profile_pictures/' ~ sharingUser.profilePicture) }}" 
-                                                     class="rounded-circle border"
-                                                     alt="{{ sharingUser.fullName }}"
-                                                     style="width: 48px; height: 48px; object-fit: cover;">
-                                            {% elseif post.author.profilePicture %}
-                                                <img src="{{ asset('uploads/profile_pictures/' ~ post.author.profilePicture) }}" 
-                                                     class="rounded-circle border"
-                                                     alt="{{ post.author.fullName }}"
-                                                     style="width: 48px; height: 48px; object-fit: cover;">
-                                            {% else %}
-                                                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center border"
-                                                     style="width: 48px; height: 48px;">
-                                                    <i class="bi bi-person text-muted"></i>
-                                                </div>
-                                            {% endif %}
-                                        </a>
-                                        <div class="flex-grow-1">
-                                            <div class="d-flex align-items-center">
-                                                <a href="{{ path('app_user_profile', {'id': isSharedPost ? sharingUser.id : post.author.id}) }}" class="text-decoration-none text-dark">
-                                                    <h6 class="mb-0 fw-bold">{{ isSharedPost ? sharingUser.fullName : post.author.fullName }}</h6>
-                                                </a>
-                                                {% if isSharedPost %}
-                                                    <span class="text-muted ms-2">a republié ceci</span>
-                                                {% endif %}
-                                                <div class="dropdown ms-auto">
-                                                    <button class="btn btn-sm btn-light rounded-circle" type="button" data-bs-toggle="dropdown">
-                                                        <i class="bi bi-three-dots"></i>
-                                                    </button>
-                                                    <ul class="dropdown-menu dropdown-menu-end">
-                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-bookmark me-2"></i>Enregistrer</a></li>
-                                                        <li><a class="dropdown-item" href="#"><i class="bi bi-link-45deg me-2"></i>Copier le lien</a></li>
-                                                        {% if post.author == app.user %}
-                                                            <li><a class="dropdown-item" href="{{ path('app_post_edit', {'id': post.id}) }}"><i class="bi bi-pencil me-2"></i>Modifier</a></li>
-                                                        {% endif %}
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                            <div class="text-muted small">
-                                                {% if isSharedPost and sharingUser.company %}
-                                                    {{ sharingUser.company }} • 
-                                                {% elseif post.author.company %}
-                                                    {{ post.author.company }} • 
-                                                {% endif %}
-                                                {{ isSharedPost ? 'Republié le ' : '' }}{{ post.createdAt|date('d/m/Y à H:i') }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Post Content -->
-                                <div class="card-body pt-2">
-                                    {% if isSharedPost and shareComment is defined and shareComment %}
-                                        <p class="card-text mb-3">{{ shareComment }}</p>
-                                    {% endif %}
-                                    
-                                    {% if isSharedPost %}
-                                        <div class="border rounded p-3 mb-3">
-                                            <div class="d-flex mb-2">
-                                                <a href="{{ path('app_user_profile', {'id': post.author.id}) }}" class="me-2">
-                                                    {% if post.author.profilePicture %}
-                                                        <img src="{{ asset('uploads/profile_pictures/' ~ post.author.profilePicture) }}" 
-                                                             class="rounded-circle border"
-                                                             alt="{{ post.author.fullName }}"
-                                                             style="width: 32px; height: 32px; object-fit: cover;">
-                                                    {% else %}
-                                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center border"
-                                                             style="width: 32px; height: 32px;">
-                                                            <i class="bi bi-person text-muted small"></i>
-                                                        </div>
-                                                    {% endif %}
-                                                </a>
-                                                <div>
-                                                    <div class="d-flex align-items-center">
-                                                        <a href="{{ path('app_user_profile', {'id': post.author.id}) }}" class="text-decoration-none text-dark">
-                                                            <h6 class="mb-0 fw-bold">{{ post.author.fullName }}</h6>
-                                                        </a>
-                                                    </div>
-                                                    <div class="text-muted small">
-                                                        {% if post.author.company %}{{ post.author.company }} • {% endif %}
-                                                        {{ post.createdAt|date('d/m/Y à H:i') }}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                    {% endif %}
-                                    
-                                    {% if post.title %}
-                                        <h5 class="card-title fw-bold mb-2">{{ post.title }}</h5>
-                                    {% endif %}
-                                    
-                                    {% set content = post.content %}
-                                    
-                                    {# Traitement des mentions #}
-                                    {% set contentWithMentions = content %}
-                                    {% for mention in post.extractMentions %}
-                                        {% set mentionKey = '@' ~ mention %}
-                                        {% set mentionValue = '<a href="' ~ path('app_user_profile_by_username', {'username': mention}) ~ '" class="mention">@' ~ mention ~ '</a>' %}
-                                        {% set contentWithMentions = contentWithMentions|replace({(mentionKey): mentionValue}) %}
-                                    {% endfor %}
-                                    
-                                    {# Traitement des hashtags #}
-                                    {% set contentWithHashtags = contentWithMentions %}
-                                    {% for hashtag in post.extractHashtags %}
-                                        {% set hashtagKey = '#' ~ hashtag %}
-                                        {% set hashtagLink = '<a href="' ~ path('app_hashtag_show', {'name': hashtag}) ~ '" class="hashtag">#' ~ hashtag ~ '</a>' %}
-                                        {% set contentWithHashtags = contentWithHashtags|replace({(hashtagKey): hashtagLink}) %}
-                                    {% endfor %}
-                                    
-                                    <p class="card-text mb-3">
-                                        {% if contentWithHashtags|length > 280 %}
-                                            {{ contentWithHashtags|slice(0, 280)|raw }}...
-                                            <a href="{{ path('app_post_show', {'id': post.id}) }}" class="text-decoration-none">voir plus</a>
-                                        {% else %}
-                                            {{ contentWithHashtags|raw }}
-                                        {% endif %}
-                                    </p>
-                                    
-                                    {% if post.hashtags.count > 0 %}
-                                        <div class="hashtags-container mb-3">
-                                            {% for hashtag in post.hashtags %}
-                                                <a href="{{ path('app_hashtag_show', {'name': hashtag.name}) }}" class="badge bg-light text-dark text-decoration-none">
-                                                    {{ hashtag.formattedName }}
-                                                </a>
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                    
-                                    {% if post.image %}
-                                        <div class="post-image mb-3">
-                                            <img src="{{ asset('uploads/posts/' ~ post.image) }}" 
-                                                 class="img-fluid rounded-3" 
-                                                 alt="{{ post.title }}" 
-                                                 style="width: 100%; max-height: 500px; object-fit: cover;">
-                                        </div>
-                                    {% endif %}
-                                    
-                                    {% if isSharedPost %}
-                                        </div>
-                                    {% endif %}
-                                    
-                                    <!-- Post Stats -->
-                                    <div class="d-flex align-items-center text-muted small mb-2">
-                                        <div class="me-auto">
-                                            {% set totalReactions = post.likesCount %}
-                                            {% if totalReactions > 0 %}
-                                                <div class="d-flex align-items-center">
-                                                    <div class="reaction-icons">
-                                                        {% set displayedReactions = 0 %}
-                                                        {% for reactionType, count in post.reactionCounts %}
-                                                            {% if count > 0 and displayedReactions < 3 %}
-                                                                <span class="reaction-icon" title="{{ ('reactions.' ~ reactionType)|trans }}">
-                                                                    {% if reactionType == 'like' %}👍{% endif %}
-                                                                    {% if reactionType == 'congrats' %}👏{% endif %}
-                                                                    {% if reactionType == 'interesting' %}💡{% endif %}
-                                                                    {% if reactionType == 'support' %}❤️{% endif %}
-                                                                    {% if reactionType == 'encouraging' %}💪{% endif %}
-                                                                </span>
-                                                                {% set displayedReactions = displayedReactions + 1 %}
-                                                            {% endif %}
-                                                        {% endfor %}
-                                                    </div>
-                                                    <span class="ms-1">{{ totalReactions }}</span>
-                                                </div>
-                                            {% endif %}
-                                        </div>
-                                        {% if post.commentsCount > 0 %}
-                                            <span>{{ post.commentsCount }} commentaire{% if post.commentsCount > 1 %}s{% endif %}</span>
-                                        {% endif %}
-                                        {% if post.sharesCount > 0 %}
-                                            <span class="ms-2">{{ post.sharesCount }} republication{% if post.sharesCount > 1 %}s{% endif %}</span>
-                                        {% endif %}
-                                    </div>
-                                    
-                                    <!-- Post Actions -->
-                                    <div class="d-flex align-items-center gap-4 py-2">
-                                        <div class="reaction-container position-relative">
-                                            <button class="btn btn-light rounded-pill px-3 d-flex align-items-center gap-2 btn-like" data-post-id="{{ post.id }}">
-                                                <i class="bi {% if app.user and post.isLikedByUser(app.user) %}
-                                                    {% if post.getUserReaction(app.user) == 'like' %}bi-hand-thumbs-up-fill text-primary{% endif %}
-                                                    {% if post.getUserReaction(app.user) == 'congrats' %}bi-emoji-smile-fill text-warning{% endif %}
-                                                    {% if post.getUserReaction(app.user) == 'interesting' %}bi-lightbulb-fill text-warning{% endif %}
-                                                    {% if post.getUserReaction(app.user) == 'support' %}bi-heart-fill text-danger{% endif %}
-                                                    {% if post.getUserReaction(app.user) == 'encouraging' %}bi-hand-thumbs-up-fill text-success{% endif %}
-                                                    {% else %}bi-hand-thumbs-up{% endif %}"></i>
-                                                <span class="like-count">{{ post.likesCount }}</span>
-                                            </button>
-                                            <div class="reactions-box position-absolute bg-white shadow rounded-pill p-1 d-none">
-                                                <div class="d-flex gap-1">
-                                                    <button class="btn btn-reaction p-1" data-post-id="{{ post.id }}" data-reaction="like" title="J'aime">
-                                                        <i class="bi bi-hand-thumbs-up-fill text-primary fs-5"></i>
-                                                    </button>
-                                                    <button class="btn btn-reaction p-1" data-post-id="{{ post.id }}" data-reaction="congrats" title="Félicitations">
-                                                        <i class="bi bi-emoji-smile-fill text-warning fs-5"></i>
-                                                    </button>
-                                                    <button class="btn btn-reaction p-1" data-post-id="{{ post.id }}" data-reaction="interesting" title="Intéressant">
-                                                        <i class="bi bi-lightbulb-fill text-warning fs-5"></i>
-                                                    </button>
-                                                    <button class="btn btn-reaction p-1" data-post-id="{{ post.id }}" data-reaction="support" title="Soutien">
-                                                        <i class="bi bi-heart-fill text-danger fs-5"></i>
-                                                    </button>
-                                                    <button class="btn btn-reaction p-1" data-post-id="{{ post.id }}" data-reaction="encouraging" title="Encourageant">
-                                                        <i class="bi bi-hand-thumbs-up-fill text-success fs-5"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <button class="btn btn-light rounded-pill px-3 d-flex align-items-center gap-2 btn-comment" data-post-id="{{ post.id }}">
-                                            <i class="bi bi-chat"></i>
-                                            <span>{{ post.commentsCount }}</span>
-                                        </button>
-                                        <a href="{{ path('app_post_share', {'id': post.id}) }}" class="btn btn-light rounded-pill px-3 d-flex align-items-center gap-2">
-                                            <i class="bi bi-share"></i>
-                                            <span>Republier</span>
-                                        </a>
-                                    </div>
-                                    
-                                    <!-- Comments Section (hidden by default) -->
-                                    <div class="comments-section mt-3 p-3 bg-light rounded-4 d-none" id="comments-section-{{ post.id }}">
-                                        <h6 class="fw-bold mb-3">Commentaires</h6>
-                                        
-                                        <!-- Comments List -->
-                                        <div class="comments-list mb-3" id="comments-list-{{ post.id }}">
-                                            <!-- Comments will be loaded here via AJAX -->
-                                            <div class="text-center">
-                                                <div class="spinner-border spinner-border-sm text-primary" role="status">
-                                                    <span class="visually-hidden">Chargement...</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Comment Form -->
-                                        {% if app.user %}
-                                            <div class="d-flex gap-2 mt-3">
-                                                <div class="flex-shrink-0">
-                                                    {% if app.user.profilePicture %}
-                                                        <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}" 
-                                                             class="rounded-circle border"
-                                                             alt="{{ app.user.fullName }}"
-                                                             style="width: 32px; height: 32px; object-fit: cover;">
-                                                    {% else %}
-                                                        <div class="bg-white rounded-circle d-flex align-items-center justify-content-center border"
-                                                             style="width: 32px; height: 32px;">
-                                                            <i class="bi bi-person text-muted small"></i>
-                                                        </div>
-                                                    {% endif %}
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <form class="comment-form" data-post-id="{{ post.id }}">
-                                                        <div class="input-group">
-                                                            <input type="text" class="form-control form-control-sm rounded-pill-start" 
-                                                                   placeholder="Ajouter un commentaire..." required>
-                                                            <button type="submit" class="btn btn-primary btn-sm rounded-pill-end">
-                                                                <i class="bi bi-send"></i>
-                                        </button>
-                                                        </div>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        {% else %}
-                                            <p class="text-muted small">
-                                                <a href="{{ path('app_login') }}">Connectez-vous</a> pour commenter
-                                            </p>
-                                        {% endif %}
-                                    </div>
-                                </div>
+                    {% if app.user %}
+                        {% if recommendedPosts is empty %}
+                            <div class="alert alert-info">
+                                Aucune publication recommandée n'est disponible pour le moment.
                             </div>
-                        {% endfor %}
+                        {% else %}
+                            {% for post in recommendedPosts %}
+                                {{ include('post/_post_card.html.twig', { post: post }) }}
+                            {% endfor %}
+                        {% endif %}
+                    {% else %}
+                        {% if recentPosts is empty %}
+                            <div class="alert alert-info">
+                                Aucune publication n'est disponible pour le moment.
+                            </div>
+                        {% else %}
+                            {% for post in recentPosts %}
+                                {{ include('post/_post_card.html.twig', { post: post }) }}
+                            {% endfor %}
+                        {% endif %}
                     {% endif %}
                 </div>
                 
@@ -405,14 +124,14 @@
                                     {% endif %}
                                     <h5 class="fw-bold mb-1">{{ app.user.fullName }}</h5>
                                     <p class="text-muted mb-3">
-                                    {% if app.user.isRecruiter %}
-                                        {{ app.user.company }}
-                                    {% else %}
-                                        {{ app.user.jobTitle|default('') }}
-                                    {% endif %}
-                                </p>
-                                
-                                    <a href="{{ path('app_user_profile', {'id': app.user.id}) }}" class="btn btn-primary rounded-pill w-100">
+                                        {% if app.user.isRecruiter %}
+                                            {{ app.user.company }}
+                                        {% else %}
+                                            {{ app.user.jobTitle|default('') }}
+                                        {% endif %}
+                                    </p>
+                                    
+                                    <a href="{{ path('app_profile_view', {'id': app.user.id}) }}" class="btn btn-primary rounded-pill w-100">
                                         <i class="bi bi-person-circle me-2"></i>Voir mon profil
                                     </a>
                                 </div>
@@ -420,28 +139,36 @@
                                 <div class="row g-2 text-center">
                                     <div class="col-4">
                                         <div class="p-3 rounded-4 bg-light">
-                                            <h6 class="fw-bold mb-1">{{ app.user.posts|length }}</h6>
+                                            <h6 class="fw-bold mb-1">{{ user_stats.posts_count }}</h6>
                                             <small class="text-muted">Publications</small>
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="p-3 rounded-4 bg-light">
-                                            <h6 class="fw-bold mb-1">{{ app.user.getFriends()|length }}</h6>
+                                            <h6 class="fw-bold mb-1">{{ user_stats.friends_count }}</h6>
                                             <small class="text-muted">Amis</small>
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="p-3 rounded-4 bg-light">
                                             <h6 class="fw-bold mb-1">
-                                                {% if app.user.isRecruiter %}
-                                                    {{ app.user.jobOffers|default([])|length }}
+                                                {% if app.user %}
+                                                    {% if app.user.isRecruiter %}
+                                                        {{ user_stats.job_offers_count }}
+                                                    {% else %}
+                                                        {{ user_stats.posts_count }}
+                                                    {% endif %}
                                                 {% else %}
-                                                    {{ app.user.posts|length }}
+                                                    0
                                                 {% endif %}
                                             </h6>
                                             <small class="text-muted">
-                                                {% if app.user.isRecruiter %}
-                                                    Offres
+                                                {% if app.user %}
+                                                    {% if app.user.isRecruiter %}
+                                                        Offres
+                                                    {% else %}
+                                                        Publications
+                                                    {% endif %}
                                                 {% else %}
                                                     Publications
                                                 {% endif %}
@@ -454,14 +181,14 @@
                     {% endif %}
                     
                     <!-- Suggestions -->
-                    {% if suggestedUsers|length > 0 %}
+                    {% if suggestedUsers is defined and suggestedUsers|length > 0 %}
                         <div class="card shadow-sm rounded-4 border-0 mb-4">
                             <div class="card-body p-4">
                                 <h6 class="fw-bold mb-3">Personnes que vous pourriez connaître</h6>
                                 {% for user in suggestedUsers|slice(0, 5) %}
                                     <div class="d-flex align-items-center justify-content-between mb-3">
                                             <div class="d-flex align-items-center">
-                                            <a href="{{ path('app_user_profile', {'id': user.id}) }}" class="me-2">
+                                            <a href="{{ path('app_profile_view', {'id': user.id}) }}" class="me-2">
                                                 {% if user.profilePicture %}
                                                     <img src="{{ asset('uploads/profile_pictures/' ~ user.profilePicture) }}" 
                                                              class="rounded-circle border"
@@ -476,7 +203,7 @@
                                                 </a>
                                             <div>
                                                 <h6 class="mb-0 fw-semibold">
-                                                    <a href="{{ path('app_user_profile', {'id': user.id}) }}" class="text-dark text-decoration-none">
+                                                    <a href="{{ path('app_profile_view', {'id': user.id}) }}" class="text-dark text-decoration-none">
                                                         {{ user.fullName }}
                                                     </a>
                                                 </h6>
@@ -493,7 +220,7 @@
                                                     <i class="bi bi-hourglass-split me-1"></i>En attente
                                                         </button>
                                                     {% else %}
-                                                <a href="{{ path('app_friendship_send', {'id': user.id}) }}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                                <a href="{{ path('app_friendship_send', {'addresseeId': user.id}) }}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
                                                     <i class="bi bi-person-plus me-1"></i>Ajouter
                                                         </a>
                                                     {% endif %}
@@ -554,7 +281,7 @@
                                                 <i class="bi bi-briefcase text-primary"></i>
                                             </div>
                                             <div>
-                                                <h3 class="h5 fw-bold mb-0">{{ offers|length }}+</h3>
+                                                <h3 class="h5 fw-bold mb-0">{{ activeJobOffers|length }}+</h3>
                                                 <small class="text-white-50">Offres d'emploi</small>
                                             </div>
                                         </div>
@@ -567,7 +294,7 @@
                                                 <i class="bi bi-building text-primary"></i>
                                             </div>
                                             <div>
-                                                <h3 class="h5 fw-bold mb-0">{{ recruiters|length }}+</h3>
+                                                <h3 class="h5 fw-bold mb-0">{{ stats.recruiters|length }}+</h3>
                                                 <small class="text-white-50">Entreprises</small>
                                             </div>
                                         </div>
@@ -578,15 +305,15 @@
                                         <div class="d-flex align-items-center">
                                             <div class="rounded-circle bg-white p-2 me-3">
                                                 <i class="bi bi-people text-primary"></i>
-                        </div>
+                                            </div>
                                             <div>
-                                                <h3 class="h5 fw-bold mb-0">{{ applicants|length }}+</h3>
+                                                <h3 class="h5 fw-bold mb-0">{{ stats.applicants|length }}+</h3>
                                                 <small class="text-white-50">Candidats</small>
-                    </div>
-                </div>
-                        </div>
-                    </div>
-                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -898,313 +625,48 @@
                 function insertMention(username, userId, fullName) {
                     const initialText = currentMentionInput.value;
                     const cursorPos = getCaretPosition(currentMentionInput);
-                    const mention = `@${username} `;
+                    const mention = `@${username}@${fullName}`;
                     
-                    const newText = initialText.substring(0, atPos) + mention + initialText.substring(cursorPos);
-                    currentMentionInput.value = newText;
-                    
-                    // Placer le curseur après la mention insérée
-                    currentMentionInput.selectionStart = atPos + mention.length;
-                    currentMentionInput.selectionEnd = atPos + mention.length;
-                    currentMentionInput.focus();
-                    
-                    // Masquer les suggestions
-                    hideSuggestions();
+                    currentMentionInput.value = initialText.substring(0, cursorPos) + mention + initialText.substring(cursorPos);
                 }
                 
-                // Fonction pour rechercher des utilisateurs
-                function searchUsers(query) {
-                    if (query.length < 2) {
-                        hideSuggestions();
-                        return;
-                    }
+                // Fonction pour mettre à jour les suggestions
+                function updateSuggestions() {
+                    const text = currentMentionInput.value;
+                    const mentions = text.match(/@[^@]+@[^@]+/g) || [];
                     
-                    fetch(`/user/search?q=${encodeURIComponent(query)}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            renderSuggestions(data.users);
-                        })
-                        .catch(error => {
-                            console.error('Erreur lors de la recherche d\'utilisateurs:', error);
-                            hideSuggestions();
-                        });
-                }
-                
-                // Fonction pour afficher les suggestions
-                function renderSuggestions(users) {
-                    if (!users || users.length === 0) {
-                        hideSuggestions();
-                        return;
-                    }
-                    
-                    // Positionner les suggestions sous l'input actuel
-                    if (currentMentionInput) {
-                        const inputRect = currentMentionInput.getBoundingClientRect();
-                        mentionSuggestions.style.top = `${inputRect.bottom}px`;
-                        mentionSuggestions.style.left = `${inputRect.left}px`;
-                        mentionSuggestions.style.width = `${inputRect.width}px`;
-                    }
-                    
-                    // Vider et afficher la liste des suggestions
                     mentionSuggestions.innerHTML = '';
-                    mentionSuggestions.classList.add('show');
                     
-                    users.forEach(user => {
-                        const item = document.createElement('div');
-                        item.className = 'mention-item';
-                        
-                        let avatarHtml = '';
-                        if (user.profilePicture) {
-                            avatarHtml = `<img src="/uploads/profile_pictures/${user.profilePicture}" alt="${user.fullName}">`;
-                        } else {
-                            avatarHtml = `<div class="avatar-placeholder"><i class="bi bi-person-circle"></i></div>`;
-                        }
-                        
-                        item.innerHTML = `
-                            ${avatarHtml}
-                            <div>
-                                <div>${user.fullName}</div>
-                                <small class="text-muted">@${user.username}</small>
-                            </div>
-                        `;
-                        
+                    for (const mention of mentions) {
+                        const [username, fullName] = mention.split('@');
+                        const item = document.createElement('a');
+                        item.href = '#';
+                        item.className = 'dropdown-item mention-item';
+                        item.textContent = fullName;
+                        item.dataset.username = username;
+                        item.dataset.fullName = fullName;
                         item.addEventListener('click', function() {
-                            insertMention(user.username, user.id, user.fullName);
+                            currentMentionInput.value = '@' + this.dataset.username + '@' + this.dataset.fullName;
+                            quickPostForm.classList.add('d-none');
                         });
-                        
                         mentionSuggestions.appendChild(item);
-                    });
-                }
-                
-                // Fonction pour masquer les suggestions
-                function hideSuggestions() {
-                    mentionSuggestions.classList.remove('show');
-                    mentionSuggestions.innerHTML = '';
-                    isMentioning = false;
-                }
-                
-                // Ajout des gestionnaires d'événements à tous les inputs
-                mentionInputs.forEach(input => {
-                    input.addEventListener('input', function(e) {
-                        currentMentionInput = input;
-                        const cursorPos = getCaretPosition(input);
-                        const mentionData = extractMentionText(input.value, cursorPos);
-                        
-                        if (mentionData) {
-                            mentionText = mentionData.text;
-                            atPos = mentionData.startPos;
-                            isMentioning = true;
-                            searchUsers(mentionText);
-                        } else {
-                            hideSuggestions();
-                        }
-                    });
-                    
-                    input.addEventListener('keydown', function(e) {
-                        // Si la liste des suggestions est affichée
-                        if (mentionSuggestions.classList.contains('show')) {
-                            currentMentionInput = input;
-                            const items = mentionSuggestions.querySelectorAll('.mention-item');
-                            
-                            if (e.key === 'ArrowDown') {
-                                e.preventDefault();
-                                mentionPos = (mentionPos + 1) % items.length;
-                                highlightItem(items, mentionPos);
-                            } else if (e.key === 'ArrowUp') {
-                                e.preventDefault();
-                                mentionPos = (mentionPos - 1 + items.length) % items.length;
-                                highlightItem(items, mentionPos);
-                            } else if (e.key === 'Enter' && mentionPos >= 0) {
-                                e.preventDefault();
-                                items[mentionPos].click();
-                            } else if (e.key === 'Escape') {
-                                e.preventDefault();
-                                hideSuggestions();
-                            }
-                        }
-                    });
-                });
-                
-                // Fonction pour mettre en surbrillance un élément
-                function highlightItem(items, pos) {
-                    items.forEach((item, index) => {
-                        if (index === pos) {
-                            item.classList.add('active');
-                            } else {
-                            item.classList.remove('active');
-                        }
-                    });
-                }
-                
-                // Masquer les suggestions lorsque l'utilisateur clique en dehors
-                document.addEventListener('click', function(e) {
-                    let isClickInside = false;
-                    mentionInputs.forEach(input => {
-                        if (input.contains(e.target)) {
-                            isClickInside = true;
-                        }
-                    });
-                    
-                    if (!mentionSuggestions.contains(e.target) && !isClickInside) {
-                        hideSuggestions();
                     }
-                });
-            }
-            
-            // Gestion des commentaires
-            document.querySelectorAll('.btn-comment').forEach(button => {
-                button.addEventListener('click', function() {
-                    const postId = this.getAttribute('data-post-id');
-                    const commentsSection = document.getElementById('comments-section-' + postId);
                     
-                    if (commentsSection.classList.contains('d-none')) {
-                        // Show comments section
-                        commentsSection.classList.remove('d-none');
-                        
-                        // Load comments
-                        loadComments(postId);
+                    if (mentions.length > 0) {
+                        mentionSuggestions.classList.add('show');
                     } else {
-                        // Hide comments section
-                        commentsSection.classList.add('d-none');
-                    }
-                });
-            });
-            
-            // Fonction pour mettre à jour les statistiques du post
-            function updatePostStats(postId, type, count) {
-                // Mettre à jour le compteur dans la section des statistiques du post
-                const postCard = document.querySelector(`.btn-like[data-post-id="${postId}"]`).closest('.card');
-                
-                if (type === 'likes') {
-                    // Si le compteur est à 0, masquer complètement l'élément
-                    const reactionStats = postCard.querySelector('.reaction-icons');
-                    if (reactionStats) {
-                        const container = reactionStats.closest('.d-flex');
-                        if (parseInt(count) === 0) {
-                            container.style.display = 'none';
-                        } else {
-                            container.style.display = '';
-                            const countElement = container.querySelector('span.ms-1');
-                            if (countElement) {
-                                countElement.textContent = count;
-                            }
-                        }
-                    }
-                } else if (type === 'comments') {
-                    // Mettre à jour le compteur de commentaires dans les statistiques
-                    const commentStats = postCard.querySelector('.text-muted.small.mb-2 span:nth-child(2)');
-                    if (commentStats) {
-                        commentStats.textContent = count + ' commentaire' + (count > 1 ? 's' : '');
+                        mentionSuggestions.classList.remove('show');
                     }
                 }
-            }
-            
-            // Load comments via AJAX
-            function loadComments(postId) {
-                const commentsList = document.getElementById('comments-list-' + postId);
                 
-                fetch('/post/' + postId + '/comments', {
-                    method: 'GET',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    credentials: 'same-origin'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Clear loading spinner
-                        commentsList.innerHTML = '';
-                        
-                        if (data.comments.length === 0) {
-                            commentsList.innerHTML = '<p class="text-muted small">Aucun commentaire pour le moment.</p>';
-                            return;
-                        }
-                        
-                        // Render comments
-                        data.comments.forEach(comment => {
-                            const commentElement = document.createElement('div');
-                            commentElement.className = 'comment d-flex gap-2 mb-2';
-                            
-                            let profileImg = '';
-                            if (comment.authorProfilePicture) {
-                                profileImg = `<img src="/uploads/profile_pictures/${comment.authorProfilePicture}" 
-                                              class="rounded-circle border" 
-                                              alt="${comment.authorName}" 
-                                              style="width: 32px; height: 32px; object-fit: cover;">`;
-                            } else {
-                                profileImg = `<div class="bg-white rounded-circle d-flex align-items-center justify-content-center border"
-                                              style="width: 32px; height: 32px;">
-                                                <i class="bi bi-person text-muted small"></i>
-                                             </div>`;
-                            }
-                            
-                            commentElement.innerHTML = `
-                                <div class="flex-shrink-0">
-                                    ${profileImg}
-                                </div>
-                                <div class="flex-grow-1">
-                                    <div class="bg-white p-2 rounded-3">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <a href="/user/${comment.authorId}" class="fw-semibold text-decoration-none text-dark small">
-                                                ${comment.authorName}
-                                            </a>
-                                            <small class="text-muted">${comment.createdAt}</small>
-                                        </div>
-                                        <p class="mb-0 small">${comment.content}</p>
-                                    </div>
-                                </div>
-                            `;
-                            
-                            commentsList.appendChild(commentElement);
-                        });
-                    }
-                })
-                .catch(error => console.error('Error:', error));
+                // Initialisation
+                for (const mentionInput of mentionInputs) {
+                    mentionInput.addEventListener('input', function() {
+                        currentMentionInput = this;
+                        updateSuggestions();
+                    });
+                }
             }
-            
-            // Comment form submission
-            document.querySelectorAll('.comment-form').forEach(form => {
-                form.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    
-                    const postId = this.getAttribute('data-post-id');
-                    const input = this.querySelector('input');
-                    const content = input.value.trim();
-                    
-                    if (content === '') return;
-                    
-                    fetch('/post/' + postId + '/comment/add', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify({ content: content }),
-                        credentials: 'same-origin'
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Clear input
-                            input.value = '';
-                            
-                            // Reload comments
-                            loadComments(postId);
-                            
-                            // Update comment count
-                            const commentCountEl = document.querySelector(`.btn-comment[data-post-id="${postId}"] span`);
-                            if (commentCountEl) {
-                            commentCountEl.textContent = data.commentsCount;
-                            }
-                            
-                            // Mettre à jour le compteur dans les statistiques
-                            updatePostStats(postId, 'comments', data.commentsCount);
-                        }
-                    })
-                    .catch(error => console.error('Error:', error));
-                });
-            });
         });
     </script>
-{% endblock %} 
+{% endblock %}

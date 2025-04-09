@@ -20,7 +20,7 @@ class PostCommentTest extends TestCase
         $this->comment = new PostComment();
         $this->author = new User();
         $this->post = new Post();
-        
+
         $this->author->setEmail('user@example.com');
     }
 
@@ -77,7 +77,7 @@ class PostCommentTest extends TestCase
         // Test d'ajout de réponses
         $this->comment->addReply($reply1);
         $this->comment->addReply($reply2);
-        
+
         $this->assertCount(2, $this->comment->getReplies());
         $this->assertTrue($this->comment->getReplies()->contains($reply1));
         $this->assertTrue($this->comment->getReplies()->contains($reply2));
@@ -110,4 +110,4 @@ class PostCommentTest extends TestCase
 
         $this->assertSame($this->comment, $returnedComment);
     }
-} 
+}

@@ -32,12 +32,12 @@ class PostTest extends TestCase
         $this->assertInstanceOf(Collection::class, $this->post->getComments());
         $this->assertInstanceOf(Collection::class, $this->post->getShares());
         $this->assertInstanceOf(Collection::class, $this->post->getHashtags());
-        
+
         // Test des compteurs
         $this->assertEquals(0, $this->post->getLikesCount());
         $this->assertEquals(0, $this->post->getCommentsCount());
         $this->assertEquals(0, $this->post->getSharesCount());
-        
+
         // Test des tableaux
         $this->assertIsArray($this->post->getMentions());
         $this->assertEmpty($this->post->getMentions());
@@ -98,7 +98,7 @@ class PostTest extends TestCase
     public function testComments(): void
     {
         $comment = new PostComment();
-        
+
         // Test d'ajout d'un commentaire
         $this->post->addComment($comment);
         $this->assertTrue($this->post->getComments()->contains($comment));
@@ -118,7 +118,7 @@ class PostTest extends TestCase
     public function testShares(): void
     {
         $share = new PostShare();
-        
+
         // Test d'ajout d'un partage
         $this->post->addShare($share);
         $this->assertTrue($this->post->getShares()->contains($share));
@@ -169,4 +169,4 @@ class PostTest extends TestCase
 
         $this->assertSame($this->post, $returnedPost);
     }
-} 
+}

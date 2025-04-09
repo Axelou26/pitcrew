@@ -39,4 +39,4 @@ class PostCounterManager
     {
         $post->setSharesCounter($post->getShares()->count());
     }
-} 
+}

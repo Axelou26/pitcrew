@@ -21,8 +21,8 @@ class FriendshipController extends AbstractController
     {
         $user = $this->getUser();
 
-        $pendingRequests = $friendshipRepository->findPendingRequestsReceived($user);
-        $sentRequests = $friendshipRepository->findPendingRequestsSent($user);
+        $pendingRequests = $friendshipRepository->findByPendingRequestsReceived($user);
+        $sentRequests = $friendshipRepository->findByPendingRequestsSent($user);
         $friends = $friendshipRepository->findFriends($user);
 
         return $this->render('friendship/requests.html.twig', [
@@ -32,7 +32,7 @@ class FriendshipController extends AbstractController
         ]);
     }
 
-    #[Route('/send/{id}', name: 'app_friendship_send')]
+    #[Route('/send/{addresseeId}', name: 'app_friendship_send')]
     public function send(
         int $addresseeId,
         Request $request,

@@ -167,7 +167,12 @@
                                         {{ form_row(form.experience, {'attr': {'class': 'form-control'}}) }}
                                     </div>
                                     <div class="col-md-6">
-                                        {{ form_row(form.education, {'attr': {'class': 'form-control'}}) }}
+                                        {{ form_row(form.educationCollection, {
+                                            'attr': {
+                                                'class': 'education-collection',
+                                                'data-prototype': form_widget(form.educationCollection.vars.prototype)|e('html_attr')
+                                            }
+                                        }) }}
                                     </div>
                                 </div>
 

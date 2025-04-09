@@ -93,7 +93,7 @@ class SubscriptionManager
 
         $subscription->setCancelled(true)
             ->setAutoRenew(false);
-        
+
         $this->entityManager->flush();
         $this->emailService->sendSubscriptionCancellationConfirmation($user, $subscription);
     }
@@ -150,4 +150,4 @@ class SubscriptionManager
             ];
         }
     }
-} 
+}

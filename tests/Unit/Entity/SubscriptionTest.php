@@ -80,7 +80,7 @@ class SubscriptionTest extends TestCase
     public function testRecruiterSubscriptions(): void
     {
         $recruiterSubscription = new RecruiterSubscription();
-        
+
         // Test d'ajout
         $this->subscription->addRecruiterSubscription($recruiterSubscription);
         $this->assertTrue($this->subscription->getRecruiterSubscriptions()->contains($recruiterSubscription));
@@ -104,4 +104,4 @@ class SubscriptionTest extends TestCase
 
         $this->assertSame($this->subscription, $returnedSubscription);
     }
-} 
+}

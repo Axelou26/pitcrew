@@ -30,7 +30,7 @@ class HomepagePerformanceTest extends WebTestCase
         $startTime = microtime(true);
 
         $this->client->request('GET', '/');
-        
+
         $endTime = microtime(true);
         $loadTime = $endTime - $startTime;
 
@@ -44,7 +44,7 @@ class HomepagePerformanceTest extends WebTestCase
     public function testCachePerformance(): void
     {
         $cacheKey = 'homepage_data_anonymous';
-        
+
         // Premier appel (sans cache)
         $startTime = microtime(true);
         $this->client->request('GET', '/');
@@ -101,12 +101,12 @@ class HomepagePerformanceTest extends WebTestCase
     public function testMemoryUsage(): void
     {
         $startMemory = memory_get_usage();
-        
+
         $this->client->request('GET', '/');
-        
+
         $endMemory = memory_get_usage();
         $memoryUsed = $endMemory - $startMemory;
 
         $this->assertLessThan(10 * 1024 * 1024, $memoryUsed, 'La consommation de mémoire doit être inférieure à 10 Mo');
     }
-} 
+}

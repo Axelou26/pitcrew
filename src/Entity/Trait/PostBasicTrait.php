@@ -89,4 +89,4 @@ trait PostBasicTrait
         $this->author = $author;
         return $this;
     }
-} 
+}

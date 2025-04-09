@@ -19,7 +19,7 @@ class PostLikeTest extends TestCase
         $this->postLike = new PostLike();
         $this->user = new User();
         $this->post = new Post();
-        
+
         $this->user->setEmail('user@example.com');
     }
 
@@ -123,4 +123,4 @@ class PostLikeTest extends TestCase
 
         $this->assertSame($this->postLike, $returnedPostLike);
     }
-} 
+}

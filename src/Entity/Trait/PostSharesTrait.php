@@ -44,4 +44,4 @@ trait PostSharesTrait
     {
         $this->sharesCounter = $this->shares->count();
     }
-} 
+}

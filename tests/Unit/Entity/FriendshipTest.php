@@ -18,7 +18,7 @@ class FriendshipTest extends TestCase
         $this->friendship = new Friendship();
         $this->requester = new User();
         $this->addressee = new User();
-        
+
         $this->requester->setEmail('requester@example.com');
         $this->addressee->setEmail('addressee@example.com');
     }
@@ -102,4 +102,4 @@ class FriendshipTest extends TestCase
 
         $this->assertSame($this->friendship, $returnedFriendship);
     }
-} 
+}

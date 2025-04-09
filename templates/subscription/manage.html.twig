@@ -161,59 +161,59 @@
         <!-- Sidebar -->
         <div class="col-lg-3">
             {% include 'components/dashboard_sidebar.html.twig' with {active: 'subscription'} %}
-</div>
+        </div>
 
         <!-- Main Content -->
         <div class="col-lg-9">
             {% if is_test_mode is defined and is_test_mode %}
                 <div class="alert alert-warning mb-4 rounded-4 shadow-sm">
-                        <div class="d-flex align-items-center">
+                    <div class="d-flex align-items-center">
                         <i class="fas fa-flask fs-4 me-3"></i>
-                            <div>
+                        <div>
                             <strong class="d-block mb-1">Mode Test</strong>
                             <span>Le système de paiement est actuellement en mode test. Aucune transaction réelle ne sera effectuée.</span>
-                            </div>
                         </div>
                     </div>
-                {% endif %}
-                
+                </div>
+            {% endif %}
+            
             <h2 class="fw-bold mb-4">Gérer mon abonnement</h2>
             
-            {% if activeSubscription %}
+            {% if active_subscription %}
                 <!-- Current Subscription -->
                 <div class="row g-4 mb-4">
                     <div class="col-md-8">
-                <div class="subscription-card">
-                            <div class="card-header p-4 {% if activeSubscription.subscription.name == 'Premium' %}premium-gradient text-white{% elseif activeSubscription.subscription.name == 'Business' %}business-gradient{% else %}basic-gradient{% endif %}">
+                        <div class="subscription-card">
+                            <div class="card-header p-4 {% if active_subscription.subscription.name == 'Premium' %}premium-gradient text-white{% elseif active_subscription.subscription.name == 'Business' %}business-gradient{% else %}basic-gradient{% endif %}">
                                 <div class="d-flex align-items-center justify-content-between">
-                                    <h3 class="fw-bold mb-0">Abonnement {{ activeSubscription.subscription.name }}</h3>
-                            <div>
-                                        {% if activeSubscription.isActive %}
+                                    <h3 class="fw-bold mb-0">Abonnement {{ active_subscription.subscription.name }}</h3>
+                                    <div>
+                                        {% if active_subscription.isActive %}
                                             <span class="badge-custom badge-active">Actif</span>
                                         {% endif %}
                                         
-                                        {% if activeSubscription.paymentStatus == 'test_mode' %}
+                                        {% if active_subscription.paymentStatus == 'test_mode' %}
                                             <span class="badge-custom badge-warning ms-2">Test</span>
                                         {% endif %}
                                     </div>
                                 </div>
                                 <div class="mt-2">
-                                    {% if activeSubscription.subscription.price == 0 %}
+                                    {% if active_subscription.subscription.price == 0 %}
                                         <span class="fs-5 fw-bold">Gratuit</span>
                                     {% else %}
-                                        <span class="fs-5 fw-bold">{{ activeSubscription.subscription.price }}€</span>
-                                        <span class="fs-6 opacity-75">/ {{ (activeSubscription.subscription.duration / 30)|round }} mois</span>
+                                        <span class="fs-5 fw-bold">{{ active_subscription.subscription.price }}€</span>
+                                        <span class="fs-6 opacity-75">/ {{ (active_subscription.subscription.duration / 30)|round }} mois</span>
                                     {% endif %}
                                 </div>
                             </div>
                             
                             <div class="card-body p-4">
-                                {% if activeSubscription.isExpiringSoon %}
+                                {% if active_subscription.isExpiringSoon %}
                                     <div class="expiration-alert d-flex align-items-center mb-4">
                                         <i class="fas fa-exclamation-circle fs-4 me-3 text-warning"></i>
-                            <div>
+                                        <div>
                                             <strong class="d-block mb-1">Votre abonnement expire bientôt</strong>
-                                            <span>Il expirera le {{ activeSubscription.endDate|date('d/m/Y') }}. Pensez à le renouveler pour continuer à profiter de tous les avantages.</span>
+                                            <span>Il expirera le {{ active_subscription.endDate|date('d/m/Y') }}. Pensez à le renouveler pour continuer à profiter de tous les avantages.</span>
                                         </div>
                                     </div>
                                 {% endif %}
@@ -222,51 +222,51 @@
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <small class="text-muted d-block mb-1">Date de début</small>
-                                            <strong>{{ activeSubscription.startDate|date('d/m/Y') }}</strong>
-                            </div>
+                                            <strong>{{ active_subscription.startDate|date('d/m/Y') }}</strong>
+                                        </div>
                                         
                                         <div class="mb-3">
                                             <small class="text-muted d-block mb-1">Date d'expiration</small>
-                                            <strong>{{ activeSubscription.endDate|date('d/m/Y') }}</strong>
-                        </div>
+                                            <strong>{{ active_subscription.endDate|date('d/m/Y') }}</strong>
+                                        </div>
                                         
-                                        {% if activeSubscription.remainingJobOffers is not null %}
+                                        {% if active_subscription.remainingJobOffers is not null %}
                                             <div class="mb-3">
                                                 <small class="text-muted d-block mb-1">Offres d'emploi restantes</small>
-                                                <strong>{{ activeSubscription.remainingJobOffers }}</strong>
-                    </div>
+                                                <strong>{{ active_subscription.remainingJobOffers }}</strong>
+                                            </div>
                                         {% endif %}
                                         
                                         <div class="mb-3">
                                             <small class="text-muted d-block mb-1">Renouvellement automatique</small>
-                                            {% if activeSubscription.autoRenew %}
+                                            {% if active_subscription.autoRenew %}
                                                 <span class="text-success fw-bold">Activé</span>
                                             {% else %}
                                                 <span class="text-danger fw-bold">Désactivé</span>
                                             {% endif %}
-                            </div>
-                        </div>
+                                        </div>
+                                    </div>
                                     
                                     <div class="col-md-6">
                                         <small class="text-muted d-block mb-2">Caractéristiques incluses</small>
                                         <ul class="feature-list">
-                                            {% for feature in activeSubscription.subscription.features %}
+                                            {% for feature in active_subscription.subscription.features %}
                                                 <li><i class="fas fa-check-circle"></i> {{ feature }}</li>
                                             {% endfor %}
                                         </ul>
-                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
                             <div class="card-footer p-4 bg-light d-flex justify-content-between">
-                                <form method="post" action="{{ path('app_subscription_cancel_subscription', {'id': activeSubscription.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cet abonnement ?')">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ activeSubscription.id) }}">
+                                <form method="post" action="{{ path('app_subscription_cancel_subscription', {'subscriptionId': active_subscription.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cet abonnement ?')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ active_subscription.id) }}">
                                     <button type="submit" class="btn btn-outline-danger btn-rounded">
                                         <i class="fas fa-times-circle me-2"></i> Annuler l'abonnement
                                     </button>
                                 </form>
                                 
-                                <a href="{{ path('app_subscription_change') }}" class="btn btn-primary btn-rounded">
+                                <a href="{{ path('app_subscription_plans') }}" class="btn btn-primary btn-rounded">
                                     <i class="fas fa-exchange-alt me-2"></i> Changer d'abonnement
                                 </a>
                             </div>
@@ -287,27 +287,33 @@
                                         <span>Voir tous les plans</span>
                                     </a>
                                     
-                                    {% if activeSubscription.autoRenew %}
+                                    {% if active_subscription.autoRenew %}
                                         <a href="#" class="action-card p-3 d-flex align-items-center text-decoration-none text-dark" onclick="alert('Fonctionnalité en développement')">
                                             <div class="rounded-circle bg-danger bg-opacity-10 p-2 me-3">
                                                 <i class="fas fa-ban text-danger"></i>
                                             </div>
-                                            <span>Désactiver le renouvellement</span>
+                                            <div>
+                                                <strong class="d-block">Désactiver le renouvellement automatique</strong>
+                                                <small class="text-muted">Votre abonnement ne sera pas renouvelé automatiquement</small>
+                                            </div>
                                         </a>
                                     {% else %}
                                         <a href="#" class="action-card p-3 d-flex align-items-center text-decoration-none text-dark" onclick="alert('Fonctionnalité en développement')">
                                             <div class="rounded-circle bg-success bg-opacity-10 p-2 me-3">
                                                 <i class="fas fa-sync text-success"></i>
-                                </div>
+                                            </div>
                                             <span>Activer le renouvellement</span>
                                         </a>
                                     {% endif %}
                                     
-                                    <a href="{{ path('app_subscription_invoice', {'id': activeSubscription.id}) }}" class="action-card p-3 d-flex align-items-center text-decoration-none text-dark">
+                                    <a href="{{ path('app_subscription_invoice', {'subscriptionId': active_subscription.id}) }}" class="action-card p-3 d-flex align-items-center text-decoration-none text-dark">
                                         <div class="rounded-circle bg-info bg-opacity-10 p-2 me-3">
                                             <i class="fas fa-file-invoice text-info"></i>
-                                    </div>
-                                        <span>Voir la facture</span>
+                                        </div>
+                                        <div>
+                                            <strong class="d-block">Télécharger la facture</strong>
+                                            <small class="text-muted">Format PDF</small>
+                                        </div>
                                     </a>
                                 </div>
                                 
@@ -316,9 +322,9 @@
                                         <div class="d-flex align-items-center mb-3">
                                             <div class="rounded-circle bg-warning bg-opacity-10 p-2 me-2">
                                                 <i class="fas fa-flask text-warning"></i>
-                            </div>
+                                            </div>
                                             <h6 class="fw-bold mb-0">Options de test</h6>
-                    </div>
+                                        </div>
                                         <div class="d-grid gap-2">
                                             <a href="#" class="btn btn-outline-warning btn-sm" onclick="alert('Cette action simulerait un paiement échoué en mode test.')">
                                                 <i class="fas fa-times-circle me-2"></i> Simuler échec de paiement
@@ -329,7 +335,7 @@
                                         </div>
                                     </div>
                                 {% endif %}
-                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -343,13 +349,13 @@
                         <p class="text-muted mb-4">Découvrez nos autres offres d'abonnement et changez à tout moment :</p>
                         
                         <div class="row g-4">
-                            {% for subscription in availableSubscriptions %}
-                                {% if subscription.id != activeSubscription.subscription.id %}
+                            {% for subscription in available_subscriptions %}
+                                {% if subscription.id != active_subscription.subscription.id %}
                                     <div class="col-md-4">
                                         <div class="subscription-card h-100">
                                             <div class="card-header p-3 {% if subscription.name == 'Premium' %}premium-gradient text-white{% elseif subscription.name == 'Business' %}business-gradient{% else %}basic-gradient{% endif %}">
                                                 <h5 class="fw-bold mb-0">{{ subscription.name }}</h5>
-                </div>
+                                            </div>
                                             <div class="card-body p-3">
                                                 <div class="text-center mb-3">
                                                     {% if subscription.price == 0 %}
@@ -357,7 +363,7 @@
                                                     {% else %}
                                                         <span class="fs-4 fw-bold">{{ subscription.price }}€</span>
                                                         <span class="text-muted d-block">/ {{ (subscription.duration / 30)|round }} mois</span>
-            {% endif %}
+                                                    {% endif %}
                                                 </div>
                                                 
                                                 <ul class="feature-list">
@@ -365,25 +371,22 @@
                                                         <li><i class="fas fa-check-circle"></i> {{ feature }}</li>
                                                     {% endfor %}
                                                 </ul>
-                    </div>
+                                            </div>
                                             <div class="card-footer p-3 d-grid">
                                                 {% if is_test_mode is defined and is_test_mode %}
                                                     <a href="{{ path('app_subscription_select', {'id': subscription.id}) }}" class="btn btn-primary btn-rounded mb-2">
                                                         Changer pour ce plan
                                                     </a>
-                                                    <a href="{{ path('app_subscription_test_direct', {'id': subscription.id}) }}" class="btn btn-outline-warning btn-rounded">
-                                                        <i class="fas fa-flask me-2"></i> Test direct
-                                                    </a>
-                                        {% else %}
+                                                {% else %}
                                                     <a href="{{ path('app_subscription_select', {'id': subscription.id}) }}" class="btn btn-primary btn-rounded">
                                                         Changer pour ce plan
-                                            </a>
-                                        {% endif %}
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
                                 {% endif %}
-                        {% endfor %}
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
@@ -405,7 +408,7 @@
                     <h4 class="fw-bold mb-0">Historique de mes abonnements</h4>
                 </div>
                 <div class="card-body p-4">
-                    {% if subscriptionHistory|length > 0 %}
+                    {% if subscription_history|length > 0 %}
                         <div class="table-responsive">
                             <table class="table custom-table">
                                 <thead>
@@ -419,7 +422,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for subscription in subscriptionHistory %}
+                                    {% for subscription in subscription_history %}
                                         <tr>
                                             <td>
                                                 <span class="fw-medium">{{ subscription.subscription.name }}</span>
@@ -449,7 +452,7 @@
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <a href="{{ path('app_subscription_invoice', {'id': subscription.id}) }}" class="btn btn-sm btn-outline-primary rounded-pill">
+                                                <a href="{{ path('app_subscription_invoice', {'subscriptionId': subscription.id}) }}" class="btn btn-sm btn-outline-primary rounded-pill">
                                                     <i class="fas fa-file-invoice me-1"></i> Facture
                                                 </a>
                                             </td>

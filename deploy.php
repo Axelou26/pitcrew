@@ -1,4 +1,5 @@
 <?php
+
 namespace Deployer;
 
 require 'recipe/common.php';
@@ -87,4 +88,4 @@ task('deploy', [
     'database:migrate',
     'app:cache:clear',
     'deploy:publish'
-]); 
+]);

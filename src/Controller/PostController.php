@@ -18,23 +18,26 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use App\Service\PostService;
 use App\Service\PostInteractionService;
 use Psr\Log\LoggerInterface;
+use Doctrine\ORM\EntityManagerInterface;
 
+#[Route('/post')]
 class PostController extends AbstractController
 {
     public function __construct(
         private PostService $postService,
         private PostInteractionService $interactionService,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private EntityManagerInterface $entityManager
     ) {
     }
 
-    #[Route('/posts', name: 'app_post_index', methods: ['GET'])]
+    #[Route('s', name: 'app_post_index', methods: ['GET'])]
     public function index(): Response
     {
         return $this->redirectToRoute('app_dashboard_posts');
     }
 
-    #[Route('/post/new', name: 'app_post_new', methods: ['GET', 'POST'])]
+    #[Route('/new', name: 'app_post_new', methods: ['GET', 'POST'])]
     #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
     public function new(Request $request): Response
     {
@@ -66,7 +69,7 @@ class PostController extends AbstractController
         ]);
     }
 
-    #[Route('/post/{id}', name: 'app_post_show', methods: ['GET'], requirements: ['id' => '\d+'])]
+    #[Route('/{id}', name: 'app_post_show', methods: ['GET'], requirements: ['id' => '\d+'])]
     public function show(Post $post): Response
     {
         return $this->render('post/show.html.twig', [
@@ -74,7 +77,7 @@ class PostController extends AbstractController
         ]);
     }
 
-    #[Route('/post/{id}/edit', name: 'app_post_edit', methods: ['GET', 'POST'])]
+    #[Route('/{id}/edit', name: 'app_post_edit', methods: ['GET', 'POST'])]
     #[IsGranted('POST_EDIT', 'post')]
     public function edit(Request $request, Post $post): Response
     {
@@ -103,7 +106,7 @@ class PostController extends AbstractController
         ]);
     }
 
-    #[Route('/post/{id}/delete', name: 'app_post_delete', methods: ['POST'])]
+    #[Route('/{id}/delete', name: 'app_post_delete', methods: ['POST'])]
     #[IsGranted('POST_DELETE', 'post')]
     public function delete(Request $request, Post $post): Response
     {
@@ -115,7 +118,7 @@ class PostController extends AbstractController
         return $this->redirectToRoute('app_home');
     }
 
-    #[Route('/post/{id}/like', name: 'app_post_like')]
+    #[Route('/{id}/like', name: 'app_post_like')]
     #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
     public function like(Post $post): JsonResponse
     {
@@ -128,7 +131,7 @@ class PostController extends AbstractController
         ]);
     }
 
-    #[Route('/post/{id}/share', name: 'app_post_share')]
+    #[Route('/{id}/share', name: 'app_post_share')]
     #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
     public function share(Post $post, Request $request): JsonResponse
     {
@@ -168,5 +171,53 @@ class PostController extends AbstractController
         return $this->render('post/trending_hashtags.html.twig', [
             'hashtags' => $hashtags,
         ]);
+    }
+
+    #[Route('/quick-create', name: 'app_post_quick_create', methods: ['POST'])]
+    public function quickCreate(Request $request): JsonResponse
+    {
+        if (!$request->isXmlHttpRequest()) {
+            return new JsonResponse(['error' => 'Requête invalide'], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (!$this->getUser()) {
+            return new JsonResponse([
+                'error' => 'Vous devez être connecté pour publier un post',
+                'redirect' => $this->generateUrl('app_login')
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        try {
+            $content = $request->request->get('content');
+            if (empty($content)) {
+                $content = $request->request->get('fullContent');
+            }
+            
+            if (empty($content)) {
+                return new JsonResponse(['error' => 'Le contenu est obligatoire'], Response::HTTP_BAD_REQUEST);
+            }
+
+            $title = $request->request->get('title');
+            $imageFile = $request->files->get('image');
+
+            $post = $this->postService->createPost(
+                $content,
+                $this->getUser(),
+                $title ?: null,
+                $imageFile
+            );
+
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Publication créée avec succès',
+                'postId' => $post->getId()
+            ], Response::HTTP_CREATED);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de la création du post: ' . $e->getMessage());
+            return new JsonResponse([
+                'error' => 'Une erreur est survenue lors de la création de la publication'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

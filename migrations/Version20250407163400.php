@@ -53,4 +53,4 @@ final class Version20250407163400 extends AbstractMigration
         $this->addSql('ALTER TABLE job_application DROP FOREIGN KEY FK_C737C6883481D195');
         $this->addSql('DROP TABLE job_application');
     }
-} 
+}

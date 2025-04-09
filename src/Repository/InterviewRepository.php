@@ -78,13 +78,11 @@ class InterviewRepository extends ServiceEntityRepository
     ) {
         $queryBuilder = $this->createQueryBuilder('i')
             ->where('i.status = :status')
-            ->andWhere('i.scheduledAt < :endTime')
-            ->andWhere('i.scheduledAt >= :oneHourBeforeEndTime')
+            ->andWhere('i.scheduledAt >= :startTime')
             ->andWhere('i.scheduledAt < :endTime')
             ->setParameter('status', 'scheduled')
             ->setParameter('startTime', $startTime)
-            ->setParameter('endTime', $endTime)
-            ->setParameter('oneHourBeforeEndTime', (clone $endTime)->modify('-1 hour'));
+            ->setParameter('endTime', $endTime);
 
         $userRoleField = in_array('ROLE_RECRUTEUR', $user->getRoles()) ? 'recruiter' : 'applicant';
         $queryBuilder->andWhere('i.' . $userRoleField . ' = :user')

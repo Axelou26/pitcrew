@@ -44,4 +44,4 @@ trait PostCommentsTrait
     {
         $this->commentsCounter = $this->comments->count();
     }
-} 
+}

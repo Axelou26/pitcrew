@@ -25,9 +25,7 @@ class PostFixtures extends Fixture implements DependentFixtureInterface
             $post = new Post();
             $post->setTitle($data['title'])
                 ->setContent($data['content'])
-                ->setAuthor($this->getReference(ApplicantFixtures::APPLICANT_REFERENCE_PREFIX . ($index % 2)))
-                ->setCreatedAt(new DateTimeImmutable())
-                ->setIsPublished(true);
+                ->setAuthor($this->getReference(ApplicantFixtures::APPLICANT_REFERENCE_PREFIX . ($index % 2)));
 
             $manager->persist($post);
         }

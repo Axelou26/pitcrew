@@ -108,4 +108,4 @@ trait PostReactionsTrait
         $reaction = $this->getUserReaction($user);
         return $reaction ? $reaction->getReactionType() : null;
     }
-} 
+}

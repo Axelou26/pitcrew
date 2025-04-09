@@ -19,7 +19,7 @@ class RecruiterSubscriptionTest extends TestCase
         $this->recruiterSubscription = new RecruiterSubscription();
         $this->recruiter = new Recruiter();
         $this->subscription = new Subscription();
-        
+
         $this->recruiter->setEmail('recruiter@example.com');
         $this->subscription->setName('Premium');
     }
@@ -135,4 +135,4 @@ class RecruiterSubscriptionTest extends TestCase
 
         $this->assertSame($this->recruiterSubscription, $returnedSubscription);
     }
-} 
+}

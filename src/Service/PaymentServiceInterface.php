@@ -12,4 +12,4 @@ interface PaymentServiceInterface
     public function handlePaymentSucceeded(array $data): void;
     public function handlePaymentFailed(array $data): void;
     public function handleSubscriptionCancelled(array $data): void;
-} 
+}

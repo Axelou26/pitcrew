@@ -158,4 +158,12 @@ class ProfileController extends AbstractController
     {
         return $this->redirectToRoute('app_applicant_edit_experience');
     }
+
+    #[Route('/{id}', name: 'app_profile_view')]
+    public function view(User $user): Response
+    {
+        return $this->render('profile/view.html.twig', [
+            'user' => $user,
+        ]);
+    }
 }

@@ -5,12 +5,9 @@ declare(strict_types=1);
 namespace App\DataFixtures;
 
 use App\Entity\Applicant;
-use App\Entity\Education;
-use App\Entity\WorkExperience;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use DateTime;
 
 class ApplicantFixtures extends Fixture
 {
@@ -35,10 +32,11 @@ class ApplicantFixtures extends Fixture
                 ->setTechnicalSkills($data['technicalSkills'])
                 ->setSoftSkills($data['softSkills'])
                 ->setCity($data['city'])
-                ->setBio($data['bio']);
-
-            $this->addWorkExperience($applicant, $data['experience']);
-            $this->addEducation($applicant, $data['education']);
+                ->setBio($data['bio'])
+                ->setEducationHistory($this->parseEducation($data['education']))
+                ->setWorkExperience($this->parseWorkExperience($data['experience']))
+                ->setSkills($data['technicalSkills'])
+                ->setDocuments([]);
 
             $manager->persist($applicant);
             $this->addReference(self::APPLICANT_REFERENCE_PREFIX . $index, $applicant);
@@ -47,68 +45,109 @@ class ApplicantFixtures extends Fixture
         $manager->flush();
     }
 
-    private function addWorkExperience(Applicant $applicant, string $experienceText): void
+    private function parseWorkExperience(string $experienceText): array
     {
-        $experiences = explode("\n", $experienceText);
-        foreach ($experiences as $exp) {
-            if (preg_match('/(\d{4})-(\d{4})\s*:\s*(.+)/', $exp, $matches)) {
-                $experience = new WorkExperience();
-                $experience->setStartDate(new DateTime($matches[1] . '-01-01'))
-                    ->setEndDate(new DateTime($matches[2] . '-12-31'))
-                    ->setTitle($matches[3])
-                    ->setApplicant($applicant);
-
-                $applicant->addWorkExperience($experience);
+        $experiences = [];
+        $items = explode("\n", $experienceText);
+        foreach ($items as $exp) {
+            if (preg_match('/(\d{4})-(\d{4})\s*:\s*(.+?)\s*@\s*(.+)/', $exp, $matches)) {
+                $experiences[] = [
+                    'startDate' => $matches[1],
+                    'endDate' => $matches[2],
+                    'title' => $matches[3],
+                    'company' => $matches[4]
+                ];
             }
         }
+        return $experiences;
     }
 
-    private function addEducation(Applicant $applicant, string $educationText): void
+    private function parseEducation(string $educationText): array
     {
-        $educations = explode("\n", $educationText);
-        foreach ($educations as $edu) {
-            if (preg_match('/(\d{4})-(\d{4})\s*:\s*(.+)/', $edu, $matches)) {
-                $education = new Education();
-                $education->setStartDate(new DateTime($matches[1] . '-01-01'))
-                    ->setEndDate(new DateTime($matches[2] . '-12-31'))
-                    ->setDegree($matches[3])
-                    ->setApplicant($applicant);
-
-                $applicant->addEducation($education);
+        $education = [];
+        $items = explode("\n", $educationText);
+        foreach ($items as $edu) {
+            if (preg_match('/(\d{4})-(\d{4})\s*:\s*(.+?)\s*@\s*(.+?)\s*,\s*(.+)/', $edu, $matches)) {
+                $education[] = [
+                    'startDate' => $matches[1],
+                    'endDate' => $matches[2],
+                    'degree' => $matches[3],
+                    'institution' => $matches[4],
+                    'location' => $matches[5]
+                ];
             }
         }
+        return $education;
     }
 
     private function getApplicantData(): array
     {
         return [
             [
-                'email' => 'candidat1@example.com',
-                'firstName' => 'Pierre',
-                'lastName' => 'Durand',
-                'jobTitle' => 'Développeur Full Stack',
-                'description' => 'Développeur passionné avec 5 ans d\'expérience',
-                'technicalSkills' => ['PHP', 'Symfony', 'JavaScript', 'React'],
-                'softSkills' => ['Communication', 'Travail d\'équipe', 'Autonomie'],
-                'city' => 'Paris',
-                'bio' => 'Passionné par le développement web',
-                'experience' => "2018-2023 : Développeur Full Stack chez Tech Corp\n2016-2018 : Développeur PHP chez Web Agency",
-                'education' => "2014-2016 : Master en Informatique\n2011-2014 : Licence en Informatique"
+                'email' => 'candidat1@exemple.fr',
+                'firstName' => 'Marc',
+                'lastName' => 'Dubois',
+                'jobTitle' => 'Mécanicien de Compétition',
+                'description' => 'Mécanicien passionné avec 5 ans d\'expérience en sport automobile',
+                'technicalSkills' => ['Mécanique', 'Hydraulique', 'Électronique', 'Composite'],
+                'softSkills' => ['Travail d\'équipe', 'Résistance au stress', 'Rigueur'],
+                'city' => 'Le Mans',
+                'bio' => 'Passionné de sport automobile depuis mon plus jeune âge',
+                'experience' => "2018-2023 : Mécanicien F3 @ Prema Racing\n2016-2018 : Mécanicien F4 @ FFSA Academy",
+                'education' => "2014-2016 : BTS Maintenance des Véhicules @ Lycée Le Mans Sud, Le Mans\n2011-2014 : Bac Pro Maintenance des Véhicules @ Lycée Le Mans Sud, Le Mans"
             ],
             [
-                'email' => 'candidat2@example.com',
-                'firstName' => 'Sophie',
-                'lastName' => 'Dubois',
-                'jobTitle' => 'UX Designer',
-                'description' => 'Designer créative avec 3 ans d\'expérience',
-                'technicalSkills' => ['Figma', 'Adobe XD', 'Sketch', 'InVision'],
-                'softSkills' => ['Créativité', 'Empathie', 'Organisation'],
-                'city' => 'Lyon',
-                'bio' => 'Passionnée par l\'expérience utilisateur',
-                'experience' => "2020-2023 : UX Designer chez Design Studio\n2019-2020 : UI Designer chez Creative Agency",
-                'education' => "2017-2019 : Master en Design Numérique\n2014-2017 : Licence en Arts Appliqués"
+                'email' => 'candidat2@exemple.fr',
+                'firstName' => 'Julie',
+                'lastName' => 'Martin',
+                'jobTitle' => 'Ingénieure Aérodynamique',
+                'description' => 'Ingénieure spécialisée en aérodynamique avec expérience en soufflerie',
+                'technicalSkills' => ['CFD', 'MATLAB', 'Python', 'CAO'],
+                'softSkills' => ['Analyse', 'Innovation', 'Communication'],
+                'city' => 'Viry-Châtillon',
+                'bio' => 'Passionnée par l\'innovation en sport automobile',
+                'experience' => "2020-2023 : Ingénieure Aéro @ Dallara\n2019-2020 : Stagiaire Aéro @ Alpine F1",
+                'education' => "2017-2019 : Master en Aérodynamique @ ISAE-SUPAERO, Toulouse\n2014-2017 : Diplôme d'Ingénieur @ École Centrale Paris, Paris"
             ],
-            // Ajoutez d'autres candidats selon vos besoins
+            [
+                'email' => 'candidat3@exemple.fr',
+                'firstName' => 'Sophie',
+                'lastName' => 'Leroy',
+                'jobTitle' => 'Ingénieure Data',
+                'description' => 'Spécialiste en analyse de données de course et télémétrie',
+                'technicalSkills' => ['Python', 'R', 'SQL', 'Machine Learning', 'Télémétrie'],
+                'softSkills' => ['Analyse', 'Précision', 'Adaptabilité'],
+                'city' => 'Monaco',
+                'bio' => 'Passionnée par l\'analyse de données dans le sport automobile',
+                'experience' => "2019-2023 : Data Engineer @ Ferrari F1\n2017-2019 : Junior Data Analyst @ Mercedes F1",
+                'education' => "2015-2017 : Master en Science des Données @ École Polytechnique, Paris\n2012-2015 : Licence en Mathématiques @ Sorbonne Université, Paris"
+            ],
+            [
+                'email' => 'candidat4@exemple.fr',
+                'firstName' => 'Lucas',
+                'lastName' => 'Bernard',
+                'jobTitle' => 'Technicien Composite',
+                'description' => 'Expert en fabrication et réparation de pièces en matériaux composites',
+                'technicalSkills' => ['Composite', 'Moulage', 'CAO', 'Contrôle Qualité'],
+                'softSkills' => ['Minutie', 'Organisation', 'Autonomie'],
+                'city' => 'Magny-Cours',
+                'bio' => 'Spécialiste des matériaux composites dans le sport automobile',
+                'experience' => "2020-2023 : Technicien Composite @ Alpine F1\n2018-2020 : Technicien Composite @ ART Grand Prix",
+                'education' => "2016-2018 : BTS Composites et Plastiques @ ISPA, Alençon\n2013-2016 : Bac Pro Plastiques et Composites @ Lycée Technique, Alençon"
+            ],
+            [
+                'email' => 'candidat5@exemple.fr',
+                'firstName' => 'Emma',
+                'lastName' => 'Petit',
+                'jobTitle' => 'Ingénieure Performance',
+                'description' => 'Spécialiste en optimisation des performances et stratégie de course',
+                'technicalSkills' => ['MATLAB', 'Simulation', 'Analyse de données', 'Stratégie'],
+                'softSkills' => ['Leadership', 'Gestion du stress', 'Communication'],
+                'city' => 'Silverstone',
+                'bio' => 'Passionnée par la stratégie et la performance en course',
+                'experience' => "2021-2023 : Performance Engineer @ Aston Martin F1\n2019-2021 : Junior Engineer @ Williams Racing",
+                'education' => "2017-2019 : Master en Ingénierie Automobile @ Cranfield University, UK\n2014-2017 : Diplôme d'Ingénieur @ ESTACA, Paris"
+            ]
         ];
     }
-} 
+}

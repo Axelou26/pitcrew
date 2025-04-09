@@ -319,13 +319,13 @@
                                             </div>
                                             <div class="card-footer bg-white border-top-0 p-3">
                                                 <div class="card-actions">
-                                                    <a href="{{ path('app_job_offer_show', {'id': offer.id}) }}" class="btn btn-outline-primary flex-grow-1">
+                                                    <a href="{{ path('app_job_offer_show', {'offerId': offer.id}) }}" class="btn btn-sm btn-outline-primary">
                                                         <i class="bi bi-eye me-1"></i>Voir
                                                     </a>
-                                                    <a href="{{ path('app_job_offer_edit', {'id': offer.id}) }}" class="btn btn-outline-warning flex-grow-1">
+                                                    <a href="{{ path('app_job_offer_edit', {'offerId': offer.id}) }}" class="btn btn-sm btn-outline-secondary">
                                                         <i class="bi bi-pencil me-1"></i>Modifier
                                                     </a>
-                                                    <button type="button" class="btn btn-outline-danger flex-grow-1" data-bs-toggle="modal" data-bs-target="#deleteModal{{ offer.id }}">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ offer.id }}">
                                                         <i class="bi bi-trash me-1"></i>Supprimer
                                                     </button>
                                                 </div>
@@ -346,7 +346,7 @@
                                                 </div>
                                                 <div class="modal-footer">
                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                                                    <form method="post" action="{{ path('app_job_offer_delete', {'id': offer.id}) }}">
+                                                    <form method="post" action="{{ path('app_job_offer_delete', {'offerId': offer.id}) }}">
                                                         <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ offer.id) }}">
                                                         <button type="submit" class="btn btn-danger">
                                                             <i class="bi bi-trash me-1"></i>Supprimer

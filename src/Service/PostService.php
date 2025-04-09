@@ -8,59 +8,40 @@ use App\Entity\Post;
 use App\Entity\User;
 use App\Entity\Hashtag;
 use App\Repository\PostRepository;
-use Symfony\Component\Cache\Adapter\AdapterInterface;
+use Psr\Cache\CacheItemPoolInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Psr\Log\LoggerInterface;
 use InvalidArgumentException;
+use App\Service\Post\PostContentProcessor;
+use App\Service\Post\PostImageHandler;
+use App\Service\Post\PostSearchCriteria;
 
 class PostService
 {
     public function __construct(
         private readonly PostRepository $postRepository,
-        private readonly AdapterInterface $cache,
+        private readonly CacheItemPoolInterface $cache,
         private EntityManagerInterface $entityManager,
-        private ContentProcessorService $contentProcessor,
-        private FileUploader $fileUploader,
-        private NotificationService $notificationService,
+        private readonly PostContentProcessor $contentProcessor,
+        private readonly PostImageHandler $imageHandler,
+        private readonly NotificationService $notificationService,
         private LoggerInterface $logger
     ) {
     }
 
     /**
-     * Recherche les posts avec texte libre
      * @return array<Post>
      */
-    public function searchPosts(string $query): array
+    public function findPosts(PostSearchCriteria $criteria): array
     {
-        return $this->postRepository->search($query);
-    }
-
-    /**
-     * Récupère les posts à afficher dans le fil d'actualité d'un utilisateur
-     * @return array<Post>
-     */
-    public function getFeedPosts(User $user): array
-    {
-        return $this->postRepository->findPostsForFeed($user);
-    }
-
-    /**
-     * Trouve les posts récents qui contiennent des hashtags
-     * @return array<Post>
-     */
-    public function getRecentPostsWithHashtags(\DateTimeInterface $fromDate): array
-    {
-        return $this->postRepository->findRecentPostsWithHashtags($fromDate);
-    }
-
-    /**
-     * Recherche les posts mentionnant un utilisateur spécifique
-     * @return array<Post>
-     */
-    public function getPostsMentioningUser(User $user): array
-    {
-        return $this->postRepository->findByMentionedUser($user);
+        return match ($criteria->getType()) {
+            PostSearchCriteria::TYPE_SEARCH => $this->postRepository->search($criteria->getQuery()),
+            PostSearchCriteria::TYPE_FEED => $this->postRepository->findPostsForFeed($criteria->getUser()),
+            PostSearchCriteria::TYPE_HASHTAGS => $this->postRepository->findRecentPostsWithHashtags($criteria->getFromDate()),
+            PostSearchCriteria::TYPE_MENTIONS => $this->postRepository->findByMentionedUser($criteria->getUser()),
+            default => throw new \InvalidArgumentException('Type de recherche invalide'),
+        };
     }
 
     /**
@@ -90,14 +71,14 @@ class PostService
     {
         // Liste de mots inappropriés à vérifier
         $inappropriateWords = ['spam', 'offensive', 'inappropriate'];
-        
+
         $content = strtolower($content);
         foreach ($inappropriateWords as $word) {
             if (str_contains($content, $word)) {
                 return true;
             }
         }
-        
+
         return false;
     }
 
@@ -112,7 +93,7 @@ class PostService
 
         $summary = substr($content, 0, $maxLength);
         $lastSpace = strrpos($summary, ' ');
-        
+
         if ($lastSpace !== false) {
             $summary = substr($summary, 0, $lastSpace);
         }
@@ -148,27 +129,17 @@ class PostService
         ?string $title = null,
         ?UploadedFile $imageFile = null
     ): Post {
+        $this->contentProcessor->validate($content);
+
         $post = new Post();
         $post->setAuthor($author);
         $post->setContent(trim($content));
         $post->setTitle($title ? trim($title) : '');
 
         if ($imageFile) {
-            try {
-                $newFilename = $this->fileUploader->upload(
-                    $imageFile,
-                    'posts_directory'
-                );
-                $post->setImage($newFilename);
-            } catch (\Exception $e) {
-                $this->logger->error('Erreur lors du téléchargement de l\'image', [
-                    'error' => $e->getMessage()
-                ]);
-                throw $e;
-            }
+            $post->setImage($this->imageHandler->handleImageUpload($imageFile));
         }
 
-        $this->contentProcessor->processUpdatedPostContent($post);
         $this->entityManager->persist($post);
         $this->entityManager->flush();
 
@@ -183,26 +154,15 @@ class PostService
         ?string $title = null,
         ?UploadedFile $imageFile = null
     ): Post {
+        $this->contentProcessor->validate($content);
+
         $post->setContent(trim($content));
         $post->setTitle($title ? trim($title) : '');
 
         if ($imageFile) {
-            try {
-                $newFilename = $this->fileUploader->upload(
-                    $imageFile,
-                    'posts_directory',
-                    $post->getImage()
-                );
-                $post->setImage($newFilename);
-            } catch (\Exception $e) {
-                $this->logger->error('Erreur lors de la mise à jour de l\'image', [
-                    'error' => $e->getMessage()
-                ]);
-                throw $e;
-            }
+            $post->setImage($this->imageHandler->handleImageUpload($imageFile, $post->getImage()));
         }
 
-        $this->contentProcessor->processUpdatedPostContent($post);
         $this->entityManager->flush();
 
         return $post;
@@ -220,4 +180,4 @@ class PostService
             throw new InvalidArgumentException('Le contenu du post ne peut pas être vide');
         }
     }
-} 
+}

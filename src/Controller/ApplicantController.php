@@ -15,14 +15,42 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use App\Form\ApplicantSkillsType;
 use App\Form\ApplicantExperienceType;
+use App\Entity\Applicant;
+use App\Entity\User;
 
 #[Route('/applicant')]
-#[IsGranted('ROLE_POSTULANT')]
 class ApplicantController extends AbstractController
 {
+    /**
+     * Permet à un utilisateur de modifier ses compétences (techniques et soft skills)
+     */
+    #[Route('/edit-skills', name: 'app_applicant_edit_skills')]
+    public function editSkills(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            throw $this->createAccessDeniedException('Vous devez être connecté pour accéder à cette page.');
+        }
+
+        $form = $this->createForm(ApplicantSkillsType::class, $user);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $entityManager->flush();
+            $this->addFlash('success', 'Vos compétences ont été mises à jour avec succès.');
+            return $this->redirectToRoute('app_profile_index');
+        }
+
+        return $this->render('applicant/edit_skills.html.twig', [
+            'form' => $form->createView()
+        ]);
+    }
+
     #[Route('/dashboard', name: 'app_applicant_dashboard')]
     public function dashboard(EntityManagerInterface $entityManager): Response
     {
+        $this->ensureUserIsApplicant();
+
         $applicant = $this->getUser();
 
         // Récupérer les candidatures de l'utilisateur
@@ -152,27 +180,6 @@ class ApplicantController extends AbstractController
 
         return $this->render('applicant/applications.html.twig', [
             'applications' => $applications
-        ]);
-    }
-
-    /**
-     * Permet à un candidat de modifier ses compétences (techniques et soft skills)
-     */
-    #[Route('/edit-skills', name: 'app_applicant_edit_skills')]
-    public function editSkills(Request $request, EntityManagerInterface $entityManager): Response
-    {
-        $user = $this->getUser();
-        $form = $this->createForm(ApplicantSkillsType::class, $user);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->flush();
-            $this->addFlash('success', 'Vos compétences ont été mises à jour avec succès.');
-            return $this->redirectToRoute('app_profile_index');
-        }
-
-        return $this->render('applicant/edit_skills.html.twig', [
-            'form' => $form->createView()
         ]);
     }
 

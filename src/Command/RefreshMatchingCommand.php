@@ -56,13 +56,13 @@ class RefreshMatchingCommand extends Command
             $ioStyle->success('Les scores de matching ont été rafraîchis avec succès.');
             return Command::SUCCESS;
         }
-        
+
         if ($applicantId) {
             $this->processSpecificApplicant($ioStyle, (int)$applicantId, $limit, $dump);
             $ioStyle->success('Les scores de matching ont été rafraîchis avec succès.');
             return Command::SUCCESS;
         }
-        
+
         $this->processAllMatches($ioStyle, $limit, $dump);
         $ioStyle->success('Les scores de matching ont été rafraîchis avec succès.');
         return Command::SUCCESS;

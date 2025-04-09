@@ -1,3 +1,5 @@
+<?php
+
 namespace App\Controller;
 
 use App\Entity\Post;
@@ -47,14 +49,20 @@ class CommentController extends AbstractController
         $parentId = $data['parentId'] ?? null;
 
         if (!$content || trim($content) === '') {
-            return $this->json(['success' => false, 'error' => 'Le commentaire ne peut pas être vide'], 400);
+            return $this->json([
+                'success' => false,
+                'error' => 'Le commentaire ne peut pas être vide'
+            ], 400);
         }
 
         $parentComment = null;
         if ($parentId) {
             $parentComment = $this->commentRepository->find($parentId);
             if (!$parentComment) {
-                return $this->json(['success' => false, 'error' => 'Commentaire parent non trouvé'], 404);
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Commentaire parent non trouvé'
+                ], 404);
             }
         }
 
@@ -86,4 +94,4 @@ class CommentController extends AbstractController
             ], 500);
         }
     }
-} 
+}

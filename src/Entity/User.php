@@ -15,7 +15,7 @@ use App\Entity\Traits\UserProfileTrait;
 use App\Entity\Traits\UserSocialTrait;
 use App\Entity\Traits\UserDocumentsTrait;
 use App\Entity\Traits\UserProfessionalTrait;
-use App\Entity\Traits\UserPersonalTrait;
+use App\Entity\Traits\UserFriendshipTrait;
 use DateTimeImmutable;
 use DateTimeInterface;
 
@@ -34,7 +34,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     use UserSocialTrait;
     use UserDocumentsTrait;
     use UserProfessionalTrait;
-    use UserPersonalTrait;
+    use UserFriendshipTrait;
 
     public const ROLE_POSTULANT = 'ROLE_POSTULANT';
     public const ROLE_RECRUTEUR = 'ROLE_RECRUTEUR';
@@ -80,7 +80,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private Collection $applicantInterviews;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Education::class, orphanRemoval: true)]
-    private Collection $educationCollection;
+    private Collection $education;
 
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: WorkExperience::class, orphanRemoval: true)]
     private Collection $workExperiences;
@@ -98,7 +98,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->subscriptions = new ArrayCollection();
         $this->recruiterInterviews = new ArrayCollection();
         $this->applicantInterviews = new ArrayCollection();
-        $this->educationCollection = new ArrayCollection();
+        $this->education = new ArrayCollection();
         $this->workExperiences = new ArrayCollection();
         $this->skills = [];
         $this->documents = [];
@@ -234,9 +234,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->applicantInterviews;
     }
 
-    public function getEducationCollection(): Collection
+    public function getEducation(): Collection
     {
-        return $this->educationCollection;
+        return $this->education;
     }
 
     public function getWorkExperiences(): Collection

@@ -51,10 +51,10 @@ class SecurityTest extends WebTestCase
     public function testXssProtection(): void
     {
         $xssPayload = '<script>alert("XSS")</script>';
-        
+
         $this->client->request('GET', '/', ['search' => $xssPayload]);
         $response = $this->client->getResponse();
-        
+
         $this->assertStringNotContainsString($xssPayload, $response->getContent());
         $this->assertStringContainsString('&lt;script&gt;', $response->getContent());
     }
@@ -88,10 +88,10 @@ class SecurityTest extends WebTestCase
     public function testSqlInjectionProtection(): void
     {
         $sqlInjectionPayload = "' OR '1'='1";
-        
+
         $this->client->request('GET', '/search', ['q' => $sqlInjectionPayload]);
         $response = $this->client->getResponse();
-        
+
         $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
         $this->assertStringNotContainsString('SQL syntax', $response->getContent());
     }
@@ -103,7 +103,7 @@ class SecurityTest extends WebTestCase
     {
         $this->client->request('GET', '/login');
         $session = $this->client->getRequest()->getSession();
-        
+
         // Vérifier que la session est sécurisée
         $this->assertTrue($session->isStarted());
         $this->assertTrue(ini_get('session.cookie_httponly'));
@@ -118,11 +118,11 @@ class SecurityTest extends WebTestCase
     {
         $this->client->request('GET', '/');
         $response = $this->client->getResponse();
-        
+
         $this->assertTrue($response->headers->has('X-Frame-Options'));
         $this->assertTrue($response->headers->has('X-Content-Type-Options'));
         $this->assertTrue($response->headers->has('X-XSS-Protection'));
         $this->assertTrue($response->headers->has('Content-Security-Policy'));
         $this->assertTrue($response->headers->has('Strict-Transport-Security'));
     }
-} 
+}

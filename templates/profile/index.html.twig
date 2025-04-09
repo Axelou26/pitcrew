@@ -60,20 +60,20 @@
                 <div class="card mb-4">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="card-title">Expérience professionnelle</h5>
+                            <h5 class="fw-bold mb-0">Expérience professionnelle</h5>
                             <a href="{{ path('app_profile_edit_experience') }}" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-pencil me-1"></i> Modifier
                             </a>
                         </div>
                         
-                        {% if user.workExperience is not empty %}
+                        {% if user.workExperiences is not empty %}
                             <div class="timeline mb-4">
-                                {% for experience in user.workExperience %}
+                                {% for experience in user.workExperiences %}
                                     <div class="timeline-item">
                                         <div class="timeline-marker"></div>
                                         <div class="timeline-content">
                                             <h6 class="mb-1">{{ experience.title }} - {{ experience.company }}</h6>
-                                            <p class="text-muted small mb-1">
+                                            <p class="text-muted small">
                                                 {{ experience.startDate }} - {{ experience.endDate == 'present' ? 'Actuel' : experience.endDate }}
                                                 {% if experience.location %}
                                                     • {{ experience.location }}
@@ -86,6 +86,8 @@
                                     </div>
                                 {% endfor %}
                             </div>
+                        {% else %}
+                            <p class="card-text">Aucune expérience professionnelle renseignée.</p>
                         {% endif %}
                         
                         <p class="card-text">{{ user.experience|default('Aucune expérience renseignée.')|nl2br }}</p>
@@ -102,9 +104,9 @@
                             </a>
                         </div>
                         
-                        {% if user.educationHistory is not empty %}
+                        {% if user.educationCollection is not empty %}
                             <div class="timeline mb-4">
-                                {% for education in user.educationHistory %}
+                                {% for education in user.educationCollection %}
                                     <div class="timeline-item">
                                         <div class="timeline-marker"></div>
                                         <div class="timeline-content">
@@ -122,9 +124,9 @@
                                     </div>
                                 {% endfor %}
                             </div>
+                        {% else %}
+                            <p class="card-text">Aucune formation renseignée.</p>
                         {% endif %}
-                        
-                        <p class="card-text">{{ user.education|default('Aucune formation renseignée.')|nl2br }}</p>
                     </div>
                 </div>
 
@@ -137,14 +139,18 @@
                                 <i class="bi bi-pencil me-1"></i> Modifier
                             </a>
                         </div>
-                        {% if user.technicalSkills is empty %}
-                            <p class="card-text">Aucune compétence technique renseignée.</p>
+                        {% if user.isPostulant and user.technicalSkills is defined %}
+                            {% if user.technicalSkills is empty %}
+                                <p class="card-text">Aucune compétence technique renseignée.</p>
+                            {% else %}
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for skill in user.technicalSkills %}
+                                        <span class="badge bg-primary">{{ skill }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         {% else %}
-                            <div class="d-flex flex-wrap gap-2">
-                                {% for skill in user.technicalSkills %}
-                                    <span class="badge bg-primary">{{ skill }}</span>
-                                {% endfor %}
-                            </div>
+                            <p class="card-text">Les compétences techniques ne sont disponibles que pour les postulants.</p>
                         {% endif %}
                     </div>
                 </div>
@@ -158,14 +164,18 @@
                                 <i class="bi bi-pencil me-1"></i> Modifier
                             </a>
                         </div>
-                        {% if user.softSkills is empty %}
-                            <p class="card-text">Aucune soft skill renseignée.</p>
+                        {% if user.isPostulant and user.softSkills is defined %}
+                            {% if user.softSkills is empty %}
+                                <p class="card-text">Aucune soft skill renseignée.</p>
+                            {% else %}
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for skill in user.softSkills %}
+                                        <span class="badge bg-success">{{ skill }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         {% else %}
-                            <div class="d-flex flex-wrap gap-2">
-                                {% for skill in user.softSkills %}
-                                    <span class="badge bg-success">{{ skill }}</span>
-                                {% endfor %}
-                            </div>
+                            <p class="card-text">Les soft skills ne sont disponibles que pour les postulants.</p>
                         {% endif %}
                     </div>
                 </div>
@@ -219,7 +229,7 @@
                         {% else %}
                             <div class="list-group">
                                 {% for offer in user.jobOffers %}
-                                    <a href="{{ path('app_job_offer_show', {'id': offer.id}) }}" class="list-group-item list-group-item-action">
+                                    <a href="{{ path('app_job_offer_show', {'offerId': offer.id}) }}" class="list-group-item list-group-item-action">
                                         <div class="d-flex w-100 justify-content-between">
                                             <h6 class="mb-1">{{ offer.title }}</h6>
                                             <small class="text-muted">{{ offer.createdAt|ago }}</small>

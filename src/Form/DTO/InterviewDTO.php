@@ -66,4 +66,4 @@ class InterviewDTO
         $this->jobOfferId = $jobOfferId;
         return $this;
     }
-} 
+}

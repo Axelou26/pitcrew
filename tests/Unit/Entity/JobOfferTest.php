@@ -19,7 +19,7 @@ class JobOfferTest extends TestCase
         parent::setUp();
         $this->jobOffer = new JobOffer();
         $this->recruiter = new User();
-        
+
         $this->recruiter->setEmail('recruiter@example.com');
     }
 
@@ -70,7 +70,7 @@ class JobOfferTest extends TestCase
     public function testApplications(): void
     {
         $application = new JobApplication();
-        
+
         // Test d'ajout d'une candidature
         $this->jobOffer->addApplication($application);
         $this->assertTrue($this->jobOffer->getApplications()->contains($application));
@@ -102,7 +102,7 @@ class JobOfferTest extends TestCase
     public function testIsActive(): void
     {
         $this->assertTrue($this->jobOffer->getIsActive());
-        
+
         $this->jobOffer->setIsActive(false);
         $this->assertFalse($this->jobOffer->getIsActive());
     }
@@ -152,7 +152,7 @@ class JobOfferTest extends TestCase
     public function testInterviews(): void
     {
         $interview = new Interview();
-        
+
         // Test d'ajout
         $this->jobOffer->addInterview($interview);
         $this->assertTrue($this->jobOffer->getInterviews()->contains($interview));
@@ -173,4 +173,4 @@ class JobOfferTest extends TestCase
         $this->jobOffer->setImage($image);
         $this->assertEquals($image, $this->jobOffer->getImage());
     }
-} 
+}

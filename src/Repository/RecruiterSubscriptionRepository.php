@@ -98,4 +98,17 @@ class RecruiterSubscriptionRepository extends ServiceEntityRepository
 
         return $result > 0;
     }
+
+    /**
+     * Trouve tous les abonnements d'un recruteur
+     */
+    public function findByUser(User $recruiter): array
+    {
+        return $this->createQueryBuilder('rs')
+            ->andWhere('rs.recruiter = :recruiter')
+            ->setParameter('recruiter', $recruiter)
+            ->orderBy('rs.startDate', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

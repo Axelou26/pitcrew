@@ -17,7 +17,7 @@ class ExperienceScoreCalculator extends BaseScoreCalculator
     {
         $experiences = $applicant->getWorkExperience();
         $relevantExperiences = $this->findRelevantExperiences($experiences, $jobOffer);
-        
+
         $baseScore = $this->calculateBaseExperienceScore($relevantExperiences);
         $bonusScore = $this->calculateExperienceBonusScore($relevantExperiences, $jobOffer);
         $totalScore = min(100, $baseScore + $bonusScore);
@@ -151,4 +151,4 @@ class ExperienceScoreCalculator extends BaseScoreCalculator
 
         return array_values(array_unique($words));
     }
-} 
+}

@@ -389,6 +389,37 @@ class NotificationService
     }
 
     /**
+     * Notifie tous les utilisateurs mentionnés dans un post
+     */
+    public function notifyMentionedUsers(Post $post): void
+    {
+        try {
+            $mentions = $post->extractMentions();
+            if (empty($mentions)) {
+                return;
+            }
+
+            $userRepository = $this->entityManager->getRepository(User::class);
+            foreach ($mentions as $username) {
+                $user = $userRepository->findOneBy(['username' => $username]);
+                if ($user) {
+                    $this->notifyMention($post, $user);
+                }
+            }
+
+            $this->logger->info('Notifications envoyées aux utilisateurs mentionnés', [
+                'post_id' => $post->getId(),
+                'mentions_count' => count($mentions)
+            ]);
+        } catch (\Throwable $e) {
+            $this->logger->error('Erreur lors de l\'envoi des notifications de mentions', [
+                'error' => $e->getMessage(),
+                'post_id' => $post->getId()
+            ]);
+        }
+    }
+
+    /**
      * Marque toutes les notifications d'un utilisateur comme lues
      */
     public function markAllAsRead(User $user): void

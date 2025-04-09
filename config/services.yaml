@@ -17,14 +17,9 @@ services:
     _defaults:
         autowire: true
         autoconfigure: true
-        # Ces bindings ne sont plus nécessaires car ils sont maintenant accédés via ParameterBagInterface
-        # Les commentaires ci-dessous sont conservés pour référence future
-        # bind:
-        #    $stripePublicKey: '%stripe_public_key%'
-        #    $stripeSecretKey: '%stripe_secret_key%'
-        #    $stripeWebhookSecret: '%stripe_webhook_secret%'
-        #    $stripeOfflineMode: '%stripe_offline_mode%'
-        #    $appEnv: '%env(APP_ENV)%'
+        bind:
+            $kernelEnvironment: '%kernel.environment%'
+            $stripeSecretKey: '%stripe_secret_key%'
 
     App\:
         resource: '../src/'
@@ -52,7 +47,5 @@ services:
             $env: '%kernel.environment%'
 
     App\Validator\EmailValidator:
-        arguments:
-            $emailValidationService: '@App\Service\EmailValidationService'
         tags:
             - { name: validator.constraint_validator } 

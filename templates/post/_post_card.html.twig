@@ -1,0 +1,107 @@
+{% set isLiked = app.user ? post.isLikedByUser(app.user) : false %}
+
+<div class="card mb-4 post-card">
+    <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+            {% if post.author.profilePicture %}
+                <img src="{{ asset('uploads/profile_pictures/' ~ post.author.profilePicture) }}" 
+                     class="rounded-circle me-3" 
+                     alt="{{ post.author.fullName }}" 
+                     style="width: 50px; height: 50px; object-fit: cover;">
+            {% else %}
+                <div class="rounded-circle me-3 bg-secondary d-flex align-items-center justify-content-center text-white" 
+                     style="width: 50px; height: 50px;">
+                    {{ post.author.firstName|first|upper }}{{ post.author.lastName|first|upper }}
+                </div>
+            {% endif %}
+            <div>
+                <h5 class="card-title mb-0">
+                    <a href="{{ path('app_profile_view', {'id': post.author.id}) }}" class="text-decoration-none text-dark">
+                        {{ post.author.fullName }}
+                    </a>
+                </h5>
+                <small class="text-muted">{{ post.createdAt|date('d/m/Y H:i') }}</small>
+            </div>
+        </div>
+
+        {% if post.title %}
+            <h6 class="card-subtitle mb-2">{{ post.title }}</h6>
+        {% endif %}
+
+        <p class="card-text">{{ post.content }}</p>
+
+        {% if post.image %}
+            <img src="{{ asset('uploads/posts/' ~ post.image) }}" 
+                 class="img-fluid rounded mb-3" 
+                 alt="Image du post">
+        {% endif %}
+
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="btn-group">
+                <button type="button" 
+                        class="btn btn-sm {{ isLiked ? 'btn-primary' : 'btn-outline-primary' }} like-button" 
+                        data-post-id="{{ post.id }}"
+                        {% if not app.user %}disabled{% endif %}>
+                    <i class="bi bi-heart-fill"></i>
+                    <span class="likes-count">{{ post.likesCount }}</span>
+                </button>
+                <button type="button" 
+                        class="btn btn-sm btn-outline-secondary comment-button" 
+                        data-post-id="{{ post.id }}">
+                    <i class="bi bi-chat-dots"></i>
+                    <span class="comments-count">{{ post.commentsCount }}</span>
+                </button>
+                <button type="button" 
+                        class="btn btn-sm btn-outline-secondary share-button" 
+                        data-post-id="{{ post.id }}">
+                    <i class="bi bi-share"></i>
+                    <span class="shares-count">{{ post.sharesCount }}</span>
+                </button>
+            </div>
+        </div>
+
+        {# Section des commentaires (initialement cachée) #}
+        <div class="comments-section mt-3" id="comments-{{ post.id }}" style="display: none;">
+            <div class="comments-list">
+                {% for comment in post.comments %}
+                    <div class="comment mb-2">
+                        <div class="d-flex">
+                            {% if comment.author.profilePicture %}
+                                <img src="{{ asset('uploads/profile_pictures/' ~ comment.author.profilePicture) }}" 
+                                     class="rounded-circle me-2" 
+                                     alt="{{ comment.author.fullName }}" 
+                                     style="width: 30px; height: 30px; object-fit: cover;">
+                            {% else %}
+                                <div class="rounded-circle me-2 bg-secondary d-flex align-items-center justify-content-center text-white" 
+                                     style="width: 30px; height: 30px; font-size: 0.8em;">
+                                    {{ comment.author.firstName|first|upper }}{{ comment.author.lastName|first|upper }}
+                                </div>
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                <div class="bg-light rounded p-2">
+                                    <strong>{{ comment.author.fullName }}</strong>
+                                    <p class="mb-0">{{ comment.content }}</p>
+                                </div>
+                                <small class="text-muted">{{ comment.createdAt|date('d/m/Y H:i') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            {% if app.user %}
+                <form class="comment-form mt-3" data-post-id="{{ post.id }}">
+                    <div class="input-group">
+                        <input type="text" 
+                               class="form-control" 
+                               placeholder="Écrire un commentaire..." 
+                               required>
+                        <button class="btn btn-primary" type="submit">
+                            <i class="bi bi-send"></i>
+                        </button>
+                    </div>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</div> 

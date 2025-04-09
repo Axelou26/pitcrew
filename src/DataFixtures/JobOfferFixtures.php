@@ -12,6 +12,8 @@ use DateTimeImmutable;
 
 class JobOfferFixtures extends Fixture implements DependentFixtureInterface
 {
+    public const JOB_OFFER_REFERENCE_PREFIX = 'job_offer_';
+
     public function getDependencies(): array
     {
         return [
@@ -28,12 +30,16 @@ class JobOfferFixtures extends Fixture implements DependentFixtureInterface
                 ->setRequiredSkills($data['requiredSkills'])
                 ->setLocation($data['location'])
                 ->setIsRemote($data['isRemote'])
-                ->setSalaryRange($data['salaryRange'])
-                ->setRecruiter($this->getReference(RecruiterFixtures::RECRUITER_REFERENCE_PREFIX . ($index % 2)))
-                ->setCreatedAt(new DateTimeImmutable())
+                ->setSalary($data['salary'])
+                ->setContractType($data['contractType'])
+                ->setExperienceLevel($data['experienceLevel'])
+                ->setCompany($data['company'])
+                ->setIsPublished(true)
+                ->setRecruiter($this->getReference(RecruiterFixtures::RECRUITER_REFERENCE_PREFIX . ($index % 5)))
                 ->setIsActive(true);
 
             $manager->persist($jobOffer);
+            $this->addReference(self::JOB_OFFER_REFERENCE_PREFIX . $index, $jobOffer);
         }
 
         $manager->flush();
@@ -43,30 +49,60 @@ class JobOfferFixtures extends Fixture implements DependentFixtureInterface
     {
         return [
             [
-                'title' => 'Développeur Full Stack PHP/Symfony',
-                'description' => 'Nous recherchons un développeur Full Stack expérimenté pour rejoindre notre équipe',
-                'requiredSkills' => ['PHP', 'Symfony', 'JavaScript', 'React', 'MySQL'],
-                'location' => 'Paris',
-                'isRemote' => true,
-                'salaryRange' => '45k€-60k€'
-            ],
-            [
-                'title' => 'UX/UI Designer Senior',
-                'description' => 'Nous recherchons un designer expérimenté pour concevoir nos interfaces utilisateur',
-                'requiredSkills' => ['Figma', 'Adobe XD', 'Sketch', 'Design System'],
-                'location' => 'Lyon',
+                'title' => 'Mécanicien F1',
+                'description' => 'Nous recherchons un mécanicien expérimenté pour rejoindre notre équipe de Formule 1. Vous serez responsable de la maintenance et de la préparation des voitures de course.',
+                'requiredSkills' => ['Mécanique de compétition', 'Hydraulique', 'Électronique embarquée', 'Composite'],
+                'location' => 'Viry-Châtillon',
                 'isRemote' => false,
-                'salaryRange' => '40k€-55k€'
+                'salary' => 40000,
+                'contractType' => 'CDI',
+                'experienceLevel' => 'Confirmé',
+                'company' => 'Alpine F1 Team'
             ],
             [
-                'title' => 'DevOps Engineer',
-                'description' => 'Nous recherchons un ingénieur DevOps pour gérer notre infrastructure cloud',
-                'requiredSkills' => ['AWS', 'Docker', 'Kubernetes', 'CI/CD'],
-                'location' => 'Paris',
-                'isRemote' => true,
-                'salaryRange' => '50k€-70k€'
+                'title' => 'Ingénieur Performance',
+                'description' => 'Rejoignez notre équipe en tant qu\'ingénieur performance pour analyser et optimiser les performances de nos voitures de course.',
+                'requiredSkills' => ['Analyse de données', 'Simulation', 'MATLAB', 'CFD'],
+                'location' => 'Le Mans',
+                'isRemote' => false,
+                'salary' => 55000,
+                'contractType' => 'CDI',
+                'experienceLevel' => 'Senior',
+                'company' => 'Toyota Gazoo Racing'
             ],
-            // Ajoutez d'autres offres d'emploi selon vos besoins
+            [
+                'title' => 'Chef d\'équipe Stand',
+                'description' => 'Nous cherchons un chef d\'équipe expérimenté pour gérer notre équipe de stand pendant les courses.',
+                'requiredSkills' => ['Management d\'équipe', 'Gestion de stress', 'Stratégie de course', 'Réglementation FIA'],
+                'location' => 'Magny-Cours',
+                'isRemote' => false,
+                'salary' => 48000,
+                'contractType' => 'CDI',
+                'experienceLevel' => 'Expert',
+                'company' => 'ORECA'
+            ],
+            [
+                'title' => 'Technicien Composite',
+                'description' => 'Expert en matériaux composites pour la fabrication et la réparation de pièces de carrosserie.',
+                'requiredSkills' => ['Fibre de carbone', 'Moulage', 'Réparation composite', 'Contrôle qualité'],
+                'location' => 'Stuttgart',
+                'isRemote' => false,
+                'salary' => 35000,
+                'contractType' => 'CDI',
+                'experienceLevel' => 'Intermédiaire',
+                'company' => 'Porsche Motorsport'
+            ],
+            [
+                'title' => 'Ingénieur Télémétrie',
+                'description' => 'Analyse en temps réel des données de course et optimisation des performances.',
+                'requiredSkills' => ['Télémétrie', 'Python', 'Analyse de données', 'Communication radio'],
+                'location' => 'Prague',
+                'isRemote' => true,
+                'salary' => 58000,
+                'contractType' => 'CDI',
+                'experienceLevel' => 'Senior',
+                'company' => 'Praga Racing'
+            ]
         ];
     }
-} 
+}

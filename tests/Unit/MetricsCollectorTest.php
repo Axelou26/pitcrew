@@ -80,4 +80,4 @@ class MetricsCollectorTest extends TestCase
         $registry = $this->metricsCollector->getRegistry();
         $this->assertInstanceOf(CollectorRegistry::class, $registry);
     }
-} 
+}

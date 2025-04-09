@@ -29,7 +29,7 @@ trait PostQueryTrait
         $qb = $this->createQueryBuilder('p');
         $this->addStandardJoins($qb);
         $this->addOrderByDate($qb);
-        
+
         return $qb;
     }
-} 
+}

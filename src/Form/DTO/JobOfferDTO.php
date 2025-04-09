@@ -151,4 +151,4 @@ class JobOfferDTO
         $this->contactEmail = $contactEmail;
         return $this;
     }
-} 
+}
