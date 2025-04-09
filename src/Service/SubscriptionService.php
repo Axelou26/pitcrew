@@ -52,7 +52,7 @@ class SubscriptionService
     public function getActiveSubscription(User $user): ?RecruiterSubscription
     {
         $subscription = $this->recruiterSubRepo->findActiveSubscription($user);
-        
+
         if ($subscription && $subscription->getSubscription()) {
             // Normaliser le nom de l'abonnement pour correspondre aux constantes
             $name = strtolower($subscription->getSubscription()->getName());
@@ -64,7 +64,7 @@ class SubscriptionService
                 $subscription->getSubscription()->setName(SubscriptionFeatures::LEVEL_BASIC);
             }
         }
-        
+
         return $subscription;
     }
 

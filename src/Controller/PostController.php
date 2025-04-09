@@ -192,7 +192,7 @@ class PostController extends AbstractController
             if (empty($content)) {
                 $content = $request->request->get('fullContent');
             }
-            
+
             if (empty($content)) {
                 return new JsonResponse(['error' => 'Le contenu est obligatoire'], Response::HTTP_BAD_REQUEST);
             }
@@ -212,7 +212,6 @@ class PostController extends AbstractController
                 'message' => 'Publication créée avec succès',
                 'postId' => $post->getId()
             ], Response::HTTP_CREATED);
-
         } catch (\Exception $e) {
             $this->logger->error('Erreur lors de la création du post: ' . $e->getMessage());
             return new JsonResponse([
