@@ -87,7 +87,8 @@ class EmailValidationService
     private function validateDotAroundAt(string $email): ?string
     {
         $hasInvalidDot = strpos($email, '.@') !== false || strpos($email, '@.') !== false;
-        return $hasInvalidDot ? 'L\'adresse email ne peut pas avoir un point juste avant ou après le @' : null;
+        $message = 'L\'adresse email ne peut pas avoir un point juste avant ou après le @';
+        return $hasInvalidDot ? $message : null;
     }
 
     private function validateEndingDot(string $email): ?string
