@@ -165,12 +165,10 @@ class PostController extends AbstractController
     {
         try {
             // Récupérer le commentaire soit du JSON soit des paramètres de formulaire
-            $comment = '';
+            $comment = $request->request->get('share-comment', '');
             if ($request->getContentTypeFormat() === 'json') {
                 $data = json_decode($request->getContent(), true);
-                $comment = $data['comment'] ?? '';
-            } else {
-                $comment = $request->request->get('share-comment', '');
+                $comment = $data['comment'] ?? $comment;
             }
 
             // Créer le nouveau post
@@ -178,7 +176,7 @@ class PostController extends AbstractController
             $sharedPost->setContent($comment ?: 'A partagé un post');
             $sharedPost->setAuthor($this->getUser());
             $sharedPost->setOriginalPost($originalPost);
-            
+
             // Définir un titre basé sur le post original
             $originalTitle = $originalPost->getTitle();
             $sharedPost->setTitle($originalTitle ? "Repost: {$originalTitle}" : "Post partagé");
@@ -297,7 +295,7 @@ class PostController extends AbstractController
 
         try {
             $reaction = $this->interactionService->addReaction($post, $this->getUser(), $reactionType);
-            
+
             return $this->json([
                 'success' => true,
                 'message' => 'Réaction ajoutée avec succès',
