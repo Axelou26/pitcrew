@@ -42,7 +42,6 @@ class UserRegistrationTest extends WebTestCase
             'favorite',
             'post_like',
             'post_comment',
-            'post_share',
             'recruiter_subscription',
             'interview',
             'education',

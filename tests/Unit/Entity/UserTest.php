@@ -11,7 +11,6 @@ use App\Entity\Friendship;
 use App\Entity\Favorite;
 use App\Entity\PostLike;
 use App\Entity\PostComment;
-use App\Entity\PostShare;
 use App\Entity\RecruiterSubscription;
 use App\Entity\Interview;
 use App\Entity\Education;
@@ -268,8 +267,10 @@ class UserTest extends TestCase
 
     public function testSocialInteractions(): void
     {
-        // Test des likes
         $post = new Post();
+        $post->setContent('Test post');
+
+        // Test des likes
         $like = new PostLike();
         $like->setPost($post);
         $like->setUser($this->user);
@@ -284,13 +285,6 @@ class UserTest extends TestCase
         $this->user->addComment($comment);
         $this->assertCount(1, $this->user->getComments());
         $this->assertTrue($this->user->getComments()->contains($comment));
-
-        // Test des partages
-        $share = new PostShare();
-        $share->setPost($post);
-        $this->user->addShare($share);
-        $this->assertCount(1, $this->user->getShares());
-        $this->assertTrue($this->user->getShares()->contains($share));
     }
 
     public function testInterviewsCollections(): void

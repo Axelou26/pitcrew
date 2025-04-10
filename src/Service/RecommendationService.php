@@ -115,12 +115,13 @@ class RecommendationService
 
         // Score basé sur la date (posts plus récents = score plus élevé)
         $age = time() - $post->getCreatedAt()->getTimestamp();
-        $score += max(0, 100 - ($age / 3600)); // Diminue le score avec l'âge (en heures)
+        // Diminue le score avec l'âge (en heures)
+        $score += max(0, 100 - ($age / 3600));
 
         // Score basé sur l'engagement
         $score += $post->getLikesCounter() * 2;
         $score += $post->getCommentsCounter() * 3;
-        $score += $post->getSharesCounter() * 4;
+        $score += $post->getReposts()->count() * 4;
 
         // Bonus si c'est un post de l'utilisateur ou d'un ami
         if ($post->getAuthor() === $user) {
@@ -312,7 +313,7 @@ class RecommendationService
         // Score basé sur l'engagement (avec pondération)
         $score += $post->getLikesCounter() * 2;
         $score += $post->getCommentsCounter() * 3;
-        $score += $post->getSharesCounter() * 4;
+        $score += $post->getReposts()->count() * 4;
 
         // Bonus pour les hashtags d'intérêt
         $userInterests = $this->getUserInterestsAndHashtags($user);

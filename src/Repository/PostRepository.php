@@ -108,18 +108,20 @@ class PostRepository extends ServiceEntityRepository
     {
         return $this->getCachedResult(
             sprintf(self::CACHE_KEY_POSTS_BY_HASHTAG, $hashtag->getId()),
-            fn(): array => $this->createQueryBuilder('p')
-                ->select('p', 'a', 'l', 'c', 'h', 's')
-                ->leftJoin('p.author', 'a')
-                ->leftJoin('p.likes', 'l')
-                ->leftJoin('p.comments', 'c')
-                ->innerJoin('p.hashtags', 'h')
-                ->leftJoin('p.shares', 's')
-                ->where('h = :hashtag')
-                ->setParameter('hashtag', $hashtag)
-                ->orderBy('p.createdAt', 'DESC')
-                ->getQuery()
-                ->getResult()
+            function () use ($hashtag): array {
+                $qb = $this->createQueryBuilder('p')
+                    ->select('p', 'a', 'l', 'c', 'h', 'o')
+                    ->leftJoin('p.author', 'a')
+                    ->leftJoin('p.likes', 'l')
+                    ->leftJoin('p.comments', 'c')
+                    ->innerJoin('p.hashtags', 'h')
+                    ->leftJoin('p.originalPost', 'o')
+                    ->where('h = :hashtag')
+                    ->setParameter('hashtag', $hashtag)
+                    ->orderBy('p.createdAt', 'DESC');
+
+                return $qb->getQuery()->getResult();
+            }
         );
     }
 
@@ -207,12 +209,12 @@ class PostRepository extends ServiceEntityRepository
         return $this
             ->getCachedResult(sprintf(self::CACHE_KEY_RECENT_WITH_AUTHORS, $limit), function () use ($limit): array {
                 $qb = $this->createQueryBuilder('p')
-                ->select('p', 'a', 'l', 'c', 'h', 's')
+                ->select('p', 'a', 'l', 'c', 'h', 'o')
                 ->leftJoin('p.author', 'a')
                 ->leftJoin('p.likes', 'l')
                 ->leftJoin('p.comments', 'c')
                 ->leftJoin('p.hashtags', 'h')
-                ->leftJoin('p.shares', 's')
+                ->leftJoin('p.originalPost', 'o')
                 ->orderBy('p.createdAt', 'DESC')
                 ->setMaxResults($limit);
 

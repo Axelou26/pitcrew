@@ -6,7 +6,6 @@ use App\Entity\Post;
 use App\Entity\User;
 use App\Entity\PostLike;
 use App\Entity\PostComment;
-use App\Entity\PostShare;
 use App\Entity\PostReaction;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
@@ -97,43 +96,22 @@ class PostInteractionService
 
     /**
      * Crée un nouveau post qui repartage un post existant.
-     *
-     * @param Post $originalPost Le post à repartager.
-     * @param User $sharingUser L'utilisateur qui repartage.
-     * @param string|null $comment Le commentaire ajouté lors du repartage (devient le contenu du nouveau post).
-     * @return Post Le nouveau post créé (le repartage).
      */
     public function sharePost(Post $originalPost, User $sharingUser, ?string $comment = null): Post
     {
-        // Créer un nouveau Post pour le repartage
         $repost = new Post();
-        $repost->setAuthor($sharingUser);       // L'auteur est celui qui partage
-        $repost->setOriginalPost($originalPost); // Lier au post original
-
-        // Le commentaire de partage devient le contenu du nouveau post
-        // Si pas de commentaire, on pourrait mettre un contenu par défaut ou laisser vide
-        $repost->setContent($comment ?? ''); // Utiliser le commentaire ou une chaîne vide
-        // Le titre pourrait être vide ou généré, laissons le vide pour l'instant
-        // L'image n'est pas copiée par défaut
+        $repost->setAuthor($sharingUser);
+        $repost->setOriginalPost($originalPost);
+        $repost->setContent($comment ?? '');
+        $repost->setTitle($originalPost->getTitle() ?? '');
 
         $this->entityManager->persist($repost);
-
-        // Incrémenter le compteur de partages sur le post original (si on garde le compteur)
-        // Note: Si on supprime PostShare, cette logique de compteur devra changer
-        // Pour l'instant, on peut le laisser ou le commenter.
-        // $originalPost->setSharesCounter($originalPost->getSharesCounter() + 1);
-        // $this->entityManager->persist($originalPost);
-        // Alternative propre: le compteur sera $originalPost->getReposts()->count() dans l'entité ou le template
-
-        $this->entityManager->flush(); // Sauvegarde le nouveau post (et potentiellement la mise à jour du compteur)
+        $this->entityManager->flush();
 
         // Notifier l'auteur du post original qu'il a été repartagé
-        // Adapter la notification si nécessaire pour prendre le nouveau $repost comme contexte
-        // $this->notificationService->notifyPostShare($originalPost, $sharingUser); // Ancienne notification
-        // Idéalement, créer une nouvelle méthode de notification pour les repartages
-        // $this->notificationService->notifyPostRepost($repost, $sharingUser);
+        $this->notificationService->notifyPostShare($repost);
 
-        return $repost; // Retourner le nouveau post créé
+        return $repost;
     }
 
     public function deleteComment(PostComment $comment): void

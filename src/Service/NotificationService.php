@@ -336,17 +336,25 @@ class NotificationService
 
     /**
      * Notifie l'auteur d'un post qu'un utilisateur a partagé son post
-     *
-     * @param PostShare $share Le partage
-     * @return void
      */
-    public function notifyPostShare(PostShare $share): void
+    public function notifyPostShare(Post $repost): void
     {
-        $post = $share->getPost();
-        $author = $post->getAuthor();
-        $shareUser = $share->getUser();
+        $originalPost = $repost->getOriginalPost();
+        if (!$originalPost) {
+            throw new RuntimeException('Original post not found for repost');
+        }
 
-        if ($author === $shareUser) {
+        $author = $originalPost->getAuthor();
+        if (!$author) {
+            throw new RuntimeException('Author not found for original post');
+        }
+
+        $reposter = $repost->getAuthor();
+        if (!$reposter) {
+            throw new RuntimeException('Author not found for repost');
+        }
+
+        if ($author === $reposter) {
             // Ne pas notifier l'auteur s'il partage son propre post
             return;
         }
@@ -356,18 +364,19 @@ class NotificationService
             $notification->setUser($author);
             $notification->setType(Notification::TYPE_SHARE);
             $notification->setEntityType('post');
-            $notification->setEntityId($post->getId());
-            $notification->setActorId($shareUser->getId());
+            $notification->setEntityId($originalPost->getId());
+            $notification->setActorId($reposter->getId());
 
-            // Définir le titre et le message
             $notification->setTitle('Nouveau partage');
-            $notification->setMessage('A partagé votre publication');
+            $notification->setMessage(sprintf(
+                '%s a partagé votre publication',
+                $reposter->getFullName()
+            ));
             $notification->setIsRead(false);
 
-            // Générer le lien vers le post
             $link = $this->urlGenerator->generate(
                 'app_post_show',
-                ['id' => $post->getId()],
+                ['id' => $originalPost->getId()],
                 UrlGeneratorInterface::ABSOLUTE_URL
             );
             $notification->setLink($link);
@@ -376,14 +385,16 @@ class NotificationService
             $this->entityManager->flush();
 
             $this->logger->info('Notification de partage créée', [
-                'post_id' => $post->getId(),
-                'share_id' => $share->getId()
+                'user_id' => $author->getId(),
+                'post_id' => $originalPost->getId(),
+                'reposter_id' => $reposter->getId()
             ]);
         } catch (\Throwable $e) {
             $this->logger->error('Erreur lors de la création d\'une notification de partage', [
                 'error' => $e->getMessage(),
-                'post_id' => $post->getId(),
-                'share_id' => $share->getId()
+                'user_id' => $author->getId(),
+                'post_id' => $originalPost->getId(),
+                'reposter_id' => $reposter->getId()
             ]);
         }
     }

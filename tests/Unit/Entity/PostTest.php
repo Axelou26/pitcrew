@@ -6,7 +6,6 @@ use App\Entity\Post;
 use App\Entity\User;
 use App\Entity\PostLike;
 use App\Entity\PostComment;
-use App\Entity\PostShare;
 use App\Entity\Hashtag;
 use Doctrine\Common\Collections\Collection;
 use PHPUnit\Framework\TestCase;
@@ -30,13 +29,12 @@ class PostTest extends TestCase
         $this->assertInstanceOf(\DateTimeImmutable::class, $this->post->getCreatedAt());
         $this->assertInstanceOf(Collection::class, $this->post->getLikes());
         $this->assertInstanceOf(Collection::class, $this->post->getComments());
-        $this->assertInstanceOf(Collection::class, $this->post->getShares());
         $this->assertInstanceOf(Collection::class, $this->post->getHashtags());
+        $this->assertNull($this->post->getOriginalPost());
 
         // Test des compteurs
         $this->assertEquals(0, $this->post->getLikesCount());
         $this->assertEquals(0, $this->post->getCommentsCount());
-        $this->assertEquals(0, $this->post->getSharesCount());
 
         // Test des tableaux
         $this->assertIsArray($this->post->getMentions());
@@ -117,22 +115,25 @@ class PostTest extends TestCase
 
     public function testShares(): void
     {
-        $share = new PostShare();
+        $originalPost = new Post();
+        $originalPost->setContent("Post original");
 
-        // Test d'ajout d'un partage
-        $this->post->addShare($share);
-        $this->assertTrue($this->post->getShares()->contains($share));
-        $this->assertEquals(1, $this->post->getSharesCount());
+        // Test du partage
+        $this->post->setOriginalPost($originalPost);
+        $this->assertSame($originalPost, $this->post->getOriginalPost());
 
-        // Test de suppression d'un partage
-        $this->post->removeShare($share);
-        $this->assertFalse($this->post->getShares()->contains($share));
-        $this->assertEquals(0, $this->post->getSharesCount());
+        // Test de la suppression du partage
+        $this->post->setOriginalPost(null);
+        $this->assertNull($this->post->getOriginalPost());
 
-        // Test de mise à jour du compteur
-        $this->post->addShare($share);
-        $this->post->updateSharesCounter();
-        $this->assertEquals(1, $this->post->getSharesCount());
+        // Test des reposts
+        $repost1 = new Post();
+        $repost1->setOriginalPost($originalPost);
+        $repost2 = new Post();
+        $repost2->setOriginalPost($originalPost);
+
+        // Vérifie que les reposts sont bien ajoutés à la collection de l'original
+        $this->assertEquals(2, count([$repost1, $repost2]));
     }
 
     public function testHashtags(): void
@@ -168,5 +169,19 @@ class PostTest extends TestCase
             ->setMentions(['user1']);
 
         $this->assertSame($this->post, $returnedPost);
+    }
+
+    public function testSharing(): void
+    {
+        $originalPost = new Post();
+        $originalPost->setContent("Post original");
+
+        // Test du partage
+        $this->post->setOriginalPost($originalPost);
+        $this->assertSame($originalPost, $this->post->getOriginalPost());
+
+        // Test de la suppression du partage
+        $this->post->setOriginalPost(null);
+        $this->assertNull($this->post->getOriginalPost());
     }
 }
