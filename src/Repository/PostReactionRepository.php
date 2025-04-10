@@ -38,4 +38,4 @@ class PostReactionRepository extends ServiceEntityRepository
             $this->getEntityManager()->flush();
         }
     }
-} 
+}

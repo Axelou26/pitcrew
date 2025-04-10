@@ -314,7 +314,7 @@ class Post
     public function getReactionCount(string $type): int
     {
         $counts = $this->getReactionCounts();
-        
+
         // Vérifier d'abord la clé exacte
         if (isset($counts[$type])) {
             return $counts[$type];

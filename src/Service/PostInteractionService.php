@@ -49,7 +49,7 @@ class PostInteractionService
                 $this->entityManager->flush();
                 return null;
             }
-            
+
             // Si c'est une réaction différente, on met à jour
             $existingLike->setReactionType($reactionType);
             $this->entityManager->flush();
@@ -109,7 +109,7 @@ class PostInteractionService
         $repost = new Post();
         $repost->setAuthor($sharingUser);       // L'auteur est celui qui partage
         $repost->setOriginalPost($originalPost); // Lier au post original
-        
+
         // Le commentaire de partage devient le contenu du nouveau post
         // Si pas de commentaire, on pourrait mettre un contenu par défaut ou laisser vide
         $repost->setContent($comment ?? ''); // Utiliser le commentaire ou une chaîne vide
@@ -122,7 +122,7 @@ class PostInteractionService
         // Note: Si on supprime PostShare, cette logique de compteur devra changer
         // Pour l'instant, on peut le laisser ou le commenter.
         // $originalPost->setSharesCounter($originalPost->getSharesCounter() + 1);
-        // $this->entityManager->persist($originalPost); 
+        // $this->entityManager->persist($originalPost);
         // Alternative propre: le compteur sera $originalPost->getReposts()->count() dans l'entité ou le template
 
         $this->entityManager->flush(); // Sauvegarde le nouveau post (et potentiellement la mise à jour du compteur)

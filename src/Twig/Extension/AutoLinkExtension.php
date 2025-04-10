@@ -18,10 +18,10 @@ class AutoLinkExtension extends AbstractExtension
     {
         $target = $options['target'] ?? '_blank';
         $pattern = '/(https?:\/\/[^\s<]+)/i';
-        
-        return preg_replace_callback($pattern, function($matches) use ($target) {
+
+        return preg_replace_callback($pattern, function ($matches) use ($target) {
             $url = $matches[0];
             return sprintf('<a href="%s" target="%s" rel="noopener noreferrer">%s</a>', $url, $target, $url);
         }, $text);
     }
-} 
+}
