@@ -99,7 +99,8 @@ class EmailValidationService
 
     private function validateStartingDot(string $email): ?string
     {
-        return substr($email, 0, 1) === '.' ? 'L\'adresse email ne peut pas commencer par un point' : null;
+        $message = 'L\'adresse email ne peut pas commencer par un point';
+        return substr($email, 0, 1) === '.' ? $message : null;
     }
 
     private function validateSpaces(string $email): ?string
