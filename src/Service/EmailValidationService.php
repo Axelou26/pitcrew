@@ -105,7 +105,8 @@ class EmailValidationService
 
     private function validateSpaces(string $email): ?string
     {
-        return strpos($email, ' ') !== false ? 'L\'adresse email ne peut pas contenir d\'espaces' : null;
+        $message = 'L\'adresse email ne peut pas contenir d\'espaces';
+        return strpos($email, ' ') !== false ? $message : null;
     }
 
     private function validateRegex(string $email): ?string
