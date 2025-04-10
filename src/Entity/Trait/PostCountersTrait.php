@@ -14,9 +14,6 @@ trait PostCountersTrait
     #[ORM\Column(options: ["default" => 0])]
     private int $commentsCounter = 0;
 
-    #[ORM\Column(options: ["default" => 0])]
-    private int $sharesCounter = 0;
-
     public function getLikesCounter(): int
     {
         return $this->likesCounter;
@@ -39,22 +36,10 @@ trait PostCountersTrait
         return $this;
     }
 
-    public function getSharesCounter(): int
-    {
-        return $this->sharesCounter;
-    }
-
-    public function setSharesCounter(int $sharesCounter): static
-    {
-        $this->sharesCounter = $sharesCounter;
-        return $this;
-    }
-
     public function updateAllCounters(): void
     {
         $this->updateLikesCounter();
         $this->updateCommentsCounter();
-        $this->updateSharesCounter();
         $this->updateReactionCounts();
     }
 }

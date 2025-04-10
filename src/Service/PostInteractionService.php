@@ -7,7 +7,9 @@ use App\Entity\User;
 use App\Entity\PostLike;
 use App\Entity\PostComment;
 use App\Entity\PostShare;
+use App\Entity\PostReaction;
 use Doctrine\ORM\EntityManagerInterface;
+use InvalidArgumentException;
 
 class PostInteractionService
 {
@@ -17,27 +19,55 @@ class PostInteractionService
     ) {
     }
 
-    public function toggleLike(Post $post, User $user): bool
+    public function getEntityManager(): EntityManagerInterface
     {
+        return $this->entityManager;
+    }
+
+    /**
+     * Gère l'ajout, la suppression ou la modification d'une réaction sur un post.
+     *
+     * @param Post $post Le post concerné.
+     * @param User $user L'utilisateur qui réagit.
+     * @param string $reactionType Le type de réaction choisi (doit être une clé de PostLike::REACTIONS).
+     * @return string|null Le type de réaction final, ou null si la réaction est supprimée.
+     * @throws InvalidArgumentException Si le reactionType est invalide.
+     */
+    public function toggleLike(Post $post, User $user, string $reactionType): ?string
+    {
+        if (!array_key_exists($reactionType, PostLike::REACTIONS)) {
+            throw new InvalidArgumentException('Type de réaction invalide : ' . $reactionType);
+        }
+
         $existingLike = $this->entityManager->getRepository(PostLike::class)
             ->findOneBy(['post' => $post, 'user' => $user]);
 
         if ($existingLike) {
-            $this->entityManager->remove($existingLike);
+            // Si c'est la même réaction, on la supprime
+            if ($existingLike->getReactionType() === $reactionType) {
+                $this->entityManager->remove($existingLike);
+                $this->entityManager->flush();
+                return null;
+            }
+            
+            // Si c'est une réaction différente, on met à jour
+            $existingLike->setReactionType($reactionType);
             $this->entityManager->flush();
-            return false;
+            return $reactionType;
         }
 
+        // Nouvelle réaction
         $like = new PostLike();
         $like->setPost($post);
         $like->setUser($user);
-
+        $like->setReactionType($reactionType);
         $this->entityManager->persist($like);
         $this->entityManager->flush();
 
-        $this->notificationService->notifyPostLike($post, $user);
+        // Notifier uniquement pour une nouvelle réaction
+        $this->notificationService->notifyPostLike($like);
 
-        return true;
+        return $reactionType;
     }
 
     public function addComment(
@@ -56,29 +86,54 @@ class PostInteractionService
         }
 
         $this->entityManager->persist($comment);
+        $post->addComment($comment);
         $this->entityManager->flush();
 
-        $this->notificationService->notifyPostComment($post, $author);
+        // Notifier avec le commentaire créé au lieu du post
+        $this->notificationService->notifyPostComment($comment);
 
         return $comment;
     }
 
-    public function sharePost(Post $post, User $user, ?string $comment = null): PostShare
+    /**
+     * Crée un nouveau post qui repartage un post existant.
+     *
+     * @param Post $originalPost Le post à repartager.
+     * @param User $sharingUser L'utilisateur qui repartage.
+     * @param string|null $comment Le commentaire ajouté lors du repartage (devient le contenu du nouveau post).
+     * @return Post Le nouveau post créé (le repartage).
+     */
+    public function sharePost(Post $originalPost, User $sharingUser, ?string $comment = null): Post
     {
-        $share = new PostShare();
-        $share->setPost($post);
-        $share->setUser($user);
+        // Créer un nouveau Post pour le repartage
+        $repost = new Post();
+        $repost->setAuthor($sharingUser);       // L'auteur est celui qui partage
+        $repost->setOriginalPost($originalPost); // Lier au post original
+        
+        // Le commentaire de partage devient le contenu du nouveau post
+        // Si pas de commentaire, on pourrait mettre un contenu par défaut ou laisser vide
+        $repost->setContent($comment ?? ''); // Utiliser le commentaire ou une chaîne vide
+        // Le titre pourrait être vide ou généré, laissons le vide pour l'instant
+        // L'image n'est pas copiée par défaut
 
-        if ($comment) {
-            $share->setComment($comment);
-        }
+        $this->entityManager->persist($repost);
 
-        $this->entityManager->persist($share);
-        $this->entityManager->flush();
+        // Incrémenter le compteur de partages sur le post original (si on garde le compteur)
+        // Note: Si on supprime PostShare, cette logique de compteur devra changer
+        // Pour l'instant, on peut le laisser ou le commenter.
+        // $originalPost->setSharesCounter($originalPost->getSharesCounter() + 1);
+        // $this->entityManager->persist($originalPost); 
+        // Alternative propre: le compteur sera $originalPost->getReposts()->count() dans l'entité ou le template
 
-        $this->notificationService->notifyPostShare($post, $user);
+        $this->entityManager->flush(); // Sauvegarde le nouveau post (et potentiellement la mise à jour du compteur)
 
-        return $share;
+        // Notifier l'auteur du post original qu'il a été repartagé
+        // Adapter la notification si nécessaire pour prendre le nouveau $repost comme contexte
+        // $this->notificationService->notifyPostShare($originalPost, $sharingUser); // Ancienne notification
+        // Idéalement, créer une nouvelle méthode de notification pour les repartages
+        // $this->notificationService->notifyPostRepost($repost, $sharingUser);
+
+        return $repost; // Retourner le nouveau post créé
     }
 
     public function deleteComment(PostComment $comment): void

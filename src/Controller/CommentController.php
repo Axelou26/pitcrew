@@ -7,6 +7,7 @@ use App\Entity\PostComment;
 use App\Form\PostCommentType;
 use App\Repository\PostCommentRepository;
 use App\Service\PostInteractionService;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,7 +19,8 @@ class CommentController extends AbstractController
 {
     public function __construct(
         private PostInteractionService $interactionService,
-        private PostCommentRepository $commentRepository
+        private PostCommentRepository $commentRepository,
+        private EntityManagerInterface $entityManager
     ) {
     }
 
@@ -74,6 +76,9 @@ class CommentController extends AbstractController
                 $parentComment
             );
 
+            // Rafraîchir le post pour obtenir le nouveau compte
+            $this->entityManager->refresh($post);
+
             return $this->json([
                 'success' => true,
                 'comment' => [
@@ -81,11 +86,14 @@ class CommentController extends AbstractController
                     'content' => $comment->getContent(),
                     'author' => [
                         'id' => $comment->getAuthor()->getId(),
-                        'name' => $comment->getAuthor()->getFullName(),
-                        'avatarUrl' => $comment->getAuthor()->getAvatarUrl()
+                        'fullName' => $comment->getAuthor()->getFullName()
                     ],
-                    'createdAt' => $comment->getCreatedAt()->format('c')
-                ]
+                    'createdAt' => $comment->getCreatedAt()->format('Y-m-d H:i:s'),
+                    'html' => $this->renderView('comment/_comment.html.twig', [
+                        'comment' => $comment
+                    ])
+                ],
+                'commentsCount' => $post->getCommentsCount()
             ]);
         } catch (\Exception $e) {
             return $this->json([
@@ -93,5 +101,26 @@ class CommentController extends AbstractController
                 'error' => 'Une erreur est survenue lors de l\'ajout du commentaire'
             ], 500);
         }
+    }
+
+    #[Route('/{id}/delete', name: 'app_comment_delete', methods: ['POST'])]
+    public function delete(PostComment $comment): JsonResponse
+    {
+        if (!$this->getUser() || ($this->getUser() !== $comment->getAuthor() && !$this->isGranted('ROLE_ADMIN'))) {
+            return $this->json(['success' => false, 'message' => 'Accès refusé'], 403);
+        }
+
+        $post = $comment->getPost();
+        $this->entityManager->remove($comment);
+        $this->entityManager->flush();
+
+        // Mettre à jour le compteur de commentaires
+        $post->updateCommentsCounter();
+        $this->entityManager->flush();
+
+        return $this->json([
+            'success' => true,
+            'commentsCount' => $post->getCommentsCount()
+        ]);
     }
 }

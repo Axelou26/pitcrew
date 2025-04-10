@@ -5,7 +5,6 @@ namespace App\Entity;
 use App\Repository\PostRepository;
 use App\Entity\Trait\PostReactionsTrait;
 use App\Entity\Trait\PostCommentsTrait;
-use App\Entity\Trait\PostSharesTrait;
 use App\Entity\Trait\PostTaggingTrait;
 use App\Entity\Trait\PostCountersTrait;
 use App\Entity\Trait\PostBasicTrait;
@@ -22,7 +21,6 @@ class Post
 {
     use PostReactionsTrait;
     use PostCommentsTrait;
-    use PostSharesTrait;
     use PostTaggingTrait;
     use PostCountersTrait;
     use PostBasicTrait;
@@ -41,45 +39,48 @@ class Post
     #[ORM\OneToMany(mappedBy: 'post', targetEntity: PostComment::class, orphanRemoval: true)]
     private Collection $comments;
 
-    #[ORM\OneToMany(mappedBy: 'post', targetEntity: PostShare::class, orphanRemoval: true)]
-    private Collection $shares;
-
     #[ORM\ManyToMany(targetEntity: Hashtag::class, inversedBy: 'posts')]
     private Collection $hashtags;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $imageName = null;
 
-    #[ORM\Column]
-    private array $reactionCounts = [
-        'like' => 0,
-        'congrats' => 0,
-        'interesting' => 0,
-        'support' => 0,
-        'encouraging' => 0
-    ];
+    #[ORM\Column(nullable: true)]
+    private ?array $reactionCounts = null;
 
     #[ORM\Column]
     private ?DateTimeImmutable $createdAt = null;
 
-    public function __construct()
+    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'reposts')]
+    #[ORM\JoinColumn(name: "original_post_id", referencedColumnName: "id", nullable: true, onDelete: "SET NULL")]
+    private ?Post $originalPost = null;
+
+    #[ORM\OneToMany(mappedBy: 'originalPost', targetEntity: self::class)]
+    private Collection $reposts;
+
+    private function getDefaultReactionCounts(): array
     {
-        $this->createdAt = new DateTimeImmutable();
-        $this->likes = new ArrayCollection();
-        $this->comments = new ArrayCollection();
-        $this->shares = new ArrayCollection();
-        $this->hashtags = new ArrayCollection();
-        $this->mentions = [];
-        $this->likesCounter = 0;
-        $this->commentsCounter = 0;
-        $this->sharesCounter = 0;
-        $this->reactionCounts = [
+        return [
             'like' => 0,
             'congrats' => 0,
             'interesting' => 0,
             'support' => 0,
             'encouraging' => 0
         ];
+    }
+
+    public function __construct()
+    {
+        $this->createdAt = new DateTimeImmutable();
+        $this->likes = new ArrayCollection();
+        $this->comments = new ArrayCollection();
+        $this->hashtags = new ArrayCollection();
+        $this->mentions = [];
+        $this->likesCounter = 0;
+        $this->commentsCounter = 0;
+        $this->reactionCounts = $this->getDefaultReactionCounts();
+        $this->reposts = new ArrayCollection();
+        $this->updateCommentsCounter();
     }
 
     public function getId(): ?int
@@ -244,92 +245,6 @@ class Post
     }
 
     /**
-     * @return Collection<int, PostShare>
-     */
-    public function getShares(): Collection
-    {
-        return $this->shares;
-    }
-
-    public function addShare(PostShare $share): static
-    {
-        if (!$this->shares->contains($share)) {
-            $this->shares->add($share);
-            $share->setPost($this);
-            $this->sharesCounter++;
-        }
-        return $this;
-    }
-
-    public function removeShare(PostShare $share): static
-    {
-        if ($this->shares->removeElement($share)) {
-            // set the owning side to null (unless already changed)
-            if ($share->getPost() === $this) {
-                $share->setPost(null);
-            }
-            $this->sharesCounter = max(0, $this->sharesCounter - 1);
-        }
-        return $this;
-    }
-
-    /**
-     * @return int
-     */
-    public function getSharesCount(): int
-    {
-        return $this->sharesCounter;
-    }
-
-    public function updateSharesCounter(): void
-    {
-        $this->sharesCounter = $this->shares->count();
-    }
-
-    /**
-     * Met à jour tous les compteurs en fonction du contenu des collections
-     */
-    public function updateAllCounters(): void
-    {
-        $this->updateLikesCounter();
-        $this->updateCommentsCounter();
-        $this->updateSharesCounter();
-    }
-
-    public function getLikesCounter(): int
-    {
-        return $this->likesCounter;
-    }
-
-    public function setLikesCounter(int $likesCounter): static
-    {
-        $this->likesCounter = $likesCounter;
-        return $this;
-    }
-
-    public function getCommentsCounter(): int
-    {
-        return $this->commentsCounter;
-    }
-
-    public function setCommentsCounter(int $commentsCounter): static
-    {
-        $this->commentsCounter = $commentsCounter;
-        return $this;
-    }
-
-    public function getSharesCounter(): int
-    {
-        return $this->sharesCounter;
-    }
-
-    public function setSharesCounter(int $sharesCounter): static
-    {
-        $this->sharesCounter = $sharesCounter;
-        return $this;
-    }
-
-    /**
      * @return Collection<int, Hashtag>
      */
     public function getHashtags(): Collection
@@ -387,37 +302,32 @@ class Post
 
     public function getReactionCounts(): array
     {
-        return $this->reactionCounts;
+        return $this->reactionCounts ?? $this->getDefaultReactionCounts();
     }
 
-    public function setReactionCounts(array $reactionCounts): static
+    public function setReactionCounts(?array $reactionCounts): static
     {
-        $this->reactionCounts = $reactionCounts;
+        $this->reactionCounts = $reactionCounts ?? $this->getDefaultReactionCounts();
         return $this;
     }
 
-    /**
-     * Retourne le nombre de réactions d'un type spécifique
-     */
     public function getReactionCount(string $type): int
     {
-        if ($this->reactionCounts === null) {
-            return 0;
-        }
-
+        $counts = $this->getReactionCounts();
+        
         // Vérifier d'abord la clé exacte
-        if (isset($this->reactionCounts[$type])) {
-            return $this->reactionCounts[$type];
+        if (isset($counts[$type])) {
+            return $counts[$type];
         }
 
         // Vérifier si c'est 'like' mais stocké comme 'likes'
-        if ($type === 'like' && isset($this->reactionCounts['likes'])) {
-            return $this->reactionCounts['likes'];
+        if ($type === 'like' && isset($counts['likes'])) {
+            return $counts['likes'];
         }
 
         // Vérifier si c'est 'likes' mais stocké comme 'like'
-        if ($type === 'likes' && isset($this->reactionCounts['like'])) {
-            return $this->reactionCounts['like'];
+        if ($type === 'likes' && isset($counts['like'])) {
+            return $counts['like'];
         }
 
         return 0;
@@ -443,5 +353,49 @@ class Post
     public function getUserReactionType(User $user): ?string
     {
         return $this->getUserReaction($user);
+    }
+
+    public function getOriginalPost(): ?Post
+    {
+        return $this->originalPost;
+    }
+
+    public function setOriginalPost(?Post $originalPost): static
+    {
+        $this->originalPost = $originalPost;
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Post>
+     */
+    public function getReposts(): Collection
+    {
+        return $this->reposts;
+    }
+
+    public function addRepost(Post $repost): static
+    {
+        if (!$this->reposts->contains($repost)) {
+            $this->reposts->add($repost);
+            $repost->setOriginalPost($this);
+        }
+        return $this;
+    }
+
+    public function removeRepost(Post $repost): static
+    {
+        if ($this->reposts->removeElement($repost)) {
+            // set the owning side to null (unless already changed)
+            if ($repost->getOriginalPost() === $this) {
+                $repost->setOriginalPost(null);
+            }
+        }
+        return $this;
+    }
+
+    public function getRepostsCount(): int
+    {
+        return $this->reposts->count();
     }
 }

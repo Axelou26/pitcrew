@@ -19,16 +19,22 @@ use App\Service\PostService;
 use App\Service\PostInteractionService;
 use Psr\Log\LoggerInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Entity\PostLike;
+use App\Entity\Comment;
+use App\Entity\PostReaction;
 
 #[Route('/post')]
 class PostController extends AbstractController
 {
+    private EntityManagerInterface $entityManager;
+
     public function __construct(
         private PostService $postService,
         private PostInteractionService $interactionService,
         private LoggerInterface $logger,
-        private EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager
     ) {
+        $this->entityManager = $entityManager;
     }
 
     #[Route('s', name: 'app_post_index', methods: ['GET'])]
@@ -69,11 +75,11 @@ class PostController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'app_post_show', methods: ['GET'], requirements: ['id' => '\d+'])]
+    #[Route('/{id}', name: 'app_post_show', methods: ['GET'])]
     public function show(Post $post): Response
     {
         return $this->render('post/show.html.twig', [
-            'post' => $post
+            'post' => $post,
         ]);
     }
 
@@ -118,30 +124,87 @@ class PostController extends AbstractController
         return $this->redirectToRoute('app_home');
     }
 
-    #[Route('/{id}/like', name: 'app_post_like')]
+    #[Route('/{id}/like', name: 'app_post_like', methods: ['POST'])]
     #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
-    public function like(Post $post): JsonResponse
+    public function like(Post $post, Request $request): JsonResponse
     {
-        $isLiked = $this->interactionService->toggleLike($post, $this->getUser());
+        $reactionType = $request->request->get('reactionType');
+        if (empty($reactionType) || !array_key_exists($reactionType, PostLike::REACTIONS)) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Type de réaction invalide ou manquant.'
+            ], Response::HTTP_BAD_REQUEST);
+        }
 
-        return $this->json([
-            'success' => true,
-            'isLiked' => $isLiked,
-            'likesCount' => $post->getLikes()->count()
-        ]);
+        try {
+            $activeReactionType = $this->interactionService->toggleLike($post, $this->getUser(), $reactionType);
+            $this->entityManager->refresh($post);
+
+            return $this->json([
+                'success' => true,
+                'activeReactionType' => $activeReactionType,
+                'likesCount' => $post->getLikes()->count()
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return $this->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors du toggle like: ' . $e->getMessage());
+            return $this->json([
+                'success' => false,
+                'message' => 'Une erreur est survenue.'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
-    #[Route('/{id}/share', name: 'app_post_share')]
+    #[Route('/{id}/share', name: 'app_post_share', methods: ['POST'])]
     #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
-    public function share(Post $post, Request $request): JsonResponse
+    public function share(Post $originalPost, Request $request): JsonResponse
     {
-        $comment = $request->request->get('comment');
-        $share = $this->interactionService->sharePost($post, $this->getUser(), $comment);
+        try {
+            // Récupérer le commentaire soit du JSON soit des paramètres de formulaire
+            $comment = '';
+            if ($request->getContentTypeFormat() === 'json') {
+                $data = json_decode($request->getContent(), true);
+                $comment = $data['comment'] ?? '';
+            } else {
+                $comment = $request->request->get('share-comment', '');
+            }
 
-        return $this->json([
-            'success' => true,
-            'sharesCount' => $post->getShares()->count()
-        ]);
+            // Créer le nouveau post
+            $sharedPost = new Post(); // Le constructeur initialise createdAt
+            $sharedPost->setContent($comment ?: 'A partagé un post');
+            $sharedPost->setAuthor($this->getUser());
+            $sharedPost->setOriginalPost($originalPost);
+            
+            // Définir un titre basé sur le post original
+            $originalTitle = $originalPost->getTitle();
+            $sharedPost->setTitle($originalTitle ? "Repost: {$originalTitle}" : "Post partagé");
+
+            // Si le post original a une image, la copier
+            if ($originalPost->getImage()) {
+                $sharedPost->setImage($originalPost->getImage());
+                $sharedPost->setImageName($originalPost->getImageName());
+            }
+
+            $this->entityManager->persist($sharedPost);
+            $this->entityManager->flush();
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Post repartagé avec succès !',
+                'postId' => $sharedPost->getId(),
+                'sharesCount' => $originalPost->getReposts()->count()
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors du partage du post: ' . $e->getMessage());
+            return $this->json([
+                'success' => false,
+                'message' => 'Une erreur est survenue lors du partage.'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     #[Route('/hashtag/{name}', name: 'app_hashtag_show')]
@@ -216,6 +279,35 @@ class PostController extends AbstractController
             $this->logger->error('Erreur lors de la création du post: ' . $e->getMessage());
             return new JsonResponse([
                 'error' => 'Une erreur est survenue lors de la création de la publication'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route('/{id}/reaction', name: 'app_post_reaction', methods: ['POST'])]
+    #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
+    public function addReaction(Post $post, Request $request): JsonResponse
+    {
+        $reactionType = $request->request->get('type');
+        if (empty($reactionType)) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Le type de réaction est requis'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        try {
+            $reaction = $this->interactionService->addReaction($post, $this->getUser(), $reactionType);
+            
+            return $this->json([
+                'success' => true,
+                'message' => 'Réaction ajoutée avec succès',
+                'reactionId' => $reaction->getId()
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de l\'ajout de la réaction: ' . $e->getMessage());
+            return $this->json([
+                'success' => false,
+                'message' => 'Une erreur est survenue lors de l\'ajout de la réaction'
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }

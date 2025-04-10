@@ -204,7 +204,7 @@
                 </div>
             {% else %}
                 {% for post in posts %}
-                    <div class="card border-0 shadow-sm rounded-3 mb-3">
+                    <div class="card border-0 shadow-sm rounded-3 mb-3 post-card" data-post-id="{{ post.id }}">
                         <!-- Post Header -->
                         <div class="card-header bg-white border-0 pt-3 pb-0">
                             <div class="d-flex">
@@ -334,8 +334,8 @@
                             
                             <!-- Post Actions -->
                             <div class="d-flex border-top pt-2">
-                                <div class="dropdown flex-fill">
-                                    <button class="btn btn-light w-100 dropdown-toggle" type="button" id="reactionDropdown{{ post.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                <div class="dropdown reaction-dropdown flex-fill">
+                                    <button class="btn btn-sm btn-outline-secondary reaction-trigger rounded-pill px-3" type="button" id="reactionDropdown{{ post.id }}" data-bs-toggle="dropdown" aria-expanded="false" data-current-reaction>
                                         {% if app.user and post.getUserReactionType(app.user) %}
                                             {% set userReaction = post.getUserReactionType(app.user) %}
                                             <span class="reaction-active">
@@ -351,27 +351,27 @@
                                     </button>
                                     <ul class="dropdown-menu reaction-menu" aria-labelledby="reactionDropdown{{ post.id }}">
                                         <li>
-                                            <a class="dropdown-item d-flex align-items-center" href="{{ path('app_post_like', {'id': post.id, 'type': 'like'}) }}">
+                                            <a class="dropdown-item d-flex align-items-center reaction-option" href="{{ path('app_post_like', {'id': post.id, 'type': 'like'}) }}" data-reaction-type="like">
                                                 <span class="reaction-emoji me-2">👍</span> J'aime
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item d-flex align-items-center" href="{{ path('app_post_like', {'id': post.id, 'type': 'congrats'}) }}">
+                                            <a class="dropdown-item d-flex align-items-center reaction-option" href="{{ path('app_post_like', {'id': post.id, 'type': 'congrats'}) }}" data-reaction-type="congrats">
                                                 <span class="reaction-emoji me-2">👏</span> Félicitations
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item d-flex align-items-center" href="{{ path('app_post_like', {'id': post.id, 'type': 'interesting'}) }}">
+                                            <a class="dropdown-item d-flex align-items-center reaction-option" href="{{ path('app_post_like', {'id': post.id, 'type': 'interesting'}) }}" data-reaction-type="interesting">
                                                 <span class="reaction-emoji me-2">💡</span> Intéressant
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item d-flex align-items-center" href="{{ path('app_post_like', {'id': post.id, 'type': 'support'}) }}">
+                                            <a class="dropdown-item d-flex align-items-center reaction-option" href="{{ path('app_post_like', {'id': post.id, 'type': 'support'}) }}" data-reaction-type="support">
                                                 <span class="reaction-emoji me-2">❤️</span> Soutien
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item d-flex align-items-center" href="{{ path('app_post_like', {'id': post.id, 'type': 'encouraging'}) }}">
+                                            <a class="dropdown-item d-flex align-items-center reaction-option" href="{{ path('app_post_like', {'id': post.id, 'type': 'encouraging'}) }}" data-reaction-type="encouraging">
                                                 <span class="reaction-emoji me-2">💪</span> Encourageant
                                             </a>
                                         </li>

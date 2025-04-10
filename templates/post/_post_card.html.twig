@@ -1,107 +1,237 @@
 {% set isLiked = app.user ? post.isLikedByUser(app.user) : false %}
 
-<div class="card mb-4 post-card">
-    <div class="card-body">
+{% set currentUserReactionType = app.user ? post.getUserReactionType(app.user) : null %}
+{% set reactionMap = {
+    'like': {'emoji': '👍', 'name': 'J\'aime', 'class': 'btn-primary'},
+    'congrats': {'emoji': '👏', 'name': 'Bravo', 'class': 'btn-success'},
+    'support': {'emoji': '❤️', 'name': 'Soutien', 'class': 'btn-danger'},
+    'interesting': {'emoji': '💡', 'name': 'Intéressant', 'class': 'btn-info'},
+    'encouraging': {'emoji': '💪', 'name': 'Encouragement', 'class': 'btn-warning'}
+} %}
+{% set defaultReaction = {'emoji': '👍', 'name': 'Réagir', 'class': 'btn-outline-secondary'} %}
+{% set activeReaction = currentUserReactionType ? reactionMap[currentUserReactionType] : defaultReaction %}
+
+<div class="card shadow-sm hover-shadow-lg mb-4 post-card border-0 rounded-4" data-post-id="{{ post.id }}">
+    <div class="card-body p-4">
         <div class="d-flex align-items-center mb-3">
             {% if post.author.profilePicture %}
-                <img src="{{ asset('uploads/profile_pictures/' ~ post.author.profilePicture) }}" 
-                     class="rounded-circle me-3" 
-                     alt="{{ post.author.fullName }}" 
-                     style="width: 50px; height: 50px; object-fit: cover;">
+                <img src="{{ asset('uploads/profile_pictures/' ~ post.author.profilePicture) }}"
+                     class="rounded-circle me-3 border"
+                     alt="{{ post.author.fullName }}"
+                     style="width: 48px; height: 48px; object-fit: cover;">
             {% else %}
-                <div class="rounded-circle me-3 bg-secondary d-flex align-items-center justify-content-center text-white" 
-                     style="width: 50px; height: 50px;">
-                    {{ post.author.firstName|first|upper }}{{ post.author.lastName|first|upper }}
+                <div class="rounded-circle me-3 bg-light d-flex align-items-center justify-content-center border"
+                     style="width: 48px; height: 48px;">
+                    <i class="bi bi-person text-muted"></i>
                 </div>
             {% endif %}
-            <div>
-                <h5 class="card-title mb-0">
+            <div class="flex-grow-1">
+                <h6 class="fw-bold mb-0">
                     <a href="{{ path('app_profile_view', {'id': post.author.id}) }}" class="text-decoration-none text-dark">
                         {{ post.author.fullName }}
                     </a>
-                </h5>
+                </h6>
                 <small class="text-muted">{{ post.createdAt|date('d/m/Y H:i') }}</small>
             </div>
+            {% if app.user and post.author.id == app.user.id %}
+                <div class="dropdown ms-auto">
+                    <button class="btn btn-sm btn-light rounded-circle" type="button" id="postOptions{{ post.id }}" data-bs-toggle="dropdown" aria-expanded="false" style="width: 32px; height: 32px;">
+                        <i class="bi bi-three-dots"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="postOptions{{ post.id }}">
+                        <li>
+                            <a class="dropdown-item edit-post" href="#" data-post-id="{{ post.id }}">
+                                <i class="bi bi-pencil me-2"></i>Modifier
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item text-danger delete-post" href="#" data-post-id="{{ post.id }}">
+                                <i class="bi bi-trash me-2"></i>Supprimer
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            {% endif %}
         </div>
 
         {% if post.title %}
-            <h6 class="card-subtitle mb-2">{{ post.title }}</h6>
+            <h5 class="card-title mb-2 fw-bold">{{ post.title }}</h5>
         {% endif %}
 
-        <p class="card-text">{{ post.content }}</p>
+        <p class="card-text mb-3 post-content">{{ post.content|nl2br|autolink({target: '_blank'})|raw }}</p>
 
-        {% if post.image %}
-            <img src="{{ asset('uploads/posts/' ~ post.image) }}" 
-                 class="img-fluid rounded mb-3" 
-                 alt="Image du post">
+        {% if post.imageName %}
+            <a href="{{ asset('uploads/posts/' ~ post.imageName) }}" data-lightbox="post-image-{{ post.id }}">
+                <img src="{{ asset('uploads/posts/' ~ post.imageName) }}"
+                     class="img-fluid rounded mb-3 w-100"
+                     style="max-height: 500px; object-fit: cover; cursor: pointer;"
+                     alt="Image du post">
+            </a>
         {% endif %}
 
-        <div class="d-flex justify-content-between align-items-center">
-            <div class="btn-group">
-                <button type="button" 
-                        class="btn btn-sm {{ isLiked ? 'btn-primary' : 'btn-outline-primary' }} like-button" 
-                        data-post-id="{{ post.id }}"
-                        {% if not app.user %}disabled{% endif %}>
-                    <i class="bi bi-heart-fill"></i>
-                    <span class="likes-count">{{ post.likesCount }}</span>
-                </button>
-                <button type="button" 
-                        class="btn btn-sm btn-outline-secondary comment-button" 
-                        data-post-id="{{ post.id }}">
-                    <i class="bi bi-chat-dots"></i>
-                    <span class="comments-count">{{ post.commentsCount }}</span>
-                </button>
-                <button type="button" 
-                        class="btn btn-sm btn-outline-secondary share-button" 
-                        data-post-id="{{ post.id }}">
-                    <i class="bi bi-share"></i>
-                    <span class="shares-count">{{ post.sharesCount }}</span>
-                </button>
+        {% if post.originalPost %}
+            <div class="card bg-light border-dashed mb-3 p-3">
+                <small class="text-muted mb-2">A repartagé :</small>
+                {{ include('post/_post_card_minimal.html.twig', { post: post.originalPost }) }}
+            </div>
+        {% endif %}
+
+        <div class="d-flex justify-content-between align-items-center text-muted small mb-2">
+            <div class="reaction-summary" data-bs-toggle="tooltip" title="Personnes ayant réagi">
+                {% set totalReactions = post.getLikesCount() %}
+                {% if totalReactions > 0 %}
+                    <span class="likes-count me-1">{{ totalReactions }}</span> réaction{{ totalReactions > 1 ? 's' : '' }}
+                {% endif %}
+            </div>
+            <div>
+                <span class="comments-count me-3">{{ post.commentsCount }} commentaire{{ post.commentsCount > 1 ? 's' : '' }}</span>
+                <span class="shares-count">{{ post.getRepostsCount() }} partage{{ post.getRepostsCount() > 1 ? 's' : '' }}</span>
             </div>
         </div>
 
-        {# Section des commentaires (initialement cachée) #}
-        <div class="comments-section mt-3" id="comments-{{ post.id }}" style="display: none;">
-            <div class="comments-list">
-                {% for comment in post.comments %}
-                    <div class="comment mb-2">
-                        <div class="d-flex">
-                            {% if comment.author.profilePicture %}
-                                <img src="{{ asset('uploads/profile_pictures/' ~ comment.author.profilePicture) }}" 
-                                     class="rounded-circle me-2" 
-                                     alt="{{ comment.author.fullName }}" 
-                                     style="width: 30px; height: 30px; object-fit: cover;">
-                            {% else %}
-                                <div class="rounded-circle me-2 bg-secondary d-flex align-items-center justify-content-center text-white" 
-                                     style="width: 30px; height: 30px; font-size: 0.8em;">
-                                    {{ comment.author.firstName|first|upper }}{{ comment.author.lastName|first|upper }}
-                                </div>
-                            {% endif %}
-                            <div class="flex-grow-1">
-                                <div class="bg-light rounded p-2">
-                                    <strong>{{ comment.author.fullName }}</strong>
-                                    <p class="mb-0">{{ comment.content }}</p>
-                                </div>
-                                <small class="text-muted">{{ comment.createdAt|date('d/m/Y H:i') }}</small>
-                            </div>
-                        </div>
+        <hr class="my-2">
+
+        <div class="d-flex justify-content-around align-items-center pt-1">
+            <div class="reaction-container position-relative">
+                <button type="button"
+                        class="btn btn-sm {{ activeReaction.class }} reaction-trigger rounded-pill px-3 d-flex align-items-center {% if currentUserReactionType %}active-reaction{% endif %}"
+                        {% if currentUserReactionType %}data-current-reaction="{{ currentUserReactionType }}"{% endif %}
+                        {% if not app.user %}disabled{% endif %}>
+                    <span class="reaction-emoji me-1">{{ activeReaction.emoji }}</span>
+                    <span class="reaction-name">{{ activeReaction.name }}</span>
+                </button>
+                <div class="reaction-menu shadow border-0 rounded-3 position-absolute bg-white p-1" 
+                     style="display: none; z-index: 1000; min-width: 240px; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 8px;">
+                    <div class="d-flex justify-content-between p-1">
+                        {% for type, details in reactionMap %}
+                            <button class="reaction-option btn btn-light rounded-circle p-1 mx-1 reaction-hover" 
+                                    type="button" 
+                                    data-reaction-type="{{ type }}"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="top"
+                                    title="{{ details.name }}">
+                                <span class="fs-4">{{ details.emoji }}</span>
+                            </button>
+                        {% endfor %}
                     </div>
+                </div>
+            </div>
+
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary comment-toggle-button rounded-pill px-3"
+                    data-post-id="{{ post.id }}">
+                <i class="bi bi-chat-dots me-1"></i> Commenter
+            </button>
+
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary share-button rounded-pill px-3"
+                    data-post-id="{{ post.id }}"
+                    data-bs-toggle="modal"
+                    data-bs-target="#shareModal{{ post.id }}"
+                    {% if not app.user %}disabled{% endif %}>
+                <i class="bi bi-share me-1"></i> Partager
+            </button>
+        </div>
+
+        <div class="comments-section mt-3 border-top pt-3" id="comments-{{ post.id }}" style="display: none;">
+            <div class="comments-list mb-3" style="max-height: 300px; overflow-y: auto;">
+                <div class="text-center text-muted p-3 comments-placeholder {% if post.comments|length > 0 %}d-none{% endif %}">
+                    Soyez le premier à commenter.
+                </div>
+                {% for comment in post.comments|sort((a, b) => a.createdAt <=> b.createdAt) %}
+                    {{ include('comment/_comment.html.twig', { comment: comment }) }}
                 {% endfor %}
             </div>
 
             {% if app.user %}
                 <form class="comment-form mt-3" data-post-id="{{ post.id }}">
-                    <div class="input-group">
-                        <input type="text" 
-                               class="form-control" 
-                               placeholder="Écrire un commentaire..." 
-                               required>
-                        <button class="btn btn-primary" type="submit">
-                            <i class="bi bi-send"></i>
-                        </button>
+                    <div class="d-flex align-items-start">
+                        {% if app.user.profilePicture %}
+                            <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}"
+                                 class="rounded-circle me-2 border"
+                                 alt="{{ app.user.fullName }}"
+                                 style="width: 32px; height: 32px; object-fit: cover;">
+                        {% else %}
+                             <div class="rounded-circle me-2 bg-light d-flex align-items-center justify-content-center border"
+                                  style="width: 32px; height: 32px;">
+                                 <i class="bi bi-person fs-6 text-muted"></i>
+                             </div>
+                        {% endif %}
+                        <div class="input-group flex-grow-1">
+                            <input type="text"
+                                   class="form-control form-control-sm comment-input bg-light border-0 rounded-start-pill"
+                                   placeholder="Écrire un commentaire..."
+                                   aria-label="Écrire un commentaire"
+                                   required>
+                            <button class="btn btn-light btn-sm comment-submit-button rounded-end-pill border-start-0 border" type="submit">
+                                <i class="bi bi-send"></i>
+                            </button>
+                        </div>
                     </div>
                 </form>
             {% endif %}
         </div>
     </div>
-</div> 
+</div>
+
+<div class="modal fade" id="shareModal{{ post.id }}" tabindex="-1" aria-labelledby="shareModalLabel{{ post.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Partager la publication</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form class="share-form" data-post-id="{{ post.id }}">
+                    <div class="mb-3">
+                        <label class="form-label">Ajouter un commentaire (optionnel)</label>
+                        <textarea class="form-control" rows="3" name="share-comment"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-share me-2"></i>Partager
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if app.user and post.author.id == app.user.id %}
+<div class="modal fade" id="editPostModal{{ post.id }}" tabindex="-1" aria-labelledby="editPostModalLabel{{ post.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modifier la publication</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form class="edit-post-form" data-post-id="{{ post.id }}">
+                    <div class="mb-3">
+                        <label class="form-label">Titre (optionnel)</label>
+                        <input type="text" class="form-control" name="title" value="{{ post.title }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contenu</label>
+                        <textarea class="form-control" rows="3" name="content" required>{{ post.content }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Image</label>
+                        <input type="file" class="form-control" name="image" accept="image/*">
+                        {% if post.image %}
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" name="remove_image" id="removeImage{{ post.id }}">
+                                <label class="form-check-label" for="removeImage{{ post.id }}">
+                                    Supprimer l'image actuelle
+                                </label>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-lg me-2"></i>Enregistrer les modifications
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}

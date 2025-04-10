@@ -43,5 +43,9 @@ trait PostCommentsTrait
     public function updateCommentsCounter(): void
     {
         $this->commentsCounter = $this->comments->count();
+        // Ajouter les réponses aux commentaires dans le compteur
+        foreach ($this->comments as $comment) {
+            $this->commentsCounter += $comment->getReplies()->count();
+        }
     }
 }

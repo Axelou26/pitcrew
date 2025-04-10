@@ -1,38 +1,48 @@
 {% for comment in comments %}
-    <div class="comment mb-3" id="comment-{{ comment.id }}">
+    <div class="comment mb-3" id="comment-{{ comment.id }}" data-comment-id="{{ comment.id }}">
         <div class="d-flex">
-            <div class="flex-shrink-0">
-                <img src="{{ comment.author.avatarUrl }}" alt="Avatar" class="rounded-circle" width="40">
-            </div>
-            <div class="flex-grow-1 ms-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">{{ comment.author.fullName }}</h6>
-                    <small class="text-muted">{{ comment.createdAt|ago }}</small>
+            {% if comment.author.profilePicture %}
+                <img src="{{ asset('uploads/profile_pictures/' ~ comment.author.profilePicture) }}"
+                     class="rounded-circle me-2 border"
+                     alt="{{ comment.author.fullName }}"
+                     style="width: 32px; height: 32px; object-fit: cover;">
+            {% else %}
+                <div class="rounded-circle me-2 bg-light d-flex align-items-center justify-content-center border"
+                     style="width: 32px; height: 32px;">
+                    <i class="bi bi-person fs-6 text-muted"></i>
                 </div>
-                <p class="mb-1">{{ comment.content|nl2br }}</p>
-                {% if is_granted('IS_AUTHENTICATED_FULLY') %}
-                    <button class="btn btn-sm btn-link reply-button" data-comment-id="{{ comment.id }}">
-                        Répondre
-                    </button>
-                {% endif %}
+            {% endif %}
+            <div class="flex-grow-1">
+                <div class="bg-light rounded-3 p-2">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <a href="{{ path('app_profile_view', {'id': comment.author.id}) }}" 
+                           class="fw-bold text-decoration-none text-dark">
+                            {{ comment.author.fullName }}
+                        </a>
+                        <small class="text-muted">{{ comment.createdAt|date('d/m/Y H:i') }}</small>
+                    </div>
+                    <div class="comment-content">{{ comment.content|nl2br }}</div>
+                </div>
+                
+                <div class="mt-1 d-flex gap-2">
+                    {% if app.user and (app.user == comment.author or is_granted('ROLE_ADMIN')) %}
+                        <button type="button" 
+                                class="btn btn-link btn-sm text-danger p-0 delete-comment" 
+                                data-comment-id="{{ comment.id }}">
+                            <i class="bi bi-trash"></i> Supprimer
+                        </button>
+                    {% endif %}
+                    {% if is_granted('IS_AUTHENTICATED_FULLY') %}
+                        <button class="btn btn-link btn-sm p-0 reply-button" data-comment-id="{{ comment.id }}">
+                            <i class="bi bi-reply"></i> Répondre
+                        </button>
+                    {% endif %}
+                </div>
 
                 {% if comment.replies|length > 0 %}
                     <div class="replies ms-4 mt-2">
                         {% for reply in comment.replies %}
-                            <div class="reply mb-2" id="comment-{{ reply.id }}">
-                                <div class="d-flex">
-                                    <div class="flex-shrink-0">
-                                        <img src="{{ reply.author.avatarUrl }}" alt="Avatar" class="rounded-circle" width="30">
-                                    </div>
-                                    <div class="flex-grow-1 ms-2">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <h6 class="mb-0 small">{{ reply.author.fullName }}</h6>
-                                            <small class="text-muted">{{ reply.createdAt|ago }}</small>
-                                        </div>
-                                        <p class="mb-0 small">{{ reply.content|nl2br }}</p>
-                                    </div>
-                                </div>
-                            </div>
+                            {{ include('comment/_comment.html.twig', { comment: reply }) }}
                         {% endfor %}
                     </div>
                 {% endif %}
@@ -40,16 +50,35 @@
         </div>
     </div>
 {% else %}
-    <p class="text-muted">Aucun commentaire pour le moment.</p>
+    <div class="text-center text-muted p-3 comments-placeholder">
+        Soyez le premier à commenter.
+    </div>
 {% endfor %}
 
 {% if is_granted('IS_AUTHENTICATED_FULLY') %}
-    <div class="comment-form mt-4">
-        <form id="comment-form" data-post-id="{{ post.id }}">
-            <div class="mb-3">
-                <textarea class="form-control" name="content" rows="3" placeholder="Ajouter un commentaire..."></textarea>
+    <form class="comment-form mt-3" data-post-id="{{ post.id }}">
+        <div class="d-flex align-items-start">
+            {% if app.user.profilePicture %}
+                <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}"
+                     class="rounded-circle me-2 border"
+                     alt="{{ app.user.fullName }}"
+                     style="width: 32px; height: 32px; object-fit: cover;">
+            {% else %}
+                <div class="rounded-circle me-2 bg-light d-flex align-items-center justify-content-center border"
+                     style="width: 32px; height: 32px;">
+                    <i class="bi bi-person fs-6 text-muted"></i>
+                </div>
+            {% endif %}
+            <div class="input-group flex-grow-1">
+                <input type="text"
+                       class="form-control form-control-sm comment-input bg-light border-0 rounded-start-pill"
+                       placeholder="Écrire un commentaire..."
+                       aria-label="Écrire un commentaire"
+                       required>
+                <button class="btn btn-light btn-sm comment-submit-button rounded-end-pill border-start-0 border" type="submit">
+                    <i class="bi bi-send"></i>
+                </button>
             </div>
-            <button type="submit" class="btn btn-primary">Publier</button>
-        </form>
-    </div>
+        </div>
+    </form>
 {% endif %} 

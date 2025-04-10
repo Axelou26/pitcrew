@@ -9,7 +9,6 @@ use App\Entity\Friendship;
 use App\Entity\Post;
 use App\Entity\PostLike;
 use App\Entity\PostComment;
-use App\Entity\PostShare;
 use App\Entity\User;
 
 trait UserSocialTrait
@@ -29,9 +28,6 @@ trait UserSocialTrait
     #[ORM\OneToMany(mappedBy: 'author', targetEntity: PostComment::class, orphanRemoval: true)]
     private Collection $comments;
 
-    #[ORM\OneToMany(mappedBy: 'user', targetEntity: PostShare::class, orphanRemoval: true)]
-    private Collection $shares;
-
     public bool $isFriend = false;
     public bool $pendingRequestFrom = false;
     public bool $pendingRequestTo = false;
@@ -44,7 +40,6 @@ trait UserSocialTrait
         $this->receivedRequests = new ArrayCollection();
         $this->postLikes = new ArrayCollection();
         $this->comments = new ArrayCollection();
-        $this->shares = new ArrayCollection();
     }
 
     public function getPosts(): Collection
@@ -155,11 +150,6 @@ trait UserSocialTrait
         return $this->comments;
     }
 
-    public function getShares(): Collection
-    {
-        return $this->shares;
-    }
-
     public function addComment(PostComment $comment): static
     {
         if (!$this->comments->contains($comment)) {
@@ -174,25 +164,6 @@ trait UserSocialTrait
         if ($this->comments->removeElement($comment)) {
             if ($comment->getAuthor() === $this) {
                 $comment->setAuthor(null);
-            }
-        }
-        return $this;
-    }
-
-    public function addShare(PostShare $share): static
-    {
-        if (!$this->shares->contains($share)) {
-            $this->shares->add($share);
-            $share->setUser($this);
-        }
-        return $this;
-    }
-
-    public function removeShare(PostShare $share): static
-    {
-        if ($this->shares->removeElement($share)) {
-            if ($share->getUser() === $this) {
-                $share->setUser(null);
             }
         }
         return $this;

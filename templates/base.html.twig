@@ -225,6 +225,79 @@
                 font-size: 1rem;
             }
         }
+        
+        /* Styles pour le menu de réactions */
+        .reaction-container {
+            position: relative;
+        }
+
+        .reaction-menu {
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .reaction-container:hover .reaction-menu {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .reaction-container .reaction-menu.show {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .reaction-menu:hover {
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+        }
+
+        .reaction-option {
+            transition: transform 0.2s ease;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            background: transparent;
+        }
+
+        .reaction-option:hover {
+            transform: scale(1.2) translateY(-4px);
+            background: transparent;
+        }
+
+        .reaction-hover {
+            position: relative;
+        }
+
+        .reaction-hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 4px 8px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            margin-bottom: 4px;
+        }
+
+        .reaction-hover:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
     </style>
     {% block stylesheets %}{% endblock %}
 </head>
@@ -483,7 +556,10 @@
             });
         });
     </script>
-    {% block javascripts %}{% endblock %}
+    {% block javascripts %}
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="{{ asset('js/post-interactions.js') }}"></script>
+    {% endblock %}
     {% if app.user %}
         <script src="{{ asset('js/notifications.js') }}"></script>
         <script src="{{ asset('js/notification-counter.js') }}"></script>

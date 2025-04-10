@@ -11,12 +11,11 @@ trait PostQueryTrait
     private function addStandardJoins(QueryBuilder $qb): QueryBuilder
     {
         return $qb
-            ->select('p', 'a', 'l', 'c', 'h', 's')
+            ->select('p', 'a', 'l', 'c', 'h')
             ->leftJoin('p.author', 'a')
             ->leftJoin('p.likes', 'l')
             ->leftJoin('p.comments', 'c')
-            ->leftJoin('p.hashtags', 'h')
-            ->leftJoin('p.shares', 's');
+            ->leftJoin('p.hashtags', 'h');
     }
 
     private function addOrderByDate(QueryBuilder $qb): QueryBuilder

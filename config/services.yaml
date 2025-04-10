@@ -49,3 +49,7 @@ services:
     App\Validator\EmailValidator:
         tags:
             - { name: validator.constraint_validator } 
+
+    twig.extension.string:
+        class: Twig\Extra\String\StringExtension
+        tags: ['twig.extension'] 

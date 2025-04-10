@@ -1,0 +1,63 @@
+{# templates/post/_post_card_minimal.html.twig #}
+<div class="shared-post border rounded p-3">
+    <div class="d-flex align-items-center mb-2">
+        {% if post.author.profilePicture %}
+            <img src="{{ asset('uploads/profile_pictures/' ~ post.author.profilePicture) }}" 
+                 alt="Avatar de {{ post.author.fullName }}" 
+                 class="rounded-circle me-2" 
+                 style="width: 32px; height: 32px; object-fit: cover;">
+        {% else %}
+            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-2"
+                 style="width: 32px; height: 32px;">
+                <i class="bi bi-person text-secondary"></i>
+            </div>
+        {% endif %}
+        <div>
+            <strong>{{ post.author.fullName }}</strong>
+            <div class="text-muted small">
+                {% if post.content %}
+                    <i class="bi bi-share"></i> · 
+                {% endif %}
+                {{ post.createdAt|ago }}
+            </div>
+        </div>
+    </div>
+    
+    {% if post.content %}
+        <div class="post-content mb-3">
+            {{ post.content|nl2br }}
+        </div>
+    {% endif %}
+
+    {% if post.originalPost is not null %}
+        <div class="original-post border rounded p-3 bg-light">
+            <div class="d-flex align-items-center mb-2">
+                {% if post.originalPost.author.profilePicture %}
+                    <img src="{{ asset('uploads/profile_pictures/' ~ post.originalPost.author.profilePicture) }}" 
+                         alt="Avatar de {{ post.originalPost.author.fullName }}" 
+                         class="rounded-circle me-2" 
+                         style="width: 32px; height: 32px; object-fit: cover;">
+                {% else %}
+                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-2"
+                         style="width: 32px; height: 32px;">
+                        <i class="bi bi-person text-secondary"></i>
+                    </div>
+                {% endif %}
+                <div>
+                    <strong>{{ post.originalPost.author.fullName }}</strong>
+                    <div class="text-muted small">{{ post.originalPost.createdAt|ago }}</div>
+                </div>
+            </div>
+
+            <div class="post-content mb-2">
+                {{ post.originalPost.content|nl2br }}
+            </div>
+
+            {% if post.originalPost.image %}
+                <div class="post-image">
+                    <img src="{{ post.originalPost.image }}" alt="Image du post original" class="img-fluid rounded">
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+</div> 
