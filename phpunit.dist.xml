@@ -30,7 +30,7 @@
         </testsuite>
     </testsuites>
 
-    <source>
+    <coverage>
         <include>
             <directory>src</directory>
         </include>
@@ -38,5 +38,5 @@
             <directory>src/DataFixtures</directory>
             <directory>src/Migrations</directory>
         </exclude>
-    </source>
+    </coverage>
 </phpunit>
