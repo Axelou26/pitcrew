@@ -7,6 +7,7 @@ use Symfony\Component\HttpFoundation\Response;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\User;
+use Symfony\Component\DomCrawler\Crawler;
 
 class UserRegistrationTest extends WebTestCase
 {
@@ -18,6 +19,58 @@ class UserRegistrationTest extends WebTestCase
         parent::setUp();
         $this->client = static::createClient();
         $this->entityManager = $this->client->getContainer()->get('doctrine')->getManager();
+        $this->cleanDatabase();
+    }
+
+    private function cleanDatabase(): void
+    {
+        if (!$this->entityManager) {
+            return;
+        }
+
+        $this->entityManager->getConnection()->executeQuery('SET FOREIGN_KEY_CHECKS=0');
+
+        $tables = [
+            'job_application',
+            'job_offer',
+            'post_hashtag',
+            'post',
+            'hashtag',
+            'user',
+            'friendship',
+            'notification',
+            'favorite',
+            'post_like',
+            'post_comment',
+            'post_share',
+            'recruiter_subscription',
+            'interview',
+            'education',
+            'work_experience',
+            'support_ticket'
+        ];
+
+        foreach ($tables as $table) {
+            $this->entityManager->getConnection()->executeQuery("TRUNCATE TABLE {$table}");
+        }
+
+        $this->entityManager->getConnection()->executeQuery('SET FOREIGN_KEY_CHECKS=1');
+        $this->entityManager->clear();
+    }
+
+    private function submitRegistrationForm(Crawler $crawler, array $formData): Crawler
+    {
+        $form = $crawler->filter('form[name="registration_form"]')->form(array_merge([
+            'registration_form[email]' => 'test@example.com',
+            'registration_form[plainPassword]' => 'MotDePasse123!',
+            'registration_form[firstName]' => 'John',
+            'registration_form[lastName]' => 'Doe',
+            'registration_form[agreeTerms]' => true,
+            'registration_form[jobTitle]' => 'Ingénieur F1',
+            'registration_form[skills]' => 'Mécanique, Aérodynamique',
+        ], $formData));
+
+        return $this->client->submit($form);
     }
 
     public function testCompleteRegistrationProcess(): void
@@ -38,17 +91,9 @@ class UserRegistrationTest extends WebTestCase
         $this->assertResponseIsSuccessful();
 
         // 4. Soumission du formulaire d'inscription
-        $form = $crawler->filter('form[name="registration_form"]')->form([
-            'registration_form[email]' => 'nouveau@example.com',
-            'registration_form[plainPassword]' => 'MotDePasse123!',
-            'registration_form[firstName]' => 'John',
-            'registration_form[lastName]' => 'Doe',
-            'registration_form[agreeTerms]' => true,
-            'registration_form[jobTitle]' => 'Ingénieur F1',
-            'registration_form[skills]' => 'Mécanique, Aérodynamique',
+        $crawler = $this->submitRegistrationForm($crawler, [
+            'registration_form[email]' => 'nouveau@example.com'
         ]);
-
-        $this->client->submit($form);
 
         // 5. Vérifier la redirection
         $this->assertResponseRedirects('/email-verification-sent');
@@ -82,7 +127,7 @@ class UserRegistrationTest extends WebTestCase
         $this->assertResponseIsSuccessful();
 
         // 4. Soumission du formulaire avec données invalides
-        $form = $crawler->filter('form[name="registration_form"]')->form([
+        $crawler = $this->submitRegistrationForm($crawler, [
             'registration_form[email]' => 'invalid-email',
             'registration_form[plainPassword]' => 'short',
             'registration_form[firstName]' => '',
@@ -91,8 +136,6 @@ class UserRegistrationTest extends WebTestCase
             'registration_form[jobTitle]' => '',
             'registration_form[skills]' => '',
         ]);
-
-        $crawler = $this->client->submit($form);
 
         // 5. Vérification des erreurs
         $this->assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -123,6 +166,21 @@ class UserRegistrationTest extends WebTestCase
 
     public function testRegistrationWithInvalidEmails(): void
     {
+        // 1. Visite de la page d'inscription
+        $crawler = $this->client->request('GET', '/register');
+        $this->assertResponseIsSuccessful();
+
+        // 2. Sélection du type d'utilisateur
+        $form = $crawler->filter('form[name="user_type_form"]')->form([
+            'user_type_form[userType]' => 'ROLE_POSTULANT'
+        ]);
+        $this->client->submit($form);
+
+        // 3. Suivre la redirection vers le formulaire d'inscription
+        $this->assertResponseRedirects('/register/details');
+        $crawler = $this->client->followRedirect();
+        $this->assertResponseIsSuccessful();
+
         $invalidEmails = [
             'plainaddress',
             '@missinguser.com',
@@ -141,33 +199,10 @@ class UserRegistrationTest extends WebTestCase
         ];
 
         foreach ($invalidEmails as $invalidEmail) {
-            // 1. Visite de la page d'inscription
-            $crawler = $this->client->request('GET', '/register');
-            $this->assertResponseIsSuccessful();
-
-            // 2. Sélection du type d'utilisateur
-            $form = $crawler->filter('form[name="user_type_form"]')->form([
-                'user_type_form[userType]' => 'ROLE_POSTULANT'
-            ]);
-            $this->client->submit($form);
-
-            // 3. Suivre la redirection vers le formulaire d'inscription
-            $this->assertResponseRedirects('/register/details');
-            $crawler = $this->client->followRedirect();
-            $this->assertResponseIsSuccessful();
-
             // 4. Soumission du formulaire avec email invalide
-            $form = $crawler->filter('form[name="registration_form"]')->form([
-                'registration_form[email]' => $invalidEmail,
-                'registration_form[plainPassword]' => 'MotDePasse123!',
-                'registration_form[firstName]' => 'John',
-                'registration_form[lastName]' => 'Doe',
-                'registration_form[agreeTerms]' => true,
-                'registration_form[jobTitle]' => 'Ingénieur F1',
-                'registration_form[skills]' => 'Mécanique, Aérodynamique',
+            $crawler = $this->submitRegistrationForm($crawler, [
+                'registration_form[email]' => $invalidEmail
             ]);
-
-            $crawler = $this->client->submit($form);
 
             // 5. Vérification des erreurs
             $this->assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);

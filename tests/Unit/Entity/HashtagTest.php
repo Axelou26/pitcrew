@@ -53,10 +53,10 @@ class HashtagTest extends TestCase
         $this->assertEquals(6, $this->hashtag->getUsageCount());
 
         // Vérifier que lastUsedAt est mis à jour lors de l'incrémentation
-        $beforeIncrement = $this->hashtag->getLastUsedAt();
+        $beforeIncrement = $this->hashtag->getLastUsedAt()->getTimestamp();
         sleep(1); // Attendre une seconde pour assurer une différence de temps
         $this->hashtag->incrementUsageCount();
-        $this->assertGreaterThan($beforeIncrement, $this->hashtag->getLastUsedAt());
+        $this->assertGreaterThan($beforeIncrement, $this->hashtag->getLastUsedAt()->getTimestamp());
     }
 
     public function testLastUsedAt(): void

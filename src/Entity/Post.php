@@ -47,6 +47,21 @@ class Post
     #[ORM\ManyToMany(targetEntity: Hashtag::class, inversedBy: 'posts')]
     private Collection $hashtags;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $imageName = null;
+
+    #[ORM\Column]
+    private array $reactionCounts = [
+        'like' => 0,
+        'congrats' => 0,
+        'interesting' => 0,
+        'support' => 0,
+        'encouraging' => 0
+    ];
+
+    #[ORM\Column]
+    private ?DateTimeImmutable $createdAt = null;
+
     public function __construct()
     {
         $this->createdAt = new DateTimeImmutable();
@@ -54,10 +69,17 @@ class Post
         $this->comments = new ArrayCollection();
         $this->shares = new ArrayCollection();
         $this->hashtags = new ArrayCollection();
+        $this->mentions = [];
         $this->likesCounter = 0;
         $this->commentsCounter = 0;
         $this->sharesCounter = 0;
-        $this->reactionCounts = $this->initializeReactionCounts();
+        $this->reactionCounts = [
+            'like' => 0,
+            'congrats' => 0,
+            'interesting' => 0,
+            'support' => 0,
+            'encouraging' => 0
+        ];
     }
 
     public function getId(): ?int
@@ -363,18 +385,12 @@ class Post
         return $this;
     }
 
-    /**
-     * @return array
-     */
-    public function getReactionCounts(): ?array
+    public function getReactionCounts(): array
     {
         return $this->reactionCounts;
     }
 
-    /**
-     * @param array|null $reactionCounts
-     */
-    public function setReactionCounts(?array $reactionCounts): static
+    public function setReactionCounts(array $reactionCounts): static
     {
         $this->reactionCounts = $reactionCounts;
         return $this;

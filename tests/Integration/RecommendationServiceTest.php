@@ -23,10 +23,38 @@ class RecommendationServiceTest extends KernelTestCase
 
         $this->recommendationService = $kernel->getContainer()
             ->get(RecommendationService::class);
+
+        $this->cleanDatabase();
+    }
+
+    private function cleanDatabase(): void
+    {
+        if (!$this->entityManager) {
+            return;
+        }
+
+        $this->entityManager->getConnection()->executeQuery('SET FOREIGN_KEY_CHECKS=0');
+
+        $tables = [
+            'post_hashtag',
+            'post',
+            'hashtag',
+            'user'
+        ];
+
+        foreach ($tables as $table) {
+            $this->entityManager->getConnection()->executeQuery("TRUNCATE TABLE {$table}");
+        }
+
+        $this->entityManager->getConnection()->executeQuery('SET FOREIGN_KEY_CHECKS=1');
+        $this->entityManager->clear();
     }
 
     public function testGetRecommendedPosts(): void
     {
+        // Nettoyer le cache avant le test
+        $this->recommendationService->clearCache();
+        
         // Créer un utilisateur de test
         $user = new User();
         $user->setEmail('test_recommended@example.com');
@@ -89,6 +117,9 @@ class RecommendationServiceTest extends KernelTestCase
 
     public function testGetTrendingHashtags(): void
     {
+        // Nettoyer le cache avant le test
+        $this->recommendationService->clearCache();
+
         // Créer un utilisateur de test
         $user = new User();
         $user->setEmail('test_trending@example.com');

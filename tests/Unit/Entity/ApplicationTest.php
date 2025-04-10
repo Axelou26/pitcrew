@@ -66,12 +66,12 @@ class ApplicationTest extends TestCase
     public function testRecommendationLetterFilename(): void
     {
         $filename = "recommendation.pdf";
-        $this->application->setRecommendationLetterFilename($filename);
-        $this->assertEquals($filename, $this->application->getRecommendationLetterFilename());
+        $this->application->setRecLetterFilename($filename);
+        $this->assertEquals($filename, $this->application->getRecLetterFilename());
 
         // Test avec une valeur null
-        $this->application->setRecommendationLetterFilename(null);
-        $this->assertNull($this->application->getRecommendationLetterFilename());
+        $this->application->setRecLetterFilename(null);
+        $this->assertNull($this->application->getRecLetterFilename());
     }
 
     public function testStatus(): void
@@ -103,7 +103,7 @@ class ApplicationTest extends TestCase
             ->setJobOffer($this->jobOffer)
             ->setCoverLetter("Lettre de motivation")
             ->setCvFilename("cv.pdf")
-            ->setRecommendationLetterFilename("recommendation.pdf")
+            ->setRecLetterFilename("recommendation.pdf")
             ->setStatus("pending")
             ->setCreatedAt(new \DateTimeImmutable());
 

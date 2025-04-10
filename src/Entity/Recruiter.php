@@ -77,4 +77,23 @@ class Recruiter extends User
         }
         return $this->favoriteApplicants->contains($user);
     }
+
+    public function addJobOffer(JobOffer $jobOffer): static
+    {
+        if (!$this->jobOffers->contains($jobOffer)) {
+            $this->jobOffers->add($jobOffer);
+            $jobOffer->setRecruiter($this);
+        }
+        return $this;
+    }
+
+    public function removeJobOffer(JobOffer $jobOffer): static
+    {
+        if ($this->jobOffers->removeElement($jobOffer)) {
+            if ($jobOffer->getRecruiter() === $this) {
+                $jobOffer->setRecruiter(null);
+            }
+        }
+        return $this;
+    }
 }

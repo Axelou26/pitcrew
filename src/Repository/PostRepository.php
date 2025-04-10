@@ -108,10 +108,16 @@ class PostRepository extends ServiceEntityRepository
     {
         return $this->getCachedResult(
             sprintf(self::CACHE_KEY_POSTS_BY_HASHTAG, $hashtag->getId()),
-            fn(): array => $this->createBasePostQuery()
+            fn(): array => $this->createQueryBuilder('p')
+                ->select('p', 'a', 'l', 'c', 'h', 's')
+                ->leftJoin('p.author', 'a')
+                ->leftJoin('p.likes', 'l')
+                ->leftJoin('p.comments', 'c')
                 ->innerJoin('p.hashtags', 'h')
+                ->leftJoin('p.shares', 's')
                 ->where('h = :hashtag')
                 ->setParameter('hashtag', $hashtag)
+                ->orderBy('p.createdAt', 'DESC')
                 ->getQuery()
                 ->getResult()
         );

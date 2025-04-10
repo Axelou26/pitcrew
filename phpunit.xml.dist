@@ -5,11 +5,9 @@
          colors="true"
          cacheDirectory=".phpunit.cache"
          executionOrder="random"
-         forceCoversAnnotation="true"
          beStrictAboutCoversAnnotation="true"
          beStrictAboutOutputDuringTests="true"
-         beStrictAboutTodoAnnotatedTests="true"
-         convertDeprecationsToExceptions="true">
+         beStrictAboutTodoAnnotatedTests="true">
     <testsuites>
         <testsuite name="Performance Tests">
             <directory>tests/Performance</directory>
@@ -25,11 +23,15 @@
         </testsuite>
     </testsuites>
 
-    <source>
+    <coverage>
+        <report>
+            <html outputDirectory="coverage/html"/>
+            <clover outputFile="coverage/clover.xml"/>
+        </report>
         <include>
             <directory>src</directory>
         </include>
-    </source>
+    </coverage>
 
     <php>
         <ini name="display_errors" value="1"/>

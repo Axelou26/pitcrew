@@ -3,7 +3,7 @@
 namespace App\Tests\Unit\Entity;
 
 use App\Entity\JobOffer;
-use App\Entity\User;
+use App\Entity\Recruiter;
 use App\Entity\JobApplication;
 use App\Entity\Interview;
 use Doctrine\Common\Collections\Collection;
@@ -12,13 +12,13 @@ use PHPUnit\Framework\TestCase;
 class JobOfferTest extends TestCase
 {
     private JobOffer $jobOffer;
-    private User $recruiter;
+    private Recruiter $recruiter;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->jobOffer = new JobOffer();
-        $this->recruiter = new User();
+        $this->recruiter = new Recruiter();
 
         $this->recruiter->setEmail('recruiter@example.com');
     }

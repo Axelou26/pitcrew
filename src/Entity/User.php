@@ -15,7 +15,6 @@ use App\Entity\Traits\UserProfileTrait;
 use App\Entity\Traits\UserSocialTrait;
 use App\Entity\Traits\UserDocumentsTrait;
 use App\Entity\Traits\UserProfessionalTrait;
-use App\Entity\Traits\UserFriendshipTrait;
 use DateTimeImmutable;
 use DateTimeInterface;
 
@@ -34,7 +33,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     use UserSocialTrait;
     use UserDocumentsTrait;
     use UserProfessionalTrait;
-    use UserFriendshipTrait;
 
     public const ROLE_POSTULANT = 'ROLE_POSTULANT';
     public const ROLE_RECRUTEUR = 'ROLE_RECRUTEUR';
@@ -85,6 +83,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: WorkExperience::class, orphanRemoval: true)]
     private Collection $workExperiences;
 
+    #[ORM\OneToMany(mappedBy: 'user', targetEntity: SupportTicket::class, orphanRemoval: true)]
+    private Collection $supportTickets;
+
     #[ORM\Column(type: 'boolean')]
     private bool $isVerified = false;
 
@@ -100,6 +101,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->applicantInterviews = new ArrayCollection();
         $this->education = new ArrayCollection();
         $this->workExperiences = new ArrayCollection();
+        $this->supportTickets = new ArrayCollection();
         $this->skills = [];
         $this->documents = [];
         $this->isVerified = false;
@@ -203,10 +205,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    // Méthodes pour les collections restantes
     public function getApplications(): Collection
     {
         return $this->applications;
+    }
+
+    public function addApplication(JobApplication $application): static
+    {
+        if (!$this->applications->contains($application)) {
+            $this->applications->add($application);
+            $application->setApplicant($this);
+        }
+        return $this;
+    }
+
+    public function removeApplication(JobApplication $application): static
+    {
+        if ($this->applications->removeElement($application)) {
+            if ($application->getApplicant() === $this) {
+                $application->setApplicant(null);
+            }
+        }
+        return $this;
     }
 
     public function getNotifications(): Collection
@@ -214,9 +234,47 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->notifications;
     }
 
+    public function addNotification(Notification $notification): static
+    {
+        if (!$this->notifications->contains($notification)) {
+            $this->notifications->add($notification);
+            $notification->setUser($this);
+        }
+        return $this;
+    }
+
+    public function removeNotification(Notification $notification): static
+    {
+        if ($this->notifications->removeElement($notification)) {
+            if ($notification->getUser() === $this) {
+                $notification->setUser(null);
+            }
+        }
+        return $this;
+    }
+
     public function getFavorites(): Collection
     {
         return $this->favorites;
+    }
+
+    public function addFavorite(Favorite $favorite): static
+    {
+        if (!$this->favorites->contains($favorite)) {
+            $this->favorites->add($favorite);
+            $favorite->setUser($this);
+        }
+        return $this;
+    }
+
+    public function removeFavorite(Favorite $favorite): static
+    {
+        if ($this->favorites->removeElement($favorite)) {
+            if ($favorite->getUser() === $this) {
+                $favorite->setUser(null);
+            }
+        }
+        return $this;
     }
 
     public function getSubscriptions(): Collection
@@ -224,14 +282,71 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->subscriptions;
     }
 
-    public function getRecruiterInterviews(): Collection
+    public function addSubscription(RecruiterSubscription $subscription): static
+    {
+        if (!$this->subscriptions->contains($subscription)) {
+            $this->subscriptions->add($subscription);
+            $subscription->setRecruiter($this);
+        }
+        return $this;
+    }
+
+    public function removeSubscription(RecruiterSubscription $subscription): static
+    {
+        if ($this->subscriptions->removeElement($subscription)) {
+            if ($subscription->getRecruiter() === $this) {
+                $subscription->setRecruiter(null);
+            }
+        }
+        return $this;
+    }
+
+    public function getInterviewsAsRecruiter(): Collection
     {
         return $this->recruiterInterviews;
     }
 
-    public function getApplicantInterviews(): Collection
+    public function addInterviewAsRecruiter(Interview $interview): static
+    {
+        if (!$this->recruiterInterviews->contains($interview)) {
+            $this->recruiterInterviews->add($interview);
+            $interview->setRecruiter($this);
+        }
+        return $this;
+    }
+
+    public function removeInterviewAsRecruiter(Interview $interview): static
+    {
+        if ($this->recruiterInterviews->removeElement($interview)) {
+            if ($interview->getRecruiter() === $this) {
+                $interview->setRecruiter(null);
+            }
+        }
+        return $this;
+    }
+
+    public function getInterviewsAsApplicant(): Collection
     {
         return $this->applicantInterviews;
+    }
+
+    public function addInterviewAsApplicant(Interview $interview): static
+    {
+        if (!$this->applicantInterviews->contains($interview)) {
+            $this->applicantInterviews->add($interview);
+            $interview->setApplicant($this);
+        }
+        return $this;
+    }
+
+    public function removeInterviewAsApplicant(Interview $interview): static
+    {
+        if ($this->applicantInterviews->removeElement($interview)) {
+            if ($interview->getApplicant() === $this) {
+                $interview->setApplicant(null);
+            }
+        }
+        return $this;
     }
 
     public function getEducation(): Collection
@@ -239,8 +354,70 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->education;
     }
 
+    public function addEducation(Education $education): static
+    {
+        if (!$this->education->contains($education)) {
+            $this->education->add($education);
+            $education->setUser($this);
+        }
+        return $this;
+    }
+
+    public function removeEducation(Education $education): static
+    {
+        if ($this->education->removeElement($education)) {
+            if ($education->getUser() === $this) {
+                $education->setUser(null);
+            }
+        }
+        return $this;
+    }
+
     public function getWorkExperiences(): Collection
     {
         return $this->workExperiences;
+    }
+
+    public function addWorkExperience(WorkExperience $workExperience): static
+    {
+        if (!$this->workExperiences->contains($workExperience)) {
+            $this->workExperiences->add($workExperience);
+            $workExperience->setUser($this);
+        }
+        return $this;
+    }
+
+    public function removeWorkExperience(WorkExperience $workExperience): static
+    {
+        if ($this->workExperiences->removeElement($workExperience)) {
+            if ($workExperience->getUser() === $this) {
+                $workExperience->setUser(null);
+            }
+        }
+        return $this;
+    }
+
+    public function getSupportTickets(): Collection
+    {
+        return $this->supportTickets;
+    }
+
+    public function addSupportTicket(SupportTicket $supportTicket): static
+    {
+        if (!$this->supportTickets->contains($supportTicket)) {
+            $this->supportTickets->add($supportTicket);
+            $supportTicket->setUser($this);
+        }
+        return $this;
+    }
+
+    public function removeSupportTicket(SupportTicket $supportTicket): static
+    {
+        if ($this->supportTickets->removeElement($supportTicket)) {
+            if ($supportTicket->getUser() === $this) {
+                $supportTicket->setUser(null);
+            }
+        }
+        return $this;
     }
 }

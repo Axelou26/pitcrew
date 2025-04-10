@@ -8,10 +8,9 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 class EmailValidationService
 {
-    private const EMAIL_REGEX =
-        '/^[a-zA-Z0-9.!#$%&\'*+\\/=?^_`{|}~-]+' .
-        '@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?' .
-        '(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/';
+    private const EMAIL_REGEX = '/^[a-zA-Z0-9.!#$%&\'*+\/=?^_`{|}~-]+@[a-zA-Z0-9]'
+        . '(?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?'
+        . '(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/';
 
     private bool $checkDns;
 
@@ -48,6 +47,14 @@ class EmailValidationService
             return false;
         }
 
+        if (substr($email, 0, 1) === '.') {
+            return false;
+        }
+
+        if (substr_count($email, '@') !== 1) {
+            return false;
+        }
+
         return preg_match(self::EMAIL_REGEX, $email) === 1;
     }
 
@@ -62,38 +69,70 @@ class EmailValidationService
         return checkdnsrr($domain, 'MX') || checkdnsrr($domain, 'A');
     }
 
+    private function validateLength(string $email): ?string
+    {
+        return !$this->isValidLength($email) ? 'L\'adresse email ne doit pas dépasser 254 caractères' : null;
+    }
+
+    private function validateAtSymbol(string $email): ?string
+    {
+        return substr_count($email, '@') !== 1 ? 'L\'adresse email doit contenir exactement un @' : null;
+    }
+
+    private function validateConsecutiveDots(string $email): ?string
+    {
+        return strpos($email, '..') !== false ? 'L\'adresse email ne peut pas contenir deux points consécutifs' : null;
+    }
+
+    private function validateDotAroundAt(string $email): ?string
+    {
+        $hasInvalidDot = strpos($email, '.@') !== false || strpos($email, '@.') !== false;
+        return $hasInvalidDot ? 'L\'adresse email ne peut pas avoir un point juste avant ou après le @' : null;
+    }
+
+    private function validateEndingDot(string $email): ?string
+    {
+        return substr($email, -1) === '.' ? 'L\'adresse email ne peut pas se terminer par un point' : null;
+    }
+
+    private function validateStartingDot(string $email): ?string
+    {
+        return substr($email, 0, 1) === '.' ? 'L\'adresse email ne peut pas commencer par un point' : null;
+    }
+
+    private function validateSpaces(string $email): ?string
+    {
+        return strpos($email, ' ') !== false ? 'L\'adresse email ne peut pas contenir d\'espaces' : null;
+    }
+
+    private function validateRegex(string $email): ?string
+    {
+        return !preg_match(self::EMAIL_REGEX, $email) ? 'Le format de l\'adresse email n\'est pas valide' : null;
+    }
+
+    private function validateDns(string $email): ?string
+    {
+        return $this->checkDns && !$this->hasValidDomain($email) ? 'Le domaine de l\'adresse email n\'existe pas' : null;
+    }
+
     /**
      * @return array<int, string>
      */
     public function getValidationErrors(string $email): array
     {
-        $errors = [];
+        $validations = [
+            $this->validateLength($email),
+            $this->validateAtSymbol($email),
+            $this->validateConsecutiveDots($email),
+            $this->validateDotAroundAt($email),
+            $this->validateEndingDot($email),
+            $this->validateStartingDot($email),
+            $this->validateSpaces($email),
+            $this->validateRegex($email),
+            $this->validateDns($email)
+        ];
 
-        if (!$this->isValidLength($email)) {
-            $errors[] = 'L\'adresse email ne doit pas dépasser 254 caractères';
-        }
-
-        if (strpos($email, '..') !== false) {
-            $errors[] = 'L\'adresse email ne peut pas contenir deux points consécutifs';
-        }
-
-        if (strpos($email, '.@') !== false || strpos($email, '@.') !== false) {
-            $errors[] = 'L\'adresse email ne peut pas avoir un point juste avant ou après le @';
-        }
-
-        if (substr($email, -1) === '.') {
-            $errors[] = 'L\'adresse email ne peut pas se terminer par un point';
-        }
-
-        if (!preg_match(self::EMAIL_REGEX, $email)) {
-            $errors[] = 'Le format de l\'adresse email n\'est pas valide';
-        }
-
-        if ($this->checkDns && !$this->hasValidDomain($email)) {
-            $errors[] = 'Le domaine de l\'adresse email n\'existe pas';
-        }
-
-        return $errors;
+        return array_values(array_filter($validations));
     }
 
     public function validateEmail(mixed $value, ExecutionContextInterface $context): void

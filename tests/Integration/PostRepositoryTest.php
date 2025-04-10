@@ -9,6 +9,7 @@ use App\Repository\PostRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\Cache\Adapter\AdapterInterface;
 
 /**
  * Tests d'intégration pour le PostRepository
@@ -17,6 +18,7 @@ class PostRepositoryTest extends KernelTestCase
 {
     private ?EntityManagerInterface $entityManager = null;
     private PostRepository $postRepository;
+    private AdapterInterface $cache;
 
     protected function setUp(): void
     {
@@ -25,6 +27,7 @@ class PostRepositoryTest extends KernelTestCase
             ->get('doctrine')
             ->getManager();
         $this->postRepository = $this->entityManager->getRepository(Post::class);
+        $this->cache = static::getContainer()->get(AdapterInterface::class);
 
         $this->cleanDatabase();
     }
@@ -119,6 +122,7 @@ class PostRepositoryTest extends KernelTestCase
         $this->entityManager->clear();
 
         $hashtag = $this->entityManager->find(Hashtag::class, $hashtag->getId());
+        $this->cache->deleteItem(sprintf('posts_by_hashtag_%d', $hashtag->getId()));
         $posts = $this->postRepository->findByHashtag($hashtag);
 
         $this->assertCount(1, $posts);

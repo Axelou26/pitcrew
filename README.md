@@ -71,6 +71,25 @@ symfony serve
 - Composer
 - Symfony CLI
 
+## Configuration de la couverture de code
+
+Pour exécuter les tests avec la couverture de code, vous devez installer et configurer Xdebug :
+
+1. Téléchargez l'extension Xdebug appropriée depuis https://xdebug.org/download
+2. Placez le fichier DLL dans le répertoire des extensions PHP
+3. Ajoutez ces lignes à votre php.ini :
+   ```ini
+   [xdebug]
+   zend_extension=xdebug
+   xdebug.mode=coverage
+   ```
+4. Redémarrez votre serveur PHP
+
+Ensuite, vous pouvez exécuter les tests avec la couverture de code :
+```bash
+composer test:coverage
+```
+
 ## Contribution
 
 1. Fork le projet

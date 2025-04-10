@@ -499,23 +499,42 @@ class RecommendationService
     }
 
     /**
-     * Récupère les hashtags tendance
+     * Vide le cache pour les tests
+     */
+    public function clearCache(): void
+    {
+        // Récupérer tous les utilisateurs pour nettoyer leurs caches spécifiques
+        $users = $this->entityManager->getRepository(User::class)->findAll();
+
+        foreach ($users as $user) {
+            $userId = $user->getId();
+            $this->cache->delete('personalized_recommendations_' . $userId);
+            $this->cache->delete('frequently_interacted_users_' . $userId);
+            $this->cache->delete('relevant_shares_' . $userId);
+        }
+
+        // Nettoyer le cache des hashtags tendances
+        $this->cache->delete('trending_hashtags');
+    }
+
+    /**
+     * Récupère les hashtags les plus utilisés
      *
      * @param int $limit Nombre maximum de hashtags à récupérer
      * @return array Liste des hashtags les plus utilisés
      */
-    public function getTrendingHashtags(int $limit = 10): array
+    public function getTrendingHashtags(int $limit = 5): array
     {
         return $this->cache->get('trending_hashtags', function (ItemInterface $item) use ($limit) {
-            $item->expiresAfter(300); // Cache pour 5 minutes
+            $item->expiresAfter(900); // Cache pour 15 minutes
 
-            $queryBuilder = $this->entityManager->createQueryBuilder();
-            $queryBuilder->select('h')
+            $qb = $this->entityManager->createQueryBuilder();
+            $qb->select('h')
                ->from('App\Entity\Hashtag', 'h')
                ->orderBy('h.usageCount', 'DESC')
                ->setMaxResults($limit);
 
-            return $queryBuilder->getQuery()->getResult();
+            return $qb->getQuery()->getResult();
         });
     }
 }

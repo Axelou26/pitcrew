@@ -33,7 +33,7 @@ class EmailValidationServiceTest extends TestCase
         $this->assertNotEmpty($this->emailValidationService->getValidationErrors($email));
     }
 
-    public function validEmailProvider(): array
+    public static function validEmailProvider(): array
     {
         return [
             ['test@example.com'],
@@ -49,7 +49,7 @@ class EmailValidationServiceTest extends TestCase
         ];
     }
 
-    public function invalidEmailProvider(): array
+    public static function invalidEmailProvider(): array
     {
         return [
             ['plainaddress'],

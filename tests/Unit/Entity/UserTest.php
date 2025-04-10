@@ -14,6 +14,8 @@ use App\Entity\PostComment;
 use App\Entity\PostShare;
 use App\Entity\RecruiterSubscription;
 use App\Entity\Interview;
+use App\Entity\Education;
+use App\Entity\WorkExperience;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -27,6 +29,7 @@ class UserTest extends TestCase
     {
         parent::setUp();
         $this->user = new User();
+        $this->user->initializeSocialCollections();
 
         // Mock du service de hachage de mot de passe
         $this->passwordHasher = $this->createMock(UserPasswordHasherInterface::class);
@@ -115,19 +118,26 @@ class UserTest extends TestCase
         $this->assertEquals($documents, $this->user->getDocuments());
 
         // Test du CV
-        $this->user->setCv('cv.pdf');
-        $this->assertEquals('cv.pdf', $this->user->getCv());
+        $this->user->setResume('cv.pdf');
+        $this->assertEquals('cv.pdf', $this->user->getResume());
     }
 
     public function testUserExperienceAndEducation(): void
     {
-        $experience = '5 ans d\'expérience en développement web';
-        $this->user->setExperience($experience);
-        $this->assertEquals($experience, $this->user->getExperience());
+        // Test de l'éducation
+        $education = new Education();
+        $education->setDegree('Master en Informatique');
+        $this->user->addEducation($education);
+        $this->assertCount(1, $this->user->getEducation());
+        $this->assertTrue($this->user->getEducation()->contains($education));
 
-        $education = 'Master en Informatique';
-        $this->user->setEducation($education);
-        $this->assertEquals($education, $this->user->getEducation());
+        // Test de l'expérience professionnelle
+        $experience = new WorkExperience();
+        $experience->setTitle('Développeur Web');
+        $experience->setDescription('5 ans d\'expérience en développement web');
+        $this->user->addWorkExperience($experience);
+        $this->assertCount(1, $this->user->getWorkExperiences());
+        $this->assertTrue($this->user->getWorkExperiences()->contains($experience));
     }
 
     public function testUserRoleChecks(): void
@@ -177,34 +187,38 @@ class UserTest extends TestCase
 
     public function testJobOffersCollection(): void
     {
+        // On utilise un Recruiter au lieu d'un User simple
+        $recruiter = new \App\Entity\Recruiter();
         $jobOffer = new JobOffer();
         $jobOffer->setTitle('Test job offer');
 
         // Test d'ajout d'une offre d'emploi
-        $this->user->addJobOffer($jobOffer);
-        $this->assertCount(1, $this->user->getJobOffers());
-        $this->assertTrue($this->user->getJobOffers()->contains($jobOffer));
-        $this->assertSame($this->user, $jobOffer->getRecruiter());
+        $recruiter->addJobOffer($jobOffer);
+        $this->assertCount(1, $recruiter->getJobOffers());
+        $this->assertTrue($recruiter->getJobOffers()->contains($jobOffer));
+        $this->assertSame($recruiter, $jobOffer->getRecruiter());
 
         // Test de suppression d'une offre d'emploi
-        $this->user->removeJobOffer($jobOffer);
-        $this->assertCount(0, $this->user->getJobOffers());
-        $this->assertFalse($this->user->getJobOffers()->contains($jobOffer));
+        $recruiter->removeJobOffer($jobOffer);
+        $this->assertCount(0, $recruiter->getJobOffers());
+        $this->assertFalse($recruiter->getJobOffers()->contains($jobOffer));
     }
 
     public function testApplicationsCollection(): void
     {
+        // On utilise un Applicant au lieu d'un User simple
+        $applicant = new \App\Entity\Applicant();
         $application = new JobApplication();
 
         // Test d'ajout d'une candidature
-        $this->user->addApplication($application);
-        $this->assertCount(1, $this->user->getApplications());
-        $this->assertTrue($this->user->getApplications()->contains($application));
+        $applicant->addApplication($application);
+        $this->assertCount(1, $applicant->getApplications());
+        $this->assertTrue($applicant->getApplications()->contains($application));
 
         // Test de suppression d'une candidature
-        $this->user->removeApplication($application);
-        $this->assertCount(0, $this->user->getApplications());
-        $this->assertFalse($this->user->getApplications()->contains($application));
+        $applicant->removeApplication($application);
+        $this->assertCount(0, $applicant->getApplications());
+        $this->assertFalse($applicant->getApplications()->contains($application));
     }
 
     public function testNotificationsCollection(): void
@@ -224,49 +238,59 @@ class UserTest extends TestCase
 
     public function testFriendshipCollections(): void
     {
-        $friend = new User();
-        $friend->setEmail('friend@example.com');
+        $otherUser = new User();
+        $otherUser->setEmail('other@example.com');
+        
+        // Initialisation des collections
+        $this->user->initializeSocialCollections();
+        $otherUser->initializeSocialCollections();
 
-        $friendship = new Friendship();
-        $friendship->setRequester($this->user);
-        $friendship->setAddressee($friend);
-
-        // Test d'ajout d'une demande d'ami envoyée
-        $this->user->addSentFriendRequest($friendship);
+        // Test des demandes d'amitié envoyées
+        $sentRequest = new Friendship();
+        $sentRequest->setRequester($this->user);
+        $sentRequest->setAddressee($otherUser);
+        $sentRequest->setStatus(Friendship::STATUS_PENDING);
+        $this->user->addSentFriendRequest($sentRequest);
+        $otherUser->addReceivedFriendRequest($sentRequest);
         $this->assertCount(1, $this->user->getSentFriendRequests());
-        $this->assertTrue($this->user->getSentFriendRequests()->contains($friendship));
+        $this->assertTrue($this->user->hasPendingFriendRequestWith($otherUser));
 
-        // Test d'ajout d'une demande d'ami reçue
-        $friendship2 = new Friendship();
-        $friendship2->setRequester($friend);
-        $friendship2->setAddressee($this->user);
-        $this->user->addReceivedFriendRequest($friendship2);
-        $this->assertCount(1, $this->user->getReceivedFriendRequests());
-        $this->assertTrue($this->user->getReceivedFriendRequests()->contains($friendship2));
+        // Test des demandes d'amitié reçues
+        $receivedRequest = new Friendship();
+        $receivedRequest->setRequester($otherUser);
+        $receivedRequest->setAddressee($this->user);
+        $receivedRequest->setStatus(Friendship::STATUS_PENDING);
+        $otherUser->addSentFriendRequest($receivedRequest);
+        $this->user->addReceivedFriendRequest($receivedRequest);
+        $this->assertCount(1, $this->user->getReceivedRequests());
+        $this->assertTrue($otherUser->hasPendingFriendRequestWith($this->user));
     }
 
     public function testSocialInteractions(): void
     {
         // Test des likes
-        $postLike = new PostLike();
-        $this->user->addPostLike($postLike);
-        $this->assertCount(1, $this->user->getPostLikes());
-        $this->user->removePostLike($postLike);
+        $post = new Post();
+        $like = new PostLike();
+        $like->setPost($post);
+        $like->setUser($this->user);
         $this->assertCount(0, $this->user->getPostLikes());
+        $this->user->getPostLikes()->add($like);
+        $this->assertCount(1, $this->user->getPostLikes());
+        $this->assertTrue($this->user->hasLikedPost($post));
 
         // Test des commentaires
         $comment = new PostComment();
-        $this->user->addPostComment($comment);
-        $this->assertCount(1, $this->user->getPostComments());
-        $this->user->removePostComment($comment);
-        $this->assertCount(0, $this->user->getPostComments());
+        $comment->setContent('Test comment');
+        $this->user->addComment($comment);
+        $this->assertCount(1, $this->user->getComments());
+        $this->assertTrue($this->user->getComments()->contains($comment));
 
         // Test des partages
         $share = new PostShare();
-        $this->user->addPostShare($share);
-        $this->assertCount(1, $this->user->getPostShares());
-        $this->user->removePostShare($share);
-        $this->assertCount(0, $this->user->getPostShares());
+        $share->setPost($post);
+        $this->user->addShare($share);
+        $this->assertCount(1, $this->user->getShares());
+        $this->assertTrue($this->user->getShares()->contains($share));
     }
 
     public function testInterviewsCollections(): void
@@ -333,18 +357,32 @@ class UserTest extends TestCase
     {
         $otherUser = new User();
         $otherUser->setEmail('other@example.com');
+        
+        // Initialisation des collections
+        $this->user->initializeSocialCollections();
+        $otherUser->initializeSocialCollections();
 
-        // Test des propriétés dynamiques de l'amitié
-        $this->assertFalse($this->user->isFriend);
-        $this->assertFalse($this->user->hasPendingRequestFrom);
-        $this->assertFalse($this->user->hasPendingRequestTo);
-        $this->assertNull($this->user->pendingRequestId);
+        // Test initial - aucune relation d'amitié
+        $this->assertFalse($this->user->isFriendWith($otherUser));
+        $this->assertFalse($this->user->hasPendingFriendRequestWith($otherUser));
 
-        // Simulation d'une demande d'ami
-        $this->user->hasPendingRequestTo = true;
-        $this->user->pendingRequestId = 1;
+        // Création d'une demande d'amitié
+        $friendRequest = new Friendship();
+        $friendRequest->setRequester($this->user);
+        $friendRequest->setAddressee($otherUser);
+        $friendRequest->setStatus(Friendship::STATUS_PENDING);
+        
+        // Utilisation des méthodes d'ajout appropriées
+        $this->user->addSentFriendRequest($friendRequest);
+        $otherUser->addReceivedFriendRequest($friendRequest);
 
-        $this->assertTrue($this->user->hasPendingRequestTo);
-        $this->assertEquals(1, $this->user->pendingRequestId);
+        // Vérification de la demande d'amitié en attente
+        $this->assertTrue($this->user->hasPendingFriendRequestWith($otherUser));
+        $this->assertFalse($this->user->isFriendWith($otherUser));
+
+        // Acceptation de la demande d'amitié
+        $friendRequest->setStatus(Friendship::STATUS_ACCEPTED);
+        $this->assertTrue($this->user->isFriendWith($otherUser));
+        $this->assertTrue($otherUser->isFriendWith($this->user));
     }
 }

@@ -83,31 +83,39 @@ trait UserSocialTrait
 
     public function hasPendingFriendRequestWith(User $user): bool
     {
+        // Vérifier les demandes envoyées
         foreach ($this->sentFriendRequests as $request) {
-            if ($request->getAddressee() === $user && $request->getStatus() === 'pending') {
+            if ($request->getAddressee() === $user && $request->getStatus() === Friendship::STATUS_PENDING) {
                 return true;
             }
         }
+
+        // Vérifier les demandes reçues
         foreach ($this->receivedRequests as $request) {
-            if ($request->getRequester() === $user && $request->getStatus() === 'pending') {
+            if ($request->getRequester() === $user && $request->getStatus() === Friendship::STATUS_PENDING) {
                 return true;
             }
         }
+
         return false;
     }
 
     public function isFriendWith(User $user): bool
     {
+        // Vérifier les demandes envoyées
         foreach ($this->sentFriendRequests as $request) {
-            if ($request->getAddressee() === $user && $request->getStatus() === 'accepted') {
+            if ($request->getAddressee() === $user && $request->getStatus() === Friendship::STATUS_ACCEPTED) {
                 return true;
             }
         }
+
+        // Vérifier les demandes reçues
         foreach ($this->receivedRequests as $request) {
-            if ($request->getRequester() === $user && $request->getStatus() === 'accepted') {
+            if ($request->getRequester() === $user && $request->getStatus() === Friendship::STATUS_ACCEPTED) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -115,12 +123,12 @@ trait UserSocialTrait
     {
         $friends = [];
         foreach ($this->sentFriendRequests as $request) {
-            if ($request->getStatus() === 'accepted') {
+            if ($request->getStatus() === Friendship::STATUS_ACCEPTED) {
                 $friends[] = $request->getAddressee();
             }
         }
         foreach ($this->receivedRequests as $request) {
-            if ($request->getStatus() === 'accepted') {
+            if ($request->getStatus() === Friendship::STATUS_ACCEPTED) {
                 $friends[] = $request->getRequester();
             }
         }
@@ -185,6 +193,44 @@ trait UserSocialTrait
         if ($this->shares->removeElement($share)) {
             if ($share->getUser() === $this) {
                 $share->setUser(null);
+            }
+        }
+        return $this;
+    }
+
+    public function addSentFriendRequest(Friendship $friendship): static
+    {
+        if (!$this->sentFriendRequests->contains($friendship)) {
+            $this->sentFriendRequests->add($friendship);
+            $friendship->setRequester($this);
+        }
+        return $this;
+    }
+
+    public function removeSentFriendRequest(Friendship $friendship): static
+    {
+        if ($this->sentFriendRequests->removeElement($friendship)) {
+            if ($friendship->getRequester() === $this) {
+                $friendship->setRequester(null);
+            }
+        }
+        return $this;
+    }
+
+    public function addReceivedFriendRequest(Friendship $friendship): static
+    {
+        if (!$this->receivedRequests->contains($friendship)) {
+            $this->receivedRequests->add($friendship);
+            $friendship->setAddressee($this);
+        }
+        return $this;
+    }
+
+    public function removeReceivedFriendRequest(Friendship $friendship): static
+    {
+        if ($this->receivedRequests->removeElement($friendship)) {
+            if ($friendship->getAddressee() === $this) {
+                $friendship->setAddressee(null);
             }
         }
         return $this;

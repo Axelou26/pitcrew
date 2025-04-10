@@ -46,6 +46,12 @@ class Application
     #[ORM\Column(length: 20)]
     private string $status = 'pending';
 
+    public function __construct()
+    {
+        $this->createdAt = new DateTimeImmutable();
+        $this->status = 'pending';
+    }
+
     #[ORM\PrePersist]
     public function setCreatedAtValue(): void
     {
