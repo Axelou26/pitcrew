@@ -93,7 +93,8 @@ class EmailValidationService
 
     private function validateEndingDot(string $email): ?string
     {
-        return substr($email, -1) === '.' ? 'L\'adresse email ne peut pas se terminer par un point' : null;
+        $message = 'L\'adresse email ne peut pas se terminer par un point';
+        return substr($email, -1) === '.' ? $message : null;
     }
 
     private function validateStartingDot(string $email): ?string
