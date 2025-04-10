@@ -111,12 +111,14 @@ class EmailValidationService
 
     private function validateRegex(string $email): ?string
     {
-        return !preg_match(self::EMAIL_REGEX, $email) ? 'Le format de l\'adresse email n\'est pas valide' : null;
+        $message = 'Le format de l\'adresse email n\'est pas valide';
+        return !preg_match(self::EMAIL_REGEX, $email) ? $message : null;
     }
 
     private function validateDns(string $email): ?string
     {
-        return $this->checkDns && !$this->hasValidDomain($email) ? 'Le domaine de l\'adresse email n\'existe pas' : null;
+        $message = 'Le domaine de l\'adresse email n\'existe pas';
+        return $this->checkDns && !$this->hasValidDomain($email) ? $message : null;
     }
 
     /**
