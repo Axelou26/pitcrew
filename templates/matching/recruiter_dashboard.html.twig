@@ -295,7 +295,7 @@
                                                                             <a href="{{ path('app_recruiter_candidate_profile', {'id': suggestion.applicant.id}) }}" class="btn btn-primary">
                                                                                 <i class="fas fa-user"></i> Voir le profil complet
                                                                             </a>
-                                                                            <a href="{{ path('app_message_start', {'id': suggestion.applicant.id}) }}" class="btn btn-success">
+                                                                            <a href="{{ path('app_message_start', {'conversationId': suggestion.applicant.id}) }}" class="btn btn-success">
                                                                                 <i class="fas fa-envelope"></i> Contacter
                                                                             </a>
                                                                         </div>

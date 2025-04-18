@@ -28,6 +28,9 @@ trait JobOfferDetailsTrait
     #[ORM\Column(type: Types::JSON)]
     private array $requiredSkills = [];
 
+    #[ORM\Column(type: Types::JSON)]
+    private array $softSkills = [];
+
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
     private ?DateTimeInterface $expiresAt = null;
 
@@ -49,6 +52,9 @@ trait JobOfferDetailsTrait
 
     #[ORM\Column]
     private ?bool $isPublished = false;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $requiredExperience = null;
 
     public function getTitle(): ?string
     {
@@ -113,6 +119,17 @@ trait JobOfferDetailsTrait
     public function setRequiredSkills(array $requiredSkills): static
     {
         $this->requiredSkills = $requiredSkills;
+        return $this;
+    }
+
+    public function getSoftSkills(): array
+    {
+        return $this->softSkills;
+    }
+
+    public function setSoftSkills(array $softSkills): static
+    {
+        $this->softSkills = $softSkills;
         return $this;
     }
 
@@ -195,6 +212,17 @@ trait JobOfferDetailsTrait
     public function setIsPublished(bool $isPublished): static
     {
         $this->isPublished = $isPublished;
+        return $this;
+    }
+
+    public function getRequiredExperience(): ?int
+    {
+        return $this->requiredExperience;
+    }
+
+    public function setRequiredExperience(?int $requiredExperience): static
+    {
+        $this->requiredExperience = $requiredExperience;
         return $this;
     }
 }

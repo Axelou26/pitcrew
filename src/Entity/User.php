@@ -89,6 +89,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'boolean')]
     private bool $isVerified = false;
 
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $verificationToken = null;
+
     public function __construct()
     {
         $this->roles = ['ROLE_USER'];
@@ -418,6 +421,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $supportTicket->setUser(null);
             }
         }
+        return $this;
+    }
+
+    public function getVerificationToken(): ?string
+    {
+        return $this->verificationToken;
+    }
+
+    public function setVerificationToken(?string $verificationToken): self
+    {
+        $this->verificationToken = $verificationToken;
         return $this;
     }
 }

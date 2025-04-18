@@ -230,7 +230,7 @@
                                     {% for application in applications|slice(0, 5) %}
                                         <tr class="align-middle">
                                             <td class="px-4">
-                                                <a href="{{ path('app_job_offer_show', {id: application.jobOffer.id}) }}" class="text-decoration-none fw-medium text-dark">
+                                                <a href="{{ path('app_job_offer_show', {'offerId': application.jobOffer.id}) }}" class="text-decoration-none fw-medium text-dark">
                                                     {{ application.jobOffer.title }}
                                                 </a>
                                             </td>
@@ -320,7 +320,7 @@
                                                 </div>
                                                 <div class="card-footer bg-white border-0 pt-0">
                                                     <div class="d-grid gap-2">
-                                                        <a href="{{ path('app_job_offer_show', {'id': offer.jobOffer.id}) }}" class="btn btn-sm btn-outline-primary">Voir l'offre</a>
+                                                        <a href="{{ path('app_job_offer_show', {'offerId': offer.jobOffer.id}) }}" class="btn btn-sm btn-outline-primary">Voir l'offre</a>
                                                     </div>
                                                 </div>
                                             </div>

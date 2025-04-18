@@ -20,6 +20,9 @@ use DateTimeImmutable;
 )]
 class UpdateTrendingHashtagsCommand extends Command
 {
+    protected static $defaultName = 'app:update-trending-hashtags';
+    protected static $defaultDescription = 'Met à jour les hashtags tendance';
+
     private EntityManagerInterface $entityManager;
     private HashtagRepository $hashtagRepository;
     private PostRepository $postRepository;
@@ -40,90 +43,60 @@ class UpdateTrendingHashtagsCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $ioStyle = new SymfonyStyle($input, $output);
-        $ioStyle->title('Mise à jour des hashtags tendance');
+        $io = new SymfonyStyle($input, $output);
 
-        // Récupérer tous les hashtags utilisés récemment (dernières 24h)
-        $now = new DateTimeImmutable();
-        $oneDayAgo = $now->modify('-1 day');
+        try {
+            $io->info('Début de la mise à jour des hashtags tendance...');
 
-        $recentPosts = $this->postRepository->findRecentPostsWithHashtags($oneDayAgo);
+            // Récupérer tous les posts des dernières 24 heures
+            $yesterday = new \DateTime('-24 hours');
+            $recentPosts = $this->postRepository->findPostsSince($yesterday);
 
-        if (empty($recentPosts)) {
-            $ioStyle->warning('Aucun post récent avec des hashtags trouvé.');
-            return Command::SUCCESS;
-        }
+            // Compteur pour chaque hashtag
+            $hashtagCounts = [];
 
-        // Calculer le score de tendance pour chaque hashtag
-        $hashtags = [];
-        foreach ($recentPosts as $post) {
-            foreach ($post->getHashtags() as $hashtag) {
-                $hashtagId = $hashtag->getId();
-
-                if (!isset($hashtags[$hashtagId])) {
-                    $hashtags[$hashtagId] = [
-                        'hashtag' => $hashtag,
-                        'recentUsage' => 0,
-                        'likes' => 0,
-                        'comments' => 0,
-                        'shares' => 0
-                    ];
+            foreach ($recentPosts as $post) {
+                $hashtags = $post->getHashtags();
+                foreach ($hashtags as $hashtag) {
+                    $hashtagName = $hashtag->getName();
+                    if (!isset($hashtagCounts[$hashtagName])) {
+                        $hashtagCounts[$hashtagName] = 0;
+                    }
+                    $hashtagCounts[$hashtagName]++;
                 }
-
-                // Comptabiliser l'utilisation récente
-                $hashtags[$hashtagId]['recentUsage']++;
-
-                // Ajouter les métriques d'engagement
-                $hashtags[$hashtagId]['likes'] += $post->getLikesCount();
-                $hashtags[$hashtagId]['comments'] += $post->getCommentsCounter();
-                $hashtags[$hashtagId]['shares'] += $post->getSharesCounter();
             }
+
+            // Trier les hashtags par nombre d'utilisations
+            arsort($hashtagCounts);
+            // Ne garder que les 5 premiers
+            $hashtagCounts = array_slice($hashtagCounts, 0, 5, true);
+
+            // Réinitialiser tous les compteurs à 0
+            $this->hashtagRepository->resetAllUsageCounts();
+
+            // Mettre à jour le compteur d'utilisation pour les 5 hashtags les plus utilisés
+            foreach ($hashtagCounts as $hashtagName => $count) {
+                $hashtag = $this->hashtagRepository->findOneBy(['name' => $hashtagName]);
+                if ($hashtag) {
+                    $hashtag->setUsageCount($count);
+                    $hashtag->setLastUsedAt(new \DateTimeImmutable());
+                }
+            }
+
+            $this->entityManager->flush();
+
+            // Mettre en cache les hashtags tendance
+            $trendingHashtags = $this->hashtagRepository->findTrending(5);
+            $cacheItem = $this->cache->getItem('trending_hashtags');
+            $cacheItem->set(array_map(fn($h) => $h->getId(), $trendingHashtags));
+            $cacheItem->expiresAfter(new \DateInterval('PT24H')); // Expire après 24 heures
+            $this->cache->save($cacheItem);
+
+            $io->success('Les hashtags tendance ont été mis à jour avec succès.');
+            return Command::SUCCESS;
+        } catch (\Exception $e) {
+            $io->error('Une erreur est survenue : ' . $e->getMessage());
+            return Command::FAILURE;
         }
-
-        // Calculer un score de tendance pour chaque hashtag
-        foreach ($hashtags as &$data) {
-            $data['trendingScore'] =
-                ($data['recentUsage'] * 2) +          // Plus de poids pour l'utilisation récente
-                ($data['likes'] * 0.5) +              // Poids des likes
-                ($data['comments'] * 1) +             // Plus de poids pour les commentaires
-                ($data['shares'] * 1.5);              // Encore plus de poids pour les partages
-        }
-
-        // Trier les hashtags par score de tendance
-        usort($hashtags, function ($hashtagA, $hashtagB) {
-            return $hashtagB['trendingScore'] <=> $hashtagA['trendingScore'];
-        });
-
-        // Limiter aux 20 premiers hashtags tendance
-        $trendingHashtags = array_slice($hashtags, 0, 20);
-
-        $ioStyle->section('Hashtags tendance mis à jour');
-        $ioStyle->table(
-            ['Hashtag', 'Usage récent', 'Likes', 'Commentaires', 'Partages', 'Score'],
-            array_map(function ($data) {
-                return [
-                    $data['hashtag']->getFormattedName(),
-                    $data['recentUsage'],
-                    $data['likes'],
-                    $data['comments'],
-                    $data['shares'],
-                    round($data['trendingScore'], 2)
-                ];
-            }, $trendingHashtags)
-        );
-
-        // Stocker les IDs des hashtags tendance dans le cache
-        $trendingHashtagIds = array_map(function ($data) {
-            return $data['hashtag']->getId();
-        }, $trendingHashtags);
-
-        $cacheItem = $this->cache->getItem('trending_hashtags');
-        $cacheItem->set($trendingHashtagIds);
-        $cacheItem->expiresAfter(3600); // Expire après 1 heure
-        $this->cache->save($cacheItem);
-
-        $ioStyle->success('Les hashtags tendance ont été mis à jour et stockés en cache pour 1 heure !');
-
-        return Command::SUCCESS;
     }
 }

@@ -221,4 +221,17 @@ class PostRepository extends ServiceEntityRepository
                 return $qb->getQuery()->getResult();
             });
     }
+
+    /**
+     * Trouve tous les posts depuis une date donnée
+     */
+    public function findPostsSince(\DateTime $date): array
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.createdAt >= :date')
+            ->setParameter('date', $date)
+            ->orderBy('p.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

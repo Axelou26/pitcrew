@@ -10,7 +10,8 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Twig\Environment;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mime\Address;
-use Symfony\Component\Mime\TemplatedEmail;
+use Symfony\Bridge\Twig\Mime\TemplatedEmail;
+use Doctrine\ORM\EntityManagerInterface;
 
 class EmailService
 {
@@ -21,12 +22,14 @@ class EmailService
     private $senderName;
     private $isDevMode;
     private $logger;
+    private $entityManager;
 
     public function __construct(
         MailerInterface $mailer,
         Environment $twig,
         UrlGeneratorInterface $urlGenerator,
         LoggerInterface $logger,
+        EntityManagerInterface $entityManager,
         string $senderEmail = 'contact@pitcrew.fr',
         string $senderName = 'PitCrew',
         string $appEnv = 'dev'
@@ -35,9 +38,43 @@ class EmailService
         $this->twig = $twig;
         $this->urlGenerator = $urlGenerator;
         $this->logger = $logger;
+        $this->entityManager = $entityManager;
         $this->senderEmail = $senderEmail;
         $this->senderName = $senderName;
         $this->isDevMode = $appEnv === 'dev';
+    }
+
+    /**
+     * Envoie un email de confirmation d'inscription avec le lien de vérification
+     */
+    public function sendRegistrationConfirmation(User $user): void
+    {
+        if (!$user->getEmail()) {
+            return;
+        }
+
+        // Générer un token de vérification unique
+        $verificationToken = bin2hex(random_bytes(32));
+        $user->setVerificationToken($verificationToken);
+        $this->entityManager->flush();
+
+        $verificationUrl = $this->urlGenerator->generate(
+            'app_verify_email',
+            ['token' => $verificationToken],
+            UrlGeneratorInterface::ABSOLUTE_URL
+        );
+
+        $email = (new TemplatedEmail())
+            ->from(new Address($this->senderEmail, $this->senderName))
+            ->to(new Address($user->getEmail(), $user->getFullName()))
+            ->subject('Confirmez votre inscription')
+            ->htmlTemplate('emails/registration/confirmation.html.twig')
+            ->context([
+                'user' => $user,
+                'verification_url' => $verificationUrl
+            ]);
+
+        $this->sendEmail($email);
     }
 
     /**

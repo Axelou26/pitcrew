@@ -28,6 +28,7 @@ class JobOfferFixtures extends Fixture implements DependentFixtureInterface
             $jobOffer->setTitle($data['title'])
                 ->setDescription($data['description'])
                 ->setRequiredSkills($data['requiredSkills'])
+                ->setSoftSkills($data['softSkills'])
                 ->setLocation($data['location'])
                 ->setIsRemote($data['isRemote'])
                 ->setSalary($data['salary'])
@@ -36,7 +37,8 @@ class JobOfferFixtures extends Fixture implements DependentFixtureInterface
                 ->setCompany($data['company'])
                 ->setIsPublished(true)
                 ->setRecruiter($this->getReference(RecruiterFixtures::RECRUITER_REFERENCE_PREFIX . ($index % 5)))
-                ->setIsActive(true);
+                ->setIsActive(true)
+                ->setRequiredExperience($data['requiredExperience']);
 
             $manager->persist($jobOffer);
             $this->addReference(self::JOB_OFFER_REFERENCE_PREFIX . $index, $jobOffer);
@@ -58,12 +60,19 @@ class JobOfferFixtures extends Fixture implements DependentFixtureInterface
                     'Électronique embarquée',
                     'Composite'
                 ],
+                'softSkills' => [
+                    'Travail d\'équipe',
+                    'Gestion du stress',
+                    'Rigueur',
+                    'Communication'
+                ],
                 'location' => 'Viry-Châtillon',
                 'isRemote' => false,
                 'salary' => 40000,
                 'contractType' => 'CDI',
                 'experienceLevel' => 'Confirmé',
-                'company' => 'Alpine F1 Team'
+                'company' => 'Alpine F1 Team',
+                'requiredExperience' => 5
             ],
             [
                 'title' => 'Ingénieur Performance',
@@ -75,12 +84,19 @@ class JobOfferFixtures extends Fixture implements DependentFixtureInterface
                     'MATLAB',
                     'CFD'
                 ],
+                'softSkills' => [
+                    'Innovation',
+                    'Esprit analytique',
+                    'Autonomie',
+                    'Communication technique'
+                ],
                 'location' => 'Le Mans',
                 'isRemote' => false,
                 'salary' => 55000,
                 'contractType' => 'CDI',
                 'experienceLevel' => 'Senior',
-                'company' => 'Toyota Gazoo Racing'
+                'company' => 'Toyota Gazoo Racing',
+                'requiredExperience' => 8
             ],
             [
                 'title' => 'Chef d\'équipe Stand',
@@ -92,12 +108,19 @@ class JobOfferFixtures extends Fixture implements DependentFixtureInterface
                     'Stratégie de course',
                     'Réglementation FIA'
                 ],
+                'softSkills' => [
+                    'Leadership',
+                    'Prise de décision',
+                    'Communication',
+                    'Gestion de crise'
+                ],
                 'location' => 'Magny-Cours',
                 'isRemote' => false,
                 'salary' => 48000,
                 'contractType' => 'CDI',
                 'experienceLevel' => 'Expert',
-                'company' => 'ORECA'
+                'company' => 'ORECA',
+                'requiredExperience' => 10
             ],
             [
                 'title' => 'Technicien Composite',
@@ -108,12 +131,19 @@ class JobOfferFixtures extends Fixture implements DependentFixtureInterface
                     'Réparation composite',
                     'Contrôle qualité'
                 ],
+                'softSkills' => [
+                    'Minutie',
+                    'Attention aux détails',
+                    'Organisation',
+                    'Travail d\'équipe'
+                ],
                 'location' => 'Stuttgart',
                 'isRemote' => false,
                 'salary' => 35000,
                 'contractType' => 'CDI',
                 'experienceLevel' => 'Intermédiaire',
-                'company' => 'Porsche Motorsport'
+                'company' => 'Porsche Motorsport',
+                'requiredExperience' => 3
             ],
             [
                 'title' => 'Ingénieur Télémétrie',
@@ -124,12 +154,19 @@ class JobOfferFixtures extends Fixture implements DependentFixtureInterface
                     'Analyse de données',
                     'Communication radio'
                 ],
+                'softSkills' => [
+                    'Réactivité',
+                    'Concentration',
+                    'Communication',
+                    'Travail sous pression'
+                ],
                 'location' => 'Prague',
                 'isRemote' => true,
                 'salary' => 58000,
                 'contractType' => 'CDI',
                 'experienceLevel' => 'Senior',
-                'company' => 'Praga Racing'
+                'company' => 'Praga Racing',
+                'requiredExperience' => 7
             ]
         ];
     }

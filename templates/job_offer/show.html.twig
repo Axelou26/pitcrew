@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ jobOffer.title }} - {{ jobOffer.recruiter.company }}{% endblock %}
+{% block title %}{{ jobOffer.title }} - {{ jobOffer.recruiter.companyName }}{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
@@ -169,9 +169,9 @@
                 <h1 class="display-6 fw-bold mb-2">{{ jobOffer.title }}</h1>
                 <div class="d-flex align-items-center">
                     {% if jobOffer.logoUrl %}
-                        <img src="{{ asset('uploads/logos/' ~ jobOffer.logoUrl) }}" alt="{{ jobOffer.company }}" class="rounded-circle bg-white me-2" width="30" height="30">
+                        <img src="{{ asset('uploads/logos/' ~ jobOffer.logoUrl) }}" alt="{{ jobOffer.recruiter.companyName }}" class="rounded-circle bg-white me-2" width="30" height="30">
                     {% endif %}
-                    <span class="me-3">{{ jobOffer.recruiter.company }}</span>
+                    <span class="me-3">{{ jobOffer.recruiter.companyName }}</span>
                     {% if jobOffer.isActive %}
                         <span class="badge bg-success">Active</span>
                     {% else %}
@@ -195,47 +195,35 @@
     <div class="row">
         <!-- Main Content -->
         <div class="col-lg-8">
-            {% if jobOffer.image %}
-            <div class="card shadow-sm mb-4 overflow-hidden">
-                <img src="{{ asset('uploads/job_images/' ~ jobOffer.image) }}" alt="{{ jobOffer.title }}" class="card-img-top" style="max-height: 350px; object-fit: cover;">
-            </div>
-            {% endif %}
-            
             <div class="card shadow-sm mb-4">
                 <div class="card-body p-4">
                     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
                         <div class="d-flex flex-wrap">
                             <div class="job-meta">
-                                <i class="bi bi-geo-alt"></i>
-                                {{ jobOffer.location }}
-                            </div>
-                            <div class="job-meta">
                                 <i class="bi bi-briefcase"></i>
                                 {{ jobOffer.contractType }}
                             </div>
+                            <div class="job-meta">
+                                <i class="bi bi-geo-alt"></i>
+                                {{ jobOffer.location }}
+                            </div>
                             {% if jobOffer.isRemote %}
-                            <div class="job-meta">
-                                <i class="bi bi-house"></i>
-                                Télétravail
-                            </div>
-                            {% endif %}
-                            <div class="job-meta">
-                                <i class="bi bi-calendar-check"></i>
-                                Publié le {{ jobOffer.createdAt|date('d/m/Y') }}
-                            </div>
-                            {% if jobOffer.expiresAt %}
                                 <div class="job-meta">
-                                    <i class="bi bi-hourglass-split"></i>
-                                    Expire le {{ jobOffer.expiresAt|date('d/m/Y') }}
+                                    <i class="bi bi-house"></i>
+                                    Télétravail possible
                                 </div>
                             {% endif %}
+                            <div class="job-meta">
+                                <i class="bi bi-clock-history"></i>
+                                Publiée le {{ jobOffer.createdAt|date('d/m/Y') }}
+                            </div>
                         </div>
                         <div>
                             {% if is_granted('ROLE_POSTULANT') %}
                                 {% set isFavorite = app.user.hasJobOfferInFavorites(jobOffer) %}
                                 <button type="button" 
                                         class="btn btn-outline-{{ isFavorite ? 'danger' : 'secondary' }} me-2 favorite-toggle"
-                                        data-url="{{ path('app_favorites_toggle_job_offer', {'offerId': jobOffer.id}) }}"
+                                        data-url="{{ path('app_favorites_toggle_job_offer', {'id': jobOffer.id}) }}"
                                         title="{{ isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris' }}">
                                     <i class="bi bi-star{{ isFavorite ? '-fill' : '' }} me-1"></i>
                                     {{ isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris' }}
@@ -256,9 +244,45 @@
                     {% endif %}
 
                     <div class="mb-4">
-                        <h3 class="h5 mb-3">Description du poste</h3>
-                        <div class="job-description">
+                        <h3 class="h4 mb-4">Description du poste</h3>
+                        <div class="job-description mb-5">
                             {{ jobOffer.description|raw }}
+                        </div>
+                    </div>
+
+                    <!-- Informations sur l'entreprise -->
+                    <h3 class="h4 mb-4">À propos de l'entreprise</h3>
+                    <div class="company-info mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            {% if jobOffer.logoUrl %}
+                                <img src="{{ asset('uploads/logos/' ~ jobOffer.logoUrl) }}" alt="{{ jobOffer.recruiter.companyName }}" class="company-logo me-3" style="width: 80px; height: 80px; object-fit: contain;">
+                            {% endif %}
+                            <div>
+                                <h4 class="h5 mb-1">{{ jobOffer.recruiter.companyName }}</h4>
+                                <p class="text-muted mb-0">
+                                    <i class="bi bi-geo-alt me-1"></i>
+                                    {{ jobOffer.recruiter.location }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="company-details">
+                            {% if jobOffer.recruiter.companyDescription %}
+                                <p class="mb-3">{{ jobOffer.recruiter.companyDescription }}</p>
+                            {% endif %}
+                            <div class="d-flex flex-wrap gap-3">
+                                {% if jobOffer.recruiter.website %}
+                                    <a href="{{ jobOffer.recruiter.website }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-globe me-1"></i>
+                                        Site web
+                                    </a>
+                                {% endif %}
+                                {% if jobOffer.recruiter.linkedin %}
+                                    <a href="{{ jobOffer.recruiter.linkedin }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-linkedin me-1"></i>
+                                        LinkedIn
+                                    </a>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -270,7 +294,7 @@
                             </a>
                         </div>
                         {% if is_granted('ROLE_POSTULANT') %}
-                            <a href="{{ path('app_job_application_new', {'offerId': jobOffer.id}) }}" class="btn btn-primary btn-lg">
+                            <a href="{{ path('app_job_application_new', {'id': jobOffer.id}) }}" class="btn btn-primary btn-lg">
                                 <i class="bi bi-send me-2"></i> Postuler à cette offre
                             </a>
                         {% endif %}
@@ -330,14 +354,14 @@
                     <div class="company-header">
                         {% if jobOffer.recruiter.profilePicture %}
                             <img src="{{ asset('uploads/profile_pictures/' ~ jobOffer.recruiter.profilePicture) }}" 
-                                 alt="Logo {{ jobOffer.recruiter.company }}"
+                                 alt="Logo {{ jobOffer.recruiter.companyName }}"
                                  class="company-logo">
                         {% else %}
                             <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center company-logo">
                                 <i class="bi bi-building text-primary display-6"></i>
                             </div>
                         {% endif %}
-                        <h3 class="h5 mb-0">{{ jobOffer.recruiter.company }}</h3>
+                        <h3 class="h5 mb-0">{{ jobOffer.recruiter.companyName }}</h3>
                     </div>
 
                     <div class="card-body p-4">
@@ -349,13 +373,13 @@
 
                         {% if is_granted('ROLE_POSTULANT') %}
                             <div class="d-grid gap-2">
-                                <a href="{{ path('app_job_application_new', {'offerId': jobOffer.id}) }}" class="btn btn-primary">
+                                <a href="{{ path('app_job_application_new', {'id': jobOffer.id}) }}" class="btn btn-primary">
                                     <i class="bi bi-send me-2"></i> Postuler
                                 </a>
                                 <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#contactModal">
                                     <i class="bi bi-chat-dots me-2"></i> Contacter le recruteur
                                 </button>
-                                <a href="{{ path('app_favorites_toggle_job_offer', {'offerId': jobOffer.id}) }}" class="btn btn-outline-secondary favorite-toggle" data-url="{{ path('app_favorites_toggle_job_offer', {'offerId': jobOffer.id}) }}">
+                                <a href="{{ path('app_favorites_toggle_job_offer', {'id': jobOffer.id}) }}" class="btn btn-outline-secondary favorite-toggle" data-url="{{ path('app_favorites_toggle_job_offer', {'id': jobOffer.id}) }}">
                                     <i class="bi {% if is_favorite is defined and is_favorite %}bi-bookmark-fill text-primary{% else %}bi-bookmark{% endif %} me-2"></i> Sauvegarder
                                 </a>
                             </div>

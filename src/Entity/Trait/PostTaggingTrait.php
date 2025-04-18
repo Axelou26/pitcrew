@@ -39,7 +39,7 @@ trait PostTaggingTrait
 
     public function extractHashtags(): array
     {
-        preg_match_all('/#(\w+)/', $this->content, $matches);
+        preg_match_all('/#([a-zA-ZÀ-ÿ0-9_-]+)/', $this->content, $matches);
         return array_unique($matches[1]);
     }
 
@@ -65,7 +65,7 @@ trait PostTaggingTrait
 
     public function extractMentions(): array
     {
-        preg_match_all('/@(\w+)/', $this->content, $matches);
+        preg_match_all('/@([a-zA-ZÀ-ÿ]+(?:\s+[a-zA-ZÀ-ÿ]+)*)/', $this->content, $matches);
         return array_unique($matches[1]);
     }
 }

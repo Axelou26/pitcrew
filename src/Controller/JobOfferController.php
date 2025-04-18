@@ -77,8 +77,8 @@ class JobOfferController extends AbstractController
     #[IsGranted('post_job_offer')]
     public function new(
         Request $request,
-        SubscriptionService $subscriptionService,
-        FileUploader $fileUploader
+        FileUploader $fileUploader,
+        SubscriptionService $subscriptionService
     ): Response {
         $jobOffer = new JobOffer();
         $jobOffer->setRecruiter($this->getUser());
@@ -93,17 +93,6 @@ class JobOfferController extends AbstractController
                 try {
                     $newLogoFilename = $fileUploader->upload($logoFile, 'logos_directory');
                     $jobOffer->setLogoUrl($newLogoFilename);
-                } catch (\Exception $e) {
-                    $this->addFlash('error', $e->getMessage());
-                }
-            }
-
-            // Gestion de l'image
-            $imageFile = $form->get('imageFile')->getData();
-            if ($imageFile) {
-                try {
-                    $newImageFilename = $fileUploader->upload($imageFile, 'job_images_directory');
-                    $jobOffer->setImage($newImageFilename);
                 } catch (\Exception $e) {
                     $this->addFlash('error', $e->getMessage());
                 }
@@ -126,6 +115,7 @@ class JobOfferController extends AbstractController
     }
 
     #[Route('/job-offer/{offerId}', name: 'app_job_offer_show')]
+    #[Route('/job-offer/by-id/{id}', name: 'app_job_offer_show_by_id')]
     public function show(int $offerId): Response
     {
         $jobOffer = $this->jobOfferRepository->find($offerId);

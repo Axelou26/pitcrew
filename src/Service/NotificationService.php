@@ -411,8 +411,14 @@ class NotificationService
             }
 
             $userRepository = $this->entityManager->getRepository(User::class);
-            foreach ($mentions as $username) {
-                $user = $userRepository->findOneBy(['username' => $username]);
+            foreach ($mentions as $mention) {
+                $user = $userRepository
+                    ->createQueryBuilder('u')
+                    ->where('CONCAT(u.firstName, \' \', u.lastName) = :fullName')
+                    ->setParameter('fullName', $mention)
+                    ->getQuery()
+                    ->getOneOrNullResult();
+
                 if ($user) {
                     $this->notifyMention($post, $user);
                 }

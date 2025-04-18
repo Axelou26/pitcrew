@@ -54,7 +54,7 @@
                                     {% endif %}
                                     <td>
                                         {% if interview.jobOffer %}
-                                            <a href="{{ path('app_job_offer_show', {'id': interview.jobOffer.id}) }}">
+                                            <a href="{{ path('app_job_offer_show', {'offerId': interview.jobOffer.id}) }}">
                                                 {{ interview.jobOffer.title }}
                                             </a>
                                         {% else %}
@@ -138,7 +138,7 @@
                                     {% endif %}
                                     <td>
                                         {% if interview.jobOffer %}
-                                            <a href="{{ path('app_job_offer_show', {'id': interview.jobOffer.id}) }}">
+                                            <a href="{{ path('app_job_offer_show', {'offerId': interview.jobOffer.id}) }}">
                                                 {{ interview.jobOffer.title }}
                                             </a>
                                         {% else %}

@@ -23,15 +23,19 @@
                 <div class="comment-content">{{ comment.content|nl2br }}</div>
             </div>
             
-            {% if app.user and (app.user == comment.author or is_granted('ROLE_ADMIN')) %}
-                <div class="mt-1">
+            <div class="mt-1 d-flex gap-2">
+                {% if app.user and (app.user == comment.author or is_granted('ROLE_ADMIN')) %}
                     <button type="button" 
-                            class="btn btn-link btn-sm text-danger p-0 delete-comment" 
-                            data-comment-id="{{ comment.id }}">
-                        <i class="bi bi-trash"></i> Supprimer
+                            class="btn btn-sm delete-comment p-0 text-muted opacity-75 hover-danger" 
+                            data-comment-id="{{ comment.id }}"
+                            data-token="{{ csrf_token('delete' ~ comment.id) }}"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            title="Supprimer ce commentaire">
+                        <i class="bi bi-trash3"></i>
                     </button>
-                </div>
-            {% endif %}
+                {% endif %}
+            </div>
         </div>
     </div>
 </div> 

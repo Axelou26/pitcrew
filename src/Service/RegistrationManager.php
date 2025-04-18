@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\User;
+use App\Entity\Recruiter;
 use App\Entity\Subscription;
 use App\Entity\RecruiterSubscription;
 use App\Repository\UserRepository;
@@ -43,6 +44,17 @@ class RegistrationManager
 
     public function createUser(User $user, string $plainPassword, string $userType): void
     {
+        if ($userType === User::ROLE_RECRUTEUR && !$user instanceof Recruiter) {
+            $recruiter = new Recruiter();
+            $recruiter->setEmail($user->getEmail());
+            $recruiter->setFirstName($user->getFirstName());
+            $recruiter->setLastName($user->getLastName());
+            $recruiter->setCompanyName($user->getCompanyName());
+            $recruiter->setCompanyDescription($user->getCompanyDescription());
+            $recruiter->setCity($user->getCity());
+            $user = $recruiter;
+        }
+
         $user->setRoles([$userType]);
         $user->setPassword(
             $this->passwordHasher->hashPassword($user, $plainPassword)
@@ -50,6 +62,9 @@ class RegistrationManager
 
         $this->entityManager->persist($user);
         $this->entityManager->flush();
+
+        // Envoyer l'email de vérification
+        $this->emailService->sendRegistrationConfirmation($user);
     }
 
     public function handleSubscriptionSelection(
@@ -80,14 +95,21 @@ class RegistrationManager
             throw new RuntimeException('Abonnement non trouvé');
         }
 
-        $recruiterSub = $this->subscriptionService->createSubscription($user, $subscription);
+        $recruiterSub = $this->subscriptionService->createSubscription(
+            $user,
+            strtolower($subscription->getName()),
+            [
+                'duration' => $subscription->getDuration(),
+                'auto_renew' => true
+            ]
+        );
 
         if ($isOfflineMode) {
             $recruiterSub->setPaymentStatus('offline_mode');
             $this->entityManager->flush();
         }
 
-        $this->emailService->sendRegistrationConfirmation($user);
+        $this->emailService->sendSubscriptionConfirmation($user, $recruiterSub);
 
         if ($subscription->getPrice() > 0) {
             $this->emailService->sendPaymentReceipt($user, $recruiterSub);
@@ -115,8 +137,21 @@ class RegistrationManager
         bool $isTestMode,
         bool $isOfflineMode
     ): array {
-        $recruiterSub = $this->subscriptionService->createSubscription($user, $subscription);
-        $this->emailService->sendRegistrationConfirmation($user);
+        if (!$user instanceof Recruiter) {
+            throw new \InvalidArgumentException('L\'utilisateur doit être un recruteur pour créer un abonnement.');
+        }
+
+        $subscriptionLevel = strtolower($subscription->getName());
+        $recruiterSub = $this->subscriptionService->createSubscription(
+            $user,
+            $subscriptionLevel,
+            [
+                'duration' => $subscription->getDuration(),
+                'auto_renew' => true
+            ]
+        );
+
+        $this->emailService->sendSubscriptionConfirmation($user, $recruiterSub);
 
         if ($isTestMode || $isOfflineMode) {
             return [

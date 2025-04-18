@@ -6,8 +6,9 @@ namespace App\Service\ScoreCalculator;
 
 use App\Entity\Applicant;
 use App\Entity\JobOffer;
+use App\Service\ScoreCalculator\BaseScoreCalculator;
 
-class LocationScoreCalculator extends BaseScoreCalculator
+class LocationScoreCalculator extends BaseScoreCalculator implements ScoreCalculatorInterface
 {
     private const WEIGHT = 0.1;
     private const MAX_SCORE = 5;

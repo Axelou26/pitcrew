@@ -173,16 +173,16 @@ class ContentProcessorService
         $post->setMentions([]);
 
         // Ajouter chaque mention
-        foreach ($mentionUsernames as $username) {
+        foreach ($mentionUsernames as $fullName) {
             try {
-                // Nettoyage du nom d'utilisateur
-                $username = trim($username);
-                if (empty($username)) {
+                // Nettoyage du nom complet
+                $fullName = trim($fullName);
+                if (empty($fullName)) {
                     continue;
                 }
 
-                // Rechercher l'utilisateur mentionné avec la méthode spéciale qui gère les noms d'utilisateur
-                $mentionedUser = $this->userRepository->findByUsername($username);
+                // Rechercher l'utilisateur mentionné par son prénom et nom
+                $mentionedUser = $this->userRepository->findByFullName($fullName);
 
                 if ($mentionedUser) {
                     // Ajouter l'ID de l'utilisateur à la liste des mentions
@@ -199,10 +199,7 @@ class ContentProcessorService
                     }
                 }
             } catch (\Throwable $e) {
-                $this
-                    ->logger
-                    ->warning('Erreur lors du traitement de la mention @' . $username . ': ' . $e
-                    ->getMessage());
+                $this->logger->warning('Erreur lors du traitement de la mention @' . $fullName . ': ' . $e->getMessage());
                 // Continuer avec les autres mentions
                 continue;
             }

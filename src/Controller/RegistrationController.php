@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Entity\Subscription;
+use App\Entity\Recruiter;
 use App\Form\RegistrationFormType;
 use App\Form\UserTypeFormType;
 use App\Service\RegistrationManager;
@@ -53,7 +54,7 @@ class RegistrationController extends AbstractController
             return $this->redirectToRoute('app_register');
         }
 
-        $user = new User();
+        $user = $userType === User::ROLE_RECRUTEUR ? new Recruiter() : new User();
         $form = $this->createForm(RegistrationFormType::class, $user, [
             'user_type' => $userType,
         ]);
@@ -61,6 +62,18 @@ class RegistrationController extends AbstractController
 
         if ($form->isSubmitted()) {
             if ($form->isValid()) {
+                // Vérifier si l'email existe déjà
+                $existingUser = $this->entityManager->getRepository(User::class)
+                    ->findOneBy(['email' => $user->getEmail()]);
+
+                if ($existingUser) {
+                    $this->addFlash('error', 'Cette adresse email est déjà utilisée.');
+                    return $this->render('registration/register_details.html.twig', [
+                        'registrationForm' => $form->createView(),
+                        'userType' => $userType,
+                    ], new Response(null, Response::HTTP_UNPROCESSABLE_ENTITY));
+                }
+
                 $this->registrationManager->createUser(
                     $user,
                     $form->get('plainPassword')->getData(),
@@ -109,11 +122,17 @@ class RegistrationController extends AbstractController
     private function validateAndGetUser(SessionInterface $session): Response|User
     {
         $userId = $session->get('registration_user_id');
-        if (!$userId) {
+        $userType = $session->get('registration_user_type');
+
+        if (!$userId || !$userType) {
             return $this->redirectToRoute('app_register');
         }
 
-        $user = $this->entityManager->getRepository(User::class)->find($userId);
+        $repository = $userType === User::ROLE_RECRUTEUR
+            ? $this->entityManager->getRepository(Recruiter::class)
+            : $this->entityManager->getRepository(User::class);
+
+        $user = $repository->find($userId);
         if (!$user) {
             return $this->redirectToRoute('app_register');
         }
@@ -212,6 +231,12 @@ class RegistrationController extends AbstractController
             $this->addFlash('error', $e->getMessage());
             return $this->redirectToRoute('app_register_subscription');
         }
+    }
+
+    #[Route('/register/email-verification-sent', name: 'app_register_email_verification_sent')]
+    public function emailVerificationSent(): Response
+    {
+        return $this->render('registration/email_verification_sent.html.twig');
     }
 
     #[Route('/register/subscription/cancel', name: 'app_register_subscription_cancel')]

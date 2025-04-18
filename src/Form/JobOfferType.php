@@ -61,23 +61,6 @@ class JobOfferType extends AbstractType implements JobOfferTypeInterface
                 'attr' => ['class' => 'form-control'],
                 'help' => 'Image au format JPEG, PNG ou SVG (max 2 Mo)',
             ])
-            ->add('imageFile', FileType::class, [
-                'label' => 'Image de l\'offre d\'emploi',
-                'mapped' => false,
-                'required' => false,
-                'constraints' => [
-                    new File([
-                        'maxSize' => '5M',
-                        'mimeTypes' => [
-                            'image/jpeg',
-                            'image/png',
-                        ],
-                        'mimeTypesMessage' => 'Veuillez télécharger une image valide (JPEG, PNG)',
-                    ])
-                ],
-                'attr' => ['class' => 'form-control'],
-                'help' => 'Image au format JPEG ou PNG (max 5 Mo)',
-            ])
             ->add('contractType', ChoiceType::class, [
                 'label' => 'Type de contrat',
                 'choices' => [

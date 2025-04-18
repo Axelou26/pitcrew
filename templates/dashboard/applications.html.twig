@@ -282,11 +282,11 @@
                                                     <i class="bi bi-eye"></i>
                                                 </a>
                                                 {% if is_granted('ROLE_RECRUTEUR') %}
-                                                    <a href="{{ path('app_message_start', {'id': application.applicant.id}) }}" class="btn btn-sm btn-outline-secondary rounded-circle" data-bs-toggle="tooltip" title="Contacter le candidat">
+                                                    <a href="{{ path('app_message_start', {'conversationId': application.applicant.id}) }}" class="btn btn-sm btn-outline-secondary rounded-circle" data-bs-toggle="tooltip" title="Contacter le candidat">
                                                         <i class="bi bi-chat-dots"></i>
                                                     </a>
                                                 {% else %}
-                                                    <a href="{{ path('app_message_start', {'id': application.jobOffer.recruiter.id}) }}" class="btn btn-sm btn-outline-secondary rounded-circle" data-bs-toggle="tooltip" title="Contacter le recruteur">
+                                                    <a href="{{ path('app_message_start', {'conversationId': application.jobOffer.recruiter.id}) }}" class="btn btn-sm btn-outline-secondary rounded-circle" data-bs-toggle="tooltip" title="Contacter le recruteur">
                                                         <i class="bi bi-chat-dots"></i>
                                                     </a>
                                                 {% endif %}

@@ -17,7 +17,7 @@ class PostContentManager
         }
 
         try {
-            preg_match_all('/#([a-zA-Z0-9_]+)/', $content, $matches);
+            preg_match_all('/#([a-zA-ZÀ-ÿ0-9_-]+)/', $content, $matches);
             return array_unique($matches[1] ?? []);
         } catch (\Throwable $e) {
             return [];

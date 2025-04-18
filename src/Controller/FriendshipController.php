@@ -47,12 +47,18 @@ class FriendshipController extends AbstractController
 
         // Vérifier si l'utilisateur existe
         if (!$addressee) {
+            if ($request->isXmlHttpRequest()) {
+                return $this->json(['success' => false, 'message' => 'L\'utilisateur n\'existe pas.']);
+            }
             $this->addFlash('error', 'L\'utilisateur n\'existe pas.');
             return $this->redirect($request->headers->get('referer', $this->generateUrl('app_home')));
         }
 
         // Vérifier que l'utilisateur n'essaie pas de s'envoyer une demande à lui-même
         if ($requester === $addressee) {
+            if ($request->isXmlHttpRequest()) {
+                return $this->json(['success' => false, 'message' => 'Vous ne pouvez pas vous envoyer une demande d\'amitié à vous-même.']);
+            }
             $this->addFlash('error', 'Vous ne pouvez pas vous envoyer une demande d\'amitié à vous-même.');
             return $this->redirect($request->headers->get('referer', $this->generateUrl('app_home')));
         }
@@ -67,6 +73,9 @@ class FriendshipController extends AbstractController
             } elseif ($existingFriendship->isAccepted()) {
                 $message = 'Vous êtes déjà ami avec cet utilisateur.';
             }
+            if ($request->isXmlHttpRequest()) {
+                return $this->json(['success' => false, 'message' => $message]);
+            }
             $this->addFlash('info', $message);
             return $this->redirect($request->headers->get('referer', $this->generateUrl('app_home')));
         }
@@ -79,8 +88,43 @@ class FriendshipController extends AbstractController
         $entityManager->persist($friendship);
         $entityManager->flush();
 
-        $this->addFlash('success', 'Votre demande d\'amitié a été envoyée.');
+        // Si c'est une requête AJAX, retourner un nouvel utilisateur suggéré
+        if ($request->isXmlHttpRequest()) {
+            // Récupérer les utilisateurs suggérés actuels
+            $suggestedUsers = $userRepository->findSuggestedUsers($requester, 5);
 
+            // Filtrer pour exclure l'utilisateur qui vient d'être ajouté
+            $suggestedUsers = array_filter($suggestedUsers, function ($user) use ($addressee) {
+                return $user->getId() !== $addressee->getId();
+            });
+
+            // Prendre le premier utilisateur qui n'est pas déjà affiché
+            $newSuggestion = array_shift($suggestedUsers);
+
+            if ($newSuggestion) {
+                return $this->json([
+                    'success' => true,
+                    'message' => 'Votre demande d\'amitié a été envoyée.',
+                    'newSuggestion' => [
+                        'id' => $newSuggestion->getId(),
+                        'fullName' => $newSuggestion->getFullName(),
+                        'jobTitle' => $newSuggestion->getJobTitle(),
+                        'company' => $newSuggestion->getCompany(),
+                        'profilePicture' => $newSuggestion->getProfilePicture(),
+                        'profileUrl' => $this->generateUrl('app_profile_view', ['id' => $newSuggestion->getId()]),
+                        'addFriendUrl' => $this->generateUrl('app_friendship_send', ['addresseeId' => $newSuggestion->getId()])
+                    ]
+                ]);
+            }
+
+            return $this->json([
+                'success' => true,
+                'message' => 'Votre demande d\'amitié a été envoyée.',
+                'newSuggestion' => null
+            ]);
+        }
+
+        $this->addFlash('success', 'Votre demande d\'amitié a été envoyée.');
         return $this->redirect($request->headers->get('referer', $this->generateUrl('app_home')));
     }
 

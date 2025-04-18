@@ -56,7 +56,7 @@
 {% endfor %}
 
 {% if is_granted('IS_AUTHENTICATED_FULLY') %}
-    <form class="comment-form mt-3" data-post-id="{{ post.id }}">
+    <form class="comment-form mt-3" data-post-id="{{ post.id }}" action="{{ path('app_post_comment_add', {'id': post.id}) }}">
         <div class="d-flex align-items-start">
             {% if app.user.profilePicture %}
                 <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}"

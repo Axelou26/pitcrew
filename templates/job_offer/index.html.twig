@@ -225,14 +225,9 @@
             transform: scaleX(1);
         }
         
-        .company-logo-container {
-            display: flex;
-            margin-bottom: 1.2rem;
-        }
-        
         .company-logo {
-            width: 54px;
-            height: 54px;
+            width: 120px;
+            height: 120px;
             border-radius: 12px;
             background-color: #f8f9fa;
             overflow: hidden;
@@ -241,24 +236,24 @@
             justify-content: center;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
             border: 1px solid #eaeaea;
+            padding: 10px;
         }
         
         .company-logo img {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            padding: 6px;
         }
         
         .company-logo-default {
-            width: 54px;
-            height: 54px;
+            width: 120px;
+            height: 120px;
             border-radius: 12px;
             background-color: #f0f0f0;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            font-size: 3rem;
             color: #aaa;
             border: 1px solid #eaeaea;
         }
@@ -553,7 +548,7 @@
                     <div class="col-md-6 col-lg-4 mb-4 animate-in">
                         <div class="job-card h-100 p-4">
                             <!-- Logo d'entreprise -->
-                            <div class="d-flex mb-3">
+                            <div class="d-flex justify-content-center mb-4">
                                 {% if jobOffer.logoUrl %}
                                     <div class="company-logo">
                                         <img src="{{ asset('uploads/logos/' ~ jobOffer.logoUrl) }}" alt="{{ jobOffer.company }}">
@@ -566,13 +561,13 @@
                             </div>
                             
                             <!-- Nom de l'entreprise -->
-                            <div class="job-company">{{ jobOffer.company }}</div>
+                            <div class="job-company text-center">{{ jobOffer.company }}</div>
                             
                             <!-- Titre du poste -->
-                            <h3 class="job-title">{{ jobOffer.title }}</h3>
+                            <h3 class="job-title text-center">{{ jobOffer.title }}</h3>
                             
                             <!-- Localisation -->
-                            <div class="job-location">
+                            <div class="job-location text-center">
                                 <i class="bi bi-geo-alt"></i>
                                 {{ jobOffer.location }}
                             </div>

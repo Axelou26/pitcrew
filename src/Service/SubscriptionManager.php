@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\User;
+use App\Entity\Recruiter;
 use App\Entity\Subscription;
 use App\Entity\RecruiterSubscription;
 use App\Repository\SubscriptionRepository;
@@ -33,6 +34,16 @@ class SubscriptionManager
         bool $isTestMode = false,
         bool $isOfflineMode = false
     ): array {
+        // Vérifier si l'utilisateur est un recruteur
+        if (!$user instanceof Recruiter) {
+            // Récupérer le Recruiter correspondant
+            $recruiter = $this->entityManager->getRepository(Recruiter::class)->find($user->getId());
+            if (!$recruiter) {
+                throw new \InvalidArgumentException('L\'utilisateur doit être un recruteur pour créer un abonnement.');
+            }
+            $user = $recruiter;
+        }
+
         $activeSubscription = $this->subscriptionService->getActiveSubscription($user);
 
         if ($this->isAlreadySubscribed($activeSubscription, $subscription)) {
@@ -118,7 +129,14 @@ class SubscriptionManager
         bool $isTestMode,
         bool $isOfflineMode
     ): array {
-        $recruiterSub = $this->subscriptionService->createSubscription($user, $subscription);
+        if (!$user instanceof Recruiter) {
+            throw new \InvalidArgumentException('L\'utilisateur doit être un recruteur pour créer un abonnement.');
+        }
+
+        $recruiterSub = $this->subscriptionService->createSubscription(
+            $user,
+            strtolower($subscription->getName())
+        );
 
         if ($isTestMode || $isOfflineMode) {
             return [

@@ -7,7 +7,7 @@ namespace App\Service\ScoreCalculator;
 use App\Entity\Applicant;
 use App\Entity\JobOffer;
 
-class SoftSkillsCalculator extends BaseScoreCalculator
+class SoftSkillsCalculator extends BaseScoreCalculator implements ScoreCalculatorInterface
 {
     private const WEIGHT = 0.2;
     private const DEFAULT_SOFT_SKILLS = [
@@ -17,20 +17,29 @@ class SoftSkillsCalculator extends BaseScoreCalculator
 
     public function calculate(Applicant $applicant, JobOffer $jobOffer): array
     {
-        $jobSoftSkills = $this->extractSoftSkillsFromJobDescription($jobOffer->getDescription());
-        $candidateSoftSkills = $applicant->getSoftSkills() ?? [];
+        $score = 0;
+        $maxScore = 0;
+        $matches = [];
 
-        if (empty($jobSoftSkills) || empty($candidateSoftSkills)) {
-            return $this->createEmptyResult();
+        $requiredSkills = $jobOffer->getSoftSkills() ?? [];
+        $applicantSkills = $applicant->getSoftSkills() ?? [];
+
+        foreach ($requiredSkills as $skill) {
+            $maxScore++;
+            if (in_array($skill, $applicantSkills, true)) {
+                $score++;
+                $matches[] = $skill;
+            }
         }
 
-        $matchResult = $this->findMatchingSoftSkills($candidateSoftSkills, $jobSoftSkills);
-
         return [
-            'score' => $this->calculateWeightedScore($matchResult['score'], $matchResult['maxScore'], self::WEIGHT),
-            'maxScore' => $this->calculateMaxWeightedScore($matchResult['maxScore'], self::WEIGHT),
-            'matches' => $matchResult['matches'],
-            'category' => 'Soft skills'
+            'category' => 'Compétences humaines',
+            'score' => $score,
+            'maxScore' => $maxScore ?: 1,
+            'matches' => $matches,
+            'details' => [
+                sprintf('%d/%d soft skills requis maîtrisés', $score, $maxScore)
+            ]
         ];
     }
 

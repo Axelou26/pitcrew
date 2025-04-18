@@ -71,7 +71,28 @@ class HashtagRepository extends ServiceEntityRepository
     }
 
     /**
-     * Recherche les hashtags les plus populaires
+     * Trouve des suggestions de hashtags basées sur une recherche
+     *
+     * @param string $query Le terme de recherche
+     * @param int $limit Nombre maximum de résultats
+     * @return array<Hashtag>
+     */
+    public function findSuggestions(string $query, int $limit = 5): array
+    {
+        return $this->createQueryBuilder('h')
+            ->where('h.name LIKE :query')
+            ->setParameter('query', $query . '%')
+            ->orderBy('h.usageCount', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Trouve les hashtags les plus utilisés
+     *
+     * @param int $limit Nombre maximum de résultats
+     * @return array<Hashtag>
      */
     public function findTrending(int $limit = 10): array
     {
@@ -143,5 +164,17 @@ class HashtagRepository extends ServiceEntityRepository
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Réinitialise tous les compteurs d'utilisation à 0
+     */
+    public function resetAllUsageCounts(): void
+    {
+        $this->createQueryBuilder('h')
+            ->update()
+            ->set('h.usageCount', 0)
+            ->getQuery()
+            ->execute();
     }
 }

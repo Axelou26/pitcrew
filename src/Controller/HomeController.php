@@ -65,8 +65,8 @@ class HomeController extends AbstractController
                 'activeJobOffers' => $jobOfferRepository->findActiveOffers(5),
                 'trendingHashtags' => $hashtagRepository->findTrending(10),
                 'stats' => [
-                    'recruiters' => $userRepository->findByRole('ROLE_RECRUITER'),
-                    'applicants' => $userRepository->findByRole('ROLE_APPLICANT')
+                    'recruiters' => $userRepository->findByRole('ROLE_RECRUTEUR'),
+                    'applicants' => $userRepository->findByRole('ROLE_POSTULANT')
                 ],
                 'recentPosts' => $postRepository->findRecentPosts(10)
             ];

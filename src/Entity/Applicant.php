@@ -130,4 +130,9 @@ class Applicant extends User
         $this->favoriteOffers->removeElement($jobOffer);
         return $this;
     }
+
+    public function hasJobOfferInFavorites(JobOffer $jobOffer): bool
+    {
+        return $this->favoriteOffers->contains($jobOffer);
+    }
 }

@@ -430,17 +430,6 @@
                             </div>
                             {{ form_errors(form.logoFile) }}
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Image de couverture</label>
-                            <div class="file-upload-container" id="imageUploadContainer">
-                                <i class="bi bi-image file-upload-icon" id="imageIcon"></i>
-                                <h5 class="mb-2">Ajouter une image</h5>
-                                <p class="text-muted mb-0">Formats acceptés: JPG ou PNG (max 5 Mo)</p>
-                                <img id="imagePreview" src="#" class="file-preview">
-                                {{ form_widget(form.imageFile, {'attr': {'class': 'file-input', 'accept': 'image/jpeg,image/png'}}) }}
-                            </div>
-                            {{ form_errors(form.imageFile) }}
-                        </div>
                     </div>
 
                     <div class="row mb-4">
@@ -610,7 +599,6 @@
             }
             
             handleFilePreview(document.querySelector('#{{ form.logoFile.vars.id }}'), 'logoPreview', 'logoIcon');
-            handleFilePreview(document.querySelector('#{{ form.imageFile.vars.id }}'), 'imagePreview', 'imageIcon');
             
             // Animation d'entrée sur les éléments du formulaire
             document.querySelectorAll('.form-card, .tips-card').forEach(function(el, index) {

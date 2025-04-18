@@ -53,7 +53,7 @@ class PostService
      */
     public function extractHashtags(string $content): array
     {
-        preg_match_all('/#(\w+)/', $content, $matches);
+        preg_match_all('/#([a-zA-ZÀ-ÿ0-9_-]+)/', $content, $matches);
         return $matches[1];
     }
 
@@ -111,14 +111,14 @@ class PostService
     {
         // Convertir les hashtags en liens
         $content = preg_replace(
-            '/#(\w+)/',
+            '/#([a-zA-ZÀ-ÿ0-9_-]+)/',
             '<a href="/hashtag/$1" class="hashtag">#$1</a>',
             $content
         );
 
         // Convertir les mentions en liens
         $content = preg_replace(
-            '/@(\w+)/',
+            '/@([a-zA-ZÀ-ÿ]+(?:\s+[a-zA-ZÀ-ÿ]+)*)/',
             '<a href="/profile/$1" class="mention">@$1</a>',
             $content
         );
@@ -143,6 +143,28 @@ class PostService
             $post->setImage($this->imageHandler->handleImageUpload($imageFile));
         }
 
+        // Traiter les hashtags
+        $hashtags = $this->contentProcessor->extractHashtags($content);
+        foreach ($hashtags as $hashtagName) {
+            $hashtag = $this->entityManager->getRepository(Hashtag::class)->findOrCreate($hashtagName);
+            $post->addHashtag($hashtag);
+        }
+
+        // Traiter les mentions
+        $mentions = $this->contentProcessor->extractMentions($content);
+        foreach ($mentions as $mention) {
+            $mentionedUser = $this->entityManager->getRepository(User::class)
+                ->createQueryBuilder('u')
+                ->where('LOWER(CONCAT(u.firstName, \' \', u.lastName)) = LOWER(:fullName)')
+                ->setParameter('fullName', trim($mention))
+                ->getQuery()
+                ->getOneOrNullResult();
+
+            if ($mentionedUser) {
+                $post->addMention($mentionedUser);
+            }
+        }
+
         $this->entityManager->persist($post);
         $this->entityManager->flush();
 
@@ -164,6 +186,34 @@ class PostService
 
         if ($imageFile) {
             $post->setImage($this->imageHandler->handleImageUpload($imageFile, $post->getImage()));
+        }
+
+        // Supprimer les anciens hashtags
+        foreach ($post->getHashtags()->toArray() as $hashtag) {
+            $post->removeHashtag($hashtag);
+        }
+
+        // Traiter les nouveaux hashtags
+        $hashtags = $this->contentProcessor->extractHashtags($content);
+        foreach ($hashtags as $hashtagName) {
+            $hashtag = $this->entityManager->getRepository(Hashtag::class)->findOrCreate($hashtagName);
+            $post->addHashtag($hashtag);
+        }
+
+        // Mettre à jour les mentions
+        $post->setMentions([]);
+        $mentions = $this->contentProcessor->extractMentions($content);
+        foreach ($mentions as $mention) {
+            $mentionedUser = $this->entityManager->getRepository(User::class)
+                ->createQueryBuilder('u')
+                ->where('LOWER(CONCAT(u.firstName, \' \', u.lastName)) = LOWER(:fullName)')
+                ->setParameter('fullName', trim($mention))
+                ->getQuery()
+                ->getOneOrNullResult();
+
+            if ($mentionedUser) {
+                $post->addMention($mentionedUser);
+            }
         }
 
         $this->entityManager->flush();

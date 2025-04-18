@@ -1,0 +1,33 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block title %}Confirmez votre inscription{% endblock %}
+
+{% block content %}
+    <h1>Bienvenue sur PitCrew !</h1>
+
+    <p>Bonjour {{ user.firstName }},</p>
+
+    <p>
+        Merci de vous être inscrit sur PitCrew. Pour activer votre compte et accéder à toutes les fonctionnalités,
+        veuillez cliquer sur le bouton ci-dessous :
+    </p>
+
+    <div class="button-container">
+        <a href="{{ verification_url }}" class="button">Confirmer mon compte</a>
+    </div>
+
+    <p>
+        Si le bouton ne fonctionne pas, vous pouvez copier et coller le lien suivant dans votre navigateur :
+        <br>
+        <a href="{{ verification_url }}">{{ verification_url }}</a>
+    </p>
+
+    <p>
+        Ce lien est valable pendant 24 heures. Si vous n'avez pas créé de compte sur PitCrew,
+        vous pouvez ignorer cet email.
+    </p>
+
+    <p>
+        À bientôt sur PitCrew !
+    </p>
+{% endblock %} 

@@ -100,11 +100,10 @@ class MatchingService
         if (!$user instanceof User) {
             throw new RuntimeException('Invalid user provided');
         }
-        $applicant = $user->getApplicant();
-        if (!$applicant instanceof Applicant) {
+        if (!$user instanceof Applicant) {
             throw new RuntimeException('User is not an applicant');
         }
-        return $applicant;
+        return $user;
     }
 
     /**

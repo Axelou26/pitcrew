@@ -18,6 +18,8 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
             ApplicantFixtures::class,
             JobOfferFixtures::class,
             PostFixtures::class,
+            ApplicationFixtures::class,
+            FriendshipFixtures::class,
         ];
     }
 

@@ -121,7 +121,7 @@
                                         <a href="{{ path('app_profile_view', {'id': friend.id}) }}" class="btn btn-light rounded-pill">
                                             <i class="bi bi-person me-2"></i>Voir le profil
                                         </a>
-                                        <a href="{{ path('app_message_start', {'id': friend.id}) }}" class="btn btn-primary rounded-pill">
+                                        <a href="{{ path('app_message_start', {'conversationId': friend.id}) }}" class="btn btn-primary rounded-pill">
                                             <i class="bi bi-chat-dots me-2"></i>Envoyer un message
                                         </a>
                                         <button type="button" class="btn btn-outline-danger rounded-pill" data-bs-toggle="modal" data-bs-target="#removeFriendModal{{ friend.id }}">

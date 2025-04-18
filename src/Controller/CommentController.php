@@ -86,14 +86,18 @@ class CommentController extends AbstractController
                     'content' => $comment->getContent(),
                     'author' => [
                         'id' => $comment->getAuthor()->getId(),
-                        'fullName' => $comment->getAuthor()->getFullName()
+                        'fullName' => $comment->getAuthor()->getFullName(),
+                        'profilePicture' => $comment->getAuthor()->getProfilePicture()
                     ],
-                    'createdAt' => $comment->getCreatedAt()->format('Y-m-d H:i:s'),
-                    'html' => $this->renderView('comment/_comment.html.twig', [
-                        'comment' => $comment
-                    ])
+                    'createdAt' => $comment->getCreatedAt()->format('Y-m-d H:i:s')
                 ],
-                'commentsCount' => $post->getCommentsCount()
+                'html' => $this->renderView('comment/_comment.html.twig', [
+                    'comment' => $comment
+                ]),
+                'commentsCount' => $post->getCommentsCount(),
+                'userProfilePicture' => $this->getUser()->getProfilePicture(),
+                'userName' => $this->getUser()->getFullName(),
+                'commentId' => $comment->getId()
             ]);
         } catch (\Exception $e) {
             return $this->json([
@@ -103,7 +107,8 @@ class CommentController extends AbstractController
         }
     }
 
-    #[Route('/{id}/delete', name: 'app_comment_delete', methods: ['POST'])]
+    #[Route('/comment/{id}/delete', name: 'app_comment_delete', methods: ['POST'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function delete(PostComment $comment): JsonResponse
     {
         if (!$this->getUser() || ($this->getUser() !== $comment->getAuthor() && !$this->isGranted('ROLE_ADMIN'))) {

@@ -44,6 +44,41 @@ async function handleCommentSubmit(event) {
             })
         });
 
+        if (!response.ok) {
+            if (response.status === 404) {
+                alert('Cette publication n\'existe plus. Elle a peut-être été supprimée.');
+                // Supprimer la carte du post si elle n'existe plus
+                if (postCard) {
+                    postCard.style.transition = 'opacity 0.3s ease';
+                    postCard.style.opacity = '0';
+                    setTimeout(() => {
+                        postCard.remove();
+                        // Vérifier si le conteneur est vide
+                        const postsContainer = document.querySelector('.posts-container');
+                        if (postsContainer) {
+                            const remainingPosts = postsContainer.querySelectorAll('.post-card');
+                            if (remainingPosts.length === 0) {
+                                postsContainer.innerHTML = `
+                                    <div class="card border-0 shadow-sm rounded-3 p-5 text-center">
+                                        <i class="bi bi-newspaper display-1 text-muted mb-3"></i>
+                                        <h3 class="h4 text-muted">Aucune publication disponible</h3>
+                                        <p class="text-muted mb-4">Soyez le premier à partager du contenu avec la communauté</p>
+                                        <div class="text-center">
+                                            <a href="/post/new" class="btn btn-primary rounded-pill px-4">
+                                                <i class="bi bi-plus-lg me-2"></i>Créer une publication
+                                            </a>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        }
+                    }, 300);
+                }
+                return;
+            }
+            throw new Error('Une erreur est survenue lors de l\'ajout du commentaire');
+        }
+
         const data = await response.json();
 
         if (data.success && data.comment && data.comment.html !== undefined && data.commentsCount !== undefined) {
@@ -68,7 +103,7 @@ async function handleCommentSubmit(event) {
         }
     } catch (error) {
         console.error('Fetch Error:', error);
-        alert('Une erreur réseau est survenue.');
+        alert(error.message);
     } finally {
         if (submitButton) submitButton.disabled = false;
     }

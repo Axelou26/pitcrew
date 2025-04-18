@@ -10,7 +10,7 @@
             <h2 class="h4 text-muted">{{ jobOffer.title }}</h2>
         </div>
         <div>
-            <a href="{{ path('app_job_offer_show', {'id': jobOffer.id}) }}" class="btn btn-outline-secondary me-2">
+            <a href="{{ path('app_job_offer_show', {'offerId': jobOffer.id}) }}" class="btn btn-outline-secondary me-2">
                 <i class="fas fa-arrow-left"></i> Retour à l'offre
             </a>
             <a href="{{ path('app_interview_new_job', {'id': jobOffer.id}) }}" class="btn btn-primary">

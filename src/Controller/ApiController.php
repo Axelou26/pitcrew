@@ -8,6 +8,9 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Repository\PostRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use App\Repository\HashtagRepository;
+use App\Repository\UserRepository;
+use Symfony\Component\HttpFoundation\Request;
 
 #[Route('/api', name: 'api_')]
 class ApiController extends AbstractController
@@ -49,5 +52,56 @@ class ApiController extends AbstractController
                 'message' => $e->getMessage()
             ], 503);
         }
+    }
+
+    #[Route('/hashtag-suggestions', name: 'api_hashtag_suggestions', methods: ['GET'])]
+    public function hashtagSuggestions(Request $request, HashtagRepository $hashtagRepository): JsonResponse
+    {
+        $query = $request->query->get('q', '');
+
+        if (strlen($query) < 1) {
+            return $this->json(['success' => true, 'results' => []]);
+        }
+
+        $hashtags = $hashtagRepository->findSuggestions($query, 5);
+
+        // Transformer les objets Hashtag en tableau de noms
+        $suggestions = array_map(function ($hashtag) {
+            return [
+                'name' => $hashtag->getName(),
+                'usageCount' => $hashtag->getUsageCount()
+            ];
+        }, $hashtags);
+
+        return $this->json([
+            'success' => true,
+            'results' => $suggestions
+        ]);
+    }
+
+    #[Route('/mention-suggestions', name: 'api_mention_suggestions', methods: ['GET'])]
+    public function mentionSuggestions(Request $request, UserRepository $userRepository): JsonResponse
+    {
+        $query = $request->query->get('q', '');
+
+        if (strlen($query) < 1) {
+            return $this->json(['success' => true, 'results' => []]);
+        }
+
+        $users = $userRepository->findSuggestions($query, 5);
+
+        // Transformer les objets User en tableau avec plus d'informations
+        $suggestions = array_map(function ($user) {
+            return [
+                'firstName' => $user->getFirstName(),
+                'lastName' => $user->getLastName(),
+                'profilePicture' => $user->getProfilePicture()
+            ];
+        }, $users);
+
+        return $this->json([
+            'success' => true,
+            'results' => $suggestions
+        ]);
     }
 }

@@ -13,7 +13,7 @@
             </div>
         {% endif %}
         <div>
-            <strong>{{ post.author.fullName }}</strong>
+            <div class="text-dark">{{ post.author.fullName }}</div>
             <div class="text-muted small">
                 {% if post.content %}
                     <i class="bi bi-share"></i> · 
@@ -24,7 +24,7 @@
     </div>
     
     {% if post.content %}
-        <div class="post-content mb-3">
+        <div class="post-content mb-3 text-dark">
             {{ post.content|nl2br }}
         </div>
     {% endif %}
@@ -44,12 +44,12 @@
                     </div>
                 {% endif %}
                 <div>
-                    <strong>{{ post.originalPost.author.fullName }}</strong>
+                    <div class="text-dark">{{ post.originalPost.author.fullName }}</div>
                     <div class="text-muted small">{{ post.originalPost.createdAt|ago }}</div>
                 </div>
             </div>
 
-            <div class="post-content mb-2">
+            <div class="post-content mb-2 text-dark">
                 {{ post.originalPost.content|nl2br }}
             </div>
 

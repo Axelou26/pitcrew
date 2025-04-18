@@ -45,7 +45,7 @@
                     <div class="card mb-4">
                         <div class="card-header bg-white py-3">
                             <div class="d-flex">
-                                <a href="{{ path('app_user_profile', {'id': post.author.id}) }}" class="me-2">
+                                <a href="{{ path('app_user_profile', {'userId': post.author.id}) }}" class="me-2">
                                     {% if post.author.profilePicture %}
                                         <img src="{{ asset('uploads/profile_pictures/' ~ post.author.profilePicture) }}" 
                                              class="rounded-circle border"
@@ -60,7 +60,7 @@
                                 </a>
                                 <div class="flex-grow-1">
                                     <div class="d-flex align-items-center">
-                                        <a href="{{ path('app_user_profile', {'id': post.author.id}) }}" class="text-decoration-none text-dark">
+                                        <a href="{{ path('app_user_profile', {'userId': post.author.id}) }}" class="text-decoration-none text-dark">
                                             <h6 class="mb-0 fw-bold">{{ post.author.fullName }}</h6>
                                         </a>
                                     </div>
@@ -137,8 +137,8 @@
                                 {% if post.commentsCount > 0 %}
                                     <span>{{ post.commentsCount }} commentaire{% if post.commentsCount > 1 %}s{% endif %}</span>
                                 {% endif %}
-                                {% if post.sharesCount > 0 %}
-                                    <span class="ms-2">{{ post.sharesCount }} republication{% if post.sharesCount > 1 %}s{% endif %}</span>
+                                {% if post.reposts|length > 0 %}
+                                    <span class="ms-2">{{ post.reposts|length }} republication{% if post.reposts|length > 1 %}s{% endif %}</span>
                                 {% endif %}
                             </div>
                             

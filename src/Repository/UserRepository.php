@@ -70,7 +70,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         if (!$user) {
             // Si aucun utilisateur n'est fourni, retourne simplement les utilisateurs les plus récents
             $queryBuilder->orderBy('u.createdAt', 'DESC');
-            return $queryBuilder->setMaxResults($limit)
+            return $queryBuilder->setMaxResults($limit * 2)
                      ->getQuery()
                      ->getResult();
         }
@@ -92,7 +92,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
            ->orderBy('COUNT(p.id)', 'DESC') // Les utilisateurs les plus actifs d'abord
            ->setParameter('excludeIds', $excludeIds);
 
-        return $queryBuilder->setMaxResults($limit)
+        return $queryBuilder->setMaxResults($limit * 2)
                  ->getQuery()
                  ->getResult();
     }
@@ -104,7 +104,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     {
         return $this->createQueryBuilder('u')
             ->where('u.roles LIKE :role')
-            ->setParameter('role', '%"' . $role . '"%')
+            ->setParameter('role', '%"ROLE_' . strtoupper(str_replace('ROLE_', '', $role)) . '"%')
             ->getQuery()
             ->getResult();
     }
@@ -204,76 +204,50 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
      */
     public function findByUsername(string $username): ?User
     {
-        // Nettoyage du nom d'utilisateur (suppression des espaces et mise en minuscules)
-        $usernameClean = str_replace(' ', '', strtolower($username));
-
-        // Essayer d'abord une recherche exacte (cas le plus simple et rapide)
-        $queryBuilder = $this->createQueryBuilder('u');
-        $exactMatches = $queryBuilder
-            ->where('LOWER(CONCAT(u.firstName, u.lastName)) = :fullname')
-            ->orWhere('LOWER(CONCAT(u.lastName, u.firstName)) = :fullname')
-            ->setParameter('fullname', $usernameClean)
+        return $this->createQueryBuilder('u')
+            ->where('CONCAT(u.firstName, \' \', u.lastName) LIKE :username')
+            ->setParameter('username', '%' . $username . '%')
             ->getQuery()
-            ->getResult();
+            ->getOneOrNullResult();
+    }
 
-        if (!empty($exactMatches)) {
-            return $exactMatches[0];
+    /**
+     * Trouve des suggestions d'utilisateurs basées sur une recherche
+     *
+     * @param string $query Le terme de recherche
+     * @param int $limit Nombre maximum de résultats
+     * @return array<User>
+     */
+    public function findSuggestions(string $query, int $limit = 5): array
+    {
+        $queryBuilder = $this->createQueryBuilder('u')
+            ->where('u.firstName LIKE :query OR u.lastName LIKE :query')
+            ->setParameter('query', '%' . $query . '%')
+            ->orderBy('u.firstName', 'ASC')
+            ->setMaxResults($limit);
+
+        return $queryBuilder->getQuery()->getResult();
+    }
+
+    /**
+     * Trouve un utilisateur par son nom complet
+     */
+    public function findByFullName(string $fullName): ?User
+    {
+        $parts = explode(' ', trim($fullName));
+        if (count($parts) < 2) {
+            return null;
         }
 
-        // Si pas de correspondance exacte et que le nom semble contenir prénom et nom
-        if (strlen($usernameClean) > 5) {
-            // Essayer de détecter la séparation prénom/nom
-            for ($i = 3; $i < strlen($usernameClean) - 2; $i++) {
-                $potentialFirstName = substr($usernameClean, 0, $i);
-                $potentialLastName = substr($usernameClean, $i);
+        $firstName = $parts[0];
+        $lastName = implode(' ', array_slice($parts, 1));
 
-                $queryBuilder = $this->createQueryBuilder('u');
-                $matchedUsers = $queryBuilder
-                    ->where('LOWER(u.firstName) LIKE :firstName')
-                    ->andWhere('LOWER(u.lastName) LIKE :lastName')
-                    ->setParameter('firstName', $potentialFirstName . '%')
-                    ->setParameter('lastName', $potentialLastName . '%')
-                    ->getQuery()
-                    ->getResult();
-
-                if (!empty($matchedUsers)) {
-                    return $matchedUsers[0];
-                }
-            }
-
-            // Essayer l'autre sens (nom puis prénom)
-            for ($i = 3; $i < strlen($usernameClean) - 2; $i++) {
-                $potentialLastName = substr($usernameClean, 0, $i);
-                $potentialFirstName = substr($usernameClean, $i);
-
-                $queryBuilder = $this->createQueryBuilder('u');
-                $matchedUsers = $queryBuilder
-                    ->where('LOWER(u.firstName) LIKE :firstName')
-                    ->andWhere('LOWER(u.lastName) LIKE :lastName')
-                    ->setParameter('firstName', $potentialFirstName . '%')
-                    ->setParameter('lastName', $potentialLastName . '%')
-                    ->getQuery()
-                    ->getResult();
-
-                if (!empty($matchedUsers)) {
-                    return $matchedUsers[0];
-                }
-            }
-        }
-
-        // Si toujours pas de correspondance, essayer avec une recherche plus souple
-        $queryBuilder = $this->createQueryBuilder('u');
-        $looseMatches = $queryBuilder
-            ->where('LOWER(CONCAT(u.firstName, u.lastName)) LIKE :partialName')
-            ->orWhere('LOWER(CONCAT(u.lastName, u.firstName)) LIKE :partialName')
-            ->setParameter('partialName', '%' . $usernameClean . '%')
+        return $this->createQueryBuilder('u')
+            ->where('LOWER(u.firstName) = LOWER(:firstName)')
+            ->andWhere('LOWER(u.lastName) = LOWER(:lastName)')
+            ->setParameter('firstName', $firstName)
+            ->setParameter('lastName', $lastName)
             ->getQuery()
-            ->getResult();
-
-        if (!empty($looseMatches)) {
-            return $looseMatches[0];
-        }
-
-        return null;
+            ->getOneOrNullResult();
     }
 }

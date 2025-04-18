@@ -1,0 +1,125 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Suggestions d'amis{% endblock %}
+
+{% block body %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- En-tête -->
+            <div class="card shadow-sm rounded-4 border-0 mb-4">
+                <div class="card-body p-4">
+                    <h1 class="h3 fw-bold mb-1">Suggestions d'amis</h1>
+                    <p class="text-muted mb-0">Découvrez des personnes que vous pourriez connaître</p>
+                </div>
+            </div>
+
+            <!-- Liste des suggestions -->
+            <div class="card shadow-sm rounded-4 border-0">
+                <div class="card-body p-4">
+                    {% if suggestedUsers is empty %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-people display-1 text-muted mb-3"></i>
+                            <h5 class="text-muted mb-3">Aucune suggestion pour le moment</h5>
+                            <p class="text-muted">Revenez plus tard pour découvrir de nouvelles personnes</p>
+                        </div>
+                    {% else %}
+                        <div id="suggested-users-container">
+                            {% for user in suggestedUsers %}
+                                <div class="d-flex align-items-center justify-content-between p-3 border-bottom suggested-user" data-user-id="{{ user.id }}">
+                                    <div class="d-flex align-items-center">
+                                        <a href="{{ path('app_profile_view', {'id': user.id}) }}" class="me-3">
+                                            {% if user.profilePicture %}
+                                                <img src="{{ asset('uploads/profile_pictures/' ~ user.profilePicture) }}" 
+                                                     class="rounded-circle border"
+                                                     alt="{{ user.fullName }}"
+                                                     style="width: 64px; height: 64px; object-fit: cover;">
+                                            {% else %}
+                                                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center border"
+                                                     style="width: 64px; height: 64px;">
+                                                    <i class="bi bi-person fs-3 text-muted"></i>
+                                                </div>
+                                            {% endif %}
+                                        </a>
+                                        <div>
+                                            <h5 class="mb-1 fw-semibold">
+                                                <a href="{{ path('app_profile_view', {'id': user.id}) }}" class="text-dark text-decoration-none">
+                                                    {{ user.fullName }}
+                                                </a>
+                                            </h5>
+                                            <p class="text-muted mb-2">{{ user.jobTitle|default(user.company) }}</p>
+                                            {% if user.bio %}
+                                                <p class="small text-muted mb-0">{{ user.bio|slice(0, 100) }}{% if user.bio|length > 100 %}...{% endif %}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        {% if user.isFriend is defined and user.isFriend %}
+                                            <button class="btn btn-light rounded-pill px-3" disabled>
+                                                <i class="bi bi-person-check me-2"></i>Ami
+                                            </button>
+                                        {% elseif user.hasPendingRequestFrom is defined and user.hasPendingRequestFrom %}
+                                            <button class="btn btn-light rounded-pill px-3" disabled>
+                                                <i class="bi bi-hourglass-split me-2"></i>En attente
+                                            </button>
+                                        {% else %}
+                                            <a href="{{ path('app_friendship_send', {'addresseeId': user.id}) }}" 
+                                               class="btn btn-outline-primary rounded-pill px-3 add-friend-btn"
+                                               data-user-id="{{ user.id }}">
+                                                <i class="bi bi-person-plus me-2"></i>Ajouter
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('suggested-users-container');
+            if (!container) return;
+
+            container.addEventListener('click', async function(e) {
+                const addButton = e.target.closest('.add-friend-btn');
+                if (!addButton) return;
+
+                e.preventDefault();
+                const userId = addButton.dataset.userId;
+                const userCard = addButton.closest('.suggested-user');
+
+                try {
+                    const response = await fetch(addButton.href, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Remplacer le bouton par "En attente"
+                        addButton.outerHTML = `
+                            <button class="btn btn-light rounded-pill px-3" disabled>
+                                <i class="bi bi-hourglass-split me-2"></i>En attente
+                            </button>
+                        `;
+                    } else {
+                        // Afficher le message d'erreur
+                        alert(data.message);
+                    }
+                } catch (error) {
+                    console.error('Erreur lors de l\'ajout de l\'ami:', error);
+                    alert('Une erreur est survenue lors de l\'ajout de l\'ami.');
+                }
+            });
+        });
+    </script>
+{% endblock %} 

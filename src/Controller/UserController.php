@@ -125,4 +125,19 @@ class UserController extends AbstractController
 
         return $this->json(['users' => $results]);
     }
+
+    #[Route('/suggestions', name: 'app_user_suggestions')]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function suggestions(EntityManagerInterface $entityManager): Response
+    {
+        $user = $this->getUser();
+        $userRepository = $entityManager->getRepository(User::class);
+
+        // Récupérer plus de suggestions (par exemple 20)
+        $suggestedUsers = $userRepository->findSuggestedUsers($user, 20);
+
+        return $this->render('user/suggestions.html.twig', [
+            'suggestedUsers' => $suggestedUsers
+        ]);
+    }
 }

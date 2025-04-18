@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Service\Post;
 
+use InvalidArgumentException;
+
 class PostContentProcessor
 {
     /**
@@ -11,7 +13,7 @@ class PostContentProcessor
      */
     public function extractHashtags(string $content): array
     {
-        preg_match_all('/#(\w+)/', $content, $matches);
+        preg_match_all('/#([a-zA-ZÀ-ÿ0-9_-]+)/', $content, $matches);
         return $matches[1];
     }
 
@@ -20,7 +22,7 @@ class PostContentProcessor
      */
     public function extractMentions(string $content): array
     {
-        preg_match_all('/@(\w+)/', $content, $matches);
+        preg_match_all('/@([a-zA-ZÀ-ÿ]+(?:\s+[a-zA-ZÀ-ÿ]+)*)/', $content, $matches);
         return $matches[1];
     }
 
@@ -57,13 +59,13 @@ class PostContentProcessor
     public function enrichContent(string $content): string
     {
         $content = preg_replace(
-            '/#(\w+)/',
+            '/#([a-zA-ZÀ-ÿ0-9_-]+)/',
             '<a href="/hashtag/$1" class="hashtag">#$1</a>',
             $content
         );
 
         $content = preg_replace(
-            '/@(\w+)/',
+            '/@([a-zA-ZÀ-ÿ]+(?:\s+[a-zA-ZÀ-ÿ]+)*)/',
             '<a href="/profile/$1" class="mention">@$1</a>',
             $content
         );

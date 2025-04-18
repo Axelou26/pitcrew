@@ -1,0 +1,195 @@
+{% set isLiked = app.user ? post.isLikedByUser(app.user) : false %}
+
+{% set currentUserReactionType = app.user ? post.getUserReactionType(app.user) : null %}
+{% set reactionMap = {
+    'like': {'emoji': '👍', 'name': 'J\'aime', 'class': 'btn-primary'},
+    'congrats': {'emoji': '👏', 'name': 'Bravo', 'class': 'btn-success'},
+    'support': {'emoji': '❤️', 'name': 'Soutien', 'class': 'btn-danger'},
+    'interesting': {'emoji': '💡', 'name': 'Intéressant', 'class': 'btn-info'},
+    'encouraging': {'emoji': '💪', 'name': 'Encouragement', 'class': 'btn-warning'}
+} %}
+{% set defaultReaction = {'emoji': '👍', 'name': 'Réagir', 'class': 'btn-outline-secondary'} %}
+{% set activeReaction = currentUserReactionType ? reactionMap[currentUserReactionType] : defaultReaction %}
+
+<div class="card shadow-sm hover-shadow-lg mb-4 post-card border-0 rounded-4" data-post-id="{{ post.id }}">
+    <div class="card-body p-4">
+        <div class="d-flex align-items-center mb-3">
+            {% if post.author.profilePicture %}
+                <img src="{{ asset('uploads/profile_pictures/' ~ post.author.profilePicture) }}"
+                     class="rounded-circle me-3 border"
+                     alt="{{ post.author.fullName }}"
+                     style="width: 48px; height: 48px; object-fit: cover;">
+            {% else %}
+                <div class="rounded-circle me-3 bg-light d-flex align-items-center justify-content-center border"
+                     style="width: 48px; height: 48px;">
+                    <i class="bi bi-person text-muted"></i>
+                </div>
+            {% endif %}
+            <div class="flex-grow-1">
+                <h6 class="fw-bold mb-0">
+                    <a href="{{ path('app_profile_view', {'id': post.author.id}) }}" class="text-decoration-none text-dark">
+                        {{ post.author.fullName }}
+                    </a>
+                </h6>
+                <small class="text-muted">{{ post.createdAt|date('d/m/Y H:i') }}</small>
+            </div>
+            {% if app.user and post.author.id == app.user.id %}
+                <div class="dropdown ms-auto">
+                    <button class="btn btn-sm btn-light rounded-circle" type="button" id="postOptions{{ post.id }}" data-bs-toggle="dropdown" aria-expanded="false" style="width: 32px; height: 32px;">
+                        <i class="bi bi-three-dots"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="postOptions{{ post.id }}">
+                        <li>
+                            <a class="dropdown-item edit-post" href="#" data-post-id="{{ post.id }}">
+                                <i class="bi bi-pencil me-2"></i>Modifier
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item text-danger delete-post" href="#" 
+                               data-post-id="{{ post.id }}"
+                               data-token="{{ csrf_token('delete' ~ post.id) }}">
+                                <i class="bi bi-trash me-2"></i>Supprimer
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+
+        {% if post.title %}
+            <h5 class="card-title mb-3 fw-bold">{{ post.title }}</h5>
+        {% endif %}
+
+        <div class="card-text mb-4">{{ post.content|nl2br|autolink({target: '_blank'})|raw }}</div>
+
+        {% if post.imageName %}
+            <a href="{{ asset('uploads/posts/' ~ post.imageName) }}" data-lightbox="post-image-{{ post.id }}" class="mb-4 d-block">
+                <img src="{{ asset('uploads/posts/' ~ post.imageName) }}"
+                     class="img-fluid rounded w-100"
+                     style="max-height: 500px; object-fit: cover; cursor: pointer;"
+                     alt="Image du post">
+            </a>
+        {% endif %}
+
+        {% if post.originalPost %}
+            <div class="card bg-light mb-4 p-3">
+                <small class="text-muted mb-2">A repartagé :</small>
+                <a href="{{ path('app_post_show', {'id': post.originalPost.id}) }}" class="text-decoration-none">
+                    {{ include('post/_post_card_minimal.html.twig', { post: post.originalPost }) }}
+                </a>
+            </div>
+        {% endif %}
+
+        <div class="d-flex justify-content-between align-items-center text-muted small mb-3">
+            <div class="reaction-summary" data-bs-toggle="tooltip" title="Personnes ayant réagi">
+                {% set totalReactions = post.getLikesCount() %}
+                {% if totalReactions > 0 %}
+                    <span class="likes-count me-1">{{ totalReactions }}</span> réaction{{ totalReactions > 1 ? 's' : '' }}
+                {% endif %}
+            </div>
+            <div>
+                <span class="comments-count me-3">{{ post.commentsCount }} commentaire{{ post.commentsCount > 1 ? 's' : '' }}</span>
+                <span class="shares-count">{{ post.getRepostsCount() }} partage{{ post.getRepostsCount() > 1 ? 's' : '' }}</span>
+            </div>
+        </div>
+
+        <hr class="my-3">
+
+        <div class="d-flex justify-content-around align-items-center pt-2">
+            <div class="reaction-container position-relative">
+                <button type="button"
+                        class="btn btn-sm {{ activeReaction.class }} reaction-trigger rounded-pill px-3 d-flex align-items-center {% if currentUserReactionType %}active-reaction{% endif %}"
+                        {% if currentUserReactionType %}data-current-reaction="{{ currentUserReactionType }}"{% endif %}
+                        {% if not app.user %}disabled{% endif %}>
+                    <span class="reaction-emoji me-1">{{ activeReaction.emoji }}</span>
+                    <span class="reaction-name">{{ activeReaction.name }}</span>
+                </button>
+                <div class="reaction-menu shadow border-0 rounded-3 position-absolute bg-white p-1" 
+                     style="display: none; z-index: 1000; min-width: 240px; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 8px;">
+                    <div class="d-flex justify-content-between p-1">
+                        {% for type, details in reactionMap %}
+                            <button class="reaction-option btn btn-light rounded-circle p-1 mx-1 reaction-hover" 
+                                    type="button" 
+                                    data-reaction-type="{{ type }}"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="top"
+                                    title="{{ details.name }}">
+                                <span class="fs-4">{{ details.emoji }}</span>
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <a href="{{ path('app_home') }}#comments-{{ post.id }}"
+               class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                <i class="bi bi-chat-dots me-1"></i> Commenter
+            </a>
+
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary share-button rounded-pill px-3"
+                    data-post-id="{{ post.id }}"
+                    data-bs-toggle="modal"
+                    data-bs-target="#shareModal{{ post.id }}"
+                    {% if not app.user or post.originalPost %}disabled{% endif %}
+                    {% if post.originalPost %}title="Un post repartagé ne peut pas être repartagé"{% endif %}>
+                <i class="bi bi-share me-1"></i> Partager
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="shareModal{{ post.id }}" tabindex="-1" aria-labelledby="shareModalLabel{{ post.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Partager la publication</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form class="share-form" data-post-id="{{ post.id }}">
+                    <div class="mb-3">
+                        <label class="form-label">Ajouter un commentaire (optionnel)</label>
+                        <textarea class="form-control" rows="3" name="share-comment"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-share me-2"></i>Partager
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if app.user and post.author.id == app.user.id %}
+<div class="modal fade" id="editPostModal{{ post.id }}" tabindex="-1" aria-labelledby="editPostModalLabel{{ post.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modifier la publication</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form class="edit-post-form" data-post-id="{{ post.id }}" enctype="multipart/form-data">
+                    <input type="hidden" name="_token" value="{{ csrf_token('edit' ~ post.id) }}">
+                    <div class="mb-3">
+                        <label class="form-label">Titre (optionnel)</label>
+                        <input type="text" class="form-control" name="title" value="{{ post.title }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contenu</label>
+                        <div class="position-relative">
+                            <textarea class="form-control mention-input" rows="3" name="content" required>{{ post.content }}</textarea>
+                            <div class="mention-suggestions dropdown-menu"></div>
+                            <small class="text-muted d-block mt-1">Astuce : Utilisez @ pour mentionner un utilisateur et # pour ajouter un hashtag</small>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-lg me-2"></i>Enregistrer les modifications
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %} 
