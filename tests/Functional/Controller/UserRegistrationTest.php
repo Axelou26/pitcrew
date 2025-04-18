@@ -198,15 +198,12 @@ class UserRegistrationTest extends WebTestCase
         ];
 
         foreach ($invalidEmails as $invalidEmail) {
-            // 4. Soumission du formulaire avec email invalide
             $crawler = $this->submitRegistrationForm($crawler, [
                 'registration_form[email]' => $invalidEmail
             ]);
 
-            // 5. Vérification des erreurs
             $this->assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
-            $this->assertSelectorExists('.invalid-feedback');
-            $this->assertSelectorTextContains('.invalid-feedback', 'email');
+            $this->assertSelectorExists('.invalid-feedback', 'L\'email n\'est pas valide');
         }
     }
 

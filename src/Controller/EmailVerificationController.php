@@ -2,7 +2,9 @@
 
 namespace App\Controller;
 
+use App\Repository\UserRepository;
 use App\Service\EmailService;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -10,7 +12,9 @@ use Symfony\Component\Routing\Annotation\Route;
 class EmailVerificationController extends AbstractController
 {
     public function __construct(
-        private EmailService $emailService
+        private EmailService $emailService,
+        private UserRepository $userRepository,
+        private EntityManagerInterface $entityManager
     ) {
     }
 
@@ -23,7 +27,16 @@ class EmailVerificationController extends AbstractController
     #[Route('/verify/email/{token}', name: 'app_verify_email')]
     public function verifyUserEmail(string $token): Response
     {
-        // TODO: Implémenter la vérification du token
+        $user = $this->userRepository->findOneBy(['verificationToken' => $token]);
+
+        if (!$user) {
+            $this->addFlash('error', 'Token de vérification invalide.');
+            return $this->redirectToRoute('app_login');
+        }
+
+        $user->setIsVerified(true);
+        $user->setVerificationToken(null); // On supprime le token après utilisation
+        $this->entityManager->flush();
 
         $this->addFlash('success', 'Votre adresse email a été vérifiée avec succès.');
         return $this->redirectToRoute('app_login');
