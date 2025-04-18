@@ -2,6 +2,8 @@
 
 namespace App\Service;
 
+use InvalidArgumentException;
+
 class SubscriptionFeatures
 {
     public const LEVEL_BASIC = 'basic';
@@ -43,7 +45,7 @@ class SubscriptionFeatures
     public function getAvailableFeatures(string $level): array
     {
         if (!$this->isValidSubscriptionLevel($level)) {
-            throw new \InvalidArgumentException('Niveau d\'abonnement invalide');
+            throw new InvalidArgumentException('Niveau d\'abonnement invalide');
         }
 
         return self::FEATURES[$level];

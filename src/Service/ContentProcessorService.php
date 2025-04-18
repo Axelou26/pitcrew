@@ -199,7 +199,10 @@ class ContentProcessorService
                     }
                 }
             } catch (\Throwable $e) {
-                $this->logger->warning('Erreur lors du traitement de la mention @' . $fullName . ': ' . $e->getMessage());
+                $this->logger->warning(
+                    'Erreur lors du traitement de la mention @' . $fullName . ': ' .
+                    $e->getMessage()
+                );
                 // Continuer avec les autres mentions
                 continue;
             }

@@ -11,8 +11,10 @@ use App\Entity\RecruiterSubscription;
 use App\Repository\SubscriptionRepository;
 use App\Repository\RecruiterSubscriptionRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Exception;
+use InvalidArgumentException;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 class SubscriptionManager
 {
@@ -39,7 +41,7 @@ class SubscriptionManager
             // Récupérer le Recruiter correspondant
             $recruiter = $this->entityManager->getRepository(Recruiter::class)->find($user->getId());
             if (!$recruiter) {
-                throw new \InvalidArgumentException('L\'utilisateur doit être un recruteur pour créer un abonnement.');
+                throw new InvalidArgumentException('L\'utilisateur doit être un recruteur pour créer un abonnement.');
             }
             $user = $recruiter;
         }
@@ -130,7 +132,7 @@ class SubscriptionManager
         bool $isOfflineMode
     ): array {
         if (!$user instanceof Recruiter) {
-            throw new \InvalidArgumentException('L\'utilisateur doit être un recruteur pour créer un abonnement.');
+            throw new InvalidArgumentException('L\'utilisateur doit être un recruteur pour créer un abonnement.');
         }
 
         $recruiterSub = $this->subscriptionService->createSubscription(

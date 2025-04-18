@@ -208,19 +208,19 @@ class PostController extends AbstractController
         }
 
         // Pour les requêtes non-AJAX (formulaire standard)
-        if ($this->isCsrfTokenValid('delete' . $post->getId(), $request->request->get('_token'))) {
-            try {
-                $this->postService->deletePost($post);
-                $this->addFlash('success', 'Le post a été supprimé avec succès !');
-            } catch (\Exception $e) {
-                $this->logger->error('Erreur lors de la suppression du post (non-AJAX): ' . $e->getMessage());
-                $this->addFlash('error', 'Erreur lors de la suppression.');
-            }
-        } else {
+        if (!$this->isCsrfTokenValid('delete' . $post->getId(), $request->request->get('_token'))) {
             $this->addFlash('error', 'Token CSRF invalide.');
+            return $this->redirectToRoute('app_home');
         }
 
-        // Toujours rediriger pour les requêtes non-AJAX
+        try {
+            $this->postService->deletePost($post);
+            $this->addFlash('success', 'Le post a été supprimé avec succès !');
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de la suppression du post (non-AJAX): ' . $e->getMessage());
+            $this->addFlash('error', 'Erreur lors de la suppression.');
+        }
+
         return $this->redirectToRoute('app_home');
     }
 
@@ -230,15 +230,18 @@ class PostController extends AbstractController
     {
         $user = $this->getUser();
         if (!$user) {
-            return $this->json(['success' => false, 'message' => 'Utilisateur non authentifié.'], Response::HTTP_UNAUTHORIZED);
+            $errorResponse = ['success' => false, 'message' => 'Utilisateur non authentifié.'];
+            return $this->json($errorResponse, Response::HTTP_UNAUTHORIZED);
         }
 
         $reactionType = $request->request->get('reactionType');
-        if (empty($reactionType) || !array_key_exists($reactionType, PostLike::REACTIONS)) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Type de réaction invalide ou manquant.'
-            ], Response::HTTP_BAD_REQUEST);
+        $isInvalidReaction = empty($reactionType) || !array_key_exists($reactionType, PostLike::REACTIONS);
+        if ($isInvalidReaction) {
+            $errorMessage = 'Type de réaction invalide ou manquant.';
+            return $this->json(
+                ['success' => false, 'message' => $errorMessage],
+                Response::HTTP_BAD_REQUEST
+            );
         }
 
         try {
@@ -357,6 +360,61 @@ class PostController extends AbstractController
         ]);
     }
 
+    private function validateContent(?string $content): ?array
+    {
+        if (empty($content)) {
+            return [
+                'error' => 'Le contenu est obligatoire',
+                'field' => 'content'
+            ];
+        }
+
+        if (strlen($content) > 5000) {
+            return [
+                'error' => 'Le contenu ne peut pas dépasser 5000 caractères',
+                'field' => 'content'
+            ];
+        }
+
+        return null;
+    }
+
+    private function validateTitle(?string $title): ?array
+    {
+        if ($title && strlen($title) > 255) {
+            return [
+                'error' => 'Le titre ne peut pas dépasser 255 caractères',
+                'field' => 'title'
+            ];
+        }
+
+        return null;
+    }
+
+    private function validateImage($imageFile): ?array
+    {
+        if (!$imageFile) {
+            return null;
+        }
+
+        $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        if (!in_array($imageFile->getMimeType(), $allowedMimeTypes)) {
+            return [
+                'error' => 'Format d\'image non supporté. Utilisez JPG, PNG ou GIF',
+                'field' => 'imageFile'
+            ];
+        }
+
+        if ($imageFile->getSize() > 5 * 1024 * 1024) { // 5MB
+            return [
+                'error' => 'L\'image ne doit pas dépasser 5MB',
+                'field' => 'imageFile'
+            ];
+        }
+
+        return null;
+    }
+
     #[Route('/quick-create', name: 'app_post_quick_create', methods: ['POST'])]
     #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
     public function quickCreate(Request $request): JsonResponse
@@ -366,55 +424,33 @@ class PostController extends AbstractController
         }
 
         try {
-            // Récupération et validation du contenu
+            // Récupération du contenu
             $content = $request->request->get('content');
             if (empty($content)) {
                 $content = $request->request->get('fullContent');
             }
 
-            if (empty($content)) {
-                return new JsonResponse([
-                    'error' => 'Le contenu est obligatoire',
-                    'field' => 'content'
-                ], Response::HTTP_BAD_REQUEST);
+            // Validation du contenu
+            $contentValidation = $this->validateContent($content);
+            if ($contentValidation !== null) {
+                return new JsonResponse($contentValidation, Response::HTTP_BAD_REQUEST);
             }
 
-            // Validation de la longueur du contenu
-            if (strlen($content) > 5000) {
-                return new JsonResponse([
-                    'error' => 'Le contenu ne peut pas dépasser 5000 caractères',
-                    'field' => 'content'
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
+            // Validation du titre
             $title = $request->request->get('title');
-            if ($title && strlen($title) > 255) {
-                return new JsonResponse([
-                    'error' => 'Le titre ne peut pas dépasser 255 caractères',
-                    'field' => 'title'
-                ], Response::HTTP_BAD_REQUEST);
+            $titleValidation = $this->validateTitle($title);
+            if ($titleValidation !== null) {
+                return new JsonResponse($titleValidation, Response::HTTP_BAD_REQUEST);
             }
 
-            // Validation et traitement de l'image
+            // Validation de l'image
             $imageFile = $request->files->get('imageFile');
-            if ($imageFile) {
-                $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif'];
-                if (!in_array($imageFile->getMimeType(), $allowedMimeTypes)) {
-                    return new JsonResponse([
-                        'error' => 'Format d\'image non supporté. Utilisez JPG, PNG ou GIF',
-                        'field' => 'imageFile'
-                    ], Response::HTTP_BAD_REQUEST);
-                }
-
-                if ($imageFile->getSize() > 5 * 1024 * 1024) { // 5MB
-                    return new JsonResponse([
-                        'error' => 'L\'image ne doit pas dépasser 5MB',
-                        'field' => 'imageFile'
-                    ], Response::HTTP_BAD_REQUEST);
-                }
+            $imageValidation = $this->validateImage($imageFile);
+            if ($imageValidation !== null) {
+                return new JsonResponse($imageValidation, Response::HTTP_BAD_REQUEST);
             }
 
-            // Création du post avec traitement des hashtags et mentions
+            // Création du post
             $post = $this->postService->createPost(
                 $content,
                 $this->getUser(),
@@ -422,59 +458,8 @@ class PostController extends AbstractController
                 $imageFile
             );
 
-            // Récupération des informations pour la réponse
-            $author = $this->getUser();
-            $authorPicture = $author->getProfilePicture()
-                ? '/uploads/profile_pictures/' . $author->getProfilePicture()
-                : null;
-
-            // Extraction des hashtags et mentions pour la réponse
-            $hashtags = [];
-            foreach ($post->getHashtags() as $hashtag) {
-                $hashtags[] = [
-                    'name' => $hashtag->getName(),
-                    'url' => $this->generateUrl('app_hashtag_show', ['name' => $hashtag->getName()])
-                ];
-            }
-
-            $mentions = [];
-            $userRepository = $this->entityManager->getRepository(User::class);
-            foreach ($post->getMentions() as $mentionId) {
-                $mentionedUser = $userRepository->find($mentionId);
-                if ($mentionedUser) {
-                    $mentions[] = [
-                        'fullName' => $mentionedUser->getFullName(),
-                        'profileUrl' => $this->generateUrl('app_user_profile', ['userId' => $mentionedUser->getId()])
-                    ];
-                }
-            }
-
-            // Construction de la réponse enrichie
-            return new JsonResponse([
-                'success' => true,
-                'message' => 'Publication créée avec succès',
-                'post' => [
-                    'id' => $post->getId(),
-                    'content' => $post->getContent(),
-                    'title' => $post->getTitle(),
-                    'image' => $post->getImage(),
-                    'createdAt' => $post->getCreatedAt()->format('d/m/Y H:i'),
-                    'author' => [
-                        'name' => $author->getFullName(),
-                        'picture' => $authorPicture,
-                        'id' => $author->getId()
-                    ],
-                    'hashtags' => $hashtags,
-                    'mentions' => $mentions,
-                    'stats' => [
-                        'likes' => 0,
-                        'comments' => 0,
-                        'shares' => 0
-                    ]
-                ],
-                'token' => $this->renderView('csrf_token.html.twig', ['id' => $post->getId()]),
-                'html' => $this->renderView('post/_post_card.html.twig', ['post' => $post])
-            ], Response::HTTP_CREATED);
+            // Préparation de la réponse
+            return $this->prepareQuickCreateResponse($post);
         } catch (\Exception $e) {
             $this->logger->error('Erreur lors de la création du post: ' . $e->getMessage());
             return new JsonResponse([
@@ -482,6 +467,62 @@ class PostController extends AbstractController
                 'details' => $this->getParameter('kernel.debug') ? $e->getMessage() : null
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private function prepareQuickCreateResponse(Post $post): JsonResponse
+    {
+        $author = $this->getUser();
+        $authorPicture = $author->getProfilePicture()
+            ? '/uploads/profile_pictures/' . $author->getProfilePicture()
+            : null;
+
+        // Extraction des hashtags
+        $hashtags = [];
+        foreach ($post->getHashtags() as $hashtag) {
+            $hashtags[] = [
+                'name' => $hashtag->getName(),
+                'url' => $this->generateUrl('app_hashtag_show', ['name' => $hashtag->getName()])
+            ];
+        }
+
+        // Extraction des mentions
+        $mentions = [];
+        $userRepository = $this->entityManager->getRepository(User::class);
+        foreach ($post->getMentions() as $mentionId) {
+            $mentionedUser = $userRepository->find($mentionId);
+            if ($mentionedUser) {
+                $mentions[] = [
+                    'fullName' => $mentionedUser->getFullName(),
+                    'profileUrl' => $this->generateUrl('app_user_profile', ['userId' => $mentionedUser->getId()])
+                ];
+            }
+        }
+
+        return new JsonResponse([
+            'success' => true,
+            'message' => 'Publication créée avec succès',
+            'post' => [
+                'id' => $post->getId(),
+                'content' => $post->getContent(),
+                'title' => $post->getTitle(),
+                'image' => $post->getImage(),
+                'createdAt' => $post->getCreatedAt()->format('d/m/Y H:i'),
+                'author' => [
+                    'name' => $author->getFullName(),
+                    'picture' => $authorPicture,
+                    'id' => $author->getId()
+                ],
+                'hashtags' => $hashtags,
+                'mentions' => $mentions,
+                'stats' => [
+                    'likes' => 0,
+                    'comments' => 0,
+                    'shares' => 0
+                ]
+            ],
+            'token' => $this->renderView('csrf_token.html.twig', ['id' => $post->getId()]),
+            'html' => $this->renderView('post/_post_card.html.twig', ['post' => $post])
+        ], Response::HTTP_CREATED);
     }
 
     #[Route('/{id}/reaction', name: 'app_post_reaction', methods: ['POST'])]
@@ -493,11 +534,13 @@ class PostController extends AbstractController
             $data = json_decode($request->getContent(), true);
             $reactionType = $data['type'] ?? null;
 
-            if (empty($reactionType) || !array_key_exists($reactionType, PostLike::REACTIONS)) {
-                return $this->json([
-                    'success' => false,
-                    'message' => 'Type de réaction invalide ou manquant'
-                ], Response::HTTP_BAD_REQUEST);
+            $isInvalidReaction = empty($reactionType) || !array_key_exists($reactionType, PostLike::REACTIONS);
+            if ($isInvalidReaction) {
+                $errorMessage = 'Type de réaction invalide ou manquant.';
+                return $this->json(
+                    ['success' => false, 'message' => $errorMessage],
+                    Response::HTTP_BAD_REQUEST
+                );
             }
 
             $activeReactionType = $this->interactionService->toggleLike($post, $this->getUser(), $reactionType);

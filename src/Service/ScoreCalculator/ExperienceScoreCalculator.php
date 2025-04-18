@@ -8,6 +8,8 @@ use App\Entity\Applicant;
 use App\Entity\JobOffer;
 use DateTime;
 use RuntimeException;
+use InvalidArgumentException;
+use Exception;
 
 class ExperienceScoreCalculator extends BaseScoreCalculator implements ScoreCalculatorInterface
 {
@@ -34,10 +36,16 @@ class ExperienceScoreCalculator extends BaseScoreCalculator implements ScoreCalc
         if ($totalYears >= $requiredExperience) {
             $score = $maxScore;
             $details[] = sprintf('Expérience suffisante (%d années vs %d requises)', $totalYears, $requiredExperience);
-        } else {
-            $score = ($totalYears / $requiredExperience) * $maxScore;
-            $details[] = sprintf('Expérience partielle (%d années vs %d requises)', $totalYears, $requiredExperience);
+            return [
+                'category' => 'Expérience professionnelle',
+                'score' => $score,
+                'maxScore' => $maxScore,
+                'details' => $details
+            ];
         }
+
+        $score = ($totalYears / $requiredExperience) * $maxScore;
+        $details[] = sprintf('Expérience partielle (%d années vs %d requises)', $totalYears, $requiredExperience);
 
         return [
             'category' => 'Expérience professionnelle',

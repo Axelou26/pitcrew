@@ -5,14 +5,17 @@ namespace App\Command;
 use App\Entity\Hashtag;
 use App\Repository\HashtagRepository;
 use App\Repository\PostRepository;
+use DateInterval;
+use DateTime;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
+use Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Psr\Cache\CacheItemPoolInterface;
-use DateTimeImmutable;
 
 #[AsCommand(
     name: 'app:update-trending-hashtags',
@@ -49,7 +52,7 @@ class UpdateTrendingHashtagsCommand extends Command
             $io->info('Début de la mise à jour des hashtags tendance...');
 
             // Récupérer tous les posts des dernières 24 heures
-            $yesterday = new \DateTime('-24 hours');
+            $yesterday = new DateTime('-24 hours');
             $recentPosts = $this->postRepository->findPostsSince($yesterday);
 
             // Compteur pour chaque hashtag
@@ -79,7 +82,7 @@ class UpdateTrendingHashtagsCommand extends Command
                 $hashtag = $this->hashtagRepository->findOneBy(['name' => $hashtagName]);
                 if ($hashtag) {
                     $hashtag->setUsageCount($count);
-                    $hashtag->setLastUsedAt(new \DateTimeImmutable());
+                    $hashtag->setLastUsedAt(new DateTimeImmutable());
                 }
             }
 
@@ -89,7 +92,7 @@ class UpdateTrendingHashtagsCommand extends Command
             $trendingHashtags = $this->hashtagRepository->findTrending(5);
             $cacheItem = $this->cache->getItem('trending_hashtags');
             $cacheItem->set(array_map(fn($h) => $h->getId(), $trendingHashtags));
-            $cacheItem->expiresAfter(new \DateInterval('PT24H')); // Expire après 24 heures
+            $cacheItem->expiresAfter(new DateInterval('PT24H')); // Expire après 24 heures
             $this->cache->save($cacheItem);
 
             $io->success('Les hashtags tendance ont été mis à jour avec succès.');

@@ -25,6 +25,7 @@ use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\Security;
 use Symfony\Component\Security\Core\User\UserInterface;
 use RuntimeException;
+use InvalidArgumentException;
 
 class RegistrationManager
 {
@@ -138,7 +139,7 @@ class RegistrationManager
         bool $isOfflineMode
     ): array {
         if (!$user instanceof Recruiter) {
-            throw new \InvalidArgumentException('L\'utilisateur doit être un recruteur pour créer un abonnement.');
+            throw new InvalidArgumentException('L\'utilisateur doit être un recruteur pour créer un abonnement.');
         }
 
         $subscriptionLevel = strtolower($subscription->getName());

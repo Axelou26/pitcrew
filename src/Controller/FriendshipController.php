@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 #[Route('/friendship')]
 #[IsGranted('IS_AUTHENTICATED_FULLY')]
@@ -32,6 +33,71 @@ class FriendshipController extends AbstractController
         ]);
     }
 
+    private function validateFriendshipRequest(User $requester, User $addressee, Request $request): ?Response
+    {
+        // Vérifier que l'utilisateur n'essaie pas de s'envoyer une demande à lui-même
+        if ($requester === $addressee) {
+            $message = 'Vous ne pouvez pas vous envoyer une demande d\'amitié à vous-même.';
+            if ($request->isXmlHttpRequest()) {
+                return $this->json(['success' => false, 'message' => $message]);
+            }
+            $this->addFlash('error', $message);
+            return $this->redirect($request->headers->get('referer', $this->generateUrl('app_home')));
+        }
+
+        return null;
+    }
+
+    private function handleExistingFriendship(
+        Friendship $friendship,
+        Request $request
+    ): Response {
+        $message = 'Une demande d\'amitié a déjà été traitée avec cet utilisateur.';
+        if ($friendship->isPending()) {
+            $message = 'Une demande d\'amitié est déjà en cours avec cet utilisateur.';
+        } elseif ($friendship->isAccepted()) {
+            $message = 'Vous êtes déjà ami avec cet utilisateur.';
+        }
+
+        if ($request->isXmlHttpRequest()) {
+            return $this->json(['success' => false, 'message' => $message]);
+        }
+
+        $this->addFlash('info', $message);
+        return $this->redirect($request->headers->get('referer', $this->generateUrl('app_home')));
+    }
+
+    private function createSuggestionResponse(
+        User $requester,
+        User $addressee,
+        User $newSuggestion = null
+    ): JsonResponse {
+        if (!$newSuggestion) {
+            return $this->json([
+                'success' => true,
+                'message' => 'Votre demande d\'amitié a été envoyée.',
+                'newSuggestion' => null
+            ]);
+        }
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Votre demande d\'amitié a été envoyée.',
+            'newSuggestion' => [
+                'id' => $newSuggestion->getId(),
+                'fullName' => $newSuggestion->getFullName(),
+                'jobTitle' => $newSuggestion->getJobTitle(),
+                'company' => $newSuggestion->getCompany(),
+                'profilePicture' => $newSuggestion->getProfilePicture(),
+                'profileUrl' => $this->generateUrl('app_profile_view', ['id' => $newSuggestion->getId()]),
+                'addFriendUrl' => $this->generateUrl(
+                    'app_friendship_send',
+                    ['addresseeId' => $newSuggestion->getId()]
+                )
+            ]
+        ]);
+    }
+
     #[Route('/send/{addresseeId}', name: 'app_friendship_send')]
     public function send(
         int $addresseeId,
@@ -40,8 +106,6 @@ class FriendshipController extends AbstractController
         FriendshipRepository $friendshipRepository
     ): Response {
         $requester = $this->getUser();
-
-        // Récupérer l'utilisateur destinataire par son ID
         $userRepository = $entityManager->getRepository(User::class);
         $addressee = $userRepository->find($addresseeId);
 
@@ -54,30 +118,16 @@ class FriendshipController extends AbstractController
             return $this->redirect($request->headers->get('referer', $this->generateUrl('app_home')));
         }
 
-        // Vérifier que l'utilisateur n'essaie pas de s'envoyer une demande à lui-même
-        if ($requester === $addressee) {
-            if ($request->isXmlHttpRequest()) {
-                return $this->json(['success' => false, 'message' => 'Vous ne pouvez pas vous envoyer une demande d\'amitié à vous-même.']);
-            }
-            $this->addFlash('error', 'Vous ne pouvez pas vous envoyer une demande d\'amitié à vous-même.');
-            return $this->redirect($request->headers->get('referer', $this->generateUrl('app_home')));
+        // Valider la demande d'amitié
+        $validationResponse = $this->validateFriendshipRequest($requester, $addressee, $request);
+        if ($validationResponse !== null) {
+            return $validationResponse;
         }
 
-        // Vérifier s'il existe déjà une demande d'amitié entre ces utilisateurs
+        // Vérifier s'il existe déjà une demande d'amitié
         $existingFriendship = $friendshipRepository->findBetweenUsers($requester, $addressee);
-
         if ($existingFriendship) {
-            $message = 'Une demande d\'amitié a déjà été traitée avec cet utilisateur.';
-            if ($existingFriendship->isPending()) {
-                $message = 'Une demande d\'amitié est déjà en cours avec cet utilisateur.';
-            } elseif ($existingFriendship->isAccepted()) {
-                $message = 'Vous êtes déjà ami avec cet utilisateur.';
-            }
-            if ($request->isXmlHttpRequest()) {
-                return $this->json(['success' => false, 'message' => $message]);
-            }
-            $this->addFlash('info', $message);
-            return $this->redirect($request->headers->get('referer', $this->generateUrl('app_home')));
+            return $this->handleExistingFriendship($existingFriendship, $request);
         }
 
         // Créer une nouvelle demande d'amitié
@@ -88,42 +138,18 @@ class FriendshipController extends AbstractController
         $entityManager->persist($friendship);
         $entityManager->flush();
 
-        // Si c'est une requête AJAX, retourner un nouvel utilisateur suggéré
+        // Gérer la réponse AJAX
         if ($request->isXmlHttpRequest()) {
-            // Récupérer les utilisateurs suggérés actuels
             $suggestedUsers = $userRepository->findSuggestedUsers($requester, 5);
-
-            // Filtrer pour exclure l'utilisateur qui vient d'être ajouté
             $suggestedUsers = array_filter($suggestedUsers, function ($user) use ($addressee) {
                 return $user->getId() !== $addressee->getId();
             });
-
-            // Prendre le premier utilisateur qui n'est pas déjà affiché
             $newSuggestion = array_shift($suggestedUsers);
 
-            if ($newSuggestion) {
-                return $this->json([
-                    'success' => true,
-                    'message' => 'Votre demande d\'amitié a été envoyée.',
-                    'newSuggestion' => [
-                        'id' => $newSuggestion->getId(),
-                        'fullName' => $newSuggestion->getFullName(),
-                        'jobTitle' => $newSuggestion->getJobTitle(),
-                        'company' => $newSuggestion->getCompany(),
-                        'profilePicture' => $newSuggestion->getProfilePicture(),
-                        'profileUrl' => $this->generateUrl('app_profile_view', ['id' => $newSuggestion->getId()]),
-                        'addFriendUrl' => $this->generateUrl('app_friendship_send', ['addresseeId' => $newSuggestion->getId()])
-                    ]
-                ]);
-            }
-
-            return $this->json([
-                'success' => true,
-                'message' => 'Votre demande d\'amitié a été envoyée.',
-                'newSuggestion' => null
-            ]);
+            return $this->createSuggestionResponse($requester, $addressee, $newSuggestion);
         }
 
+        // Réponse standard
         $this->addFlash('success', 'Votre demande d\'amitié a été envoyée.');
         return $this->redirect($request->headers->get('referer', $this->generateUrl('app_home')));
     }
@@ -149,10 +175,8 @@ class FriendshipController extends AbstractController
         $friendship->accept();
         $entityManager->flush();
 
-        $this
-            ->addFlash('success', 'Vous êtes maintenant ami avec ' . $friendship
-            ->getRequester()
-            ->getFullName() . '.');
+        $requester = $friendship->getRequester();
+        $this->addFlash('success', sprintf('Vous êtes maintenant ami avec %s.', $requester->getFullName()));
 
         return $this->redirect($request->headers->get('referer', $this->generateUrl('app_friendship_requests')));
     }
