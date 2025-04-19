@@ -1,0 +1,16 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+.idea
+.vscode
+vendor/
+var/
+node_modules/
+tests/
+phpunit.xml.dist
+README.md 
