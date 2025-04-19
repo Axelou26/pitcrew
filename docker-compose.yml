@@ -35,9 +35,4 @@ services:
       - "33306:3306"
 
 volumes:
-  mysql-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: C:/ProgramData/MySQL/MySQL Server 8.0/Data/blog 
+  mysql-data: 
