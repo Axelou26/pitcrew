@@ -108,7 +108,7 @@ jobs:
         sleep 10
         
         # Installer les dépendances
-        docker compose exec -T app composer install --no-dev --optimize-autoloader
+        docker compose exec -T app composer install --no-dev --optimize-autoloader --no-scripts
         
         # Exécuter les migrations et le cache
         docker compose exec -T app php bin/console doctrine:migrations:migrate --no-interaction --env=prod
