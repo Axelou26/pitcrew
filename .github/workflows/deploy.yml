@@ -1,0 +1,127 @@
+name: Docker Deployment
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-quality:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: azerty-26
+          MYSQL_DATABASE: blog_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json
+          coverage: xdebug
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install Dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Code Quality Checks
+        run: |
+          vendor/bin/phpcs --standard=PSR12 src/
+          vendor/bin/phpmd src/ text .github/phpmd.xml
+
+      - name: Security Check
+        uses: symfonycorp/security-checker-action@v4
+
+      - name: Setup Test Database
+        run: |
+          php bin/console --env=test doctrine:database:create --if-not-exists
+          php bin/console --env=test doctrine:schema:update --force
+        env:
+          DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog_test?serverVersion=8.0"
+
+      - name: Run Tests with Coverage
+        run: php bin/phpunit --coverage-clover clover.xml
+
+  docker-build-and-deploy:
+    needs: test-and-quality
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: 
+      name: production
+      url: http://localhost:8888
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Build and push Docker images
+      env:
+        DOCKER_REPO: ${{ secrets.DOCKER_HUB_USERNAME }}/pitcrew
+      run: |
+        docker build -t $DOCKER_REPO:${{ github.sha }} -t $DOCKER_REPO:latest .
+        docker push $DOCKER_REPO:${{ github.sha }}
+        docker push $DOCKER_REPO:latest
+
+    - name: Deploy locally
+      run: |
+        # Créer le fichier .env.prod
+        cat > .env.prod << EOL
+        APP_ENV=prod
+        APP_SECRET=${{ secrets.APP_SECRET }}
+        DATABASE_URL="${{ secrets.DATABASE_URL }}"
+        EOL
+        
+        # Arrêter les conteneurs existants
+        docker compose down || true
+        
+        # Démarrer les nouveaux conteneurs
+        docker compose --env-file .env.prod up -d
+        
+        # Attendre que les conteneurs soient prêts
+        sleep 10
+        
+        # Exécuter les migrations et le cache
+        docker compose exec -T app php bin/console doctrine:migrations:migrate --no-interaction --env=prod
+        docker compose exec -T app php bin/console cache:clear --env=prod
+        docker compose exec -T app php bin/console cache:warmup --env=prod
+
+    - name: Health Check
+      run: |
+        curl --retry 10 --retry-delay 5 --retry-connrefused http://localhost:8888/health
+        curl --retry 10 --retry-delay 5 --retry-connrefused http://localhost:8888/api/health
+
+    - name: Notify Slack
+      if: always()
+      uses: rtCamp/action-slack-notify@v2.2.0
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_MESSAGE: ${{ job.status == 'success' && '🐳 Déploiement Docker réussi en local' || '❌ Échec du déploiement Docker en local' }}
+        SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
+        SLACK_FOOTER: "Commit: ${{ github.sha }}" 
