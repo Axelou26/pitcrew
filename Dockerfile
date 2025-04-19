@@ -8,10 +8,11 @@ RUN apt-get update && apt-get install -y \
     libicu-dev \
     libpq-dev \
     nodejs \
-    npm
+    npm \
+    && rm -rf /var/lib/apt/lists/*
 
 # Installation des extensions PHP
-RUN docker-php-ext-install pdo pdo_mysql zip intl
+RUN docker-php-ext-install pdo pdo_mysql zip intl opcache
 
 # Configuration PHP
 COPY docker/php/php.ini /usr/local/etc/php/php.ini
@@ -30,25 +31,17 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Configuration du répertoire de travail
 WORKDIR /var/www
 
-# Copie des fichiers de configuration
-COPY composer.json composer.lock ./
-RUN composer install --no-scripts --no-autoloader
-
-# Copie du reste des fichiers
+# Copie des fichiers de l'application
 COPY . .
 
-# Installation des dépendances Node.js et build des assets
-RUN npm install
-RUN npm run build
-
-# Finalisation de Composer avec plus de mémoire
-RUN php -d memory_limit=512M /usr/bin/composer dump-autoload --optimize && \
-    php -d memory_limit=512M /usr/bin/composer run-script post-install-cmd
+# Installation des dépendances Composer avec optimisation
+RUN composer install --no-dev --optimize-autoloader --no-scripts
 
 # Configuration des permissions
 RUN mkdir -p var/cache var/log && \
     chown -R www-data:www-data var && \
-    chmod -R 777 var
+    chmod -R 777 var && \
+    chmod +x bin/console
 
 # Exposition du port
 EXPOSE 9000

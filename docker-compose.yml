@@ -8,9 +8,9 @@ services:
     volumes:
       - .:/var/www
     environment:
-      DATABASE_URL: "mysql://root:azerty-26@host.docker.internal:3306/blog?serverVersion=8.0"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      DATABASE_URL: "mysql://root:azerty-26@database:3306/blog?serverVersion=8.0"
+    depends_on:
+      - database
 
   nginx:
     image: nginx:alpine
@@ -25,10 +25,10 @@ services:
   database:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: azerty-26
+      MYSQL_DATABASE: blog
+      MYSQL_USER: root
+      MYSQL_PASSWORD: azerty-26
     volumes:
       - mysql-data:/var/lib/mysql
     ports:
