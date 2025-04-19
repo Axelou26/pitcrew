@@ -31,11 +31,18 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Configuration du répertoire de travail
 WORKDIR /var/www
 
-# Copie des fichiers de l'application
+# Copie des fichiers de configuration Composer
+COPY composer.json composer.lock ./
+
+# Installation des dépendances Composer
+RUN composer install --no-scripts --no-autoloader
+
+# Copie du reste des fichiers de l'application
 COPY . .
 
-# Installation des dépendances Composer avec optimisation
-RUN composer install --no-dev --optimize-autoloader --no-scripts
+# Finalisation de l'installation Composer
+RUN composer dump-autoload --optimize && \
+    composer run-script post-install-cmd
 
 # Configuration des permissions
 RUN mkdir -p var/cache var/log && \
