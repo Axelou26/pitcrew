@@ -337,7 +337,8 @@ class PostController extends AbstractController
     ): Response {
         $hashtag = $hashtagRepository->findOneBy(['name' => $name]);
         if (!$hashtag) {
-            throw $this->createNotFoundException('Hashtag non trouvé');
+            $this->addFlash('warning', sprintf('Le hashtag #%s n\'existe pas.', $name));
+            return $this->redirectToRoute('app_hashtags_trending');
         }
 
         $posts = $postRepository->findByHashtag($hashtag);

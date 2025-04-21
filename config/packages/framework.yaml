@@ -9,6 +9,15 @@ framework:
     #esi: true
     #fragments: true
 
+    cache:
+        app: cache.adapter.filesystem
+        system: cache.adapter.filesystem
+        pools:
+            doctrine.result_cache_pool:
+                adapter: cache.adapter.filesystem
+            doctrine.system_cache_pool:
+                adapter: cache.adapter.filesystem
+
 when@test:
     framework:
         test: true

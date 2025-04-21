@@ -111,6 +111,51 @@ class RecruiterFixtures extends Fixture implements DependentFixtureInterface
                 'companyDescription' => 'Constructeur de voitures de course et de karts de compétition',
                 'city' => 'Prague',
                 'subscriptionReference' => 'subscription-business'
+            ],
+            [
+                'email' => 'recruteur6@exemple.fr',
+                'firstName' => 'Sophie',
+                'lastName' => 'Lefevre',
+                'companyName' => 'Ferrari GT Racing',
+                'companyDescription' => 'Division GT de Ferrari, spécialisée dans les championnats GT et l\'endurance',
+                'city' => 'Maranello',
+                'subscriptionReference' => 'subscription-premium'
+            ],
+            [
+                'email' => 'recruteur7@exemple.fr',
+                'firstName' => 'Marc',
+                'lastName' => 'Dubois',
+                'companyName' => 'Michelin Motorsport',
+                'companyDescription' => 'Leader mondial des pneumatiques de compétition',
+                'city' => 'Clermont-Ferrand',
+                'subscriptionReference' => 'subscription-business'
+            ],
+            [
+                'email' => 'recruteur8@exemple.fr',
+                'firstName' => 'Laura',
+                'lastName' => 'Garcia',
+                'companyName' => 'McLaren Automotive',
+                'companyDescription' => 'Constructeur de voitures de luxe et de course, pionnier en F1',
+                'city' => 'Woking',
+                'subscriptionReference' => 'subscription-premium'
+            ],
+            [
+                'email' => 'recruteur9@exemple.fr',
+                'firstName' => 'Alexandre',
+                'lastName' => 'Moreau',
+                'companyName' => 'Peugeot Sport',
+                'companyDescription' => 'Division sportive de Peugeot, engagée en WEC et rallye-raid',
+                'city' => 'Sochaux',
+                'subscriptionReference' => 'subscription-business'
+            ],
+            [
+                'email' => 'recruteur10@exemple.fr',
+                'firstName' => 'Claire',
+                'lastName' => 'Bernard',
+                'companyName' => 'Aston Martin Racing',
+                'companyDescription' => 'Équipe officielle Aston Martin en compétition GT et F1',
+                'city' => 'Gaydon',
+                'subscriptionReference' => 'subscription-premium'
             ]
         ];
     }

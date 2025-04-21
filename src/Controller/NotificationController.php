@@ -47,11 +47,21 @@ class NotificationController extends AbstractController
     }
 
     #[Route('/api/notifications/count', name: 'app_api_notification_count', methods: ['GET'])]
-    public function apiCount(NotificationRepository $notifRepo): JsonResponse
+    public function apiCount(NotificationRepository $notifRepo, Request $request): JsonResponse
     {
-        $count = $notifRepo->countUnreadByUser($this->getUser());
-
-        return $this->json(['count' => $count]);
+        $response = new JsonResponse(['count' => $notifRepo->countUnreadByUser($this->getUser())]);
+        
+        // Cache pour 30 secondes avec validation ETag
+        $response->setPublic();
+        $response->setMaxAge(30);
+        $response->setEtag(md5($response->getContent()));
+        
+        // Vérifie si la réponse a changé
+        if ($response->isNotModified($request)) {
+            return $response;
+        }
+        
+        return $response;
     }
 
     #[Route('/{id}/mark-as-read', name: 'app_notification_mark_as_read', methods: ['POST'])]

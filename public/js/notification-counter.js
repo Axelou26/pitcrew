@@ -2,16 +2,34 @@
  * Script pour gérer le compteur de notifications
  */
 document.addEventListener('DOMContentLoaded', function() {
+    let lastEtag = null;
+
     // Fonction pour mettre à jour le compteur de notifications
     function updateNotificationCounter() {
         fetch('/api/notifications/count', {
             method: 'GET',
             headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+                'X-Requested-With': 'XMLHttpRequest',
+                'If-None-Match': lastEtag || ''
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            // Stocke le nouvel ETag
+            const etag = response.headers.get('ETag');
+            if (etag) {
+                lastEtag = etag;
+            }
+
+            // Si le contenu n'a pas changé (304), on ne fait rien
+            if (response.status === 304) {
+                return null;
+            }
+
+            return response.json();
+        })
         .then(data => {
+            if (data === null) return;
+
             const notificationBadge = document.getElementById('notification-badge');
             if (notificationBadge) {
                 if (data.count > 0) {
@@ -28,6 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Appeler la fonction immédiatement au chargement
     updateNotificationCounter();
 
-    // Mettre à jour le compteur toutes les 60 secondes
-    setInterval(updateNotificationCounter, 60000);
+    // Mettre à jour le compteur toutes les 30 secondes
+    setInterval(updateNotificationCounter, 30000);
+}); 
 }); 

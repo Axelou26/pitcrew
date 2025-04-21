@@ -66,10 +66,10 @@ class MatchingController extends AbstractController
      */
     #[Route('/suggestions/job-offer/{id}', name: 'app_matching_suggestions_job_offer')]
     #[IsGranted('ROLE_RECRUTEUR')]
-    public function suggestCandidatesForJobOffer(Request $request, int $jobOfferId): Response
+    public function suggestCandidatesForJobOffer(Request $request, int $id): Response
     {
         // Récupérer manuellement l'offre d'emploi
-        $jobOffer = $this->jobOfferRepository->find($jobOfferId);
+        $jobOffer = $this->jobOfferRepository->find($id);
 
         // Vérifier que l'offre existe
         if (!$jobOffer) {

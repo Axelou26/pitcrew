@@ -167,6 +167,121 @@ class JobOfferFixtures extends Fixture implements DependentFixtureInterface
                 'experienceLevel' => 'Senior',
                 'company' => 'Praga Racing',
                 'requiredExperience' => 7
+            ],
+            [
+                'title' => 'Ingénieur Développement Moteur',
+                'description' => 'Conception et développement de nouveaux moteurs de course.',
+                'requiredSkills' => [
+                    'Conception moteur',
+                    'Thermodynamique',
+                    'CAO',
+                    'Simulation moteur'
+                ],
+                'softSkills' => [
+                    'Innovation',
+                    'Rigueur',
+                    'Travail d\'équipe',
+                    'Résolution de problèmes'
+                ],
+                'location' => 'Maranello',
+                'isRemote' => false,
+                'salary' => 65000,
+                'contractType' => 'CDI',
+                'experienceLevel' => 'Senior',
+                'company' => 'Ferrari GT Racing',
+                'requiredExperience' => 8
+            ],
+            [
+                'title' => 'Responsable Marketing Sportif',
+                'description' => 'Développement et mise en œuvre de la stratégie marketing dans le sport automobile.',
+                'requiredSkills' => [
+                    'Marketing digital',
+                    'Communication',
+                    'Gestion de projet',
+                    'Sponsoring'
+                ],
+                'softSkills' => [
+                    'Créativité',
+                    'Leadership',
+                    'Négociation',
+                    'Vision stratégique'
+                ],
+                'location' => 'Paris',
+                'isRemote' => true,
+                'salary' => 52000,
+                'contractType' => 'CDI',
+                'experienceLevel' => 'Confirmé',
+                'company' => 'Alpine F1 Team',
+                'requiredExperience' => 6
+            ],
+            [
+                'title' => 'Ingénieur R&D Pneumatiques',
+                'description' => 'Développement et test de nouveaux composés pour les pneumatiques de course.',
+                'requiredSkills' => [
+                    'Chimie des matériaux',
+                    'Test sur piste',
+                    'Analyse de données',
+                    'Simulation'
+                ],
+                'softSkills' => [
+                    'Innovation',
+                    'Méthodologie',
+                    'Communication technique',
+                    'Esprit d\'équipe'
+                ],
+                'location' => 'Clermont-Ferrand',
+                'isRemote' => false,
+                'salary' => 48000,
+                'contractType' => 'CDI',
+                'experienceLevel' => 'Confirmé',
+                'company' => 'Michelin Motorsport',
+                'requiredExperience' => 5
+            ],
+            [
+                'title' => 'Ingénieur Systèmes Électroniques',
+                'description' => 'Conception et développement des systèmes électroniques embarqués.',
+                'requiredSkills' => [
+                    'Électronique embarquée',
+                    'FPGA',
+                    'C++',
+                    'Systèmes temps réel'
+                ],
+                'softSkills' => [
+                    'Précision',
+                    'Innovation',
+                    'Résolution de problèmes',
+                    'Travail en équipe'
+                ],
+                'location' => 'Woking',
+                'isRemote' => false,
+                'salary' => 62000,
+                'contractType' => 'CDI',
+                'experienceLevel' => 'Senior',
+                'company' => 'McLaren Automotive',
+                'requiredExperience' => 7
+            ],
+            [
+                'title' => 'Aérodynamicien',
+                'description' => 'Optimisation aérodynamique des véhicules de course.',
+                'requiredSkills' => [
+                    'CFD',
+                    'Soufflerie',
+                    'CAO',
+                    'Post-traitement'
+                ],
+                'softSkills' => [
+                    'Analyse',
+                    'Innovation',
+                    'Communication',
+                    'Rigueur'
+                ],
+                'location' => 'Gaydon',
+                'isRemote' => false,
+                'salary' => 58000,
+                'contractType' => 'CDI',
+                'experienceLevel' => 'Senior',
+                'company' => 'Aston Martin Racing',
+                'requiredExperience' => 6
             ]
         ];
     }

@@ -63,6 +63,7 @@ class NotificationRepository extends ServiceEntityRepository
             ->setParameter('user', $user)
             ->setParameter('isRead', false)
             ->getQuery()
+            ->setResultCacheLifetime(60)  // Cache le résultat pendant 60 secondes
             ->getSingleScalarResult();
     }
 
