@@ -6,21 +6,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const notificationBadge = document.getElementById('notification-badge');
     const notificationDropdown = document.querySelector('.notification-dropdown');
     
-    // Fonction pour mettre à jour le compteur de notifications
-    function updateNotificationCount() {
-        fetch('/notifications/count')
-            .then(response => response.json())
-            .then(data => {
-                if (data.count > 0) {
-                    notificationBadge.textContent = data.count;
-                    notificationBadge.classList.remove('d-none');
-                } else {
-                    notificationBadge.classList.add('d-none');
-                }
-            })
-            .catch(error => console.error('Erreur lors de la récupération du nombre de notifications:', error));
-    }
-    
     // Fonction pour marquer une notification comme lue
     function markAsRead(notificationId) {
         fetch(`/notifications/${notificationId}/mark-as-read`, {
@@ -33,7 +18,10 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    updateNotificationCount();
+                    // Le compteur sera mis à jour automatiquement via NotificationCounter
+                    document.dispatchEvent(new CustomEvent('notificationRead', { 
+                        detail: { notificationId } 
+                    }));
                 }
             })
             .catch(error => console.error('Erreur lors du marquage de la notification comme lue:', error));
@@ -51,8 +39,6 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    updateNotificationCount();
-                    
                     // Mettre à jour l'interface utilisateur
                     const unreadItems = document.querySelectorAll('.notification-dropdown .dropdown-item.unread');
                     unreadItems.forEach(item => {
@@ -90,7 +76,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (element && element.parentNode) {
                         element.parentNode.removeChild(element);
                     }
-                    updateNotificationCount();
                 }
             })
             .catch(error => console.error('Erreur lors de la suppression de la notification:', error));
@@ -133,9 +118,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Mettre à jour le compteur de notifications toutes les 30 secondes
-    setInterval(updateNotificationCount, 30000);
-    
     // Marquer les notifications comme lues lorsqu'on clique dessus dans le dropdown
     document.querySelectorAll('.notification-dropdown .dropdown-item').forEach(item => {
         if (!item.classList.contains('text-center')) {
@@ -146,61 +128,5 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
-    });
-
-    // Sélectionner tous les éléments de notification dans le menu déroulant
-    const notificationItems = document.querySelectorAll('.notification-item');
-
-    // Ajouter un gestionnaire d'événements à chaque élément de notification
-    notificationItems.forEach(item => {
-        item.addEventListener('click', function(e) {
-            // Ne pas marquer comme lu si l'utilisateur clique sur un bouton à l'intérieur de la notification
-            if (e.target.closest('button')) {
-                return;
-            }
-            
-            // Récupérer l'URL pour marquer la notification comme lue
-            const markAsReadUrl = this.dataset.markAsReadUrl;
-            
-            // Envoyer une requête AJAX pour marquer la notification comme lue
-            if (markAsReadUrl && this.classList.contains('unread')) {
-                // Empêcher la navigation immédiate pour permettre à la requête AJAX de se terminer
-                e.preventDefault();
-                
-                fetch(markAsReadUrl, {
-                    method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Supprimer la classe 'unread'
-                        this.classList.remove('unread');
-                        
-                        // Mettre à jour le compteur de notifications
-                        const unreadCount = document.querySelectorAll('.notification-item.unread').length;
-                        if (notificationBadge) {
-                            if (unreadCount > 0) {
-                                notificationBadge.textContent = unreadCount;
-                            } else {
-                                notificationBadge.classList.add('d-none');
-                            }
-                        }
-                        
-                        // Rediriger vers l'URL cible après un court délai
-                        setTimeout(() => {
-                            window.location.href = this.href;
-                        }, 100);
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur lors du marquage de la notification comme lue:', error);
-                    // En cas d'erreur, rediriger quand même
-                    window.location.href = this.href;
-                });
-            }
-        });
     });
 }); 

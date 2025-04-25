@@ -50,17 +50,17 @@ class NotificationController extends AbstractController
     public function apiCount(NotificationRepository $notifRepo, Request $request): JsonResponse
     {
         $response = new JsonResponse(['count' => $notifRepo->countUnreadByUser($this->getUser())]);
-        
+
         // Cache pour 30 secondes avec validation ETag
         $response->setPublic();
         $response->setMaxAge(30);
         $response->setEtag(md5($response->getContent()));
-        
+
         // Vérifie si la réponse a changé
         if ($response->isNotModified($request)) {
             return $response;
         }
-        
+
         return $response;
     }
 

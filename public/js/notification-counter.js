@@ -1,23 +1,30 @@
 /**
  * Script pour gérer le compteur de notifications
  */
-document.addEventListener('DOMContentLoaded', function() {
-    let lastEtag = null;
+const NotificationCounter = {
+    lastEtag: null,
+    notificationBadge: null,
 
-    // Fonction pour mettre à jour le compteur de notifications
-    function updateNotificationCounter() {
+    init() {
+        this.notificationBadge = document.getElementById('notification-badge');
+        this.updateCounter();
+        // Mettre à jour le compteur toutes les 30 secondes
+        setInterval(() => this.updateCounter(), 30000);
+    },
+
+    updateCounter() {
         fetch('/api/notifications/count', {
             method: 'GET',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'If-None-Match': lastEtag || ''
+                'If-None-Match': this.lastEtag || ''
             }
         })
         .then(response => {
             // Stocke le nouvel ETag
             const etag = response.headers.get('ETag');
             if (etag) {
-                lastEtag = etag;
+                this.lastEtag = etag;
             }
 
             // Si le contenu n'a pas changé (304), on ne fait rien
@@ -30,23 +37,21 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data === null) return;
 
-            const notificationBadge = document.getElementById('notification-badge');
-            if (notificationBadge) {
+            if (this.notificationBadge) {
                 if (data.count > 0) {
-                    notificationBadge.textContent = data.count;
-                    notificationBadge.classList.remove('d-none');
+                    this.notificationBadge.textContent = data.count;
+                    this.notificationBadge.classList.remove('d-none');
                 } else {
-                    notificationBadge.classList.add('d-none');
+                    this.notificationBadge.classList.add('d-none');
                 }
             }
+
+            // Émettre un événement personnalisé pour informer d'autres parties de l'application
+            document.dispatchEvent(new CustomEvent('notificationCountUpdated', { detail: data.count }));
         })
         .catch(error => console.error('Erreur lors de la récupération du nombre de notifications:', error));
     }
+};
 
-    // Appeler la fonction immédiatement au chargement
-    updateNotificationCounter();
-
-    // Mettre à jour le compteur toutes les 30 secondes
-    setInterval(updateNotificationCounter, 30000);
-}); 
-}); 
+// Initialiser le compteur au chargement de la page
+document.addEventListener('DOMContentLoaded', () => NotificationCounter.init()); 
