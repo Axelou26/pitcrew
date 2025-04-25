@@ -17,13 +17,14 @@
   "dependencies": {
     "@popperjs/core": "^2.11.8",
     "bootstrap": "^5.3.2",
-    "bootstrap-icons": "^1.11.3"
+    "bootstrap-icons": "^1.11.3",
+    "http-proxy-middleware": "3.0.5"
   },
   "devDependencies": {
     "@symfony/webpack-encore": "^4.5.0",
     "@vitejs/plugin-vue": "^5.2.3",
     "sass": "^1.69.5",
-    "vite": "^6.2.5",
+    "vite": "6.3.3",
     "vite-plugin-symfony": "^8.0.2"
   },
   "main": "vite.config.js",
