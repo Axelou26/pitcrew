@@ -55,6 +55,7 @@ jobs:
         run: |
           php bin/console --env=test doctrine:database:create --if-not-exists
           php bin/console --env=test doctrine:schema:update --force
+          php bin/console --env=test doctrine:fixtures:load --no-interaction
         env:
           DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog_test?serverVersion=8.0"
 
