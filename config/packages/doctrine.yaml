@@ -1,6 +1,6 @@
 doctrine:
     dbal:
-        url: '%env(resolve:DATABASE_URL)%'
+        url: 'mysql://root:azerty-26@127.0.0.1:3306/blog?serverVersion=8.0.30&charset=utf8mb4'
         server_version: '8.0.30'
 
         # IMPORTANT: You MUST configure your server version,

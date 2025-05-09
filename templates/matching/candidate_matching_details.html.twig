@@ -72,7 +72,7 @@
                                                 <h6 class="mb-1">{{ experience.title }} - {{ experience.company }}</h6>
                                                 <p class="text-muted small mb-1">
                                                     {{ experience.startDate }} - {{ experience.endDate == 'present' ? 'Actuel' : experience.endDate }}
-                                                    {% if experience.location %}
+                                                    {% if experience.location is defined and experience.location is not empty %}
                                                         • {{ experience.location }}
                                                     {% endif %}
                                                 </p>

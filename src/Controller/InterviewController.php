@@ -160,7 +160,7 @@ class InterviewController extends AbstractController
             $this->videoConfService->createRoom($interview);
 
             $this->addFlash('success', 'L\'entretien a été planifié avec succès.');
-            return $this->redirectToRoute('app_job_offer_show', ['id' => $jobOffer->getId()]);
+            return $this->redirectToRoute('app_interviews_for_job', ['id' => $jobOffer->getId()]);
         }
 
         return $this->render('interview/new_for_job.html.twig', [
