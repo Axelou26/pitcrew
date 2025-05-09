@@ -74,6 +74,9 @@
     "knplabs/knp-time-bundle": {
         "version": "v2.4.0"
     },
+    "liip/test-fixtures-bundle": {
+        "version": "3.3.0"
+    },
     "phpstan/phpstan": {
         "version": "2.1",
         "recipe": {

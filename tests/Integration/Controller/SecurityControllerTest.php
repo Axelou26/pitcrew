@@ -4,15 +4,25 @@ namespace App\Tests\Integration\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Response;
+use Liip\TestFixturesBundle\Services\DatabaseToolCollection;
+use Liip\TestFixturesBundle\Services\DatabaseTools\AbstractDatabaseTool;
 
 class SecurityControllerTest extends WebTestCase
 {
     private $client;
+    private AbstractDatabaseTool $databaseTool;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->client = static::createClient();
+        
+        // Charger les fixtures
+        $this->databaseTool = static::getContainer()->get(DatabaseToolCollection::class)->get();
+        $this->databaseTool->loadFixtures([
+            'App\DataFixtures\TestUserFixtures'
+        ]);
+        
         // S'assurer qu'aucun utilisateur n'est connecté
         $this->client->request('GET', '/logout');
     }
@@ -28,6 +38,10 @@ class SecurityControllerTest extends WebTestCase
             'password' => 'password123',
             '_csrf_token' => $crawler->filter('input[name="_csrf_token"]')->attr('value'),
         ]);
+
+        $this->assertResponseRedirects('/dashboard');
+        $this->client->followRedirect();
+        $this->assertResponseIsSuccessful();
     }
 
     public function testLoginWithInvalidCredentials(): void
@@ -41,7 +55,6 @@ class SecurityControllerTest extends WebTestCase
         ]);
 
         $this->assertResponseRedirects('/login');
-
         $crawler = $this->client->followRedirect();
         $this->assertSelectorExists('.alert.alert-danger');
     }
