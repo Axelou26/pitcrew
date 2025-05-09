@@ -22,6 +22,10 @@ class TestUserFixtures extends Fixture
         $user->setPassword(
             $this->passwordHasher->hashPassword($user, 'password123')
         );
+        $user->setFirstName('Test');
+        $user->setLastName('User');
+        $user->setRoles(['ROLE_USER']);
+
         $manager->persist($user);
 
         $manager->flush();

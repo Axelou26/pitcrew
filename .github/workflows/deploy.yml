@@ -24,7 +24,7 @@ jobs:
           --health-retries=3
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -55,7 +55,7 @@ jobs:
         run: |
           php bin/console --env=test doctrine:database:create --if-not-exists
           php bin/console --env=test doctrine:schema:update --force
-          php bin/console --env=test doctrine:fixtures:load --no-interaction
+          
         env:
           DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog_test?serverVersion=8.0"
 
