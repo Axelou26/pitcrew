@@ -88,7 +88,7 @@ class RecommendationServiceTest extends KernelTestCase
 
     public function testGetSuggestedUsers(): void
     {
-        // Créer des utilisateurs de test
+        // Créer des utilisateurs de test avec des posts pour les rendre plus actifs
         $user1 = new User();
         $user1->setEmail('test_suggested1@example.com');
         $user1->setPassword('password');
@@ -104,6 +104,19 @@ class RecommendationServiceTest extends KernelTestCase
         $user2->setFirstName('Test2');
         $user2->setLastName('User2');
         $this->entityManager->persist($user2);
+
+        // Ajouter des posts pour user2 pour le rendre plus actif
+        $post1 = new Post();
+        $post1->setContent('Test post 1');
+        $post1->setTitle('Test Post 1');
+        $post1->setAuthor($user2);
+        $this->entityManager->persist($post1);
+
+        $post2 = new Post();
+        $post2->setContent('Test post 2');
+        $post2->setTitle('Test Post 2');
+        $post2->setAuthor($user2);
+        $this->entityManager->persist($post2);
 
         $this->entityManager->flush();
 
