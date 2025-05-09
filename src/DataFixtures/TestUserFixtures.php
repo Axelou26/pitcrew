@@ -11,7 +11,8 @@ class TestUserFixtures extends Fixture
 {
     public function __construct(
         private UserPasswordHasherInterface $passwordHasher
-    ) {}
+    ) {
+    }
 
     public function load(ObjectManager $manager): void
     {
@@ -25,4 +26,4 @@ class TestUserFixtures extends Fixture
 
         $manager->flush();
     }
-} 
+}
