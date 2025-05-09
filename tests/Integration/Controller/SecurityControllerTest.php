@@ -13,6 +13,8 @@ class SecurityControllerTest extends WebTestCase
     {
         parent::setUp();
         $this->client = static::createClient();
+        // S'assurer qu'aucun utilisateur n'est connecté
+        $this->client->request('GET', '/logout');
     }
 
     public function testLogin(): void
@@ -20,17 +22,24 @@ class SecurityControllerTest extends WebTestCase
         $crawler = $this->client->request('GET', '/login');
         $this->assertResponseIsSuccessful();
         $this->assertSelectorTextContains('h1', 'Se connecter');
+
+        $this->client->submitForm('Se connecter', [
+            'email' => 'test@example.com',
+            'password' => 'password123',
+            '_csrf_token' => $crawler->filter('input[name="_csrf_token"]')->attr('value'),
+        ]);
     }
 
     public function testLoginWithInvalidCredentials(): void
     {
         $crawler = $this->client->request('GET', '/login');
-        $form = $crawler->selectButton('Se connecter')->form([
+        
+        $this->client->submitForm('Se connecter', [
             'email' => 'invalid@example.com',
-            'password' => 'wrongpassword'
+            'password' => 'wrongpassword',
+            '_csrf_token' => $crawler->filter('input[name="_csrf_token"]')->attr('value'),
         ]);
 
-        $this->client->submit($form);
         $this->assertResponseRedirects('/login');
 
         $crawler = $this->client->followRedirect();
