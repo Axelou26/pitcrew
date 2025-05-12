@@ -27,6 +27,7 @@ when@test:
 
 when@prod:
     monolog:
+        channels: ['deprecation']
         handlers:
             main:
                 type: fingers_crossed
@@ -45,4 +46,5 @@ when@prod:
             deprecation:
                 type: stream
                 channels: [deprecation]
-                path: php://stderr 
+                path: php://stderr
+                level: debug 

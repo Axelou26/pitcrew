@@ -1,4 +1,24 @@
-FROM php:8.2-fpm
+# Build stage
+FROM node:20-alpine as node-builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY assets assets/
+COPY webpack.config.js .
+RUN npm run build
+
+FROM composer:latest as composer
+WORKDIR /app
+COPY composer.* ./
+RUN composer install \
+    --no-interaction \
+    --no-plugins \
+    --no-scripts \
+    --no-dev \
+    --prefer-dist \
+    --optimize-autoloader
+
+FROM php:8.2-fpm as app
 
 # Installation des dépendances système
 RUN apt-get update && apt-get install -y \
@@ -7,8 +27,6 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     libicu-dev \
     libpq-dev \
-    nodejs \
-    npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Installation des extensions PHP
@@ -18,29 +36,15 @@ RUN docker-php-ext-install pdo pdo_mysql zip intl opcache
 COPY docker/php/php.ini /usr/local/etc/php/php.ini
 COPY docker/php/www.conf /usr/local/etc/php-fpm.d/www.conf
 
-# Création des répertoires et fichiers de log
-RUN mkdir -p /var/log && \
-    touch /var/log/php_errors.log && \
-    touch /var/log/www.access.log && \
-    chown -R www-data:www-data /var/log && \
-    chmod -R 777 /var/log
-
-# Installation de Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
 # Configuration du répertoire de travail
 WORKDIR /var/www
 
-# Copie de tous les fichiers de l'application
-COPY . .
+# Copie des dépendances et des assets compilés
+COPY --from=composer /app/vendor ./vendor
+COPY --from=node-builder /app/public/build ./public/build
 
-# Installation des dépendances en mode production
-RUN composer install \
-    --no-interaction \
-    --no-plugins \
-    --no-scripts \
-    --prefer-dist \
-    --optimize-autoloader
+# Copie des fichiers de l'application
+COPY . .
 
 # Configuration des permissions
 RUN mkdir -p var/cache var/log && \
