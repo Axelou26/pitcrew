@@ -6,8 +6,6 @@ twig:
     paths:
         '%kernel.project_dir%/templates/admin': admin
         '%kernel.project_dir%/vendor/easycorp/easyadmin-bundle/templates': EasyAdmin
-    globals:
-        deprecation_notices: false
 
 when@test:
     twig:
