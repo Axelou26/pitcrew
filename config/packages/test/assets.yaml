@@ -1,0 +1,4 @@
+framework:
+    assets:
+        json_manifest_path: null
+        version_strategy: null 

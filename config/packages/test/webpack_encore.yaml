@@ -1,0 +1,7 @@
+webpack_encore:
+    strict_mode: false
+    output_path: false
+    preload: false
+    script_attributes: []
+    link_attributes: []
+    builds: [] 

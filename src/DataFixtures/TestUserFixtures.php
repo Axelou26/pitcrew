@@ -25,6 +25,7 @@ class TestUserFixtures extends Fixture
         $user->setFirstName('Test');
         $user->setLastName('User');
         $user->setRoles(['ROLE_USER', 'ROLE_POSTULANT']);
+        $user->setIsVerified(true);
 
         $manager->persist($user);
 
