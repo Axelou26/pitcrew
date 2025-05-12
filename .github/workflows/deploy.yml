@@ -33,6 +33,18 @@ jobs:
           extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json
           coverage: xdebug
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm install
+
+      - name: Build assets
+        run: npm run build
+
       - name: Cache Composer dependencies
         uses: actions/cache@v4
         with:

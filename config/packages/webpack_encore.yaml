@@ -21,7 +21,7 @@ webpack_encore:
     # preload: true
 
     # Throw an exception if the entrypoints.json file is missing or an entry is missing from the data
-    # strict_mode: false
+    strict_mode: true
 
     # If you have multiple builds:
     # builds:
@@ -40,6 +40,7 @@ framework:
 #        # Available in version 1.2
 #        cache: true
 
-#when@test:
-#    webpack_encore:
-#        strict_mode: false
+when@test:
+    webpack_encore:
+        strict_mode: false
+        output_path: false
