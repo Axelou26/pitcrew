@@ -44,3 +44,12 @@ when@test:
     webpack_encore:
         strict_mode: false
         output_path: false
+        builds:
+            test: '%kernel.project_dir%/public/build'
+
+    framework:
+        test: true
+        session:
+            storage_factory_id: session.storage.factory.mock_file
+        assets:
+            json_manifest_path: false
