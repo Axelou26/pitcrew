@@ -355,20 +355,10 @@
             position: relative;
         }
         
-        .reactions-box {
-            position: absolute;
-            bottom: 50px;
-            left: 0;
-            z-index: 100;
-            transition: all 0.9s ease;
-            transform-origin: bottom left;
-            padding: 8px !important;
-        }
-        
         .reaction-menu {
-            transition: opacity 0.9s ease, visibility 0.9s ease;
             opacity: 0;
             visibility: hidden;
+            transition: all 0.3s ease;
         }
         
         .reaction-container:hover .reaction-menu,
@@ -398,7 +388,8 @@
             background: transparent;
         }
         
-        .btn-reaction:focus, .btn-reaction:active {
+        .btn-reaction:focus,
+        .btn-reaction:active {
             box-shadow: none;
             outline: none;
             background: transparent;
@@ -485,274 +476,63 @@
     {{ parent() }}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Gestion de la création rapide de post
             const quickPostContent = document.getElementById('quick-post-content');
             const quickPostForm = document.getElementById('quick-post-form');
             const quickPostTitle = document.getElementById('quick-post-title');
             const quickPostFullContent = document.getElementById('quick-post-full-content');
-            const quickPostCancel = document.getElementById('quick-post-cancel');
-            const quickPostSubmit = document.getElementById('quick-post-submit');
             const quickPostImage = document.getElementById('quick-post-image');
-            
-            if (quickPostContent) {
-                quickPostContent.addEventListener('focus', function() {
-                    quickPostForm.classList.remove('d-none');
-                    quickPostFullContent.focus();
-                    quickPostFullContent.value = quickPostContent.value;
-                });
+            const quickPostSubmit = document.getElementById('quick-post-submit');
+            const quickPostError = document.getElementById('quick-post-error');
+
+            if (!quickPostContent || !quickPostForm) return;
+
+            // Afficher le formulaire complet lors du clic sur l'input rapide
+            quickPostContent.addEventListener('click', function() {
+                quickPostForm.classList.remove('d-none');
+                quickPostFullContent.value = this.value;
+                quickPostFullContent.focus();
+            });
+
+            // Gérer la soumission du formulaire
+            quickPostSubmit.addEventListener('click', function() {
+                // Désactiver le bouton pendant la soumission
+                this.disabled = true;
+                this.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Publication en cours...';
+
+                const formData = new FormData();
+                formData.append('title', quickPostTitle.value);
+                formData.append('content', quickPostFullContent.value);
                 
-                quickPostCancel.addEventListener('click', function() {
+                if (quickPostImage.files[0]) {
+                    formData.append('imageFile', quickPostImage.files[0]);
+                }
+
+                fetch('/post/quick', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        throw new Error(data.error || 'Erreur inconnue lors de la création du post');
+                    }
+                    
+                    // Réinitialiser le formulaire
                     quickPostForm.classList.add('d-none');
                     quickPostContent.value = '';
                     quickPostTitle.value = '';
                     quickPostFullContent.value = '';
                     quickPostImage.value = '';
+                    
+                    // Recharger la page pour afficher le nouveau post
+                    window.location.reload();
+                })
+                .catch(error => {
+                    console.error('Erreur lors de la création du post:', error);
+                    quickPostSubmit.disabled = false;
+                    quickPostSubmit.innerHTML = '<i class="bi bi-send me-1"></i> Publier';
+                    alert('Erreur lors de la création du post: ' + error.message);
                 });
-                
-                quickPostSubmit.addEventListener('click', function() {
-                    // Vérification basique des données du formulaire
-                    if (!quickPostFullContent.value.trim()) {
-                        alert('Le contenu du post ne peut pas être vide');
-                        return;
-                    }
-                    
-                    const formData = new FormData();
-                    formData.append('title', quickPostTitle.value.trim());
-                    formData.append('content', quickPostFullContent.value.trim());
-                    
-                    if (quickPostImage.files.length > 0) {
-                        formData.append('imageFile', quickPostImage.files[0]);
-                    }
-                    
-                    // Désactiver le bouton et montrer un indicateur de chargement
-                    quickPostSubmit.disabled = true;
-                    quickPostSubmit.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Publication en cours...';
-                    
-                    // Consigner dans la console ce qui est envoyé
-                    console.log('Envoi du formulaire :', {
-                        title: quickPostTitle.value.trim(),
-                        content: quickPostFullContent.value.trim(),
-                        hasImage: quickPostImage.files.length > 0
-                    });
-                    
-                    fetch('/post/quick-create', {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('Réponse du serveur:', data);
-                        
-                        if (!data.success) {
-                            throw new Error(data.error || 'Erreur inconnue lors de la création du post');
-                        }
-                        
-                        // Vérifier si l'ID du post est valide
-                        if (!data.post || !data.post.id || isNaN(parseInt(data.post.id))) {
-                            console.error('ID de post invalide reçu:', data.post?.id);
-                            throw new Error('ID de post invalide reçu du serveur');
-                        }
-                        
-                        // Réinitialiser le formulaire
-                        quickPostForm.classList.add('d-none');
-                        quickPostContent.value = '';
-                        quickPostTitle.value = '';
-                        quickPostFullContent.value = '';
-                        quickPostImage.value = '';
-                        
-                        // Recharger la page pour afficher le nouveau post
-                        window.location.reload();
-                    })
-                    .catch(error => {
-                        console.error('Erreur lors de la création du post:', error);
-                        // Réactiver le bouton et afficher un message d'erreur
-                        quickPostSubmit.disabled = false;
-                        quickPostSubmit.innerHTML = '<i class="bi bi-send me-1"></i> Publier';
-                        
-                        // Afficher un message d'erreur plus détaillé
-                        alert('Erreur lors de la création du post: ' + error.message);
-                    });
-                });
-            }
-            
-            // Fonctionnalité d'autocomplétion des mentions
-            const mentionInputs = document.querySelectorAll('.mention-input');
-            const mentionSuggestions = document.getElementById('mention-suggestions');
-            
-            if (mentionInputs.length > 0 && mentionSuggestions) {
-                let currentMentionInput = null;
-                let mentionPos = -1;
-                let mentionText = '';
-                let atPos = -1;
-                let isMentioning = false;
-                
-                // Fonction pour détecter la position du curseur
-                function getCaretPosition(element) {
-                    return element.selectionStart;
-                }
-                
-                // Fonction pour extraire le texte de la mention en cours
-                function extractMentionText(text, cursorPos) {
-                    const beforeCursor = text.substring(0, cursorPos);
-                    const atIndex = beforeCursor.lastIndexOf('@');
-                    
-                    if (atIndex !== -1) {
-                        const afterAt = beforeCursor.substring(atIndex + 1);
-                        // Vérifier qu'il n'y a pas d'espace dans le texte après @
-                        if (!/\s/.test(afterAt)) {
-                            return {
-                                text: afterAt,
-                                startPos: atIndex
-                            };
-                        }
-                    }
-                    
-                    return null;
-                }
-                
-                // Fonction pour insérer la mention à la position du curseur
-                function insertMention(username, userId, fullName) {
-                    const initialText = currentMentionInput.value;
-                    const cursorPos = getCaretPosition(currentMentionInput);
-                    const mention = `@${username}@${fullName}`;
-                    
-                    currentMentionInput.value = initialText.substring(0, cursorPos) + mention + initialText.substring(cursorPos);
-                }
-                
-                // Fonction pour mettre à jour les suggestions
-                function updateSuggestions() {
-                    const text = currentMentionInput.value;
-                    const mentions = text.match(/@[^@]+@[^@]+/g) || [];
-                    
-                    mentionSuggestions.innerHTML = '';
-                    
-                    for (const mention of mentions) {
-                        const [username, fullName] = mention.split('@');
-                        const item = document.createElement('a');
-                        item.href = '#';
-                        item.className = 'dropdown-item mention-item';
-                        item.textContent = fullName;
-                        item.dataset.username = username;
-                        item.dataset.fullName = fullName;
-                        item.addEventListener('click', function() {
-                            currentMentionInput.value = '@' + this.dataset.username + '@' + this.dataset.fullName;
-                            quickPostForm.classList.add('d-none');
-                        });
-                        mentionSuggestions.appendChild(item);
-                    }
-                    
-                    if (mentions.length > 0) {
-                        mentionSuggestions.classList.add('show');
-                    } else {
-                        mentionSuggestions.classList.remove('show');
-                    }
-                }
-                
-                // Initialisation
-                for (const mentionInput of mentionInputs) {
-                    mentionInput.addEventListener('input', function() {
-                        currentMentionInput = this;
-                        updateSuggestions();
-                    });
-                }
-            }
-
-            const container = document.getElementById('suggested-users-container');
-            if (!container) return;
-
-            container.addEventListener('click', async function(e) {
-                const addButton = e.target.closest('.add-friend-btn');
-                if (!addButton) return;
-
-                e.preventDefault();
-                const userId = addButton.dataset.userId;
-                const userCard = addButton.closest('.suggested-user');
-
-                try {
-                    const response = await fetch(addButton.href, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
-                    const data = await response.json();
-
-                    if (data.success) {
-                        // Remplacer le bouton par "En attente"
-                        addButton.outerHTML = `
-                            <button class="btn btn-light btn-sm rounded-pill px-3" disabled>
-                                <i class="bi bi-hourglass-split me-1"></i>En attente
-                            </button>
-                        `;
-
-                        // Si un nouvel utilisateur est suggéré, l'ajouter avec une animation
-                        if (data.newSuggestion) {
-                            // Créer le nouvel élément
-                            const newUserHtml = `
-                                <div class="d-flex align-items-center justify-content-between mb-3 suggested-user" 
-                                     data-user-id="${data.newSuggestion.id}" 
-                                     style="opacity: 0; transform: translateY(20px);">
-                                    <div class="d-flex align-items-center">
-                                        <a href="${data.newSuggestion.profileUrl}" class="me-2">
-                                            ${data.newSuggestion.profilePicture 
-                                                ? `<img src="/uploads/profile_pictures/${data.newSuggestion.profilePicture}" 
-                                                       class="rounded-circle border"
-                                                       alt="${data.newSuggestion.fullName}"
-                                                       style="width: 40px; height: 40px; object-fit: cover;">`
-                                                : `<div class="bg-light rounded-circle d-flex align-items-center justify-content-center border"
-                                                       style="width: 40px; height: 40px;">
-                                                       <i class="bi bi-person text-muted"></i>
-                                                   </div>`
-                                            }
-                                        </a>
-                                        <div>
-                                            <h6 class="mb-0 fw-semibold">
-                                                <a href="${data.newSuggestion.profileUrl}" class="text-dark text-decoration-none">
-                                                    ${data.newSuggestion.fullName}
-                                                </a>
-                                            </h6>
-                                            <small class="text-muted">
-                                                ${data.newSuggestion.jobTitle || data.newSuggestion.company || ''}
-                                            </small>
-                                        </div>
-                                    </div>
-                                    <a href="${data.newSuggestion.addFriendUrl}" 
-                                       class="btn btn-outline-primary btn-sm rounded-pill px-3 add-friend-btn"
-                                       data-user-id="${data.newSuggestion.id}">
-                                        <i class="bi bi-person-plus me-1"></i>Ajouter
-                                    </a>
-                                </div>
-                            `;
-
-                            // Ajouter le nouvel élément au conteneur
-                            container.insertAdjacentHTML('beforeend', newUserHtml);
-                            const newUserElement = container.lastElementChild;
-
-                            // Animer la sortie de l'ancien utilisateur
-                            userCard.style.transition = 'all 0.3s ease-out';
-                            userCard.style.opacity = '0';
-                            userCard.style.transform = 'translateY(-20px)';
-
-                            setTimeout(() => {
-                                // Supprimer l'ancien utilisateur
-                                userCard.remove();
-
-                                // Animer l'entrée du nouvel utilisateur
-                                newUserElement.style.transition = 'all 0.3s ease-out';
-                                newUserElement.style.opacity = '1';
-                                newUserElement.style.transform = 'translateY(0)';
-                            }, 300);
-                        }
-                    } else {
-                        // Afficher le message d'erreur
-                        alert(data.message);
-                    }
-                } catch (error) {
-                    console.error('Erreur lors de l\'ajout de l\'ami:', error);
-                    alert('Une erreur est survenue lors de l\'ajout de l\'ami.');
-                }
             });
         });
     </script>

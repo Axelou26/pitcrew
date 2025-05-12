@@ -23,7 +23,7 @@ class PostContentProcessor
     public function extractMentions(string $content): array
     {
         preg_match_all('/@([a-zA-ZÀ-ÿ]+(?:\s+[a-zA-ZÀ-ÿ]+)*)/', $content, $matches);
-        return $matches[1];
+        return array_unique($matches[1] ?? []);
     }
 
     public function containsInappropriateContent(string $content): bool

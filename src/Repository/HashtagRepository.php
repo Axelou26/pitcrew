@@ -79,13 +79,39 @@ class HashtagRepository extends ServiceEntityRepository
      */
     public function findSuggestions(string $query, int $limit = 5): array
     {
-        return $this->createQueryBuilder('h')
-            ->where('h.name LIKE :query')
+        // Nettoyer et normaliser la requête
+        $query = trim(ltrim($query, '#'));
+        if (empty($query)) {
+            return [];
+        }
+
+        // Clé de cache unique pour cette requête
+        $cacheKey = 'hashtag_suggestions_' . strtolower($query);
+        $cacheItem = $this->cache->getItem($cacheKey);
+
+        if ($cacheItem->isHit()) {
+            return $cacheItem->get();
+        }
+
+        $qb = $this->createQueryBuilder('h')
+            ->where('LOWER(h.name) LIKE LOWER(:query)')
             ->setParameter('query', $query . '%')
             ->orderBy('h.usageCount', 'DESC')
-            ->setMaxResults($limit)
-            ->getQuery()
-            ->getResult();
+            ->addOrderBy('h.name', 'ASC')
+            ->setMaxResults($limit);
+
+        // Ajouter un index hint pour utiliser l'index sur name si disponible
+        $query = $qb->getQuery();
+        $query->setHint('doctrine.query.hint_force_partial_load', true);
+
+        $results = $query->getResult();
+
+        // Mettre en cache pour 5 minutes
+        $cacheItem->set($results);
+        $cacheItem->expiresAfter(300);
+        $this->cache->save($cacheItem);
+
+        return $results;
     }
 
     /**

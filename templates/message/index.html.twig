@@ -108,81 +108,63 @@
 {% block javascripts %}
     {{ parent() }}
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Rafraîchir la liste des conversations toutes les 30 secondes
-            setInterval(function() {
-                fetch('{{ path('app_message_index') }}')
-                    .then(response => response.text())
-                    .then(html => {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-                        const newList = doc.getElementById('conversations-list');
+        const ConversationManager = {
+            updateInterval: 30000,
+            lastUpdate: 0,
+            isLoading: false,
+
+            init() {
+                this.setupAutoUpdate();
+            },
+
+            async updateConversationsList() {
+                if (this.isLoading || document.hidden) return;
+
+                try {
+                    this.isLoading = true;
+                    const response = await fetch('{{ path('app_message_index') }}', {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+
+                    if (!response.ok) throw new Error('Erreur réseau');
+
+                    const html = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newList = doc.getElementById('conversations-list');
+                    
+                    if (newList) {
                         document.getElementById('conversations-list').innerHTML = newList.innerHTML;
-                    });
-            }, 30000);
-            
-            // Chargement des destinataires potentiels
-            const recipientSelect = document.getElementById('recipient');
-            if (recipientSelect) {
-                // Ajouter une option de chargement
-                const loadingOption = document.createElement('option');
-                loadingOption.value = "";
-                loadingOption.textContent = "Chargement des contacts...";
-                loadingOption.disabled = true;
-                recipientSelect.appendChild(loadingOption);
-                
-                fetch('{{ path('app_message_get_recipients') }}')
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Erreur réseau');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        // Vider le select
-                        recipientSelect.innerHTML = '';
-                        
-                        // Ajouter l'option par défaut
-                        const defaultOption = document.createElement('option');
-                        defaultOption.value = "";
-                        defaultOption.textContent = "Sélectionnez un destinataire...";
-                        defaultOption.selected = true;
-                        defaultOption.disabled = true;
-                        recipientSelect.appendChild(defaultOption);
-                        
-                        if (data.recipients && data.recipients.length > 0) {
-                            data.recipients.forEach(user => {
-                                const option = document.createElement('option');
-                                option.value = user.id;
-                                option.textContent = user.fullName;
-                                recipientSelect.appendChild(option);
-                            });
-                        } else {
-                            const option = document.createElement('option');
-                            option.value = "";
-                            option.textContent = "Aucun ami disponible";
-                            option.disabled = true;
-                            recipientSelect.appendChild(option);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Erreur:', error);
-                        recipientSelect.innerHTML = '';
-                        
-                        const defaultOption = document.createElement('option');
-                        defaultOption.value = "";
-                        defaultOption.textContent = "Sélectionnez un destinataire...";
-                        defaultOption.selected = true;
-                        defaultOption.disabled = true;
-                        recipientSelect.appendChild(defaultOption);
-                        
-                        const option = document.createElement('option');
-                        option.value = "";
-                        option.textContent = "Erreur lors du chargement des contacts";
-                        option.disabled = true;
-                        recipientSelect.appendChild(option);
-                    });
+                    }
+
+                    this.lastUpdate = Date.now();
+                } catch (error) {
+                    console.error('Erreur lors de la mise à jour des conversations:', error);
+                } finally {
+                    this.isLoading = false;
+                }
+            },
+
+            setupAutoUpdate() {
+                // Mettre à jour périodiquement uniquement si l'onglet est actif
+                setInterval(() => {
+                    if (!document.hidden && Date.now() - this.lastUpdate >= this.updateInterval) {
+                        this.updateConversationsList();
+                    }
+                }, this.updateInterval);
+
+                // Mettre à jour lors du retour sur l'onglet
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden && Date.now() - this.lastUpdate >= this.updateInterval) {
+                        this.updateConversationsList();
+                    }
+                });
             }
-        });
+        };
+
+        document.addEventListener('DOMContentLoaded', () => ConversationManager.init());
     </script>
 {% endblock %} 

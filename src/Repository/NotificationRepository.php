@@ -17,6 +17,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class NotificationRepository extends ServiceEntityRepository
 {
+    private const CACHE_KEY_UNREAD_COUNT = 'notification_unread_count_%d';
+    private const CACHE_TTL = 30; // 30 secondes
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Notification::class);
@@ -56,6 +59,8 @@ class NotificationRepository extends ServiceEntityRepository
      */
     public function countUnreadByUser(User $user): int
     {
+        $cacheKey = sprintf(self::CACHE_KEY_UNREAD_COUNT, $user->getId());
+
         return $this->createQueryBuilder('n')
             ->select('COUNT(n.id)')
             ->andWhere('n.user = :user')
@@ -63,8 +68,16 @@ class NotificationRepository extends ServiceEntityRepository
             ->setParameter('user', $user)
             ->setParameter('isRead', false)
             ->getQuery()
-            ->setResultCacheLifetime(60)  // Cache le résultat pendant 60 secondes
+            ->enableResultCache(self::CACHE_TTL, $cacheKey)
             ->getSingleScalarResult();
+    }
+
+    public function invalidateUserCache(User $user): void
+    {
+        $cacheKey = sprintf(self::CACHE_KEY_UNREAD_COUNT, $user->getId());
+        $this->getEntityManager()->getConfiguration()
+            ->getResultCache()
+            ->delete($cacheKey);
     }
 
     /**
@@ -82,5 +95,8 @@ class NotificationRepository extends ServiceEntityRepository
             ->setParameter('notRead', false)
             ->getQuery()
             ->execute();
+
+        // Invalider le cache après la mise à jour
+        $this->invalidateUserCache($user);
     }
 }

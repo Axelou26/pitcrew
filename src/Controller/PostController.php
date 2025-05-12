@@ -624,17 +624,33 @@ class PostController extends AbstractController
     }
 
     #[Route('/feed', name: 'app_post_feed', methods: ['GET'])]
-    public function feed(): Response
+    public function feed(Request $request): Response
     {
+        $page = max(1, $request->query->getInt('page', 1));
+        $limit = max(1, $request->query->getInt('limit', 10));
+
         $posts = $this->postService->findPosts(
             new PostSearchCriteria(
                 PostSearchCriteria::TYPE_FEED,
                 user: $this->getUser()
-            )
+            ),
+            $page,
+            $limit
         );
 
+        if ($request->isXmlHttpRequest()) {
+            return new JsonResponse([
+                'html' => $this->renderView('post/_feed.html.twig', [
+                    'posts' => $posts
+                ]),
+                'hasMore' => count($posts) === $limit
+            ]);
+        }
+
         return $this->render('post/_feed.html.twig', [
-            'posts' => $posts
+            'posts' => $posts,
+            'currentPage' => $page,
+            'hasMore' => count($posts) === $limit
         ]);
     }
 }

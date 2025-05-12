@@ -239,7 +239,7 @@ class UserTest extends TestCase
     {
         $otherUser = new User();
         $otherUser->setEmail('other@example.com');
-        
+
         // Initialisation des collections
         $this->user->initializeSocialCollections();
         $otherUser->initializeSocialCollections();
@@ -351,7 +351,7 @@ class UserTest extends TestCase
     {
         $otherUser = new User();
         $otherUser->setEmail('other@example.com');
-        
+
         // Initialisation des collections
         $this->user->initializeSocialCollections();
         $otherUser->initializeSocialCollections();
@@ -365,7 +365,7 @@ class UserTest extends TestCase
         $friendRequest->setRequester($this->user);
         $friendRequest->setAddressee($otherUser);
         $friendRequest->setStatus(Friendship::STATUS_PENDING);
-        
+
         // Utilisation des méthodes d'ajout appropriées
         $this->user->addSentFriendRequest($friendRequest);
         $otherUser->addReceivedFriendRequest($friendRequest);

@@ -49,19 +49,38 @@ class NotificationController extends AbstractController
     #[Route('/api/notifications/count', name: 'app_api_notification_count', methods: ['GET'])]
     public function apiCount(NotificationRepository $notifRepo, Request $request): JsonResponse
     {
-        $response = new JsonResponse(['count' => $notifRepo->countUnreadByUser($this->getUser())]);
-
-        // Cache pour 30 secondes avec validation ETag
-        $response->setPublic();
-        $response->setMaxAge(30);
-        $response->setEtag(md5($response->getContent()));
-
-        // Vérifie si la réponse a changé
-        if ($response->isNotModified($request)) {
-            return $response;
+        $user = $this->getUser();
+        if (!$user) {
+            return new JsonResponse(['error' => 'Utilisateur non authentifié'], Response::HTTP_UNAUTHORIZED);
         }
 
-        return $response;
+        try {
+            $count = $notifRepo->countUnreadByUser($user);
+            $response = new JsonResponse(['count' => $count]);
+
+            // Générer un ETag basé sur le compte et l'ID utilisateur
+            $etag = md5($count . '_' . $user->getId());
+            $response->setEtag($etag);
+
+            // Cache pour 30 secondes avec validation ETag
+            $response->setPublic();
+            $response->setMaxAge(30);
+            $response->setSharedMaxAge(30);
+            $response->headers->addCacheControlDirective('must-revalidate', true);
+
+            // Vérifier si la réponse a changé
+            if ($response->isNotModified($request)) {
+                return $response;
+            }
+
+            return $response;
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors du comptage des notifications : ' . $e->getMessage());
+            return new JsonResponse(
+                ['error' => 'Une erreur est survenue'],
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
     }
 
     #[Route('/{id}/mark-as-read', name: 'app_notification_mark_as_read', methods: ['POST'])]

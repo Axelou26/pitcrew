@@ -11,12 +11,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/post.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/styles.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/mentions.css') }}">
     <style>
         :root {
             --primary-color: #e10600;
             --secondary-color: #15151e;
             --accent-color: #f0b323;
-            --light-bg: #f0f2f5;
+            --light-bg: #f0f0f0;
             --dark-text: #15151e;
             --light-text: #6e6e8f;
             --success-color: #27ae60;
@@ -27,7 +29,7 @@
         
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: var(--light-bg);
+            background-color: #f0f0f0 !important;
             color: var(--dark-text);
             padding-top: 70px;
         }
@@ -391,9 +393,7 @@
                         <li class="nav-item dropdown">
                             <a class="nav-link position-relative {% if app.request.get('_route') starts with 'app_notification' %}active{% endif %}" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-bell me-1"></i> 
-                                <span id="notification-badge" class="notification-badge {% if app.user.notifications|filter(n => not n.isRead)|length == 0 %}d-none{% endif %}">
-                                    {{ app.user.notifications|filter(n => not n.isRead)|length }}
-                                </span>
+                                <span id="notification-badge" class="notification-badge d-none">0</span>
                             </a>
                             <div class="dropdown-menu dropdown-menu-end notification-dropdown" aria-labelledby="notificationDropdown">
                                 <div class="dropdown-header d-flex justify-content-between align-items-center">
@@ -401,17 +401,10 @@
                                     <a href="{{ path('app_notification_index') }}" class="text-white text-decoration-none">
                                         <i class="bi bi-gear-fill"></i>
                                     </a>
-                    </div>
+                                </div>
                                 <div class="dropdown-divider"></div>
-                                {% set unreadNotifications = app.user.notifications|filter(n => not n.isRead)|slice(0, 5) %}
-                                <div class="dropdown-body">
-                                    {% if unreadNotifications is empty %}
-                                        <p class="mb-0 text-muted text-center py-2">Aucune notification non lue</p>
-                                    {% else %}
-                                        {% for notification in unreadNotifications %}
-                                            {% include 'notification/_dropdown_notification.html.twig' with {'notification': notification} %}
-                                        {% endfor %}
-                                    {% endif %}
+                                <div id="notifications-container">
+                                    <p class="text-center py-3">Chargement...</p>
                                 </div>
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item text-center" href="{{ path('app_notification_index') }}">
@@ -530,15 +523,15 @@
     </footer>
 
     {% block javascripts %}
-            {{ encore_entry_script_tags('app') }}
+        <script src="{{ asset('js/notifications.js') }}"></script>
         <!-- Scripts principaux -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js" defer></script>
 
         <!-- Scripts personnalisés -->
-        <script src="{{ asset('js/post.js') }}?v={{ 'now'|date('YmdHis') }}"></script>
-        <script src="{{ asset('js/post-autocomplete.js') }}"></script>
-        <script src="{{ asset('js/feed.js') }}?v={{ 'now'|date('YmdHis') }}"></script>
+        <script src="{{ asset('js/post.js') }}" defer></script>
+        <script src="{{ asset('js/post-autocomplete.js') }}" defer></script>
+        <script src="{{ asset('js/feed.js') }}" defer></script>
 
         <script>
             // Script pour faire disparaître les alertes après 5 secondes
@@ -595,8 +588,8 @@
 
     {% if app.user %}
         <!-- Scripts spécifiques aux utilisateurs connectés -->
-        <script src="{{ asset('js/notifications.js') }}"></script>
-        <script src="{{ asset('js/notification-counter.js') }}"></script>
+        <script src="{{ asset('js/notifications.js') }}" defer></script>
+        <script src="{{ asset('js/notification-counter.js') }}" defer></script>
     {% endif %}
 </body>
 </html> 

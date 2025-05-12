@@ -16,13 +16,13 @@ class SecurityControllerTest extends WebTestCase
     {
         parent::setUp();
         $this->client = static::createClient();
-        
+
         // Charger les fixtures
         $this->databaseTool = static::getContainer()->get(DatabaseToolCollection::class)->get();
         $this->databaseTool->loadFixtures([
             'App\DataFixtures\TestUserFixtures'
         ]);
-        
+
         // S'assurer qu'aucun utilisateur n'est connecté
         $this->client->request('GET', '/logout');
     }
@@ -47,7 +47,7 @@ class SecurityControllerTest extends WebTestCase
     public function testLoginWithInvalidCredentials(): void
     {
         $crawler = $this->client->request('GET', '/login');
-        
+
         $this->client->submitForm('Se connecter', [
             'email' => 'invalid@example.com',
             'password' => 'wrongpassword',

@@ -57,15 +57,34 @@ trait PostTaggingTrait
     public function addMention(User $user): static
     {
         $userId = $user->getId();
-        if (!in_array($userId, $this->mentions, true)) {
+        if (!in_array($userId, $this->mentions ?? [], true)) {
+            $this->mentions = $this->mentions ?? [];
             $this->mentions[] = $userId;
         }
         return $this;
     }
 
+    public function removeMention(User $user): static
+    {
+        $userId = $user->getId();
+        $this->mentions = array_values(array_filter($this->mentions ?? [], function ($mentionId) use ($userId) {
+            return $mentionId !== $userId;
+        }));
+        return $this;
+    }
+
+    public function hasMention(User $user): bool
+    {
+        return in_array($user->getId(), $this->mentions ?? [], true);
+    }
+
     public function extractMentions(): array
     {
+        if (empty($this->content)) {
+            return [];
+        }
+
         preg_match_all('/@([a-zA-ZÀ-ÿ]+(?:\s+[a-zA-ZÀ-ÿ]+)*)/', $this->content, $matches);
-        return array_unique($matches[1]);
+        return array_unique(array_map('trim', $matches[1] ?? []));
     }
 }

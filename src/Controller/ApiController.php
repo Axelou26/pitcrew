@@ -84,24 +84,34 @@ class ApiController extends AbstractController
     {
         $query = $request->query->get('q', '');
 
-        if (strlen($query) < 1) {
+        if (strlen($query) < 2) {
             return $this->json(['success' => true, 'results' => []]);
         }
 
-        $users = $userRepository->findSuggestions($query, 5);
+        // Limiter le nombre de résultats et optimiser la requête
+        $users = $userRepository->findSuggestionsOptimized($query, 5);
 
-        // Transformer les objets User en tableau avec plus d'informations
+        // Transformer les objets User en tableau avec les informations minimales nécessaires
         $suggestions = array_map(function ($user) {
             return [
-                'firstName' => $user->getFirstName(),
-                'lastName' => $user->getLastName(),
-                'profilePicture' => $user->getProfilePicture()
+                'firstName' => $user['firstName'],
+                'lastName' => $user['lastName'],
+                'profilePicture' => $user['profilePicture']
             ];
         }, $users);
 
-        return $this->json([
+        // Configurer les en-têtes de cache
+        $response = $this->json([
             'success' => true,
             'results' => $suggestions
         ]);
+
+        $response->setPublic();
+        $response->setMaxAge(300); // Cache pendant 5 minutes
+        $response->setSharedMaxAge(300);
+        $response->headers->set('X-Accel-Buffering', 'no'); // Désactiver le buffering Nginx
+        $response->headers->set('Cache-Control', 'public, max-age=300');
+
+        return $response;
     }
 }

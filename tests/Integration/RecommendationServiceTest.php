@@ -54,7 +54,7 @@ class RecommendationServiceTest extends KernelTestCase
     {
         // Nettoyer le cache avant le test
         $this->recommendationService->clearCache();
-        
+
         // Créer un utilisateur de test
         $user = new User();
         $user->setEmail('test_recommended@example.com');

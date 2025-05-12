@@ -34,11 +34,12 @@ class PostService
     /**
      * @return array<Post>
      */
-    public function findPosts(PostSearchCriteria $criteria): array
+    public function findPosts(PostSearchCriteria $criteria, int $page = 1, int $limit = 10): array
     {
         return match ($criteria->getType()) {
             PostSearchCriteria::TYPE_SEARCH => $this->postRepository->search($criteria->getQuery()),
-            PostSearchCriteria::TYPE_FEED => $this->postRepository->findPostsForFeed($criteria->getUser()),
+            PostSearchCriteria::TYPE_FEED =>
+                $this->postRepository->findPostsForFeed($criteria->getUser(), $page, $limit),
             PostSearchCriteria::TYPE_HASHTAGS =>
                 $this->postRepository->findRecentPostsWithHashtags($criteria->getFromDate()),
             PostSearchCriteria::TYPE_MENTIONS =>
@@ -132,43 +133,35 @@ class PostService
         ?string $title = null,
         ?UploadedFile $imageFile = null
     ): Post {
-        $this->contentProcessor->validate($content);
-
         $post = new Post();
+        $post->setContent($content);
+        $post->setTitle($title);
         $post->setAuthor($author);
-        $post->setContent(trim($content));
-        $post->setTitle($title ? trim($title) : '');
 
+        // Traitement du contenu pour les hashtags et mentions
+        $processedContent = $this->contentProcessor->process($content);
+        $post->setContent($processedContent['content']);
+        $post->setHashtags($processedContent['hashtags']);
+        $post->setMentions($processedContent['mentions']);
+
+        // Traitement de l'image si présente
         if ($imageFile) {
-            $post->setImage($this->imageHandler->handleImageUpload($imageFile));
+            $imagePath = $this->imageHandler->handle($imageFile);
+            $post->setImage($imagePath);
+            $post->setImageName($imageFile->getClientOriginalName());
         }
 
-        // Traiter les hashtags
-        $hashtags = $this->contentProcessor->extractHashtags($content);
-        foreach ($hashtags as $hashtagName) {
-            $hashtag = $this->entityManager->getRepository(Hashtag::class)->findOrCreate($hashtagName);
-            $post->addHashtag($hashtag);
-        }
-
-        // Traiter les mentions
-        $mentions = $this->contentProcessor->extractMentions($content);
-        foreach ($mentions as $mention) {
-            $mentionedUser = $this->entityManager->getRepository(User::class)
-                ->createQueryBuilder('u')
-                ->where('LOWER(CONCAT(u.firstName, \' \', u.lastName)) = LOWER(:fullName)')
-                ->setParameter('fullName', trim($mention))
-                ->getQuery()
-                ->getOneOrNullResult();
-
-            if ($mentionedUser) {
-                $post->addMention($mentionedUser);
-            }
-        }
-
+        // Sauvegarde et notification
         $this->entityManager->persist($post);
         $this->entityManager->flush();
 
-        $this->notificationService->notifyMentionedUsers($post);
+        // Notifier les utilisateurs mentionnés
+        foreach ($processedContent['mentions'] as $mentionedUserId) {
+            $this->notificationService->notifyMention($post, $mentionedUserId);
+        }
+
+        // Invalider le cache
+        $this->cache->deleteItem(sprintf('feed_posts_%d', $author->getId()));
 
         return $post;
     }

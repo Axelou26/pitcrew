@@ -61,25 +61,39 @@
         {% endif %}
 
         {% set content = post.content %}
+        {% set processedContent = content %}
         
-        {# Traitement des mentions #}
-        {% set contentWithMentions = content %}
+        {# Création d'un tableau de remplacements #}
+        {% set replacements = [] %}
+        
+        {# Collecter les remplacements pour les mentions #}
         {% for mention in post.extractMentions %}
             {% set mentionKey = '@' ~ mention %}
             {% set userPath = path('app_user_profile_by_username', {'username': mention}) %}
             {% set mentionValue = '<a href="' ~ userPath ~ '" class="mention">@' ~ mention ~ '</a>' %}
-            {% set contentWithMentions = contentWithMentions|replace({(mentionKey): mentionValue}) %}
+            {% set replacements = replacements|merge([{
+                'key': mentionKey,
+                'value': mentionValue
+            }]) %}
         {% endfor %}
         
-        {# Traitement des hashtags #}
-        {% set contentWithHashtags = contentWithMentions %}
+        {# Collecter les remplacements pour les hashtags #}
         {% for hashtag in post.extractHashtags %}
             {% set hashtagKey = '#' ~ hashtag %}
-            {% set hashtagValue = '<a href="' ~ path('app_hashtag_show', {'name': hashtag}) ~ '" class="hashtag fw-bold">#' ~ hashtag ~ '</a>' %}
-            {% set contentWithHashtags = contentWithHashtags|replace({(hashtagKey): hashtagValue}) %}
+            {% set hashtagPath = path('app_hashtag_show', {'name': hashtag}) %}
+            {% set hashtagValue = '<a href="' ~ hashtagPath ~ '" class="hashtag fw-bold">#' ~ hashtag ~ '</a>' %}
+            {% set replacements = replacements|merge([{
+                'key': hashtagKey,
+                'value': hashtagValue
+            }]) %}
         {% endfor %}
         
-        <p class="card-text mb-3 post-content">{{ contentWithHashtags|raw }}</p>
+        {# Appliquer tous les remplacements #}
+        {% for replacement in replacements %}
+            {% set processedContent = processedContent|replace({(replacement.key): replacement.value}) %}
+        {% endfor %}
+        
+        <p class="card-text mb-3 post-content">{{ processedContent|raw }}</p>
 
         {% if post.imageName %}
             <a href="{{ asset('uploads/posts/' ~ post.imageName) }}" data-lightbox="post-image-{{ post.id }}">

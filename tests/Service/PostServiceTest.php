@@ -168,4 +168,4 @@ class PostServiceTest extends TestCase
         $this->assertCount(1, $updatedPost->getMentions());
         $this->assertContains(1, $updatedPost->getMentions());
     }
-} 
+}

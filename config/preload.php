@@ -14,15 +14,15 @@ $preload = [
     dirname(__DIR__) . '/src/Entity/User.php',
     dirname(__DIR__) . '/src/Entity/Notification.php',
     dirname(__DIR__) . '/src/Entity/Post.php',
-    
+
     // Repositories
     dirname(__DIR__) . '/src/Repository/UserRepository.php',
     dirname(__DIR__) . '/src/Repository/NotificationRepository.php',
     dirname(__DIR__) . '/src/Repository/PostRepository.php',
-    
+
     // Services
     dirname(__DIR__) . '/src/Service/NotificationService.php',
-    
+
     // Controllers
     dirname(__DIR__) . '/src/Controller/NotificationController.php',
 ];

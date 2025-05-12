@@ -159,8 +159,10 @@ class PostRepository extends ServiceEntityRepository
     /**
      * @return array<Post>
      */
-    public function findPostsForFeed(User $user): array
+    public function findPostsForFeed(User $user, int $page = 1, int $limit = 10): array
     {
+        $firstResult = ($page - 1) * $limit;
+
         return $this->getCachedResult(
             sprintf(self::CACHE_KEY_FEED_POSTS, $user->getId()),
             fn(): array => $this->createBasePostQuery()
@@ -168,6 +170,9 @@ class PostRepository extends ServiceEntityRepository
                 ->orWhere('p.author IN (:friends)')
                 ->setParameter('user', $user)
                 ->setParameter('friends', $user->getFriends())
+                ->orderBy('p.createdAt', 'DESC')
+                ->setFirstResult($firstResult)
+                ->setMaxResults($limit)
                 ->getQuery()
                 ->getResult()
         );

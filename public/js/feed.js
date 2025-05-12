@@ -2,6 +2,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const postForm = document.querySelector('#post-form');
     const feedContainer = document.querySelector('#feed-container');
     const MAX_CHARACTERS = 500;
+    let currentPage = 1;
+    let isLoading = false;
+    let hasMore = true;
 
     // Initialiser la troncature pour tous les posts existants
     document.querySelectorAll('.post-content').forEach(initializePostTruncation);
@@ -198,4 +201,91 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
+
+    // Fonction pour charger plus de posts
+    async function loadMorePosts() {
+        if (isLoading || !hasMore) return;
+        
+        isLoading = true;
+        currentPage++;
+
+        try {
+            const response = await fetch(`/post/feed?page=${currentPage}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (!response.ok) throw new Error('Erreur réseau');
+
+            const data = await response.json();
+            
+            if (data.html) {
+                const tempContainer = document.createElement('div');
+                tempContainer.innerHTML = data.html;
+                
+                // Ajouter chaque post individuellement avec une animation
+                Array.from(tempContainer.children).forEach(post => {
+                    post.classList.add('new-post');
+                    feedContainer.appendChild(post);
+                    
+                    // Animation d'apparition
+                    setTimeout(() => post.classList.add('show'), 10);
+                    
+                    // Initialiser les interactions pour le nouveau post
+                    initializePostInteractions(post);
+                });
+            }
+
+            hasMore = data.hasMore;
+            
+            if (!hasMore) {
+                // Afficher un message "Fin des publications"
+                const endMessage = document.createElement('div');
+                endMessage.className = 'text-center text-muted my-4';
+                endMessage.innerHTML = 'Fin des publications';
+                feedContainer.appendChild(endMessage);
+            }
+        } catch (error) {
+            console.error('Erreur lors du chargement des posts:', error);
+            showNotification('Une erreur est survenue lors du chargement des publications', 'danger');
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    // Détecter quand l'utilisateur arrive en bas de la page
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && !isLoading && hasMore) {
+                loadMorePosts();
+            }
+        });
+    }, { threshold: 0.5 });
+
+    // Observer le dernier post
+    function observeLastPost() {
+        const posts = document.querySelectorAll('.post-card');
+        if (posts.length > 0) {
+            observer.observe(posts[posts.length - 1]);
+        }
+    }
+
+    // Observer le dernier post initial
+    observeLastPost();
+
+    // Style pour l'animation des nouveaux posts
+    const style = document.createElement('style');
+    style.textContent = `
+        .new-post {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+        }
+        .new-post.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    `;
+    document.head.appendChild(style);
 }); 

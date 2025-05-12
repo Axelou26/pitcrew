@@ -9,6 +9,7 @@ use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
+use Symfony\Contracts\Cache\CacheInterface;
 
 /**
  * @extends ServiceEntityRepository<User>
@@ -20,9 +21,12 @@ use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
  */
 class UserRepository extends ServiceEntityRepository implements PasswordUpgraderInterface
 {
-    public function __construct(ManagerRegistry $registry)
+    private $cache;
+
+    public function __construct(ManagerRegistry $registry, CacheInterface $cache)
     {
         parent::__construct($registry, User::class);
+        $this->cache = $cache;
     }
 
     public function save(User $entity, bool $flush = false): void
@@ -212,21 +216,40 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     }
 
     /**
-     * Trouve des suggestions d'utilisateurs basées sur une recherche
+     * Trouve des suggestions d'utilisateurs de manière optimisée
      *
      * @param string $query Le terme de recherche
      * @param int $limit Nombre maximum de résultats
-     * @return array<User>
+     * @return array
      */
-    public function findSuggestions(string $query, int $limit = 5): array
+    public function findSuggestionsOptimized(string $query, int $limit = 5): array
     {
-        $queryBuilder = $this->createQueryBuilder('u')
-            ->where('u.firstName LIKE :query OR u.lastName LIKE :query')
+        $cacheKey = 'user_suggestions_' . md5($query . $limit);
+        $qb = $this->createQueryBuilder('u')
+            ->select('PARTIAL u.{id, firstName, lastName, profilePicture}')
+            ->where('LOWER(CONCAT(u.firstName, \' \', u.lastName)) LIKE LOWER(:query)')
+            ->orWhere('LOWER(u.firstName) LIKE LOWER(:query)')
+            ->orWhere('LOWER(u.lastName) LIKE LOWER(:query)')
             ->setParameter('query', '%' . $query . '%')
-            ->orderBy('u.firstName', 'ASC')
-            ->setMaxResults($limit);
+            ->setMaxResults($limit)
+            ->orderBy('u.lastName', 'ASC')
+            ->addOrderBy('u.firstName', 'ASC');
 
-        return $queryBuilder->getQuery()->getResult();
+        // Utiliser le cache de requête Doctrine
+        $query = $qb->getQuery();
+        $query->setResultCacheId($cacheKey);
+        $query->setResultCacheLifetime(300); // 5 minutes
+
+        // Optimisations de performance
+        $query->setHint(\Doctrine\ORM\Query::HINT_FORCE_PARTIAL_LOAD, true);
+        $query->setHint(\Doctrine\ORM\Query::HINT_CUSTOM_OUTPUT_WALKER, 'Doctrine\ORM\Query\SqlWalker');
+
+        try {
+            return $query->getArrayResult();
+        } catch (\Exception $e) {
+            // En cas d'erreur, retourner un tableau vide
+            return [];
+        }
     }
 
     /**

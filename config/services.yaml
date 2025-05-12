@@ -53,3 +53,8 @@ services:
     twig.extension.string:
         class: Twig\Extra\String\StringExtension
         tags: ['twig.extension'] 
+
+    # Configuration du UserRepository avec autowiring
+    App\Repository\UserRepository: ~
+
+    # Configuration du UserRepository avec autowiring 
