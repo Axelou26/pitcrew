@@ -82,6 +82,37 @@ class PostController extends AbstractController
         ]);
     }
 
+    #[Route('/feed', name: 'app_post_feed', methods: ['GET'])]
+    public function feed(Request $request): Response
+    {
+        $page = max(1, $request->query->getInt('page', 1));
+        $limit = max(1, $request->query->getInt('limit', 10));
+
+        $posts = $this->postService->findPosts(
+            new PostSearchCriteria(
+                PostSearchCriteria::TYPE_FEED,
+                user: $this->getUser()
+            ),
+            $page,
+            $limit
+        );
+
+        if ($request->isXmlHttpRequest()) {
+            return new JsonResponse([
+                'html' => $this->renderView('post/_feed.html.twig', [
+                    'posts' => $posts
+                ]),
+                'hasMore' => count($posts) === $limit
+            ]);
+        }
+
+        return $this->render('post/_feed.html.twig', [
+            'posts' => $posts,
+            'currentPage' => $page,
+            'hasMore' => count($posts) === $limit
+        ]);
+    }
+
     #[Route('/{id}', name: 'app_post_show', methods: ['GET'])]
     public function show(Post $post): Response
     {
@@ -329,6 +360,16 @@ class PostController extends AbstractController
         }
     }
 
+    #[Route('/hashtags/trending', name: 'app_hashtags_trending')]
+    public function trendingHashtags(HashtagRepository $hashtagRepository): Response
+    {
+        $hashtags = $hashtagRepository->findTrending();
+
+        return $this->render('post/trending_hashtags.html.twig', [
+            'hashtags' => $hashtags,
+        ]);
+    }
+
     #[Route('/hashtag/{name}', name: 'app_hashtag_show')]
     public function showHashtag(
         string $name,
@@ -348,16 +389,6 @@ class PostController extends AbstractController
             'hashtag' => $hashtag,
             'posts' => $posts,
             'trendingHashtags' => $trendingHashtags,
-        ]);
-    }
-
-    #[Route('/hashtags/trending', name: 'app_hashtags_trending')]
-    public function trendingHashtags(HashtagRepository $hashtagRepository): Response
-    {
-        $hashtags = $hashtagRepository->findTrending();
-
-        return $this->render('post/trending_hashtags.html.twig', [
-            'hashtags' => $hashtags,
         ]);
     }
 
@@ -623,34 +654,4 @@ class PostController extends AbstractController
         ]);
     }
 
-    #[Route('/feed', name: 'app_post_feed', methods: ['GET'])]
-    public function feed(Request $request): Response
-    {
-        $page = max(1, $request->query->getInt('page', 1));
-        $limit = max(1, $request->query->getInt('limit', 10));
-
-        $posts = $this->postService->findPosts(
-            new PostSearchCriteria(
-                PostSearchCriteria::TYPE_FEED,
-                user: $this->getUser()
-            ),
-            $page,
-            $limit
-        );
-
-        if ($request->isXmlHttpRequest()) {
-            return new JsonResponse([
-                'html' => $this->renderView('post/_feed.html.twig', [
-                    'posts' => $posts
-                ]),
-                'hasMore' => count($posts) === $limit
-            ]);
-        }
-
-        return $this->render('post/_feed.html.twig', [
-            'posts' => $posts,
-            'currentPage' => $page,
-            'hasMore' => count($posts) === $limit
-        ]);
-    }
 }

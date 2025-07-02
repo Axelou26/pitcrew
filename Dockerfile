@@ -27,7 +27,12 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     libicu-dev \
     libpq-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Installation de Node.js et npm
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs
 
 # Installation des extensions PHP
 RUN docker-php-ext-install pdo pdo_mysql zip intl opcache
@@ -45,6 +50,9 @@ COPY --from=node-builder /app/public/build ./public/build
 
 # Copie des fichiers de l'application
 COPY . .
+
+# Installation des dépendances Node.js dans le conteneur final
+RUN npm install
 
 # Configuration des permissions
 RUN mkdir -p var/cache var/log && \

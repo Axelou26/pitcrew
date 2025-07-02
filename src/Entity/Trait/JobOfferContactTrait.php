@@ -6,10 +6,10 @@ use Doctrine\ORM\Mapping as ORM;
 
 trait JobOfferContactTrait
 {
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(name: 'contact_email', length: 255, nullable: true)]
     private ?string $contactEmail = null;
 
-    #[ORM\Column(length: 20, nullable: true)]
+    #[ORM\Column(name: 'contact_phone', length: 20, nullable: true)]
     private ?string $contactPhone = null;
 
     public function getContactEmail(): ?string

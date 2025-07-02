@@ -9,6 +9,11 @@ framework:
     #esi: true
     #fragments: true
 
+    # Optimisations de performance
+    router:
+        cache_dir: '%kernel.cache_dir%/router'
+        default_uri: null
+
     cache:
         app: cache.adapter.filesystem
         system: cache.adapter.filesystem

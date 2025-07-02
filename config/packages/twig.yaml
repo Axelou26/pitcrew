@@ -10,3 +10,8 @@ twig:
 when@test:
     twig:
         strict_variables: true
+
+when@prod:
+    twig:
+        auto_reload: false
+        strict_variables: false

@@ -76,11 +76,14 @@ class FriendshipRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve tous les amis d'un utilisateur
+     * Trouve tous les amis d'un utilisateur avec préchargement des entités
      */
     public function findFriends(User $user): array
     {
         $friendships = $this->createQueryBuilder('f')
+            ->leftJoin('f.requester', 'r')
+            ->leftJoin('f.addressee', 'a')
+            ->addSelect('r', 'a')
             ->where('(f.requester = :user OR f.addressee = :user)')
             ->andWhere('f.status = :status')
             ->setParameter('user', $user)
@@ -101,20 +104,34 @@ class FriendshipRepository extends ServiceEntityRepository
     }
 
     /**
-     * Vérifie si deux utilisateurs sont amis
+     * Vérifie si deux utilisateurs sont amis (version optimisée)
      */
     public function areFriends(User $user1, User $user2): bool
     {
-        $friendship = $this->findAcceptedBetweenUsers($user1, $user2);
-        return $friendship !== null;
+        $count = $this->createQueryBuilder('f')
+            ->select('COUNT(f.id)')
+            ->where(
+                '(f.requester = :user1 AND f.addressee = :user2) OR ' .
+                '(f.requester = :user2 AND f.addressee = :user1)'
+            )
+            ->andWhere('f.status = :status')
+            ->setParameter('user1', $user1)
+            ->setParameter('user2', $user2)
+            ->setParameter('status', Friendship::STATUS_ACCEPTED)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $count > 0;
     }
 
     /**
-     * Trouve les demandes d'amitié reçues en attente
+     * Trouve les demandes d'amitié reçues en attente (version optimisée)
      */
     public function findByPendingRequestsReceived(User $user): array
     {
         return $this->createQueryBuilder('f')
+            ->leftJoin('f.requester', 'r')
+            ->addSelect('r')
             ->where('f.addressee = :user')
             ->andWhere('f.status = :status')
             ->setParameter('user', $user)
@@ -125,15 +142,48 @@ class FriendshipRepository extends ServiceEntityRepository
     }
 
     /**
+     * Compte les demandes d'amitié reçues en attente (version optimisée)
+     */
+    public function countPendingRequestsReceived(User $user): int
+    {
+        return $this->createQueryBuilder('f')
+            ->select('COUNT(f.id)')
+            ->where('f.addressee = :user')
+            ->andWhere('f.status = :status')
+            ->setParameter('user', $user)
+            ->setParameter('status', Friendship::STATUS_PENDING)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
      * Trouve les demandes d'amitié envoyées en attente
      */
     public function findByPendingRequestsSent(User $user): array
     {
         return $this->createQueryBuilder('f')
+            ->leftJoin('f.addressee', 'a')
+            ->addSelect('a')
             ->where('f.requester = :user')
             ->andWhere('f.status = :status')
             ->setParameter('user', $user)
             ->setParameter('status', Friendship::STATUS_PENDING)
+            ->orderBy('f.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Trouve toutes les amitiés d'un utilisateur avec préchargement
+     */
+    public function findAllFriendshipsForUser(User $user): array
+    {
+        return $this->createQueryBuilder('f')
+            ->leftJoin('f.requester', 'r')
+            ->leftJoin('f.addressee', 'a')
+            ->addSelect('r', 'a')
+            ->where('f.requester = :user OR f.addressee = :user')
+            ->setParameter('user', $user)
             ->orderBy('f.createdAt', 'DESC')
             ->getQuery()
             ->getResult();

@@ -16,7 +16,30 @@ framework:
 
         # Namespaced pools use the above "app" backend by default
         pools:
-            # Creates a "user_suggestions" pool
-            user_suggestions_cache:
+            # Cache pour les données de l'application
+            app.cache:
                 adapter: cache.adapter.filesystem
-                default_lifetime: 300 # 5 minutes
+                default_lifetime: 3600
+                public: false
+                tags: true
+            
+            # Cache pour Doctrine
+            doctrine.system_cache_pool:
+                adapter: cache.adapter.filesystem
+                default_lifetime: 86400
+                public: false
+                tags: true
+            
+            # Cache pour les résultats de requêtes Doctrine
+            doctrine.result_cache_pool:
+                adapter: cache.adapter.filesystem
+                default_lifetime: 3600
+                public: false
+                tags: true
+            
+            # Cache pour les métadonnées Doctrine
+            doctrine.metadata_cache_pool:
+                adapter: cache.adapter.filesystem
+                default_lifetime: 86400
+                public: false
+                tags: true

@@ -7,7 +7,6 @@ use App\Repository\JobOfferRepository;
 use App\Repository\PostRepository;
 use App\Repository\UserRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Cache\CacheItem;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Contracts\Cache\CacheInterface;
@@ -33,26 +32,51 @@ class HomeController extends AbstractController
         JobOfferRepository $jobOfferRepository
     ): Response {
         $user = $this->getUser();
+        $userId = $user ? $user->getId() : 'anonymous';
 
-        // Précharger les collections si l'utilisateur est connecté
-        $userStats = [
-            'posts_count' => 0,
-            'friends_count' => 0,
-            'job_offers_count' => 0
-        ];
+        // Cache séparé pour les statistiques utilisateur
+        $userStatsCacheKey = 'user_stats_' . $userId;
+        $userStats = $this->cache->get($userStatsCacheKey, function (ItemInterface $item) use ($user) {
+            $item->expiresAfter(600); // Cache pour 10 minutes
+            
+            if (!$user) {
+                return [
+                    'posts_count' => 0,
+                    'friends_count' => 0,
+                    'job_offers_count' => 0
+                ];
+            }
 
-        if ($user) {
-            $this->entityManager->initializeObject($user);
-            $userStats = [
-                'posts_count' => $user->getPosts()->count(),
-                'friends_count' => count($user->getFriends()),
-                'job_offers_count' => $user->isRecruiter() ? $user->getJobOffers()->count() : 0
+            // Utiliser des requêtes optimisées au lieu de compter les collections
+            $postsCount = $this->entityManager->createQuery(
+                'SELECT COUNT(p.id) FROM App\Entity\Post p WHERE p.author = :user'
+            )->setParameter('user', $user)->getSingleScalarResult();
+
+            $friendsCount = $this->entityManager->createQuery(
+                'SELECT COUNT(f.id) FROM App\Entity\Friendship f 
+                 WHERE (f.requester = :user OR f.addressee = :user) 
+                 AND f.status = :status'
+            )->setParameter('user', $user)
+             ->setParameter('status', 'accepted')
+             ->getSingleScalarResult();
+
+            $jobOffersCount = 0;
+            if ($user->isRecruiter()) {
+                $jobOffersCount = $this->entityManager->createQuery(
+                    'SELECT COUNT(j.id) FROM App\Entity\JobOffer j WHERE j.recruiter = :user'
+                )->setParameter('user', $user)->getSingleScalarResult();
+            }
+
+            return [
+                'posts_count' => $postsCount,
+                'friends_count' => $friendsCount,
+                'job_offers_count' => $jobOffersCount
             ];
-        }
+        });
 
-        $cacheKey = 'homepage_data_' . ($user ? $user->getId() : 'anonymous');
-
-        $data = $this->cache->get($cacheKey, function (ItemInterface $item) use (
+        // Cache pour les données de la page d'accueil
+        $homepageCacheKey = 'homepage_data_' . $userId;
+        $data = $this->cache->get($homepageCacheKey, function (ItemInterface $item) use (
             $postRepository,
             $userRepository,
             $hashtagRepository,

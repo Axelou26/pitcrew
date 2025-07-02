@@ -8,7 +8,7 @@ services:
     environment:
       APP_ENV: dev
       APP_SECRET: "a7c8b9d0e1f2g3h4i5j6k7l8m9n0p1q2"
-      DATABASE_URL: "mysql://root:azerty-26@172.19.0.2:3306/blog?serverVersion=8.0&charset=utf8mb4"
+      DATABASE_URL: "mysql://root:azerty-26@database:3306/blog?serverVersion=8.0&charset=utf8mb4"
       MYSQL_HOST: database
       MYSQL_PORT: 3306
       MYSQL_DATABASE: blog

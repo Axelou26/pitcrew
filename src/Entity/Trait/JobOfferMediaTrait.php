@@ -6,7 +6,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 trait JobOfferMediaTrait
 {
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(name: 'logo_url', length: 255, nullable: true)]
     private ?string $logoUrl = null;
 
     #[ORM\Column(length: 255, nullable: true)]

@@ -10,6 +10,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use DateTimeImmutable;
 
 #[ORM\Entity(repositoryClass: HashtagRepository::class)]
+#[ORM\Table(name: 'hashtag')]
 #[UniqueEntity(fields: ['name'], message: 'Ce hashtag existe déjà')]
 class Hashtag
 {
@@ -24,13 +25,13 @@ class Hashtag
     #[ORM\Column(length: 50, unique: true)]
     private ?string $name = null;
 
-    #[ORM\Column]
+    #[ORM\Column(name: 'usage_count')]
     private int $usageCount = 0;
 
-    #[ORM\Column]
+    #[ORM\Column(name: 'created_at')]
     private ?DateTimeImmutable $createdAt = null;
 
-    #[ORM\Column(nullable: true)]
+    #[ORM\Column(name: 'last_used_at', nullable: true)]
     private ?DateTimeImmutable $lastUsedAt = null;
 
     #[ORM\ManyToMany(targetEntity: Post::class, mappedBy: 'hashtags')]

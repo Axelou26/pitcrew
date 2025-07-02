@@ -18,42 +18,42 @@ trait JobOfferDetailsTrait
     #[ORM\Column(length: 255)]
     private ?string $location = null;
 
-    #[ORM\Column(length: 50)]
+    #[ORM\Column(name: 'contract_type', length: 50)]
     #[Assert\NotBlank(message: 'Le type de contrat est obligatoire')]
     private ?string $contractType = null;
 
     #[ORM\Column(nullable: true)]
     private ?int $salary = null;
 
-    #[ORM\Column(type: Types::JSON)]
+    #[ORM\Column(name: 'required_skills', type: Types::JSON)]
     private array $requiredSkills = [];
 
-    #[ORM\Column(type: Types::JSON)]
+    #[ORM\Column(name: 'soft_skills', type: Types::JSON)]
     private array $softSkills = [];
 
-    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    #[ORM\Column(name: 'expires_at', type: Types::DATE_MUTABLE, nullable: true)]
     private ?DateTimeInterface $expiresAt = null;
 
-    #[ORM\Column]
+    #[ORM\Column(name: 'is_remote')]
     private ?bool $isRemote = false;
 
-    #[ORM\Column]
+    #[ORM\Column(name: 'is_promoted')]
     private ?bool $isPromoted = false;
 
-    #[ORM\Column(length: 50)]
+    #[ORM\Column(name: 'experience_level', length: 50)]
     private ?string $experienceLevel = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: 'Le nom de l\'entreprise est obligatoire')]
     private ?string $company = null;
 
-    #[ORM\Column]
+    #[ORM\Column(name: 'is_active')]
     private ?bool $isActive = true;
 
-    #[ORM\Column]
+    #[ORM\Column(name: 'is_published')]
     private ?bool $isPublished = false;
 
-    #[ORM\Column(nullable: true)]
+    #[ORM\Column(name: 'required_experience', nullable: true)]
     private ?int $requiredExperience = null;
 
     public function getTitle(): ?string
