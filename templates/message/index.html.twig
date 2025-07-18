@@ -115,6 +115,7 @@
 
             init() {
                 this.setupAutoUpdate();
+                this.setupRecipientLoader();
             },
 
             async updateConversationsList() {
@@ -162,6 +163,73 @@
                         this.updateConversationsList();
                     }
                 });
+            },
+
+            setupRecipientLoader() {
+                // Charger les destinataires lors de l'ouverture du modal
+                const modal = document.getElementById('newConversationModal');
+                if (modal) {
+                    modal.addEventListener('show.bs.modal', () => this.loadRecipients());
+                }
+            },
+
+            async loadRecipients() {
+                const recipientSelect = document.getElementById('recipient');
+                if (!recipientSelect) return;
+
+                try {
+                    recipientSelect.disabled = true;
+                    
+                    // Afficher un message de chargement
+                    const loadingOption = document.createElement('option');
+                    loadingOption.textContent = 'Chargement...';
+                    recipientSelect.innerHTML = '';
+                    recipientSelect.appendChild(loadingOption);
+
+                    const response = await fetch('{{ path('app_message_get_recipients') }}', {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Erreur réseau');
+                    }
+
+                    const data = await response.json();
+                    
+                    // Vider et réinitialiser le select
+                    recipientSelect.innerHTML = '';
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = 'Sélectionnez un destinataire...';
+                    recipientSelect.appendChild(defaultOption);
+
+                    // Ajouter les options pour chaque ami
+                    if (data.recipients && data.recipients.length > 0) {
+                        data.recipients.forEach(recipient => {
+                            const option = document.createElement('option');
+                            option.value = recipient.id;
+                            option.textContent = recipient.fullName;
+                            recipientSelect.appendChild(option);
+                        });
+                    } else {
+                        const noFriendsOption = document.createElement('option');
+                        noFriendsOption.disabled = true;
+                        noFriendsOption.textContent = 'Aucun ami disponible';
+                        recipientSelect.appendChild(noFriendsOption);
+                    }
+                } catch (error) {
+                    console.error('Erreur lors du chargement des destinataires:', error);
+                    recipientSelect.innerHTML = '';
+                    const errorOption = document.createElement('option');
+                    errorOption.disabled = true;
+                    errorOption.textContent = 'Erreur lors du chargement des destinataires';
+                    recipientSelect.appendChild(errorOption);
+                } finally {
+                    recipientSelect.disabled = false;
+                }
             }
         };
 

@@ -90,6 +90,64 @@ Ensuite, vous pouvez exécuter les tests avec la couverture de code :
 composer test:coverage
 ```
 
+## 🧹 Outils de nettoyage et maintenance
+
+### Scripts de nettoyage automatisé
+
+Le projet inclut plusieurs outils pour maintenir la qualité du code et détecter les fichiers obsolètes :
+
+#### Scripts Composer
+```bash
+# Vérification complète de la qualité du code
+composer quality:check
+
+# Vérification des fichiers orphelins
+composer cleanup:orphaned-files
+
+# Vérification des doublons
+composer cleanup:duplicates
+
+# Vérification complète de nettoyage
+composer cleanup:check
+```
+
+#### Scripts de nettoyage (Linux/Mac)
+```bash
+# Nettoyage complet automatisé
+./bin/cleanup.sh
+```
+
+#### Scripts de nettoyage (Windows)
+```cmd
+# Nettoyage complet automatisé
+bin\cleanup.bat
+```
+
+### Commandes Symfony personnalisées
+
+```bash
+# Détecter les fichiers orphelins
+php bin/console app:check-orphaned-files
+
+# Détecter les doublons
+php bin/console app:check-duplicates
+```
+
+### CI/CD
+
+Le projet inclut un workflow GitHub Actions (`/.github/workflows/code-quality.yml`) qui :
+- Exécute automatiquement les tests
+- Vérifie la qualité du code (PHPStan, PHP CS Fixer, PHPMD)
+- Détecte les fichiers orphelins et doublons
+- Génère des rapports de nettoyage
+
+### Recommandations de maintenance
+
+1. **Exécuter les scripts de nettoyage régulièrement** (hebdomadaire)
+2. **Vérifier manuellement** les fichiers signalés avant suppression
+3. **Maintenir les dépendances à jour** avec `composer update` et `npm update`
+4. **Utiliser les outils de qualité** avant chaque commit
+
 ## Contribution
 
 1. Fork le projet

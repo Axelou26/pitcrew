@@ -1,0 +1,42 @@
+{# Template partiel pour la liste des notifications non lues (AJAX) #}
+{% if notifications is empty %}
+    <div class="dropdown-item text-center py-3">
+        <i class="bi bi-bell-slash text-muted"></i>
+        <p class="mb-0 text-muted">Aucune notification non lue</p>
+    </div>
+{% else %}
+    {% for notification in notifications %}
+        <a href="{{ notification.targetUrl ?: '#' }}" class="dropdown-item notification-item unread" 
+           data-notification-id="{{ notification.id }}"
+           data-mark-as-read-url="/notifications/{{ notification.id }}/mark-as-read">
+            <div class="d-flex align-items-center">
+                <div class="notification-icon me-2">
+                    {% if notification.type == 'friend_request' %}
+                        <i class="bi bi-person-plus text-primary"></i>
+                    {% elseif notification.type == 'message' %}
+                        <i class="bi bi-chat-dots text-info"></i>
+                    {% elseif notification.type == 'job_application' %}
+                        <i class="bi bi-briefcase text-success"></i>
+                    {% elseif notification.type == 'job_offer' %}
+                        <i class="bi bi-file-earmark-text text-warning"></i>
+                    {% elseif notification.type == 'application' %}
+                        <i class="bi bi-file-earmark-text text-primary"></i>
+                    {% else %}
+                        <i class="bi bi-bell text-secondary"></i>
+                    {% endif %}
+                </div>
+                <div class="flex-grow-1">
+                    <div class="notification-title fw-bold">{{ notification.title }}</div>
+                    <div class="notification-message small text-muted">{{ notification.message }}</div>
+                    <small class="notification-time text-muted">
+                        {% if notification.createdAt %}
+                            {{ notification.createdAt|ago }}
+                        {% else %}
+                            <em>Date inconnue</em>
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </a>
+    {% endfor %}
+{% endif %} 

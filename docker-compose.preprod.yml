@@ -1,0 +1,123 @@
+# Configuration Docker pour l'environnement de pré-production
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/var/www
+      - symfony-cache-preprod:/var/www/var/cache
+      - symfony-logs-preprod:/var/www/var/log
+      - node-modules:/var/www/node_modules
+    environment:
+      APP_ENV: preprod
+      APP_SECRET: "preprod-secret-key-change-in-production"
+      DATABASE_URL: "mysql://root:azerty-26@database:3306/pitcrew_preprod?serverVersion=8.0&charset=utf8mb4"
+      MYSQL_HOST: database
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: pitcrew_preprod
+      MYSQL_USER: root
+      MYSQL_PASSWORD: azerty-26
+      # Variables d'optimisation pour pré-production
+      PHP_OPCACHE_ENABLE: 1
+      PHP_OPCACHE_MEMORY_CONSUMPTION: 256
+      PHP_OPCACHE_MAX_ACCELERATED_FILES: 8000
+      PHP_OPCACHE_REVALIDATE_FREQ: 60
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - pitcrew_preprod_network
+    links:
+      - database:database
+      - redis:redis
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8889:80"
+    volumes:
+      - .:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - nginx-logs-preprod:/var/log/nginx
+    depends_on:
+      - app
+    networks:
+      - pitcrew_preprod_network
+    restart: unless-stopped
+
+  database:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: azerty-26
+      MYSQL_DATABASE: pitcrew_preprod
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    volumes:
+      - mysql-data-preprod:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "33307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pazerty-26"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pitcrew_preprod_network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-data-preprod:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - pitcrew_preprod_network
+    restart: unless-stopped
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1026:1025"
+      - "8026:8025"
+    networks:
+      - pitcrew_preprod_network
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    environment:
+      PMA_HOST: database
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: azerty-26
+    ports:
+      - "8081:80"
+    depends_on:
+      - database
+    networks:
+      - pitcrew_preprod_network
+    restart: unless-stopped
+
+networks:
+  pitcrew_preprod_network:
+    driver: bridge
+
+volumes:
+  mysql-data-preprod:
+  redis-data-preprod:
+  symfony-cache-preprod:
+  symfony-logs-preprod:
+  nginx-logs-preprod:
+  node-modules: 

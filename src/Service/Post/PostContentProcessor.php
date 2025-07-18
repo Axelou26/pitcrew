@@ -79,4 +79,27 @@ class PostContentProcessor
             throw new InvalidArgumentException('Le contenu du post ne peut pas être vide');
         }
     }
+
+    /**
+     * Traite le contenu d'un post pour en extraire les hashtags et les mentions
+     * @return array{content: string, hashtags: array, mentions: array}
+     */
+    public function process(string $content): array
+    {
+        // Valider le contenu
+        $this->validate($content);
+
+        // Extraire les hashtags et les mentions
+        $hashtags = $this->extractHashtags($content);
+        $mentions = $this->extractMentions($content);
+
+        // Enrichir le contenu (optionnel, à adapter selon les besoins)
+        $processedContent = $content;
+
+        return [
+            'content' => $processedContent,
+            'hashtags' => $hashtags,
+            'mentions' => $mentions
+        ];
+    }
 }

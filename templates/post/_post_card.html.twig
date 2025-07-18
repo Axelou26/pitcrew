@@ -1,15 +1,5 @@
 {% set isLiked = app.user ? post.isLikedByUser(app.user) : false %}
-
-{% set currentUserReactionType = app.user ? post.getUserReactionType(app.user) : null %}
-{% set reactionMap = {
-    'like': {'emoji': '👍', 'name': 'J\'aime', 'class': 'btn-primary'},
-    'congrats': {'emoji': '👏', 'name': 'Bravo', 'class': 'btn-success'},
-    'support': {'emoji': '❤️', 'name': 'Soutien', 'class': 'btn-danger'},
-    'interesting': {'emoji': '💡', 'name': 'Intéressant', 'class': 'btn-info'},
-    'encouraging': {'emoji': '💪', 'name': 'Encouragement', 'class': 'btn-warning'}
-} %}
-{% set defaultReaction = {'emoji': '👍', 'name': 'Réagir', 'class': 'btn-outline-secondary'} %}
-{% set activeReaction = currentUserReactionType ? reactionMap[currentUserReactionType] : defaultReaction %}
+{% set isFromFriend = app.user and (post.author.id == app.user.id or app.user.isFriendWith(post.author)) %}
 
 <div class="card shadow-sm hover-shadow-lg mb-4 post-card border-0 rounded-4" data-post-id="{{ post.id }}">
     <div class="card-body p-4">
@@ -33,6 +23,11 @@
                 </h6>
                 <small class="text-muted">{{ post.createdAt|date('d/m/Y H:i') }}</small>
             </div>
+            {% if not isFromFriend and app.user and post.author.id != app.user.id %}
+                <div class="badge bg-info text-white me-3">
+                    <i class="bi bi-magic me-1"></i> Recommandé
+                </div>
+            {% endif %}
             {% if app.user and post.author.id == app.user.id %}
                 <div class="dropdown ms-auto">
                     <button class="btn btn-sm btn-light rounded-circle" type="button" id="postOptions{{ post.id }}" data-bs-toggle="dropdown" aria-expanded="false" style="width: 32px; height: 32px;">
@@ -114,10 +109,10 @@
         {% endif %}
 
         <div class="d-flex justify-content-between align-items-center text-muted small mb-2">
-            <div class="reaction-summary" data-bs-toggle="tooltip" title="Personnes ayant réagi">
-                {% set totalReactions = post.getLikesCount() %}
-                {% if totalReactions > 0 %}
-                    <span class="likes-count me-1">{{ totalReactions }}</span> réaction{{ totalReactions > 1 ? 's' : '' }}
+            <div class="likes-summary" data-bs-toggle="tooltip" title="Personnes ayant liké">
+                {% set totalLikes = post.getLikesCount() %}
+                {% if totalLikes > 0 %}
+                    <span class="likes-count me-1">{{ totalLikes }}</span> j'aime{{ totalLikes > 1 ? 's' : '' }}
                 {% endif %}
             </div>
             <div>
@@ -129,30 +124,13 @@
         <hr class="my-2">
 
         <div class="d-flex justify-content-around align-items-center pt-1">
-            <div class="reaction-container position-relative">
-                <button type="button"
-                        class="btn btn-sm {{ activeReaction.class }} reaction-trigger rounded-pill px-3 d-flex align-items-center {% if currentUserReactionType %}active-reaction{% endif %}"
-                        {% if currentUserReactionType %}data-current-reaction="{{ currentUserReactionType }}"{% endif %}
-                        {% if not app.user %}disabled{% endif %}>
-                    <span class="reaction-emoji me-1">{{ activeReaction.emoji }}</span>
-                    <span class="reaction-name">{{ activeReaction.name }}</span>
-                </button>
-                <div class="reaction-menu shadow border-0 rounded-3 position-absolute bg-white p-1" 
-                     style="display: none; z-index: 1000; min-width: 240px; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 8px;">
-                    <div class="d-flex justify-content-between p-1">
-                        {% for type, details in reactionMap %}
-                            <button class="reaction-option btn btn-light rounded-circle p-1 mx-1 reaction-hover" 
-                                    type="button" 
-                                    data-reaction-type="{{ type }}"
-                                    data-bs-toggle="tooltip"
-                                    data-bs-placement="top"
-                                    title="{{ details.name }}">
-                                <span class="fs-4">{{ details.emoji }}</span>
-                            </button>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
+            <button type="button"
+                    class="btn btn-sm {% if isLiked %}btn-primary{% else %}btn-outline-secondary{% endif %} like-button rounded-pill px-3 d-flex align-items-center"
+                    data-post-id="{{ post.id }}"
+                    {% if not app.user %}disabled{% endif %}>
+                <i class="bi bi-heart{% if isLiked %}-fill{% endif %} me-1"></i>
+                <span class="like-text">J'aime</span>
+            </button>
 
             <button type="button"
                     class="btn btn-sm btn-outline-secondary comment-toggle-button rounded-pill px-3"
@@ -198,10 +176,10 @@
                         <div class="input-group flex-grow-1">
                             <input type="text"
                                    class="form-control form-control-sm comment-input bg-light border-0 rounded-start-pill"
-                                   placeholder="Écrire un commentaire..."
-                                   aria-label="Écrire un commentaire"
+                                   placeholder="Ajouter un commentaire..."
+                                   name="content"
                                    required>
-                            <button class="btn btn-light btn-sm comment-submit-button rounded-end-pill border-start-0 border" type="submit">
+                            <button type="submit" class="btn btn-sm btn-primary rounded-end-pill">
                                 <i class="bi bi-send"></i>
                             </button>
                         </div>
@@ -212,23 +190,25 @@
     </div>
 </div>
 
+<!-- Modal de partage -->
 <div class="modal fade" id="shareModal{{ post.id }}" tabindex="-1" aria-labelledby="shareModalLabel{{ post.id }}" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Partager la publication</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="shareModalLabel{{ post.id }}">Partager ce post</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form class="share-form" data-post-id="{{ post.id }}">
                     <div class="mb-3">
-                        <label class="form-label">Ajouter un commentaire (optionnel)</label>
-                        <textarea class="form-control" rows="3" name="share-comment"></textarea>
+                        <label for="shareComment{{ post.id }}" class="form-label">Ajouter un commentaire (optionnel)</label>
+                        <textarea class="form-control" id="shareComment{{ post.id }}" name="comment" rows="3" placeholder="Que pensez-vous de ce post ?"></textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-share me-2"></i>Partager
-                    </button>
                 </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary share-submit" data-post-id="{{ post.id }}">Partager</button>
             </div>
         </div>
     </div>

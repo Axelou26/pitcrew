@@ -2,33 +2,145 @@
 
 {% block title %}Mes entretiens{% endblock %}
 
+{% block stylesheets %}
+{{ parent() }}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, var(--bs-danger) 0%, #dc3545 100%);
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        box-shadow: 0 5px 15px rgba(220, 53, 69, 0.2);
+    }
+    
+    .page-title {
+        color: white;
+        margin: 0;
+        font-weight: 600;
+    }
+    
+    .interview-card {
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        border: none;
+        margin-bottom: 2rem;
+        transition: all 0.2s ease;
+    }
+    
+    .interview-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-header-modern {
+        background: white;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        padding: 1.2rem 1.5rem;
+    }
+    
+    .card-header-modern h5 {
+        font-weight: 600;
+        color: var(--bs-danger);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .action-button {
+        border-radius: 50px;
+        padding: 0.6rem 1rem;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .action-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 50px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .table-modern {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .table-modern th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #495057;
+        border: none;
+        padding: 1rem;
+    }
+    
+    .table-modern tr {
+        border-bottom: 1px solid #f1f1f1;
+    }
+    
+    .table-modern td {
+        padding: 1rem;
+        border: none;
+        vertical-align: middle;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+    }
+    
+    .empty-state-icon {
+        font-size: 3rem;
+        color: #dee2e6;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
 {% block body %}
-<div class="container my-4">
-    <h1 class="text-center mb-4">Mes entretiens</h1>
+<div class="container my-5">
+    <div class="page-header text-center">
+        <h1 class="page-title">
+            <i class="fas fa-calendar-alt me-2"></i>
+            Mes entretiens
+        </h1>
+    </div>
 
     {% for label, messages in app.flashes %}
         {% for message in messages %}
-            <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
+            <div class="alert alert-{{ label }} alert-dismissible fade show rounded-3" role="alert">
                 {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         {% endfor %}
     {% endfor %}
 
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h5 class="m-0 font-weight-bold text-primary">Entretiens à venir</h5>
+    <div class="interview-card card">
+        <div class="card-header-modern d-flex justify-content-between align-items-center">
+            <h5 class="m-0">
+                <i class="fas fa-calendar-check text-danger"></i>
+                Entretiens à venir
+            </h5>
             {% if is_granted('ROLE_RECRUTEUR') %}
-                <a href="{{ path('app_interview_new') }}" class="btn btn-primary btn-sm">
+                <a href="{{ path('app_interview_new') }}" class="action-button btn btn-danger">
                     <i class="fas fa-plus"></i> Planifier un entretien
                 </a>
             {% endif %}
         </div>
-        <div class="card-body">
+        <div class="card-body p-0">
             {% if upcomingInterviews|length > 0 %}
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover" id="upcomingInterviewsTable">
-                        <thead class="table-light">
+                    <table class="table table-modern table-hover m-0" id="upcomingInterviewsTable">
+                        <thead>
                             <tr>
                                 <th>Titre</th>
                                 <th>Date et heure</th>
@@ -46,7 +158,10 @@
                             {% for interview in upcomingInterviews %}
                                 <tr>
                                     <td>{{ interview.title }}</td>
-                                    <td>{{ interview.scheduledAt|date('d/m/Y H:i') }}</td>
+                                    <td>
+                                        <i class="far fa-calendar-alt text-danger me-2"></i>
+                                        {{ interview.scheduledAt|date('d/m/Y H:i') }}
+                                    </td>
                                     {% if is_granted('ROLE_RECRUTEUR') %}
                                         <td>{{ interview.applicant.fullName }}</td>
                                     {% else %}
@@ -54,7 +169,8 @@
                                     {% endif %}
                                     <td>
                                         {% if interview.jobOffer %}
-                                            <a href="{{ path('app_job_offer_show', {'offerId': interview.jobOffer.id}) }}">
+                                            <a href="{{ path('app_job_offer_show', {'offerId': interview.jobOffer.id}) }}" class="text-decoration-none">
+                                                <i class="fas fa-briefcase me-1 text-danger"></i>
                                                 {{ interview.jobOffer.title }}
                                             </a>
                                         {% else %}
@@ -63,28 +179,38 @@
                                     </td>
                                     <td>
                                         {% if interview.isScheduled %}
-                                            <span class="badge bg-primary">Planifié</span>
+                                            <span class="status-badge bg-primary text-white">
+                                                <i class="far fa-calendar-check"></i>
+                                                Planifié
+                                            </span>
                                         {% elseif interview.isActive %}
-                                            <span class="badge bg-success">En cours</span>
+                                            <span class="status-badge bg-success text-white">
+                                                <i class="fas fa-video"></i>
+                                                En cours
+                                            </span>
                                         {% else %}
-                                            <span class="badge bg-secondary">{{ interview.status }}</span>
+                                            <span class="status-badge bg-secondary text-white">
+                                                {{ interview.status }}
+                                            </span>
                                         {% endif %}
                                     </td>
-                                    <td class="text-center">
-                                        <a href="{{ path('app_interview_show', {'id': interview.id}) }}" class="btn btn-info btn-sm mx-1" title="Voir détails">
-                                            <i class="fas fa-eye"></i> Détails
-                                        </a>
-                                        {% if interview.isScheduled or interview.isActive %}
-                                            <a href="{{ path('app_interview_direct_join', {'id': interview.id}) }}" class="btn btn-success btn-sm mx-1" title="Rejoindre la salle">
-                                                <i class="fas fa-video"></i> Rejoindre
+                                    <td>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <a href="{{ path('app_interview_show', {'id': interview.id}) }}" class="btn btn-outline-info btn-sm" title="Voir détails">
+                                                <i class="fas fa-eye"></i>
                                             </a>
-                                        {% endif %}
-                                        <form action="{{ path('app_interview_cancel', {'id': interview.id}) }}" method="post" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cet entretien?');">
-                                            <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ interview.id) }}">
-                                            <button type="submit" class="btn btn-danger btn-sm mx-1" title="Annuler l'entretien">
-                                                <i class="fas fa-times"></i> Annuler
-                                            </button>
-                                        </form>
+                                            {% if interview.isScheduled or interview.isActive %}
+                                                <a href="{{ path('app_interview_direct_join', {'id': interview.id}) }}" class="btn btn-success btn-sm" title="Rejoindre la visioconférence">
+                                                    <i class="fas fa-video"></i>
+                                                </a>
+                                            {% endif %}
+                                            <form action="{{ path('app_interview_cancel', {'id': interview.id}) }}" method="post" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cet entretien?');">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ interview.id) }}">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Annuler l'entretien">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             {% endfor %}
@@ -92,27 +218,33 @@
                     </table>
                 </div>
             {% else %}
-                <p class="text-center text-muted my-4">Vous n'avez aucun entretien à venir.</p>
-                {% if is_granted('ROLE_POSTULANT') %}
-                    <div class="text-center">
-                        <a href="{{ path('app_job_offers') }}" class="btn btn-outline-primary">
-                            Consulter les offres d'emploi
-                        </a>
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-calendar-alt"></i>
                     </div>
-                {% endif %}
+                    <p class="text-muted">Vous n'avez aucun entretien à venir.</p>
+                    {% if is_granted('ROLE_POSTULANT') %}
+                        <a href="{{ path('app_job_offers') }}" class="btn btn-outline-primary action-button">
+                            <i class="fas fa-search"></i> Consulter les offres d'emploi
+                        </a>
+                    {% endif %}
+                </div>
             {% endif %}
         </div>
     </div>
 
-    <div class="card shadow">
-        <div class="card-header py-3">
-            <h5 class="m-0 font-weight-bold text-primary">Entretiens passés</h5>
+    <div class="interview-card card">
+        <div class="card-header-modern">
+            <h5 class="m-0">
+                <i class="fas fa-history text-danger"></i>
+                Entretiens passés
+            </h5>
         </div>
-        <div class="card-body">
+        <div class="card-body p-0">
             {% if pastInterviews|length > 0 %}
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover" id="pastInterviewsTable">
-                        <thead class="table-light">
+                    <table class="table table-modern table-hover m-0" id="pastInterviewsTable">
+                        <thead>
                             <tr>
                                 <th>Titre</th>
                                 <th>Date et heure</th>
@@ -130,7 +262,10 @@
                             {% for interview in pastInterviews %}
                                 <tr>
                                     <td>{{ interview.title }}</td>
-                                    <td>{{ interview.scheduledAt|date('d/m/Y H:i') }}</td>
+                                    <td>
+                                        <i class="far fa-calendar-alt text-secondary me-2"></i>
+                                        {{ interview.scheduledAt|date('d/m/Y H:i') }}
+                                    </td>
                                     {% if is_granted('ROLE_RECRUTEUR') %}
                                         <td>{{ interview.applicant.fullName }}</td>
                                     {% else %}
@@ -138,7 +273,8 @@
                                     {% endif %}
                                     <td>
                                         {% if interview.jobOffer %}
-                                            <a href="{{ path('app_job_offer_show', {'offerId': interview.jobOffer.id}) }}">
+                                            <a href="{{ path('app_job_offer_show', {'offerId': interview.jobOffer.id}) }}" class="text-decoration-none">
+                                                <i class="fas fa-briefcase me-1 text-secondary"></i>
                                                 {{ interview.jobOffer.title }}
                                             </a>
                                         {% else %}
@@ -147,15 +283,23 @@
                                     </td>
                                     <td>
                                         {% if interview.isCompleted %}
-                                            <span class="badge bg-success">Terminé</span>
+                                            <span class="status-badge bg-success text-white">
+                                                <i class="fas fa-check-circle"></i>
+                                                Terminé
+                                            </span>
                                         {% elseif interview.isCancelled %}
-                                            <span class="badge bg-danger">Annulé</span>
+                                            <span class="status-badge bg-danger text-white">
+                                                <i class="fas fa-times-circle"></i>
+                                                Annulé
+                                            </span>
                                         {% else %}
-                                            <span class="badge bg-secondary">{{ interview.status }}</span>
+                                            <span class="status-badge bg-secondary text-white">
+                                                {{ interview.status }}
+                                            </span>
                                         {% endif %}
                                     </td>
-                                    <td class="text-center">
-                                        <a href="{{ path('app_interview_show', {'id': interview.id}) }}" class="btn btn-info btn-sm">
+                                    <td>
+                                        <a href="{{ path('app_interview_show', {'id': interview.id}) }}" class="btn btn-outline-info btn-sm" title="Voir détails">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                     </td>
@@ -165,7 +309,12 @@
                     </table>
                 </div>
             {% else %}
-                <p class="text-center text-muted my-4">Vous n'avez aucun entretien passé.</p>
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <p class="text-muted">Vous n'avez aucun entretien passé.</p>
+                </div>
             {% endif %}
         </div>
     </div>
@@ -182,7 +331,10 @@
                 "language": {
                     "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/French.json"
                 },
-                "order": [[1, 'asc']]
+                "order": [[1, 'asc']],
+                "columnDefs": [
+                    { "orderable": false, "targets": 5 }
+                ]
             });
         }
         
@@ -191,7 +343,10 @@
                 "language": {
                     "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/French.json"
                 },
-                "order": [[1, 'desc']]
+                "order": [[1, 'desc']],
+                "columnDefs": [
+                    { "orderable": false, "targets": 5 }
+                ]
             });
         }
     });

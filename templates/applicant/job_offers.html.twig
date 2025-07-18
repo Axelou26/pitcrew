@@ -108,7 +108,11 @@
                                         Voir l'offre
                                     </a>
                                     <span class="text-sm text-gray-500">
-                                        {{ offer.createdAt|ago }}
+                                        {% if offer.createdAt %}
+                                            {{ offer.createdAt|ago }}
+                                        {% else %}
+                                            <em>Date inconnue</em>
+                                        {% endif %}
                                     </span>
                                 </div>
                             </div>

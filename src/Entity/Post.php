@@ -45,9 +45,6 @@ class Post
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $imageName = null;
 
-    #[ORM\Column(nullable: true)]
-    private ?array $reactionCounts = null;
-
     #[ORM\Column]
     private ?DateTimeImmutable $createdAt = null;
 
@@ -58,16 +55,8 @@ class Post
     #[ORM\OneToMany(mappedBy: 'originalPost', targetEntity: self::class)]
     private Collection $reposts;
 
-    private function getDefaultReactionCounts(): array
-    {
-        return [
-            'like' => 0,
-            'congrats' => 0,
-            'interesting' => 0,
-            'support' => 0,
-            'encouraging' => 0
-        ];
-    }
+    #[ORM\Column(options: ["default" => 0])]
+    private int $likesCounter = 0;
 
     public function __construct()
     {
@@ -78,7 +67,6 @@ class Post
         $this->mentions = [];
         $this->likesCounter = 0;
         $this->commentsCounter = 0;
-        $this->reactionCounts = $this->getDefaultReactionCounts();
         $this->reposts = new ArrayCollection();
         $this->updateCommentsCounter();
     }
@@ -169,7 +157,6 @@ class Post
     public function removeLike(PostLike $like): static
     {
         if ($this->likes->removeElement($like)) {
-            // set the owning side to null (unless already changed)
             if ($like->getPost() === $this) {
                 $like->setPost(null);
             }
@@ -178,9 +165,6 @@ class Post
         return $this;
     }
 
-    /**
-     * @return int
-     */
     public function getLikesCount(): int
     {
         return $this->likesCounter;
@@ -300,59 +284,17 @@ class Post
         return $this;
     }
 
-    public function getReactionCounts(): array
-    {
-        return $this->reactionCounts ?? $this->getDefaultReactionCounts();
-    }
-
-    public function setReactionCounts(?array $reactionCounts): static
-    {
-        $this->reactionCounts = $reactionCounts ?? $this->getDefaultReactionCounts();
-        return $this;
-    }
-
-    public function getReactionCount(string $type): int
-    {
-        $counts = $this->getReactionCounts();
-
-        // Vérifier d'abord la clé exacte
-        if (isset($counts[$type])) {
-            return $counts[$type];
-        }
-
-        // Vérifier si c'est 'like' mais stocké comme 'likes'
-        if ($type === 'like' && isset($counts['likes'])) {
-            return $counts['likes'];
-        }
-
-        // Vérifier si c'est 'likes' mais stocké comme 'like'
-        if ($type === 'likes' && isset($counts['like'])) {
-            return $counts['like'];
-        }
-
-        return 0;
-    }
-
     /**
-     * Récupère le type de réaction d'un utilisateur pour ce post
+     * Récupère le like d'un utilisateur pour ce post
      */
-    public function getUserReaction(User $user): ?string
+    public function getUserReaction(User $user): ?PostLike
     {
         foreach ($this->likes as $like) {
             if ($like->getUser() === $user) {
-                return $like->getReactionType();
+                return $like;
             }
         }
         return null;
-    }
-
-    /**
-     * Alias pour getUserReaction()
-     * Cette méthode est utilisée dans les templates
-     */
-    public function getUserReactionType(User $user): ?string
-    {
-        return $this->getUserReaction($user);
     }
 
     public function getOriginalPost(): ?Post

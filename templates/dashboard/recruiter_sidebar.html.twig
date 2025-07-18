@@ -1,0 +1,40 @@
+<div class="bg-white rounded-4 shadow-sm overflow-hidden">
+    <a href="{{ path('app_dashboard') }}" class="d-flex align-items-center bg-primary text-white p-3 text-decoration-none">
+        <i class="fas fa-th-large me-3"></i> 
+        <span class="fw-medium">Tableau de bord</span>
+    </a>
+    
+    <a href="{{ path('app_dashboard_offers') }}" class="d-flex align-items-center p-3 text-dark text-decoration-none">
+        <i class="fas fa-briefcase me-3"></i>
+        <span>Offres d'emploi</span>
+    </a>
+    
+    <a href="{{ path('app_job_application_recruiter') }}" class="d-flex align-items-center p-3 text-dark text-decoration-none">
+        <i class="fas fa-users me-3"></i>
+        <span>Candidatures reçues</span>
+        {% if received_applications is defined and received_applications|length > 0 %}
+            <span class="badge bg-primary rounded-circle ms-auto">{{ received_applications|length }}</span>
+        {% endif %}
+    </a>
+    
+    <a href="{{ path('app_dashboard_posts') }}" class="d-flex align-items-center p-3 text-dark text-decoration-none">
+        <i class="fas fa-file-alt me-3"></i>
+        <span>Mes publications</span>
+    </a>
+    
+    <a href="{{ path('app_message_index') }}" class="d-flex align-items-center p-3 text-dark text-decoration-none">
+        <i class="fas fa-envelope me-3"></i>
+        <span>Messages</span>
+    </a>
+    
+    <a href="{{ path('app_subscription_manage') }}" class="d-flex align-items-center p-3 text-dark text-decoration-none">
+        <i class="fas fa-credit-card me-3"></i>
+        <span>Mon abonnement</span>
+    </a>
+    
+    <a href="{{ path('app_matching_dashboard_recruiter') }}" class="d-flex align-items-center p-3 text-dark text-decoration-none">
+        <i class="fas fa-chart-line me-3"></i>
+        <span>Matching candidats</span>
+        <span class="badge bg-success ms-auto">Nouveau</span>
+    </a>
+</div> 

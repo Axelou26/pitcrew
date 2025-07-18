@@ -12,11 +12,16 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Psr\Log\LoggerInterface;
 
 #[Route('/notifications')]
-#[IsGranted('IS_AUTHENTICATED_FULLY')]
+#[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
 class NotificationController extends AbstractController
 {
+    public function __construct(
+        private LoggerInterface $logger
+    ) {
+    }
     #[Route('/', name: 'app_notification_index', methods: ['GET'])]
     public function index(NotificationRepository $notifRepo): Response
     {
@@ -29,64 +34,35 @@ class NotificationController extends AbstractController
     }
 
     #[Route('/unread', name: 'app_notification_unread', methods: ['GET'])]
-    public function unread(NotificationRepository $notifRepo): Response
+    public function unread(NotificationRepository $notifRepo, Request $request): Response
     {
         $notifications = $notifRepo->findUnreadByUser($this->getUser());
 
+        // Si c'est une requête AJAX, retourner seulement le contenu des notifications
+        if ($request->isXmlHttpRequest()) {
+            $html = $this->renderView('notification/_notifications_list.html.twig', [
+                'notifications' => $notifications,
+            ]);
+
+            return new Response($html, 200, [
+                'Content-Type' => 'text/html',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0'
+            ]);
+        }
+
+        // Sinon, retourner la page complète
         return $this->render('notification/unread.html.twig', [
             'notifications' => $notifications,
         ]);
-    }
-
-    #[Route('/count', name: 'app_notification_count', methods: ['GET'])]
-    public function count(NotificationRepository $notifRepo): JsonResponse
-    {
-        $count = $notifRepo->countUnreadByUser($this->getUser());
-
-        return $this->json(['count' => $count]);
-    }
-
-    #[Route('/api/notifications/count', name: 'app_api_notification_count', methods: ['GET'])]
-    public function apiCount(NotificationRepository $notifRepo, Request $request): JsonResponse
-    {
-        $user = $this->getUser();
-        if (!$user) {
-            return new JsonResponse(['error' => 'Utilisateur non authentifié'], Response::HTTP_UNAUTHORIZED);
-        }
-
-        try {
-            $count = $notifRepo->countUnreadByUser($user);
-            $response = new JsonResponse(['count' => $count]);
-
-            // Générer un ETag basé sur le compte et l'ID utilisateur
-            $etag = md5($count . '_' . $user->getId());
-            $response->setEtag($etag);
-
-            // Cache pour 30 secondes avec validation ETag
-            $response->setPublic();
-            $response->setMaxAge(30);
-            $response->setSharedMaxAge(30);
-            $response->headers->addCacheControlDirective('must-revalidate', true);
-
-            // Vérifier si la réponse a changé
-            if ($response->isNotModified($request)) {
-                return $response;
-            }
-
-            return $response;
-        } catch (\Exception $e) {
-            $this->logger->error('Erreur lors du comptage des notifications : ' . $e->getMessage());
-            return new JsonResponse(
-                ['error' => 'Une erreur est survenue'],
-                Response::HTTP_INTERNAL_SERVER_ERROR
-            );
-        }
     }
 
     #[Route('/{id}/mark-as-read', name: 'app_notification_mark_as_read', methods: ['POST'])]
     public function markAsRead(
         Notification $notification,
         EntityManagerInterface $entityManager,
+        NotificationRepository $notificationRepository,
         Request $request
     ) {
         // Vérifier que la notification appartient à l'utilisateur connecté
@@ -97,6 +73,9 @@ class NotificationController extends AbstractController
         // Marquer la notification comme lue
         $notification->setIsRead(true);
         $entityManager->flush();
+
+        // Invalider le cache des notifications pour cet utilisateur
+        $notificationRepository->invalidateUserCache($this->getUser());
 
         // Si c'est une requête AJAX, retourner une réponse JSON
         if ($request->isXmlHttpRequest()) {
@@ -123,6 +102,9 @@ class NotificationController extends AbstractController
 
         $entityManager->flush();
 
+        // Invalider le cache des notifications pour cet utilisateur
+        $notifRepo->invalidateUserCache($user);
+
         // Si c'est une requête AJAX, retourner une réponse JSON
         if ($request->isXmlHttpRequest()) {
             return new JsonResponse(['success' => true]);
@@ -135,7 +117,8 @@ class NotificationController extends AbstractController
     #[Route('/{id}/delete', name: 'app_notification_delete', methods: ['POST'])]
     public function delete(
         Notification $notification,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        NotificationRepository $notificationRepository
     ): JsonResponse {
         // Vérifier que la notification appartient à l'utilisateur
         if ($notification->getUser() !== $this->getUser()) {
@@ -144,6 +127,9 @@ class NotificationController extends AbstractController
 
         $entityManager->remove($notification);
         $entityManager->flush();
+
+        // Invalider le cache des notifications pour cet utilisateur
+        $notificationRepository->invalidateUserCache($this->getUser());
 
         return $this->json(['success' => true]);
     }

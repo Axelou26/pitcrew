@@ -1,16 +1,94 @@
+# Fichiers et dossiers à ignorer lors du build Docker
+
+# Git
 .git
 .gitignore
-.env
-.env.*
-!.env.docker
-docker-compose.yml
-Dockerfile
-.dockerignore
-.idea
-.vscode
-vendor/
-var/
+.gitattributes
+
+# Documentation
+README.md
+DOCKER_README.md
+*.md
+
+# IDE et éditeurs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Cache et temporaires
+cache/
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Node.js
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# PHP
+vendor/
+composer.lock
+composer.phar
+
+# Symfony
+var/cache/
+var/logs/
+var/sessions/
+var/bootstrap.php.cache
+
+# Tests
 tests/
+phpunit.xml
 phpunit.xml.dist
-README.md 
+.phpunit.result.cache
+
+# Docker
+Dockerfile
+docker-compose.yml
+docker-compose.override.yml
+.dockerignore
+
+# Configuration locale
+.env.local
+.env.test
+.env.prod
+
+# Uploads (seront montés en volume)
+public/uploads/
+
+# Assets compilés (seront copiés depuis le build stage)
+public/build/
+
+# Scripts de développement
+docker-start.sh
+*.sh
+
+# Fichiers de configuration spécifiques à l'environnement
+config/packages/test/
+config/packages/dev/
+
+# Fichiers de migration (optionnel)
+migrations/
+
+# Fichiers de fixtures (optionnel)
+src/DataFixtures/
+
+# Fichiers de documentation
+docs/
+
+# Fichiers de déploiement
+deploy.php
+deploy_key* 

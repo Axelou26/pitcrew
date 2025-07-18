@@ -194,82 +194,7 @@ class NotificationService
      * Notifie l'auteur d'un post qu'un utilisateur a aimé son post
      * @throws RuntimeException Si les relations requises sont nulles
      */
-    public function notifyPostLike(PostLike $like): void
-    {
-        $post = $this->validatePostLike($like);
-        $author = $post->getAuthor();
-        $user = $like->getUser();
 
-        if ($author === $user) {
-            return;
-        }
-
-        try {
-            $notification = $this->createPostLikeNotification($like);
-            $this->entityManager->persist($notification);
-            $this->entityManager->flush();
-
-            $this->logger->info('Notification de like créée', [
-                'post_id' => $post->getId(),
-                'reaction_type' => $like->getReactionType()
-            ]);
-        } catch (\Throwable $e) {
-            $this->logger->error('Erreur lors de la création d\'une notification de like', [
-                'error' => $e->getMessage(),
-                'post_id' => $post->getId(),
-                'user_id' => $user->getId()
-            ]);
-        }
-    }
-
-    private function validatePostLike(PostLike $like): Post
-    {
-        $post = $like->getPost();
-        if (!$post) {
-            throw new RuntimeException('Post not found for like');
-        }
-
-        $author = $post->getAuthor();
-        if (!$author) {
-            throw new RuntimeException('Author not found for post');
-        }
-
-        $user = $like->getUser();
-        if (!$user) {
-            throw new RuntimeException('User not found for like');
-        }
-
-        return $post;
-    }
-
-    private function createPostLikeNotification(PostLike $like): Notification
-    {
-        $post = $like->getPost();
-        $notification = new Notification();
-        $notification->setUser($post->getAuthor());
-        $notification->setType(Notification::TYPE_LIKE);
-        $notification->setEntityType('post');
-        $notification->setEntityId($post->getId());
-        $notification->setActorId($like->getUser()->getId());
-        $notification->setTitle('Nouvelle réaction');
-        $notification->setMessage($this->getReactionMessage($like->getReactionType()));
-        $notification->setIsRead(false);
-        $notification->setLink($this->generatePostLink($post));
-
-        return $notification;
-    }
-
-    private function getReactionMessage(string $reactionType): string
-    {
-        return match ($reactionType) {
-            PostLike::REACTION_LIKE => 'A aimé votre publication',
-            PostLike::REACTION_CONGRATS => 'A félicité votre publication',
-            PostLike::REACTION_INTERESTING => 'Trouve votre publication intéressante',
-            PostLike::REACTION_SUPPORT => 'Soutient votre publication',
-            PostLike::REACTION_ENCOURAGING => 'Encourage votre publication',
-            default => 'A réagi à votre publication'
-        };
-    }
 
     private function generatePostLink(Post $post): string
     {
@@ -452,5 +377,41 @@ class NotificationService
     {
         $notification->setIsRead(true);
         $this->entityManager->flush();
+    }
+
+    public function createLikeNotification(Post $post, User $user): void
+    {
+        $author = $post->getAuthor();
+
+        if ($author === $user) {
+            return;
+        }
+
+        try {
+            $notification = new Notification();
+            $notification->setUser($author);
+            $notification->setType(Notification::TYPE_LIKE);
+            $notification->setEntityType('post');
+            $notification->setEntityId($post->getId());
+            $notification->setActorId($user->getId());
+            $notification->setTitle('Nouveau like');
+            $notification->setMessage('A aimé votre publication');
+            $notification->setIsRead(false);
+            $notification->setLink($this->generatePostLink($post));
+
+            $this->entityManager->persist($notification);
+            $this->entityManager->flush();
+
+            $this->logger->info('Notification de like créée', [
+                'post_id' => $post->getId(),
+                'user_id' => $user->getId()
+            ]);
+        } catch (\Throwable $e) {
+            $this->logger->error('Erreur lors de la création d\'une notification de like', [
+                'error' => $e->getMessage(),
+                'post_id' => $post->getId(),
+                'user_id' => $user->getId()
+            ]);
+        }
     }
 }

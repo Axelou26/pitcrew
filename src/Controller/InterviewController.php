@@ -48,6 +48,41 @@ class InterviewController extends AbstractController
     }
 
     /**
+     * Vérifier les conflits d'horaire pour un entretien
+     */
+    private function checkScheduleConflicts(
+        Interview $interview,
+        string $redirectRoute,
+        array $routeParams = []
+    ): ?Response {
+        // Vérifier les conflits d'horaire pour le recruteur
+        $hasConflict = $this->interviewRepository->hasScheduleConflict(
+            $this->getUser(),
+            $interview->getScheduledAt(),
+            (clone $interview->getScheduledAt())->modify('+1 hour')
+        );
+
+        if ($hasConflict) {
+            $this->addFlash('error', 'Vous avez déjà un entretien programmé à cette heure.');
+            return $this->redirectToRoute($redirectRoute, $routeParams);
+        }
+
+        // Vérifier les conflits d'horaire pour le candidat
+        $hasApplicantConflict = $this->interviewRepository->hasScheduleConflict(
+            $interview->getApplicant(),
+            $interview->getScheduledAt(),
+            (clone $interview->getScheduledAt())->modify('+1 hour')
+        );
+
+        if ($hasApplicantConflict) {
+            $this->addFlash('error', 'Le candidat a déjà un entretien programmé à cette heure.');
+            return $this->redirectToRoute($redirectRoute, $routeParams);
+        }
+
+        return null;
+    }
+
+    /**
      * Crée un nouvel entretien
      */
     #[Route('/new', name: 'app_interview_new')]
@@ -62,27 +97,9 @@ class InterviewController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             // Vérifier les conflits d'horaire
-            $hasConflict = $this->interviewRepository->hasScheduleConflict(
-                $this->getUser(),
-                $interview->getScheduledAt(),
-                (clone $interview->getScheduledAt())->modify('+1 hour')
-            );
-
-            if ($hasConflict) {
-                $this->addFlash('error', 'Vous avez déjà un entretien programmé à cette heure.');
-                return $this->redirectToRoute('app_interview_new');
-            }
-
-            // Vérifie aussi pour le candidat
-            $hasApplicantConflict = $this->interviewRepository->hasScheduleConflict(
-                $interview->getApplicant(),
-                $interview->getScheduledAt(),
-                (clone $interview->getScheduledAt())->modify('+1 hour')
-            );
-
-            if ($hasApplicantConflict) {
-                $this->addFlash('error', 'Le candidat a déjà un entretien programmé à cette heure.');
-                return $this->redirectToRoute('app_interview_new');
+            $conflictResponse = $this->checkScheduleConflicts($interview, 'app_interview_new');
+            if ($conflictResponse) {
+                return $conflictResponse;
             }
 
             $entityManager->persist($interview);
@@ -113,8 +130,7 @@ class InterviewController extends AbstractController
         // Vérifier que l'offre appartient au recruteur connecté
         if ($jobOffer->getRecruiter() !== $this->getUser()) {
             throw $this
-                ->createAccessDeniedException('Vous n\'êtes pas autorisé à planifier des entretiens pour cette offre
-                    .');
+                ->createAccessDeniedException('Vous n\'êtes pas autorisé à planifier des entretiens pour cette offre.');
         }
 
         $interview = new Interview();
@@ -130,27 +146,13 @@ class InterviewController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             // Vérifier les conflits d'horaire
-            $hasConflict = $this->interviewRepository->hasScheduleConflict(
-                $this->getUser(),
-                $interview->getScheduledAt(),
-                (clone $interview->getScheduledAt())->modify('+1 hour')
+            $conflictResponse = $this->checkScheduleConflicts(
+                $interview,
+                'app_interview_new_job',
+                ['id' => $jobOffer->getId()]
             );
-
-            if ($hasConflict) {
-                $this->addFlash('error', 'Vous avez déjà un entretien programmé à cette heure.');
-                return $this->redirectToRoute('app_interview_new_job', ['id' => $jobOffer->getId()]);
-            }
-
-            // Vérifie aussi pour le candidat
-            $hasApplicantConflict = $this->interviewRepository->hasScheduleConflict(
-                $interview->getApplicant(),
-                $interview->getScheduledAt(),
-                (clone $interview->getScheduledAt())->modify('+1 hour')
-            );
-
-            if ($hasApplicantConflict) {
-                $this->addFlash('error', 'Le candidat a déjà un entretien programmé à cette heure.');
-                return $this->redirectToRoute('app_interview_new_job', ['id' => $jobOffer->getId()]);
+            if ($conflictResponse) {
+                return $conflictResponse;
             }
 
             $entityManager->persist($interview);
@@ -248,9 +250,11 @@ class InterviewController extends AbstractController
             $this->interviewRepository->save($interview, true);
         }
 
-        // Obtenir la configuration pour le client
+        // Obtenir la configuration pour le client avec paramètres d'accès direct
         $clientConfig = $this->videoConfService->getClientConfig($interview, $user);
+        $clientConfig['directJoin'] = true;
 
+        // Rendu de la vue avec la salle d'entretien
         return $this->render('interview/room.html.twig', [
             'interview' => $interview,
             'clientConfig' => json_encode($clientConfig),
@@ -335,19 +339,34 @@ class InterviewController extends AbstractController
             throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à accéder à cette salle.');
         }
 
-        // Vérifier que l'entretien n'est pas annulé
-        if ($interview->isCancelled()) {
-            $this->addFlash('error', 'Cet entretien a été annulé.');
-            return $this->redirectToRoute('app_interviews_index');
-        }
-
-        // Générer un token pour l'accès à la salle
+        // Générer un token et rediriger vers la salle normale
         $token = $this->videoConfService->generateRoomToken($interview);
 
-        // Rediriger vers la salle d'entretien
         return $this->redirectToRoute('app_interview_room', [
             'id' => $interview->getId(),
             'token' => $token
+        ]);
+    }
+
+    /**
+     * Fin d'appel vidéo et redirection
+     */
+    #[Route('/{id}/end-call', name: 'app_interview_end_call')]
+    public function endCall(Interview $interview): Response
+    {
+        // Vérifier que l'utilisateur est autorisé à accéder à cet entretien
+        if (!$this->videoConfService->canAccessRoom($interview, $this->getUser())) {
+            throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à accéder à cet entretien.');
+        }
+
+        // Si l'entretien est actif, mettre à jour son statut
+        if ($interview->isActive() && !$interview->isCompleted()) {
+            $this->addFlash('success', 'L\'appel vidéo a été terminé.');
+        }
+
+        // Rediriger vers la page de détails
+        return $this->redirectToRoute('app_interview_show', [
+            'id' => $interview->getId()
         ]);
     }
 }

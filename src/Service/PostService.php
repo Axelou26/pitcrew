@@ -16,7 +16,6 @@ use InvalidArgumentException;
 use App\Service\Post\PostContentProcessor;
 use App\Service\Post\PostImageHandler;
 use App\Service\Post\PostSearchCriteria;
-use App\Service\Criteria\PostSearchCriteria as CriteriaPostSearchCriteria;
 
 class PostService
 {
@@ -141,8 +140,26 @@ class PostService
         // Traitement du contenu pour les hashtags et mentions
         $processedContent = $this->contentProcessor->process($content);
         $post->setContent($processedContent['content']);
-        $post->setHashtags($processedContent['hashtags']);
-        $post->setMentions($processedContent['mentions']);
+
+        // Traiter les hashtags
+        foreach ($processedContent['hashtags'] as $hashtagName) {
+            $hashtag = $this->entityManager->getRepository(Hashtag::class)->findOrCreate($hashtagName);
+            $post->addHashtag($hashtag);
+        }
+
+        // Traiter les mentions
+        foreach ($processedContent['mentions'] as $mentionName) {
+            $mentionedUser = $this->entityManager->getRepository(User::class)
+                ->createQueryBuilder('u')
+                ->where('LOWER(CONCAT(u.firstName, \' \', u.lastName)) = LOWER(:fullName)')
+                ->setParameter('fullName', trim($mentionName))
+                ->getQuery()
+                ->getOneOrNullResult();
+
+            if ($mentionedUser) {
+                $post->addMention($mentionedUser);
+            }
+        }
 
         // Traitement de l'image si présente
         if ($imageFile) {
@@ -156,8 +173,12 @@ class PostService
         $this->entityManager->flush();
 
         // Notifier les utilisateurs mentionnés
-        foreach ($processedContent['mentions'] as $mentionedUserId) {
-            $this->notificationService->notifyMention($post, $mentionedUserId);
+        $userRepository = $this->entityManager->getRepository(User::class);
+        foreach ($post->getMentions() as $mentionedUserId) {
+            $mentionedUser = $userRepository->find($mentionedUserId);
+            if ($mentionedUser) {
+                $this->notificationService->notifyMention($post, $mentionedUser);
+            }
         }
 
         // Invalider le cache

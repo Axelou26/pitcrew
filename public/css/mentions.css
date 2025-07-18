@@ -45,7 +45,7 @@
 }
 
 .mention {
-    color: var(--info-color);
+    color: #e10600;
     font-weight: 600;
     text-decoration: none;
 }

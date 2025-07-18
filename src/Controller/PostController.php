@@ -13,35 +13,37 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use App\Service\PostService;
 use App\Service\PostInteractionService;
+use App\Service\RecommendationService;
 use Psr\Log\LoggerInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\PostLike;
-use App\Entity\Comment;
-use App\Entity\PostReaction;
 use Symfony\Contracts\Cache\CacheInterface;
-use Symfony\Contracts\Cache\TagAwareCacheInterface;
-use App\Entity\PostSearchCriteria;
+use App\Service\Post\PostSearchCriteria;
 use App\Entity\User;
+use Symfony\Component\Security\Core\Security;
 
 #[Route('/post')]
 class PostController extends AbstractController
 {
     private EntityManagerInterface $entityManager;
     private CacheInterface $cache;
+    private RecommendationService $recommendationService;
 
     public function __construct(
         private PostService $postService,
         private PostInteractionService $interactionService,
         private LoggerInterface $logger,
         EntityManagerInterface $entityManager,
-        CacheInterface $cache
+        CacheInterface $cache,
+        RecommendationService $recommendationService
     ) {
         $this->entityManager = $entityManager;
         $this->cache = $cache;
+        $this->recommendationService = $recommendationService;
     }
 
     #[Route('s', name: 'app_post_index', methods: ['GET'])]
@@ -85,32 +87,85 @@ class PostController extends AbstractController
     #[Route('/feed', name: 'app_post_feed', methods: ['GET'])]
     public function feed(Request $request): Response
     {
-        $page = max(1, $request->query->getInt('page', 1));
-        $limit = max(1, $request->query->getInt('limit', 10));
+        try {
+            $page = max(1, $request->query->getInt('page', 1));
+            $limit = max(1, $request->query->getInt('limit', 10));
 
-        $posts = $this->postService->findPosts(
-            new PostSearchCriteria(
-                PostSearchCriteria::TYPE_FEED,
-                user: $this->getUser()
-            ),
-            $page,
-            $limit
-        );
+            $user = $this->getUser();
+            if (!$user) {
+                // Si l'utilisateur n'est pas connecté, retourner une erreur ou rediriger
+                if ($request->isXmlHttpRequest()) {
+                    return new JsonResponse([
+                        'error' => 'Vous devez être connecté pour voir le feed',
+                        'html' => '<div class="alert alert-warning">Veuillez vous connecter pour voir le feed</div>'
+                    ], Response::HTTP_UNAUTHORIZED);
+                }
 
-        if ($request->isXmlHttpRequest()) {
-            return new JsonResponse([
-                'html' => $this->renderView('post/_feed.html.twig', [
-                    'posts' => $posts
-                ]),
+                return $this->redirectToRoute('app_login');
+            }
+
+            // 1. Récupérer les posts des amis
+            $friendsPosts = $this->postService->findPosts(
+                PostSearchCriteria::forFeed($user),
+                $page,
+                $limit
+            );
+
+            // 2. Récupérer les posts recommandés "Pour vous"
+            $recommendedPosts = $this->recommendationService->getRecommendedPosts($user, $limit);
+
+            // 3. Fusionner les deux listes
+            $allPosts = array_merge($friendsPosts, $recommendedPosts);
+
+            // 4. Supprimer les doublons (posts qui pourraient être à la fois d'amis et recommandés)
+            $uniquePosts = [];
+            $postIds = [];
+
+            foreach ($allPosts as $post) {
+                if (!in_array($post->getId(), $postIds)) {
+                    $postIds[] = $post->getId();
+                    $uniquePosts[] = $post;
+                }
+            }
+
+            // 5. Trier par date de création (du plus récent au plus ancien)
+            usort($uniquePosts, function ($a, $b) {
+                return $b->getCreatedAt() <=> $a->getCreatedAt();
+            });
+
+            // 6. Limiter le nombre de posts à afficher
+            $posts = array_slice($uniquePosts, 0, $limit);
+
+            if ($request->isXmlHttpRequest()) {
+                return new JsonResponse([
+                    'html' => $this->renderView('post/_feed.html.twig', [
+                        'posts' => $posts
+                    ]),
+                    'hasMore' => count($posts) === $limit
+                ]);
+            }
+
+            return $this->render('post/_feed.html.twig', [
+                'posts' => $posts,
+                'currentPage' => $page,
                 'hasMore' => count($posts) === $limit
             ]);
-        }
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors du chargement du feed: ' . $e->getMessage(), [
+                'exception' => $e,
+                'user_id' => $this->getUser()?->getId(),
+                'page' => $page ?? 1
+            ]);
 
-        return $this->render('post/_feed.html.twig', [
-            'posts' => $posts,
-            'currentPage' => $page,
-            'hasMore' => count($posts) === $limit
-        ]);
+            if ($request->isXmlHttpRequest()) {
+                return new JsonResponse([
+                    'error' => 'Une erreur est survenue lors du chargement des publications',
+                    'html' => '<div class="alert alert-danger">Erreur lors du chargement des publications</div>'
+                ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            }
+
+            throw $e;
+        }
     }
 
     #[Route('/{id}', name: 'app_post_show', methods: ['GET'])]
@@ -255,47 +310,39 @@ class PostController extends AbstractController
         return $this->redirectToRoute('app_home');
     }
 
-    #[Route('/{id}/like', name: 'app_post_like', methods: ['POST'])]
+    #[Route('/{id}/like', name: 'post_like', methods: ['POST'])]
     #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
-    public function like(Post $post, Request $request): JsonResponse
-    {
+    public function toggleLike(
+        Post $post,
+        Request $request
+    ): JsonResponse {
         $user = $this->getUser();
-        if (!$user) {
-            $errorResponse = ['success' => false, 'message' => 'Utilisateur non authentifié.'];
-            return $this->json($errorResponse, Response::HTTP_UNAUTHORIZED);
-        }
 
-        $reactionType = $request->request->get('reactionType');
-        $isInvalidReaction = empty($reactionType) || !array_key_exists($reactionType, PostLike::REACTIONS);
-        if ($isInvalidReaction) {
-            $errorMessage = 'Type de réaction invalide ou manquant.';
-            return $this->json(
-                ['success' => false, 'message' => $errorMessage],
-                Response::HTTP_BAD_REQUEST
-            );
+        if (!$user) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Vous devez être connecté pour liker un post.'
+            ], Response::HTTP_UNAUTHORIZED);
         }
 
         try {
-            $activeReactionType = $this->interactionService->toggleLike($post, $user, $reactionType);
+            $isLiked = $this->interactionService->toggleLike($post, $user);
 
-            $cacheKey = 'homepage_data_' . $user->getId();
-            $this->cache->delete($cacheKey);
+            // Mettre à jour le compteur de likes
+            $post->updateLikesCounter();
+            $this->entityManager->flush();
 
             return $this->json([
                 'success' => true,
-                'activeReactionType' => $activeReactionType,
-                'likesCount' => $post->getLikes()->count()
+                'isLiked' => $isLiked,
+                'likesCount' => $post->getLikesCount(),
+                'message' => $isLiked ? 'Post liké !' : 'Like retiré !'
             ]);
-        } catch (\InvalidArgumentException $e) {
-            return $this->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], Response::HTTP_BAD_REQUEST);
         } catch (\Exception $e) {
-            $this->logger->error('Erreur lors du toggle like: ' . $e->getMessage());
+            $this->logger->error('Erreur lors du like/unlike: ' . $e->getMessage());
             return $this->json([
                 'success' => false,
-                'message' => 'Une erreur est survenue.'
+                'message' => 'Une erreur est survenue lors du like.'
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -447,6 +494,57 @@ class PostController extends AbstractController
         return null;
     }
 
+    #[Route('/quick', name: 'app_post_quick', methods: ['POST'])]
+    #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
+    public function quick(Request $request): JsonResponse
+    {
+        try {
+            $title = $request->request->get('title');
+            $content = $request->request->get('content');
+            $imageFile = $request->files->get('imageFile');
+
+            // Validation du contenu
+            if (empty($content)) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Le contenu est obligatoire'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Créer le post
+            $post = $this->postService->createPost(
+                $content,
+                $this->getUser(),
+                $title,
+                $imageFile
+            );
+
+            // Récupérer le HTML du post pour l'afficher sans rechargement
+            $postHtml = $this->renderView('post/_post_card.html.twig', [
+                'post' => $post,
+                'showCommentForm' => false,
+                'showFullContent' => true,
+            ]);
+
+            return $this->json([
+                'success' => true,
+                'postId' => $post->getId(),
+                'message' => 'Post créé avec succès!',
+                'postHtml' => $postHtml,
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de la création rapide du post: ' . $e->getMessage(), [
+                'exception' => $e,
+                'user_id' => $this->getUser()?->getId()
+            ]);
+
+            return $this->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
     #[Route('/quick-create', name: 'app_post_quick_create', methods: ['POST'])]
     #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
     public function quickCreate(Request $request): JsonResponse
@@ -557,60 +655,7 @@ class PostController extends AbstractController
         ], Response::HTTP_CREATED);
     }
 
-    #[Route('/{id}/reaction', name: 'app_post_reaction', methods: ['POST'])]
-    #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
-    public function addReaction(Post $post, Request $request): JsonResponse
-    {
-        try {
-            // Récupérer les données JSON
-            $data = json_decode($request->getContent(), true);
-            $reactionType = $data['type'] ?? null;
 
-            $isInvalidReaction = empty($reactionType) || !array_key_exists($reactionType, PostLike::REACTIONS);
-            if ($isInvalidReaction) {
-                $errorMessage = 'Type de réaction invalide ou manquant.';
-                return $this->json(
-                    ['success' => false, 'message' => $errorMessage],
-                    Response::HTTP_BAD_REQUEST
-                );
-            }
-
-            $activeReactionType = $this->interactionService->toggleLike($post, $this->getUser(), $reactionType);
-
-            // Mettre à jour les compteurs de réactions
-            $post->updateReactionCounts();
-            $this->entityManager->flush();
-
-            // Définir la carte des réactions
-            $reactionMap = [
-                'like' => ['emoji' => '👍', 'name' => 'J\'aime', 'class' => 'btn-primary'],
-                'congrats' => ['emoji' => '👏', 'name' => 'Bravo', 'class' => 'btn-success'],
-                'support' => ['emoji' => '❤️', 'name' => 'Soutien', 'class' => 'btn-danger'],
-                'interesting' => ['emoji' => '💡', 'name' => 'Intéressant', 'class' => 'btn-info'],
-                'encouraging' => ['emoji' => '💪', 'name' => 'Encouragement', 'class' => 'btn-warning']
-            ];
-            $defaultReaction = ['emoji' => '👍', 'name' => 'Réagir', 'class' => 'btn-outline-secondary'];
-
-            // Préparer la réponse
-            $reactionInfo = $activeReactionType ? $reactionMap[$activeReactionType] : $defaultReaction;
-            $reactionInfo['type'] = $activeReactionType;
-
-            return $this->json([
-                'success' => true,
-                'message' => $activeReactionType ? 'Réaction ajoutée avec succès' : 'Réaction retirée avec succès',
-                'reaction' => $reactionInfo,
-                'totalReactions' => $post->getLikes()->count(),
-                'isActive' => $activeReactionType !== null,
-                'reactionCounts' => $post->getReactionCounts()
-            ]);
-        } catch (\Exception $e) {
-            $this->logger->error('Erreur lors de l\'ajout de la réaction: ' . $e->getMessage());
-            return $this->json([
-                'success' => false,
-                'message' => 'Une erreur est survenue lors de l\'ajout de la réaction'
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
 
     #[Route('/comment/{id}/reply', name: 'app_post_comment_reply', methods: ['GET'])]
     #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
@@ -654,4 +699,44 @@ class PostController extends AbstractController
         ]);
     }
 
+    #[Route('/sync-likes', name: 'app_post_sync_likes', methods: ['POST'])]
+    #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
+    public function syncLikes(Request $request): JsonResponse
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            return $this->json([
+                'success' => false,
+                'message' => 'Vous devez être connecté pour synchroniser les likes.'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        try {
+            $data = json_decode($request->getContent(), true);
+            $clientLikedPosts = $data['likedPosts'] ?? [];
+
+            // Récupérer les posts réellement likés par l'utilisateur
+            $postRepository = $this->entityManager->getRepository(Post::class);
+            $serverLikedPosts = [];
+
+            foreach ($clientLikedPosts as $postId) {
+                $post = $postRepository->find($postId);
+                if ($post && $post->isLikedByUser($user)) {
+                    $serverLikedPosts[] = $postId;
+                }
+            }
+
+            return $this->json([
+                'success' => true,
+                'serverLikedPosts' => $serverLikedPosts,
+                'message' => 'Synchronisation des likes terminée'
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Erreur lors de la synchronisation des likes: ' . $e->getMessage());
+            return $this->json([
+                'success' => false,
+                'message' => 'Une erreur est survenue lors de la synchronisation'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }

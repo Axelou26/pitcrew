@@ -42,6 +42,13 @@ class EmailService
         $this->senderEmail = $senderEmail;
         $this->senderName = $senderName;
         $this->isDevMode = $appEnv === 'dev';
+
+        // Log au démarrage du service
+        $this->logger->info('Service EmailService initialisé', [
+            'mailer_dsn' => $_SERVER['MAILER_DSN'] ?? 'non défini',
+            'dev_mode' => $this->isDevMode ? 'oui' : 'non',
+            'sender' => "$senderName <$senderEmail>"
+        ]);
     }
 
     /**
@@ -193,13 +200,52 @@ class EmailService
     }
 
     /**
+     * Envoie un email de test pour vérifier la configuration
+     */
+    public function sendTestEmail(string $toEmail): void
+    {
+        $email = (new Email())
+            ->from(new Address($this->senderEmail, $this->senderName))
+            ->to($toEmail)
+            ->subject('Test de configuration email PitCrew')
+            ->html('<p>Ceci est un email de test pour vérifier la configuration SMTP.</p>');
+
+        $this->sendEmail($email);
+    }
+
+    /**
      * Méthode privée pour envoyer l'email et gérer les erreurs.
      */
-    private function sendEmail(TemplatedEmail $email): void
+    private function sendEmail($email): void
     {
         try {
+            // Log avant l'envoi
+            $this->logger->info('Tentative d\'envoi d\'email', [
+                'subject' => $email->getSubject(),
+                'to' => implode(', ', array_map(fn($addr) => $addr->toString(), $email->getTo())),
+                'is_dev_mode' => $this->isDevMode ? 'oui' : 'non',
+                'mailer_dsn' => $_SERVER['MAILER_DSN'] ?? 'non défini'
+            ]);
+
             $this->mailer->send($email);
+
+            // Log après l'envoi réussi
+            $this->logger->info('Email envoyé avec succès', [
+                'subject' => $email->getSubject(),
+                'to' => implode(', ', array_map(fn($addr) => $addr->toString(), $email->getTo()))
+            ]);
         } catch (\Exception $e) {
+            // Log détaillé de l'erreur
+            $this->logger->error('Erreur d\'envoi d\'email', [
+                'subject' => $email->getSubject(),
+                'to' => implode(', ', array_map(fn($addr) => $addr->toString(), $email->getTo())),
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+                'mailer_dsn' => $_SERVER['MAILER_DSN'] ?? 'non défini'
+            ]);
+
             if ($this->isDevMode) {
                 $this->logger->info('Email non envoyé (mode développement): {subject}', [
                     'subject' => $email->getSubject(),

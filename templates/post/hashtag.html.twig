@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}#{{ hashtag.name }} - Posts{% endblock %}
+{% block title %}#{{ hashtag.name }} - PitCrew{% endblock %}
 
 {% block stylesheets %}
     {{ parent() }}
@@ -112,25 +112,11 @@
                             <!-- Post Stats -->
                             <div class="d-flex align-items-center text-muted small mb-2">
                                 <div class="me-auto">
-                                    {% set totalReactions = post.likesCount %}
-                                    {% if totalReactions > 0 %}
+                                    {% set totalLikes = post.likesCount %}
+                                    {% if totalLikes > 0 %}
                                         <div class="d-flex align-items-center">
-                                            <div class="reaction-icons">
-                                                {% set displayedReactions = 0 %}
-                                                {% for reactionType, count in post.reactionCounts %}
-                                                    {% if count > 0 and displayedReactions < 3 %}
-                                                        <span class="reaction-icon" title="{{ ('reactions.' ~ reactionType)|trans }}">
-                                                            {% if reactionType == 'like' %}👍{% endif %}
-                                                            {% if reactionType == 'congrats' %}👏{% endif %}
-                                                            {% if reactionType == 'interesting' %}💡{% endif %}
-                                                            {% if reactionType == 'support' %}❤️{% endif %}
-                                                            {% if reactionType == 'encouraging' %}💪{% endif %}
-                                                        </span>
-                                                        {% set displayedReactions = displayedReactions + 1 %}
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </div>
-                                            <span class="ms-1">{{ totalReactions }}</span>
+                                            <span class="me-1">👍</span>
+                                            <span>{{ totalLikes }} j'aime{{ totalLikes > 1 ? 's' : '' }}</span>
                                         </div>
                                     {% endif %}
                                 </div>
@@ -144,49 +130,10 @@
                             
                             <!-- Post Actions -->
                             <div class="d-flex border-top pt-2">
-                                <div class="dropdown flex-fill">
-                                    <button class="btn btn-light w-100 dropdown-toggle" type="button" id="reactionDropdown{{ post.id }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                        {% if app.user and post.getUserReaction(app.user) %}
-                                            {% set userReaction = post.getUserReaction(app.user) %}
-                                            <span class="reaction-active">
-                                                {% if userReaction == 'like' %}👍 J'aime{% endif %}
-                                                {% if userReaction == 'congrats' %}👏 Félicitations{% endif %}
-                                                {% if userReaction == 'interesting' %}💡 Intéressant{% endif %}
-                                                {% if userReaction == 'support' %}❤️ Soutien{% endif %}
-                                                {% if userReaction == 'encouraging' %}💪 Encourageant{% endif %}
-                                            </span>
-                                        {% else %}
-                                            <i class="bi bi-hand-thumbs-up me-1"></i> J'aime
-                                        {% endif %}
-                                    </button>
-                                    <ul class="dropdown-menu reaction-menu" aria-labelledby="reactionDropdown{{ post.id }}">
-                                        <li>
-                                            <a class="dropdown-item d-flex align-items-center" href="{{ path('app_post_like', {'id': post.id, 'type': 'like'}) }}">
-                                                <span class="reaction-emoji me-2">👍</span> J'aime
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item d-flex align-items-center" href="{{ path('app_post_like', {'id': post.id, 'type': 'congrats'}) }}">
-                                                <span class="reaction-emoji me-2">👏</span> Félicitations
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item d-flex align-items-center" href="{{ path('app_post_like', {'id': post.id, 'type': 'interesting'}) }}">
-                                                <span class="reaction-emoji me-2">💡</span> Intéressant
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item d-flex align-items-center" href="{{ path('app_post_like', {'id': post.id, 'type': 'support'}) }}">
-                                                <span class="reaction-emoji me-2">❤️</span> Soutien
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item d-flex align-items-center" href="{{ path('app_post_like', {'id': post.id, 'type': 'encouraging'}) }}">
-                                                <span class="reaction-emoji me-2">💪</span> Encourageant
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
+                                <a href="{{ path('post_like', {'id': post.id}) }}" class="btn btn-light flex-fill me-1 rounded-2">
+                                    <i class="bi bi-heart{% if app.user and post.isLikedByUser(app.user) %}-fill{% endif %} me-1"></i> 
+                                    J'aime
+                                </a>
                                 <a href="{{ path('app_post_show', {'id': post.id}) }}#comments" class="btn btn-light flex-fill me-1 rounded-2">
                                     <i class="bi bi-chat-text me-1"></i> Commenter
                                 </a>
@@ -213,7 +160,7 @@
                                 <li class="list-group-item">
                                     <a href="{{ path('app_hashtag_show', {'name': trendingHashtag.name}) }}" 
                                        class="d-flex justify-content-between align-items-center trending-hashtag text-decoration-none">
-                                        <span class="fw-bold text-primary">{{ trendingHashtag.formattedName }}</span>
+                                        <span class="fw-bold text-danger">{{ trendingHashtag.formattedName }}</span>
                                         <span class="badge bg-light text-dark">{{ trendingHashtag.usageCount }}</span>
                                     </a>
                                 </li>

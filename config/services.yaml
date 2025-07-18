@@ -12,6 +12,9 @@ parameters:
     stripe_offline_mode: '%env(bool:STRIPE_OFFLINE_MODE)%'
     logos_directory: '%kernel.project_dir%/public/uploads/logos'
     job_images_directory: '%kernel.project_dir%/public/uploads/job_images'
+    
+    # Optimisation du container de services
+    container.dumper.inline_factories: true
 
 services:
     _defaults:
@@ -54,7 +57,11 @@ services:
         class: Twig\Extra\String\StringExtension
         tags: ['twig.extension'] 
 
-    # Configuration du UserRepository avec autowiring
+        # Configuration du UserRepository avec autowiring 
     App\Repository\UserRepository: ~
 
-    # Configuration du UserRepository avec autowiring 
+    # Extension Twig personnalisée
+    App\Twig\AppExtension:
+        tags: ['twig.extension']
+
+    # Configuration du UserRepository avec autowiring  

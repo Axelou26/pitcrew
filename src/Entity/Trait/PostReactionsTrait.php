@@ -10,17 +10,6 @@ use Doctrine\Common\Collections\Collection;
 
 trait PostReactionsTrait
 {
-    private function initializeReactionCounts(): array
-    {
-        return [
-            PostLike::REACTION_LIKE => 0,
-            PostLike::REACTION_CONGRATS => 0,
-            PostLike::REACTION_INTERESTING => 0,
-            PostLike::REACTION_SUPPORT => 0,
-            PostLike::REACTION_ENCOURAGING => 0
-        ];
-    }
-
     public function getLikes(): Collection
     {
         return $this->likes;
@@ -32,7 +21,6 @@ trait PostReactionsTrait
             $this->likes->add($like);
             $like->setPost($this);
             $this->likesCounter++;
-            $this->updateReactionCounts();
         }
         return $this;
     }
@@ -44,7 +32,6 @@ trait PostReactionsTrait
                 $like->setPost(null);
             }
             $this->likesCounter = max(0, $this->likesCounter - 1);
-            $this->updateReactionCounts();
         }
         return $this;
     }
@@ -69,30 +56,6 @@ trait PostReactionsTrait
         return false;
     }
 
-    public function getReactionCounts(): ?array
-    {
-        return $this->reactionCounts;
-    }
-
-    public function updateReactionCounts(): void
-    {
-        $counts = $this->initializeReactionCounts();
-
-        foreach ($this->likes as $like) {
-            $type = $like->getReactionType();
-            if (isset($counts[$type])) {
-                $counts[$type]++;
-            }
-        }
-
-        $this->reactionCounts = $counts;
-    }
-
-    public function getReactionCount(string $type): int
-    {
-        return $this->reactionCounts[$type] ?? 0;
-    }
-
     public function getUserReaction(User $user): ?PostLike
     {
         foreach ($this->likes as $like) {
@@ -101,11 +64,5 @@ trait PostReactionsTrait
             }
         }
         return null;
-    }
-
-    public function getUserReactionType(User $user): ?string
-    {
-        $reaction = $this->getUserReaction($user);
-        return $reaction ? $reaction->getReactionType() : null;
     }
 }

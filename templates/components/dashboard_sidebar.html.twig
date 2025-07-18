@@ -68,7 +68,7 @@
             'label': 'Offres recommandées',
             'badge': {
                 'text': 'IA',
-                'class': 'bg-primary'
+                'class': 'bg-danger'
             }
         }
     ]) %}
@@ -92,24 +92,47 @@
     }
 ]) %}
 
-<div class="card">
-    <div class="card-header bg-primary text-white">
-        <h5 class="mb-0">Mon espace</h5>
+<div class="card rounded-4 shadow-sm border-0 overflow-hidden">
+    <div class="card-header bg-gradient" style="background-color: #e10600; color: white;">
+        <h5 class="mb-0 fw-bold">Mon espace</h5>
     </div>
     <div class="list-group list-group-flush">
         {% for link in dashboardLinks %}
-            <a href="{{ path(link.route) }}" class="list-group-item list-group-item-action {% if active is defined and active == link.route|split('_')[1] %}active{% endif %}">
-                <i class="{{ link.icon }} me-2"></i> {{ link.label }}
-                {% if link.badge is defined %}
-                    <span class="badge {{ link.badge.class }} ms-auto">{{ link.badge.text }}</span>
-                {% endif %}
+            <a href="{{ path(link.route) }}" 
+               class="list-group-item list-group-item-action border-0 py-3 {% if active is defined and active == link.route|split('_')[1] %}active-item{% endif %}"
+               style="{% if active is defined and active == link.route|split('_')[1] %}background-color: #e10600; color: white; {% endif %}transition: all 0.3s ease;">
+                <div class="d-flex align-items-center">
+                    <i class="{{ link.icon }} me-3 {% if active is defined and active == link.route|split('_')[1] %}text-white{% else %}text-danger{% endif %}" 
+                       style="{% if not (active is defined and active == link.route|split('_')[1]) %}color: #e10600;{% endif %}width: 20px;"></i> 
+                    <span>{{ link.label }}</span>
+                    {% if link.badge is defined %}
+                        <span class="badge ms-auto rounded-pill {% if active is defined and active == link.route|split('_')[1] %}bg-white text-danger{% else %}{{ link.badge.class }}{% endif %}" 
+                              style="{% if active is defined and active == link.route|split('_')[1] %}color: #e10600 !important;{% endif %}">
+                            {{ link.badge.text }}
+                        </span>
+                    {% endif %}
+                </div>
             </a>
         {% endfor %}
         
         {% if is_granted('ROLE_ADMIN') %}
-            <a href="{{ path('admin_dashboard_index') }}" class="list-group-item list-group-item-action text-primary">
-                <i class="fas fa-cog me-2"></i> Administration
+            <a href="{{ path('admin_dashboard_index') }}" class="list-group-item list-group-item-action border-0 py-3" style="color: #e10600;">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-cog me-3" style="width: 20px;"></i> 
+                    <span>Administration</span>
+                </div>
             </a>
         {% endif %}
     </div>
-</div> 
+</div>
+
+<style>
+.active-item:hover {
+    background-color: #b30000 !important;
+}
+
+.list-group-item:not(.active-item):hover {
+    background-color: #f8f9fa;
+    transform: translateX(3px);
+}
+</style> 

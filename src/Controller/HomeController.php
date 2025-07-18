@@ -6,6 +6,7 @@ use App\Repository\HashtagRepository;
 use App\Repository\JobOfferRepository;
 use App\Repository\PostRepository;
 use App\Repository\UserRepository;
+use App\Service\RecommendationService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -17,7 +18,8 @@ class HomeController extends AbstractController
 {
     public function __construct(
         private CacheInterface $cache,
-        private EntityManagerInterface $entityManager
+        private EntityManagerInterface $entityManager,
+        private RecommendationService $recommendationService
     ) {
     }
 
@@ -38,7 +40,7 @@ class HomeController extends AbstractController
         $userStatsCacheKey = 'user_stats_' . $userId;
         $userStats = $this->cache->get($userStatsCacheKey, function (ItemInterface $item) use ($user) {
             $item->expiresAfter(600); // Cache pour 10 minutes
-            
+
             if (!$user) {
                 return [
                     'posts_count' => 0,
@@ -74,34 +76,21 @@ class HomeController extends AbstractController
             ];
         });
 
-        // Cache pour les données de la page d'accueil
-        $homepageCacheKey = 'homepage_data_' . $userId;
-        $data = $this->cache->get($homepageCacheKey, function (ItemInterface $item) use (
-            $postRepository,
-            $userRepository,
-            $hashtagRepository,
-            $jobOfferRepository,
-            $user
-        ) {
-            $item->expiresAfter(300); // Cache pour 5 minutes
+        // Récupérer les données directement sans cache pour les posts
+        $data = [
+            'activeJobOffers' => $jobOfferRepository->findActiveOffers(5),
+            'trendingHashtags' => $hashtagRepository->findTrending(10),
+            'stats' => [
+                'recruiters' => $userRepository->findByRole('ROLE_RECRUTEUR'),
+                'applicants' => $userRepository->findByRole('ROLE_POSTULANT')
+            ],
+            'recentPosts' => $postRepository->findRecentWithAuthors(10)
+        ];
 
-            $data = [
-                'activeJobOffers' => $jobOfferRepository->findActiveOffers(5),
-                'trendingHashtags' => $hashtagRepository->findTrending(10),
-                'stats' => [
-                    'recruiters' => $userRepository->findByRole('ROLE_RECRUTEUR'),
-                    'applicants' => $userRepository->findByRole('ROLE_POSTULANT')
-                ],
-                'recentPosts' => $postRepository->findRecentPosts(10)
-            ];
-
-            if ($user) {
-                $data['recommendedPosts'] = $postRepository->findRecentPosts(10);
-                $data['suggestedUsers'] = $userRepository->findSuggestedUsers($user, 5);
-            }
-
-            return $data;
-        });
+        if ($user) {
+            $data['recommendedPosts'] = $this->recommendationService->getRecommendedPosts($user, 10);
+            $data['suggestedUsers'] = $userRepository->findSuggestedUsers($user, 5);
+        }
 
         // Ajouter les statistiques de l'utilisateur aux données
         $data['user_stats'] = $userStats;

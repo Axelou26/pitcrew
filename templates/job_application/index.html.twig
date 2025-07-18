@@ -43,7 +43,12 @@
                             <div class="mb-3">
                                 <small class="text-muted">
                                     <i class="bi bi-clock me-1"></i>
-                                    Candidature envoyée {{ application.createdAt|ago }}
+                                    Candidature envoyée 
+                                    {% if application.createdAt %}
+                                        {{ application.createdAt|ago }}
+                                    {% else %}
+                                        <em>Date inconnue</em>
+                                    {% endif %}
                                 </small>
                             </div>
 

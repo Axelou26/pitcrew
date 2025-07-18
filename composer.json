@@ -17,6 +17,7 @@
         "easycorp/easyadmin-bundle": "^4.24",
         "knplabs/knp-time-bundle": "^2.4",
         "monolog/monolog": "^3.5",
+        "predis/predis": "*",
         "promphp/prometheus_client_php": "^2.0",
         "stripe/stripe-php": "^16.6",
         "symfony/asset": "7.0.*",
@@ -37,8 +38,9 @@
         "symfony/security-http": "^7.1",
         "symfony/string": "7.0.*",
         "symfony/twig-bundle": "7.0.*",
+        "symfony/ux-turbo": "*",
         "symfony/validator": "^7.1",
-        "symfony/webpack-encore-bundle": "^2.2",
+        "symfony/web-link": "7.0.*",
         "symfony/yaml": "7.0.*",
         "twig/extra-bundle": "^3.20",
         "twig/html-extra": "*",
@@ -113,7 +115,22 @@
             "@php bin/console doctrine:schema:create --env=test",
             "@php bin/console doctrine:fixtures:load --env=test --no-interaction",
             "phpunit"
-        ]
+        ],
+        "quality:check": [
+            "@php-cs-fixer",
+            "@phpstan",
+            "@phpmd",
+            "@test"
+        ],
+        "php-cs-fixer": "php-cs-fixer fix --diff",
+        "phpstan": "phpstan analyse src/ --level=8",
+        "phpmd": "phpmd src/ text cleancode,codesize,controversial,design,naming,unusedcode",
+        "cleanup:check": [
+            "@cleanup:orphaned-files",
+            "@cleanup:duplicates"
+        ],
+        "cleanup:orphaned-files": "php bin/console app:check-orphaned-files",
+        "cleanup:duplicates": "php bin/console app:check-duplicates"
     },
     "conflict": {
         "symfony/symfony": "*"

@@ -8,6 +8,9 @@ use Doctrine\ORM\Mapping as ORM;
 use DateTimeImmutable;
 
 #[ORM\Entity(repositoryClass: NotificationRepository::class)]
+#[ORM\Index(columns: ['user_id', 'is_read'], name: 'idx_notification_user_read')]
+#[ORM\Index(columns: ['created_at'], name: 'idx_notification_created_at')]
+#[ORM\Index(columns: ['type'], name: 'idx_notification_type')]
 class Notification
 {
     // Types de notifications

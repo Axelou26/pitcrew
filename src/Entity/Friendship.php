@@ -44,6 +44,19 @@ class Friendship
         $this->createdAt = new DateTimeImmutable();
     }
 
+    /**
+     * Crée une nouvelle amitié acceptée entre deux utilisateurs
+     */
+    public static function createAccepted(User $user1, User $user2): self
+    {
+        $friendship = new self();
+        $friendship->setRequester($user1);
+        $friendship->setAddressee($user2);
+        $friendship->setStatus(self::STATUS_ACCEPTED);
+        $friendship->updatedAt = new DateTimeImmutable();
+        return $friendship;
+    }
+
     public function getId(): ?int
     {
         return $this->id;

@@ -229,7 +229,13 @@
                                     <a href="{{ path('app_job_offer_show', {'offerId': offer.id}) }}" class="list-group-item list-group-item-action">
                                         <div class="d-flex w-100 justify-content-between">
                                             <h6 class="mb-1">{{ offer.title }}</h6>
-                                            <small class="text-muted">{{ offer.createdAt|ago }}</small>
+                                            <small class="text-muted">
+                                                {% if offer.createdAt %}
+                                                    {{ offer.createdAt|ago }}
+                                                {% else %}
+                                                    <em>Date inconnue</em>
+                                                {% endif %}
+                                            </small>
                                         </div>
                                         <p class="mb-1">{{ offer.location }} - {{ offer.contractType }}</p>
                                         <small class="text-muted">{{ offer.applications|length }} candidature(s)</small>

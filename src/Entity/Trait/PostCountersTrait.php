@@ -40,6 +40,5 @@ trait PostCountersTrait
     {
         $this->updateLikesCounter();
         $this->updateCommentsCounter();
-        $this->updateReactionCounts();
     }
 }

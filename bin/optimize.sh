@@ -1,29 +1,30 @@
 #!/bin/bash
 
-echo "🚀 Optimisation de l'application Symfony..."
+echo "🚀 Optimisation des performances Symfony..."
 
-# Vider tous les caches
+# Optimisation de l'autoloader Composer
+echo "📦 Optimisation de l'autoloader Composer..."
+composer dump-autoload --no-dev --classmap-authoritative --optimize
+
+# Vider les caches
 echo "🗑️  Vidage des caches..."
 php bin/console cache:clear --env=prod
 php bin/console cache:warmup --env=prod
 
-# Optimiser l'autoloader Composer
-echo "📦 Optimisation de l'autoloader Composer..."
-composer dump-autoload --optimize --no-dev --classmap-authoritative
+# Optimisation du cache des routes
+echo "🛣️  Optimisation du cache des routes..."
+php bin/console router:match / --env=prod
 
-# Vider le cache Doctrine
-echo "🗄️  Vidage du cache Doctrine..."
+# Optimisation des métadonnées Doctrine
+echo "🗄️  Optimisation des métadonnées Doctrine..."
 php bin/console doctrine:cache:clear-metadata --env=prod
 php bin/console doctrine:cache:clear-query --env=prod
 php bin/console doctrine:cache:clear-result --env=prod
 
-# Optimiser les routes
-echo "🛣️  Optimisation des routes..."
-php bin/console router:match / --env=prod
-
-# Vérifier les permissions
+# Vérification des permissions
 echo "🔐 Vérification des permissions..."
 chmod -R 755 var/cache/
 chmod -R 755 var/log/
 
-echo "✅ Optimisation terminée !" 
+echo "✅ Optimisation terminée !"
+echo "📊 Redémarrez votre serveur web pour appliquer les changements." 

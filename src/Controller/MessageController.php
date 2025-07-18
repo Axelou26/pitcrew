@@ -243,15 +243,28 @@ class MessageController extends AbstractController
     #[Route('/get-recipients', name: 'app_message_get_recipients', methods: ['GET'])]
     public function getRecipients(
         UserRepository $userRepository,
-        FriendshipRepository $friendshipRepository
+        FriendshipRepository $friendshipRepository,
+        EntityManagerInterface $entityManager
     ) {
         $currentUser = $this->getUser();
 
         try {
-            // Récupérer directement les amis de l'utilisateur
+            // Récupérer uniquement les amis de l'utilisateur
             $friends = $friendshipRepository->findFriends($currentUser);
 
+            // Débogage : compter les amitiés acceptées
+            $count = $entityManager->createQuery(
+                'SELECT COUNT(f) FROM App\Entity\Friendship f 
+                 WHERE (f.requester = :user OR f.addressee = :user)
+                 AND f.status = :status'
+            )
+            ->setParameter('user', $currentUser)
+            ->setParameter('status', 'accepted')
+            ->getSingleScalarResult();
+
             $recipients = [];
+
+            // N'utiliser que les amis comme destinataires
             foreach ($friends as $friend) {
                 $recipients[] = [
                     'id' => $friend->getId(),
@@ -261,10 +274,21 @@ class MessageController extends AbstractController
                 ];
             }
 
-            return new JsonResponse(['recipients' => $recipients]);
+            return new JsonResponse([
+                'recipients' => $recipients,
+                'debug' => [
+                    'friendCount' => count($friends),
+                    'acceptedFriendshipsCount' => $count,
+                    'currentUserId' => $currentUser->getId()
+                ]
+            ]);
         } catch (\Exception $e) {
             return new JsonResponse(
-                ['error' => 'Une erreur est survenue lors de la récupération des contacts.'],
+                [
+                    'error' => 'Une erreur est survenue lors de la récupération des contacts.',
+                    'message' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ],
                 JsonResponse::HTTP_INTERNAL_SERVER_ERROR
             );
         }

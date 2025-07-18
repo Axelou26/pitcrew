@@ -1,15 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
 use App\Entity\Post;
 use App\Entity\Hashtag;
 use App\Entity\User;
 use App\Repository\Trait\PostQueryTrait;
+use App\Repository\Trait\FlushTrait;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
-use Symfony\Component\Cache\Adapter\AdapterInterface;
-use Symfony\Component\Cache\Item\ItemInterface;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Component\Cache\CacheItem;
 
 /**
  * @extends ServiceEntityRepository<Post>
@@ -22,40 +25,23 @@ use Symfony\Component\Cache\Item\ItemInterface;
 class PostRepository extends ServiceEntityRepository
 {
     use PostQueryTrait;
+    use FlushTrait;
 
-    private const CACHE_TTL = 300; // 5 minutes
+    private const CACHE_TTL = 3600; // 1 heure
     private const CACHE_KEY_RECENT_POSTS = 'recent_posts_%d';
-    private const CACHE_KEY_ALL_POSTS = 'all_posts_ordered';
+    private const CACHE_KEY_ALL_POSTS = 'all_posts';
     private const CACHE_KEY_POSTS_BY_HASHTAG = 'posts_by_hashtag_%d';
-    private const CACHE_KEY_POSTS_BY_MENTION = 'posts_mentioned_%d';
+    private const CACHE_KEY_POSTS_BY_MENTION = 'posts_by_mention_%d';
     private const CACHE_KEY_SEARCH_POSTS = 'search_posts_%s';
-    private const CACHE_KEY_FEED_POSTS = 'feed_posts_%d';
-    private const CACHE_KEY_RECENT_WITH_AUTHORS = 'recent_posts_with_authors_%d';
+    private const CACHE_KEY_FEED_POSTS = 'feed_posts';
+    private const CACHE_KEY_RECENT_WITH_AUTHORS = 'recent_with_authors_%d';
 
-    private AdapterInterface $cache;
+    private CacheInterface $cache;
 
-    public function __construct(ManagerRegistry $registry, AdapterInterface $cache)
+    public function __construct(ManagerRegistry $registry, CacheInterface $cache)
     {
         parent::__construct($registry, Post::class);
         $this->cache = $cache;
-    }
-
-    public function save(Post $entity, bool $flush = false): void
-    {
-        $this->getEntityManager()->persist($entity);
-
-        if ($flush) {
-            $this->getEntityManager()->flush();
-        }
-    }
-
-    public function remove(Post $entity, bool $flush = false): void
-    {
-        $this->getEntityManager()->remove($entity);
-
-        if ($flush) {
-            $this->getEntityManager()->flush();
-        }
     }
 
     /**
@@ -63,15 +49,15 @@ class PostRepository extends ServiceEntityRepository
      */
     private function getCachedResult(string $key, callable $callback): mixed
     {
-        $item = $this->cache->getItem($key);
-
-        if (!$item->isHit()) {
-            $item->set($callback());
-            $item->expiresAfter(self::CACHE_TTL);
-            $this->cache->save($item);
+        try {
+            return $this->cache->get($key, function (CacheItem $item) use ($callback) {
+                $item->expiresAfter(self::CACHE_TTL);
+                return $callback();
+            });
+        } catch (\Exception $e) {
+            // En cas d'erreur de cache, exécuter directement la callback
+            return $callback();
         }
-
-        return $item->get();
     }
 
     /**
@@ -110,9 +96,8 @@ class PostRepository extends ServiceEntityRepository
             sprintf(self::CACHE_KEY_POSTS_BY_HASHTAG, $hashtag->getId()),
             function () use ($hashtag): array {
                 $qb = $this->createQueryBuilder('p')
-                    ->select('p', 'a', 'l', 'c', 'h', 'o')
+                    ->select('p', 'a', 'c', 'h', 'o')
                     ->leftJoin('p.author', 'a')
-                    ->leftJoin('p.likes', 'l')
                     ->leftJoin('p.comments', 'c')
                     ->innerJoin('p.hashtags', 'h')
                     ->leftJoin('p.originalPost', 'o')
@@ -162,19 +147,31 @@ class PostRepository extends ServiceEntityRepository
     public function findPostsForFeed(User $user, int $page = 1, int $limit = 10): array
     {
         $firstResult = ($page - 1) * $limit;
+        $friends = $user->getFriends();
 
         return $this->getCachedResult(
-            sprintf(self::CACHE_KEY_FEED_POSTS, $user->getId()),
-            fn(): array => $this->createBasePostQuery()
-                ->where('p.author = :user')
-                ->orWhere('p.author IN (:friends)')
-                ->setParameter('user', $user)
-                ->setParameter('friends', $user->getFriends())
-                ->orderBy('p.createdAt', 'DESC')
-                ->setFirstResult($firstResult)
-                ->setMaxResults($limit)
-                ->getQuery()
-                ->getResult()
+            sprintf(self::CACHE_KEY_FEED_POSTS . '_%d_%d', $user->getId(), $page),
+            function () use ($user, $friends, $firstResult, $limit): array {
+                $qb = $this->createBasePostQuery();
+
+                if (empty($friends)) {
+                    // Si l'utilisateur n'a pas d'amis, afficher seulement ses propres posts
+                    $qb->where('p.author = :user')
+                       ->setParameter('user', $user);
+                } else {
+                    // Sinon, afficher ses posts et ceux de ses amis
+                    $qb->where('p.author = :user')
+                       ->orWhere('p.author IN (:friends)')
+                       ->setParameter('user', $user)
+                       ->setParameter('friends', $friends);
+                }
+
+                return $qb->orderBy('p.createdAt', 'DESC')
+                         ->setFirstResult($firstResult)
+                         ->setMaxResults($limit)
+                         ->getQuery()
+                         ->getResult();
+            }
         );
     }
 
@@ -214,9 +211,8 @@ class PostRepository extends ServiceEntityRepository
         return $this
             ->getCachedResult(sprintf(self::CACHE_KEY_RECENT_WITH_AUTHORS, $limit), function () use ($limit): array {
                 $qb = $this->createQueryBuilder('p')
-                ->select('p', 'a', 'l', 'c', 'h', 'o')
+                ->select('p', 'a', 'c', 'h', 'o')
                 ->leftJoin('p.author', 'a')
-                ->leftJoin('p.likes', 'l')
                 ->leftJoin('p.comments', 'c')
                 ->leftJoin('p.hashtags', 'h')
                 ->leftJoin('p.originalPost', 'o')

@@ -5,7 +5,6 @@ namespace App\Entity;
 use App\Repository\PostLikeRepository;
 use Doctrine\ORM\Mapping as ORM;
 use DateTimeImmutable;
-use InvalidArgumentException;
 
 #[ORM\Entity(repositoryClass: PostLikeRepository::class)]
 #[ORM\UniqueConstraint(
@@ -14,23 +13,6 @@ use InvalidArgumentException;
 )]
 class PostLike
 {
-    public const REACTION_LIKE = 'like';
-    public const REACTION_CONGRATS = 'congrats';
-    public const REACTION_INTERESTING = 'interesting';
-    public const REACTION_SUPPORT = 'support';
-    public const REACTION_ENCOURAGING = 'encouraging';
-
-    public const REACTIONS = [
-        self::REACTION_LIKE => '👍',
-        self::REACTION_CONGRATS => '👏',
-        self::REACTION_INTERESTING => '💡',
-        self::REACTION_SUPPORT => '❤️',
-        self::REACTION_ENCOURAGING => '💪',
-    ];
-
-    /**
-     * @SuppressWarnings("PHPMD.ShortVariable")
-     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -46,9 +28,6 @@ class PostLike
 
     #[ORM\Column]
     private ?DateTimeImmutable $createdAt = null;
-
-    #[ORM\Column(length: 20)]
-    private string $reactionType = self::REACTION_LIKE;
 
     public function __construct()
     {
@@ -91,37 +70,5 @@ class PostLike
     {
         $this->createdAt = $createdAt;
         return $this;
-    }
-
-    public function getReactionType(): string
-    {
-        return $this->reactionType;
-    }
-
-    public function setReactionType(string $reactionType): static
-    {
-        if (!array_key_exists($reactionType, self::REACTIONS)) {
-            throw new InvalidArgumentException('Type de réaction invalide');
-        }
-        $this->reactionType = $reactionType;
-        return $this;
-    }
-
-    public function getReactionEmoji(): string
-    {
-        return self::REACTIONS[$this->reactionType];
-    }
-
-    public function getReactionName(): string
-    {
-        $names = [
-            self::REACTION_LIKE => 'J\'aime',
-            self::REACTION_CONGRATS => 'Félicitations',
-            self::REACTION_INTERESTING => 'Intéressant',
-            self::REACTION_SUPPORT => 'Soutien',
-            self::REACTION_ENCOURAGING => 'Encourageant',
-        ];
-
-        return $names[$this->reactionType];
     }
 }

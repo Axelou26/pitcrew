@@ -35,3 +35,19 @@ node_modules
 npm-debug.log
 yarn-error.log
 ###< symfony/webpack-encore-bundle ###
+
+###> Rapports et fichiers de qualité de code ###
+/psalm-deadcode.txt
+/phpstan-unused.txt
+/clover.xml
+###< Rapports et fichiers de qualité de code ###
+
+###> Fichiers de déploiement sensibles ###
+/deploy_key
+/deploy_key.pub
+/deploy.php
+###< Fichiers de déploiement sensibles ###
+
+###> Fichiers uploadés de test ###
+/public/uploads/
+###< Fichiers uploadés de test ###

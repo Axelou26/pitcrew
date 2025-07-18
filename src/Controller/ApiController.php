@@ -84,8 +84,11 @@ class ApiController extends AbstractController
     {
         $query = $request->query->get('q', '');
 
-        if (strlen($query) < 2) {
-            return $this->json(['success' => true, 'results' => []]);
+        // Exiger plus de caractères pour réduire la charge
+        if (strlen($query) < 3) {
+            return $this->json(['success' => true, 'results' => []], 200, [
+                'Cache-Control' => 'public, max-age=60'
+            ]);
         }
 
         // Limiter le nombre de résultats et optimiser la requête
@@ -100,17 +103,19 @@ class ApiController extends AbstractController
             ];
         }, $users);
 
-        // Configurer les en-têtes de cache
+        // Configurer les en-têtes de cache avec un TTL plus court
         $response = $this->json([
             'success' => true,
             'results' => $suggestions
         ]);
 
         $response->setPublic();
-        $response->setMaxAge(300); // Cache pendant 5 minutes
-        $response->setSharedMaxAge(300);
-        $response->headers->set('X-Accel-Buffering', 'no'); // Désactiver le buffering Nginx
-        $response->headers->set('Cache-Control', 'public, max-age=300');
+        $response->setMaxAge(60); // Cache pendant 1 minute au lieu de 5
+        $response->setSharedMaxAge(60);
+        // Ajouter l'en-tête pour gzip/deflate
+        $response->headers->set('Vary', 'Accept-Encoding');
+        $response->headers->set('X-Accel-Buffering', 'no');
+        $response->headers->set('Cache-Control', 'public, max-age=60');
 
         return $response;
     }

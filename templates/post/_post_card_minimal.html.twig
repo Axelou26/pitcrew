@@ -1,7 +1,7 @@
 {# templates/post/_post_card_minimal.html.twig #}
 <div class="shared-post border rounded p-3">
     <div class="d-flex align-items-center mb-2">
-        {% if post.author.profilePicture %}
+        {% if post.author and post.author.profilePicture %}
             <img src="{{ asset('uploads/profile_pictures/' ~ post.author.profilePicture) }}" 
                  alt="Avatar de {{ post.author.fullName }}" 
                  class="rounded-circle me-2" 
@@ -13,12 +13,16 @@
             </div>
         {% endif %}
         <div>
-            <div class="text-dark">{{ post.author.fullName }}</div>
+            <div class="text-dark">{{ post.author ? post.author.fullName : 'Utilisateur supprimé' }}</div>
             <div class="text-muted small">
                 {% if post.content %}
                     <i class="bi bi-share"></i> · 
                 {% endif %}
-                {{ post.createdAt|ago }}
+                {% if post.createdAt %}
+                    {{ post.createdAt|ago }}
+                {% else %}
+                    Date inconnue
+                {% endif %}
             </div>
         </div>
     </div>
@@ -32,7 +36,7 @@
     {% if post.originalPost is not null %}
         <div class="original-post border rounded p-3 bg-light">
             <div class="d-flex align-items-center mb-2">
-                {% if post.originalPost.author.profilePicture %}
+                {% if post.originalPost.author and post.originalPost.author.profilePicture %}
                     <img src="{{ asset('uploads/profile_pictures/' ~ post.originalPost.author.profilePicture) }}" 
                          alt="Avatar de {{ post.originalPost.author.fullName }}" 
                          class="rounded-circle me-2" 
@@ -44,8 +48,14 @@
                     </div>
                 {% endif %}
                 <div>
-                    <div class="text-dark">{{ post.originalPost.author.fullName }}</div>
-                    <div class="text-muted small">{{ post.originalPost.createdAt|ago }}</div>
+                    <div class="text-dark">{{ post.originalPost.author ? post.originalPost.author.fullName : 'Utilisateur supprimé' }}</div>
+                    <div class="text-muted small">
+                        {% if post.originalPost.createdAt %}
+                            {{ post.originalPost.createdAt|ago }}
+                        {% else %}
+                            Date inconnue
+                        {% endif %}
+                    </div>
                 </div>
             </div>
 

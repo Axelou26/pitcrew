@@ -1,0 +1,101 @@
+<div class="card rounded-4 shadow-sm border-0 overflow-hidden">
+    <div class="list-group list-group-flush p-0">
+        <a href="{{ path('app_dashboard') }}" 
+           class="list-group-item list-group-item-action border-0 py-3 px-4 {% if active is defined and active == 'dashboard' %}active-item{% endif %}"
+           style="{% if active is defined and active == 'dashboard' %}background-color: #e10600; color: white; {% endif %}transition: all 0.3s ease;">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-th-large me-3 {% if active is defined and active == 'dashboard' %}text-white{% else %}{% endif %}" 
+                   style="{% if not (active is defined and active == 'dashboard') %}color: #e10600;{% endif %}width: 20px;"></i>
+                <span>Tableau de bord</span>
+            </div>
+        </a>
+        
+        <a href="{{ path('app_dashboard_offers') }}" 
+           class="list-group-item list-group-item-action border-0 py-3 px-4 {% if active is defined and active == 'offers' %}active-item{% endif %}"
+           style="{% if active is defined and active == 'offers' %}background-color: #e10600; color: white; {% endif %}transition: all 0.3s ease;">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-briefcase me-3 {% if active is defined and active == 'offers' %}text-white{% else %}{% endif %}"
+                   style="{% if not (active is defined and active == 'offers') %}color: #e10600;{% endif %}width: 20px;"></i>
+                <span>Offres d'emploi</span>
+            </div>
+        </a>
+        
+        <a href="{{ path('app_job_application_recruiter') }}" 
+           class="list-group-item list-group-item-action border-0 py-3 px-4 {% if active is defined and active == 'job_application' %}active-item{% endif %}"
+           style="{% if active is defined and active == 'job_application' %}background-color: #e10600; color: white; {% endif %}transition: all 0.3s ease;">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-users me-3 {% if active is defined and active == 'job_application' %}text-white{% else %}{% endif %}"
+                   style="{% if not (active is defined and active == 'job_application') %}color: #e10600;{% endif %}width: 20px;"></i>
+                <span>Candidatures reçues</span>
+                {% if received_applications is defined %}
+                    <span class="badge rounded-pill ms-auto {% if active is defined and active == 'job_application' %}bg-white text-danger{% else %}{% endif %}"
+                          style="{% if active is defined and active == 'job_application' %}color: #e10600 !important;{% else %}background-color: #e10600; color: white;{% endif %}">
+                        {{ received_applications|length }}
+                    </span>
+                {% endif %}
+            </div>
+        </a>
+        
+        <a href="{{ path('app_matching_dashboard_recruiter') }}" 
+           class="list-group-item list-group-item-action border-0 py-3 px-4 {% if active is defined and active == 'matching' %}active-item{% endif %}"
+           style="{% if active is defined and active == 'matching' %}background-color: #e10600; color: white; {% endif %}transition: all 0.3s ease;">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-chart-line me-3 {% if active is defined and active == 'matching' %}text-white{% else %}{% endif %}"
+                   style="{% if not (active is defined and active == 'matching') %}color: #e10600;{% endif %}width: 20px;"></i>
+                <span>Matching candidats</span>
+                <span class="badge bg-success rounded-pill ms-auto">Nouveau</span>
+            </div>
+        </a>
+        
+        <a href="{{ path('app_interviews_index') }}" 
+           class="list-group-item list-group-item-action border-0 py-3 px-4 {% if active is defined and active == 'interviews' %}active-item{% endif %}"
+           style="{% if active is defined and active == 'interviews' %}background-color: #e10600; color: white; {% endif %}transition: all 0.3s ease;">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-calendar-alt me-3 {% if active is defined and active == 'interviews' %}text-white{% else %}{% endif %}"
+                   style="{% if not (active is defined and active == 'interviews') %}color: #e10600;{% endif %}width: 20px;"></i>
+                <span>Planning d'entretiens</span>
+            </div>
+        </a>
+        
+        <a href="{{ path('app_message_index') }}" 
+           class="list-group-item list-group-item-action border-0 py-3 px-4 {% if active is defined and active == 'message' %}active-item{% endif %}"
+           style="{% if active is defined and active == 'message' %}background-color: #e10600; color: white; {% endif %}transition: all 0.3s ease;">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-envelope me-3 {% if active is defined and active == 'message' %}text-white{% else %}{% endif %}"
+                   style="{% if not (active is defined and active == 'message') %}color: #e10600;{% endif %}width: 20px;"></i>
+                <span>Messages</span>
+            </div>
+        </a>
+        
+        <a href="{{ path('app_dashboard_posts') }}" 
+           class="list-group-item list-group-item-action border-0 py-3 px-4 {% if active is defined and active == 'posts' %}active-item{% endif %}"
+           style="{% if active is defined and active == 'posts' %}background-color: #e10600; color: white; {% endif %}transition: all 0.3s ease;">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-newspaper me-3 {% if active is defined and active == 'posts' %}text-white{% else %}{% endif %}"
+                   style="{% if not (active is defined and active == 'posts') %}color: #e10600;{% endif %}width: 20px;"></i>
+                <span>Mes publications</span>
+            </div>
+        </a>
+        
+        <a href="{{ path('app_subscription_manage') }}" 
+           class="list-group-item list-group-item-action border-0 py-3 px-4 {% if active is defined and active == 'subscription' %}active-item{% endif %}"
+           style="{% if active is defined and active == 'subscription' %}background-color: #e10600; color: white; {% endif %}transition: all 0.3s ease;">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-credit-card me-3 {% if active is defined and active == 'subscription' %}text-white{% else %}{% endif %}"
+                   style="{% if not (active is defined and active == 'subscription') %}color: #e10600;{% endif %}width: 20px;"></i>
+                <span>Mon abonnement</span>
+            </div>
+        </a>
+    </div>
+</div>
+
+<style>
+.active-item:hover {
+    background-color: #b30000 !important;
+}
+
+.list-group-item:not(.active-item):hover {
+    background-color: #f8f9fa;
+    transform: translateX(3px);
+}
+</style> 

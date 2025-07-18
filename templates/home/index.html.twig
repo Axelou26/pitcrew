@@ -174,9 +174,9 @@
                             <h6 class="fw-bold mb-4">PitCrew en chiffres</h6>
                             <div class="row g-3">
                                 <div class="col-12">
-                                    <div class="bg-primary bg-opacity-10 rounded-4 p-3">
+                                    <div class="bg-danger bg-opacity-10 rounded-4 p-3">
                                         <div class="d-flex align-items-center">
-                                            <div class="rounded-circle bg-primary p-2 me-3">
+                                            <div class="rounded-circle bg-danger p-2 me-3">
                                                 <i class="bi bi-briefcase text-white"></i>
                                             </div>
                                             <div>
@@ -187,9 +187,9 @@
                                     </div>
                                 </div>
                                 <div class="col-12">
-                                    <div class="bg-primary bg-opacity-10 rounded-4 p-3">
+                                    <div class="bg-danger bg-opacity-10 rounded-4 p-3">
                                         <div class="d-flex align-items-center">
-                                            <div class="rounded-circle bg-primary p-2 me-3">
+                                            <div class="rounded-circle bg-danger p-2 me-3">
                                                 <i class="bi bi-building text-white"></i>
                                             </div>
                                             <div>
@@ -200,9 +200,9 @@
                                     </div>
                                 </div>
                                 <div class="col-12">
-                                    <div class="bg-primary bg-opacity-10 rounded-4 p-3">
+                                    <div class="bg-danger bg-opacity-10 rounded-4 p-3">
                                         <div class="d-flex align-items-center">
-                                            <div class="rounded-circle bg-primary p-2 me-3">
+                                            <div class="rounded-circle bg-danger p-2 me-3">
                                                 <i class="bi bi-people text-white"></i>
                                             </div>
                                             <div>
@@ -292,7 +292,7 @@
                                         <div class="rounded-3 p-3 mb-2 hover-bg-light">
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <div>
-                                                    <div class="fw-bold text-primary">#{{ hashtag.name }}</div>
+                                                    <div class="fw-bold text-danger">#{{ hashtag.name }}</div>
                                                     <div class="text-muted small">{{ hashtag.usageCount }} publications</div>
                                                 </div>
                                                 <i class="bi bi-hash fs-4 text-muted"></i>
@@ -462,12 +462,50 @@
         }
         
         .mention {
-            color: #0d6efd;
+            color: var(--primary-color);
             font-weight: 500;
         }
         
         .hashtag {
-            color: #0d6efd;
+            color: var(--primary-color);
+        }
+        
+        /* Animation pour les nouveaux posts */
+        @keyframes highlightPost {
+            0% { 
+                transform: translateY(-20px);
+                opacity: 0;
+                box-shadow: 0 0 15px rgba(var(--bs-info-rgb), 0.8);
+            }
+            100% { 
+                transform: translateY(0);
+                opacity: 1;
+                box-shadow: none;
+            }
+        }
+        
+        .post-new {
+            animation: highlightPost 0.8s ease-out;
+            position: relative;
+            z-index: 2;
+            overflow: hidden;
+        }
+        
+        .post-new::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to right, rgba(var(--bs-info-rgb), 0.1), rgba(var(--bs-info-rgb), 0.05), transparent);
+            z-index: -1;
+            animation: fadeBackground 2s forwards;
+        }
+        
+        @keyframes fadeBackground {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
         }
     </style>
 {% endblock %}
@@ -524,8 +562,45 @@
                     quickPostFullContent.value = '';
                     quickPostImage.value = '';
                     
-                    // Recharger la page pour afficher le nouveau post
-                    window.location.reload();
+                    // Afficher le nouveau post au début du feed sans recharger la page
+                    const feedContainer = document.querySelector('.posts-container');
+                    if (feedContainer && data.postHtml) {
+                        // Créer un conteneur temporaire pour transformer le HTML en éléments DOM
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = data.postHtml;
+                        const newPostElement = tempDiv.firstElementChild;
+                        
+                        // Ajouter une classe pour animation
+                        newPostElement.classList.add('post-new');
+                        
+                        // Insérer au début du feed
+                        feedContainer.insertBefore(newPostElement, feedContainer.firstChild);
+                        
+                        // Afficher un message de succès
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                        alertDiv.innerHTML = `
+                            <i class="bi bi-check-circle me-2"></i> Post publié avec succès!
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        `;
+                        const mainContainer = document.querySelector('.container');
+                        if (mainContainer) {
+                            mainContainer.insertBefore(alertDiv, mainContainer.firstChild);
+                            
+                            // Supprimer l'alerte après 3 secondes
+                            setTimeout(() => {
+                                alertDiv.classList.remove('show');
+                                setTimeout(() => alertDiv.remove(), 150);
+                            }, 3000);
+                        }
+                        
+                        // Réinitialiser le bouton
+                        quickPostSubmit.disabled = false;
+                        quickPostSubmit.innerHTML = '<i class="bi bi-send me-1"></i> Publier';
+                    } else {
+                        // Fallback en cas de problème avec le HTML du post
+                        window.location.reload();
+                    }
                 })
                 .catch(error => {
                     console.error('Erreur lors de la création du post:', error);

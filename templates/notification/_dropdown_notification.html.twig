@@ -6,9 +6,9 @@
     <div class="d-flex align-items-center">
         <div class="flex-shrink-0 me-2">
             {% if notification.type == 'friend_request' %}
-                <i class="bi bi-person-plus text-primary"></i>
+                <i class="bi bi-person-plus text-danger"></i>
             {% elseif notification.type == 'message' %}
-                <i class="bi bi-chat-dots text-info"></i>
+                <i class="bi bi-chat-dots text-danger"></i>
             {% elseif notification.type == 'job_application' %}
                 <i class="bi bi-briefcase text-success"></i>
             {% elseif notification.type == 'job_offer' %}

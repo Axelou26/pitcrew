@@ -2,14 +2,20 @@
 
 {% block title %}Connexion{% endblock %}
 
+{# Optimisation: Précharge de la ressource principale #}
+{% block head_javascripts %}
+    <link rel="preload" href="{{ asset('js/login.js') }}" as="script">
+{% endblock %}
+
 {% block body %}
+{# Structure simplifiée avec classes minimales pour le rendu rapide #}
 <div class="row justify-content-center">
     <div class="col-md-6">
         <div class="card">
             <div class="card-body">
                 <h1 class="h3 mb-3 text-center">Se connecter</h1>
 
-                <form method="post">
+                <form method="post" id="login-form">
                     {% if error %}
                         <div class="alert alert-danger">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
                     {% endif %}
@@ -26,7 +32,7 @@
 
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
 
-                    <button class="btn btn-primary w-100" type="submit">
+                    <button class="btn btn-primary w-100" type="submit" id="login-button">
                         Se connecter
                     </button>
                 </form>
@@ -38,4 +44,22 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{# Optimisation: Chargement JavaScript à la fin pour ne pas bloquer le rendu #}
+{% block javascripts %}
+    <script>
+        // Script léger intégré directement pour éviter un appel HTTP supplémentaire
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('login-form');
+            const loginButton = document.getElementById('login-button');
+            
+            if (loginForm && loginButton) {
+                loginForm.addEventListener('submit', function() {
+                    loginButton.disabled = true;
+                    loginButton.innerHTML = 'Connexion en cours...';
+                });
+            }
+        });
+    </script>
 {% endblock %} 

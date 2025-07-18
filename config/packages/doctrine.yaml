@@ -1,33 +1,67 @@
 doctrine:
     dbal:
-        url: '%env(resolve:DATABASE_URL)%'
-        # IMPORTANT: You MUST configure your server version,
-        # either here or in the DATABASE_URL env var (see https://symfony.com/doc/current/doctrine.html#configuring-the-database)
-        # server_version: '13'
-        options:
-            # 1002 is \PDO::MYSQL_ATTR_INIT_COMMAND
-            1002: "SET sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))"
-        profiling_collect_backtrace: '%kernel.debug%'
-        use_savepoints: true
+        connections:
+            default:
+                url: '%env(resolve:DATABASE_URL)%'
+                # IMPORTANT: You MUST configure your server version,
+                # either here or in the DATABASE_URL env var (see https://symfony.com/doc/current/doctrine.html#configuring-the-database)
+                # server_version: '13'
+                options:
+                    # 1002 is \PDO::MYSQL_ATTR_INIT_COMMAND
+                    1002: "SET sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))"
+                profiling_collect_backtrace: '%kernel.debug%'
+                use_savepoints: true
+                # Enlever la classe wrapper qui cause des erreurs
+                # wrapper_class: App\Doctrine\Connection\CacheableConnection
+                persistent: true
+        default_connection: default
+                
     orm:
         auto_generate_proxy_classes: true
         enable_lazy_ghost_objects: true
         controller_resolver:
             auto_mapping: true
         naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
+        
+        # Optimisations ORM
+        metadata_cache_driver:
+            type: pool
+            pool: doctrine.metadata_cache_pool
+            
+        query_cache_driver:
+            type: pool
+            pool: doctrine.system_cache_pool
+            
+        result_cache_driver:
+            type: pool
+            pool: doctrine.result_cache_pool
+            
         mappings:
             App:
                 is_bundle: false
                 dir: '%kernel.project_dir%/src/Entity'
                 prefix: 'App\Entity'
                 alias: App
+                
+        # Optimisations performance
+        second_level_cache:
+            enabled: true
+            regions:
+                default:
+                    lifetime: 3600
+                    cache_driver:
+                        type: pool
+                        pool: doctrine.result_cache_pool
 
+# Configuration pour les tests
 when@test:
     doctrine:
         dbal:
-            # "TEST_TOKEN" is typically set by ParaTest
-            dbname_suffix: '_test%env(default::TEST_TOKEN)%'
+            connections:
+                default:
+                    dbname_suffix: '_test%env(default::TEST_TOKEN)%'
 
+# Configuration pour la production            
 when@prod:
     doctrine:
         orm:

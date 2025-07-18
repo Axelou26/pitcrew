@@ -60,4 +60,4 @@ class CacheInvalidationService
             $this->invalidateHomepageCache($friendship->getAddressee());
         }
     }
-} 
+}

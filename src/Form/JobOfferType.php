@@ -4,6 +4,7 @@ namespace App\Form;
 
 use App\Entity\JobOffer;
 use App\Form\Type\JobOfferTypeInterface;
+use App\Form\Trait\FileValidationTrait;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
@@ -15,12 +16,13 @@ use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Validator\Constraints\File;
 use DateTime;
 use Symfony\Component\Validator\Constraints as Assert;
 
 class JobOfferType extends AbstractType implements JobOfferTypeInterface
 {
+    use FileValidationTrait;
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -48,17 +50,9 @@ class JobOfferType extends AbstractType implements JobOfferTypeInterface
                 'mapped' => false,
                 'required' => false,
                 'constraints' => [
-                    new File([
-                        'maxSize' => '2M',
-                        'mimeTypes' => [
-                            'image/jpeg',
-                            'image/png',
-                            'image/svg+xml',
-                        ],
-                        'mimeTypesMessage' => 'Veuillez télécharger une image valide (JPEG, PNG, SVG)',
-                    ])
+                    $this->createImageFileConstraint(self::MAX_SIZE_SMALL, true),
                 ],
-                'attr' => ['class' => 'form-control'],
+                'attr' => $this->getImageFileAttributes('form-control', true),
                 'help' => 'Image au format JPEG, PNG ou SVG (max 2 Mo)',
             ])
             ->add('contractType', ChoiceType::class, [

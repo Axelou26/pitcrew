@@ -1,0 +1,113 @@
+# Configuration Docker pour l'environnement de production
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - symfony-cache-prod:/var/www/var/cache
+      - symfony-logs-prod:/var/www/var/log
+      - uploads-prod:/var/www/public/uploads
+    environment:
+      APP_ENV: prod
+      APP_SECRET: "%env(APP_SECRET)%"
+      DATABASE_URL: "%env(DATABASE_URL)%"
+      MYSQL_HOST: database
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: pitcrew_prod
+      MYSQL_USER: "%env(MYSQL_USER)%"
+      MYSQL_PASSWORD: "%env(MYSQL_PASSWORD)%"
+      # Variables d'optimisation pour production
+      PHP_OPCACHE_ENABLE: 1
+      PHP_OPCACHE_MEMORY_CONSUMPTION: 512
+      PHP_OPCACHE_MAX_ACCELERATED_FILES: 10000
+      PHP_OPCACHE_REVALIDATE_FREQ: 300
+      # Variables Redis
+      REDIS_URL: "%env(REDIS_URL)%"
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - pitcrew_prod_network
+    links:
+      - database:database
+      - redis:redis
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/production.conf:/etc/nginx/conf.d/default.conf
+      - nginx-logs-prod:/var/log/nginx
+      - uploads-prod:/var/www/public/uploads
+      - ./docker/nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - app
+    networks:
+      - pitcrew_prod_network
+    restart: unless-stopped
+
+  database:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: "%env(MYSQL_ROOT_PASSWORD)%"
+      MYSQL_DATABASE: pitcrew_prod
+      MYSQL_USER: "%env(MYSQL_USER)%"
+      MYSQL_PASSWORD: "%env(MYSQL_PASSWORD)%"
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    volumes:
+      - mysql-data-prod:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p%env(MYSQL_ROOT_PASSWORD)%"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pitcrew_prod_network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis-data-prod:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - pitcrew_prod_network
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+networks:
+  pitcrew_prod_network:
+    driver: bridge
+
+volumes:
+  mysql-data-prod:
+  redis-data-prod:
+  symfony-cache-prod:
+  symfony-logs-prod:
+  nginx-logs-prod:
+  uploads-prod: 

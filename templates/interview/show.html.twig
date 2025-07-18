@@ -2,18 +2,154 @@
 
 {% block title %}Détails de l'entretien{% endblock %}
 
+{% block stylesheets %}
+{{ parent() }}
+<style>
+    .interview-card {
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: none;
+    }
+    
+    .interview-header {
+        background: linear-gradient(135deg, var(--bs-primary) 0%, #4a89dc 100%);
+        padding: 1.5rem;
+    }
+    
+    .interview-header h1 {
+        margin: 0;
+        color: white;
+        font-weight: 600;
+    }
+    
+    .interview-body {
+        padding: 2rem;
+    }
+    
+    .info-section {
+        margin-bottom: 2rem;
+        position: relative;
+    }
+    
+    .info-title {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+    
+    .info-content {
+        font-size: 1.1rem;
+    }
+    
+    .status-badge {
+        padding: 8px 16px;
+        border-radius: 50px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .participant-card {
+        border-radius: 12px;
+        padding: 1.2rem;
+        background-color: #f8f9fa;
+        margin-bottom: 1.5rem;
+        transition: all 0.2s ease;
+    }
+    
+    .participant-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    }
+    
+    .notes-card {
+        background-color: #f8f9fa;
+        border-radius: 12px;
+        padding: 1.2rem;
+        margin: 1.5rem 0;
+        border-left: 5px solid var(--bs-primary);
+    }
+    
+    .action-button {
+        border-radius: 50px;
+        padding: 0.8rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        justify-content: center;
+    }
+    
+    .action-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .action-button.primary {
+        background: linear-gradient(135deg, var(--bs-success) 0%, #28a745 100%);
+        color: white;
+    }
+    
+    .action-button.danger {
+        background: linear-gradient(135deg, var(--bs-danger) 0%, #dc3545 100%);
+        color: white;
+    }
+    
+    .action-button.warning {
+        background: linear-gradient(135deg, var(--bs-warning) 0%, #ffc107 100%);
+        color: white;
+    }
+    
+    .back-button {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        background: rgba(255, 255, 255, 0.2);
+        transition: all 0.2s;
+    }
+    
+    .back-button:hover {
+        background: rgba(255, 255, 255, 0.3);
+        color: white;
+    }
+    
+    .countdown-timer {
+        background: rgba(0, 0, 0, 0.05);
+        padding: 1rem;
+        border-radius: 12px;
+        text-align: center;
+        margin-top: 1rem;
+    }
+</style>
+{% endblock %}
+
 {% block body %}
-<div class="container my-4">
+<div class="container my-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h1 class="h3 mb-0 text-primary">Détails de l'entretien</h1>
-                    <a href="{{ path('app_interviews_index') }}" class="btn btn-outline-secondary btn-sm">
-                        <i class="fas fa-arrow-left"></i> Retour
+        <div class="col-md-9">
+            <div class="interview-card card">
+                <div class="interview-header d-flex justify-content-between align-items-center">
+                    <h1 class="h3">
+                        <i class="fas fa-handshake me-2"></i> 
+                        Détails de l'entretien
+                    </h1>
+                    <a href="{{ path('app_interviews_index') }}" class="back-button">
+                        <i class="fas fa-arrow-left"></i> 
+                        <span>Retour à la liste</span>
                     </a>
                 </div>
-                <div class="card-body">
+                
+                <div class="interview-body">
                     {% for label, messages in app.flashes %}
                         {% for message in messages %}
                             <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
@@ -22,112 +158,178 @@
                             </div>
                         {% endfor %}
                     {% endfor %}
-
+                    
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-4">
-                                <h5 class="font-weight-bold">Titre</h5>
-                                <p>{{ interview.title }}</p>
+                        <div class="col-lg-8">
+                            <div class="info-section">
+                                <div class="info-title">Titre</div>
+                                <div class="info-content">{{ interview.title }}</div>
                             </div>
-
-                            <div class="mb-4">
-                                <h5 class="font-weight-bold">Date et heure</h5>
-                                <p>{{ interview.scheduledAt|date('d/m/Y à H:i') }}</p>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="info-section">
+                                        <div class="info-title">Date et heure</div>
+                                        <div class="info-content">
+                                            <i class="far fa-calendar-alt me-2 text-primary"></i>
+                                            {{ interview.scheduledAt|date('d/m/Y à H:i') }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="info-section">
+                                        <div class="info-title">Statut</div>
+                                        <div>
+                                            {% if interview.isScheduled %}
+                                                <span class="status-badge bg-primary text-white">
+                                                    <i class="far fa-calendar-check"></i>
+                                                    Planifié
+                                                </span>
+                                            {% elseif interview.isActive %}
+                                                <span class="status-badge bg-success text-white">
+                                                    <i class="fas fa-video"></i>
+                                                    En cours
+                                                </span>
+                                            {% elseif interview.isCompleted %}
+                                                <span class="status-badge bg-success text-white">
+                                                    <i class="fas fa-check-circle"></i>
+                                                    Terminé
+                                                </span>
+                                            {% elseif interview.isCancelled %}
+                                                <span class="status-badge bg-danger text-white">
+                                                    <i class="fas fa-times-circle"></i>
+                                                    Annulé
+                                                </span>
+                                            {% else %}
+                                                <span class="status-badge bg-secondary text-white">
+                                                    {{ interview.status }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-
-                            <div class="mb-4">
-                                <h5 class="font-weight-bold">Statut</h5>
-                                <p>
-                                    {% if interview.isScheduled %}
-                                        <span class="badge bg-primary">Planifié</span>
-                                    {% elseif interview.isActive %}
-                                        <span class="badge bg-success">En cours</span>
-                                    {% elseif interview.isCompleted %}
-                                        <span class="badge bg-success">Terminé</span>
-                                    {% elseif interview.isCancelled %}
-                                        <span class="badge bg-danger">Annulé</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">{{ interview.status }}</span>
-                                    {% endif %}
-                                </p>
-                            </div>
-
+                            
                             {% if interview.endedAt %}
-                            <div class="mb-4">
-                                <h5 class="font-weight-bold">Terminé le</h5>
-                                <p>{{ interview.endedAt|date('d/m/Y à H:i') }}</p>
+                            <div class="info-section">
+                                <div class="info-title">Terminé le</div>
+                                <div class="info-content">
+                                    <i class="far fa-clock me-2 text-secondary"></i>
+                                    {{ interview.endedAt|date('d/m/Y à H:i') }}
+                                </div>
                             </div>
                             {% endif %}
-                        </div>
-
-                        <div class="col-md-6">
-                            {% if is_granted('ROLE_RECRUTEUR') %}
-                            <div class="mb-4">
-                                <h5 class="font-weight-bold">Candidat</h5>
-                                <p>{{ interview.applicant.fullName }}</p>
-                                <p><i class="fas fa-envelope"></i> {{ interview.applicant.email }}</p>
-                            </div>
-                            {% else %}
-                            <div class="mb-4">
-                                <h5 class="font-weight-bold">Recruteur</h5>
-                                <p>{{ interview.recruiter.fullName }}</p>
-                                <p><i class="fas fa-envelope"></i> {{ interview.recruiter.email }}</p>
-                            </div>
-                            {% endif %}
-
+                            
                             {% if interview.jobOffer %}
-                            <div class="mb-4">
-                                <h5 class="font-weight-bold">Offre d'emploi</h5>
-                                <p>
-                                    <a href="{{ path('app_job_offer_show', {'offerId': interview.jobOffer.id}) }}">
+                            <div class="info-section">
+                                <div class="info-title">Offre d'emploi associée</div>
+                                <div class="info-content">
+                                    <a href="{{ path('app_job_offer_show', {'offerId': interview.jobOffer.id}) }}" class="text-decoration-none">
+                                        <i class="fas fa-briefcase me-2 text-primary"></i>
                                         {{ interview.jobOffer.title }}
                                     </a>
-                                </p>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if interview.notes %}
+                            <div class="notes-card">
+                                <div class="info-title mb-2">Notes / Instructions</div>
+                                <div class="info-content">
+                                    {{ interview.notes|nl2br }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-lg-4">
+                            {% if is_granted('ROLE_RECRUTEUR') %}
+                            <div class="participant-card">
+                                <div class="info-title">Candidat</div>
+                                <div class="d-flex align-items-center mb-2 mt-2">
+                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ interview.applicant.fullName }}</div>
+                                        <div class="small text-muted">Candidat</div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <a href="mailto:{{ interview.applicant.email }}" class="text-decoration-none d-flex align-items-center">
+                                        <i class="fas fa-envelope me-2 text-primary"></i>
+                                        {{ interview.applicant.email }}
+                                    </a>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="participant-card">
+                                <div class="info-title">Recruteur</div>
+                                <div class="d-flex align-items-center mb-2 mt-2">
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user-tie"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ interview.recruiter.fullName }}</div>
+                                        <div class="small text-muted">Recruteur</div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <a href="mailto:{{ interview.recruiter.email }}" class="text-decoration-none d-flex align-items-center">
+                                        <i class="fas fa-envelope me-2 text-primary"></i>
+                                        {{ interview.recruiter.email }}
+                                    </a>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if canJoin and not interview.isCancelled %}
+                            <div class="countdown-timer mb-3">
+                                {% if interview.scheduledAt > date() %}
+                                    <div class="small text-muted mb-1">Début de l'entretien dans</div>
+                                    <div id="countdown" class="fw-bold text-primary fs-5">--:--:--</div>
+                                {% else %}
+                                    <div class="small text-muted mb-1">L'entretien est en cours</div>
+                                    <div class="fw-bold text-success">Vous pouvez rejoindre maintenant</div>
+                                {% endif %}
                             </div>
                             {% endif %}
                         </div>
                     </div>
-
-                    {% if interview.notes %}
-                    <div class="mb-4">
-                        <h5 class="font-weight-bold">Notes / Instructions</h5>
-                        <div class="p-3 bg-light rounded">
-                            {{ interview.notes|nl2br }}
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    <div class="d-grid gap-2 mt-4">
+                    
+                    <div class="mt-4 pt-3 border-top">
                         {% if canJoin and not interview.isCancelled %}
-                            <a href="{{ interview.meetingUrl }}" class="btn btn-success btn-lg">
-                                <i class="fas fa-video"></i> Rejoindre la salle d'entretien
+                            <a href="{{ interview.meetingUrl }}" class="action-button primary btn btn-lg w-100">
+                                <i class="fas fa-video fa-lg"></i> 
+                                <span>Rejoindre l'appel vidéo maintenant</span>
                             </a>
                             <p class="text-center text-muted small mt-2">
                                 La salle est accessible 15 minutes avant l'heure prévue et jusqu'à 1 heure après.
                             </p>
                         {% elseif not interview.isCancelled and not interview.isCompleted %}
-                            <div class="alert alert-info">
+                            <div class="alert alert-info rounded-3">
                                 {% if interview.scheduledAt > date() %}
-                                    <i class="fas fa-info-circle"></i> La salle d'entretien sera accessible 15 minutes avant l'heure prévue.
+                                    <i class="fas fa-info-circle me-2"></i> L'appel vidéo sera disponible 15 minutes avant l'heure prévue.
                                 {% else %}
-                                    <i class="fas fa-info-circle"></i> La salle d'entretien n'est plus accessible. L'entretien a déjà eu lieu.
+                                    <i class="fas fa-info-circle me-2"></i> L'appel vidéo n'est plus accessible. L'entretien a déjà eu lieu.
                                 {% endif %}
                             </div>
                         {% endif %}
 
                         {% if interview.isScheduled and not interview.isCancelled %}
-                            <div class="d-flex justify-content-between">
-                                <form action="{{ path('app_interview_cancel', {'id': interview.id}) }}" method="post" onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cet entretien?');">
+                            <div class="d-flex justify-content-between mt-3 gap-3">
+                                <form action="{{ path('app_interview_cancel', {'id': interview.id}) }}" method="post" class="w-100" onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cet entretien?');">
                                     <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ interview.id) }}">
-                                    <button type="submit" class="btn btn-danger">
+                                    <button type="submit" class="action-button danger btn w-100">
                                         <i class="fas fa-times"></i> Annuler l'entretien
                                     </button>
                                 </form>
 
                                 {% if is_granted('ROLE_RECRUTEUR') and interview.recruiter == app.user and canJoin %}
-                                    <form action="{{ path('app_interview_end', {'id': interview.id}) }}" method="post">
+                                    <form action="{{ path('app_interview_end', {'id': interview.id}) }}" method="post" class="w-100">
                                         <input type="hidden" name="_token" value="{{ csrf_token('end' ~ interview.id) }}">
-                                        <button type="submit" class="btn btn-warning">
+                                        <button type="submit" class="action-button warning btn w-100">
                                             <i class="fas fa-check"></i> Terminer l'entretien
                                         </button>
                                     </form>
@@ -140,4 +342,39 @@
         </div>
     </div>
 </div>
+
+{% if canJoin and interview.scheduledAt > date() %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const countdownElement = document.getElementById('countdown');
+        const targetDate = new Date('{{ interview.scheduledAt|date('Y-m-d H:i:s') }}');
+        
+        function updateCountdown() {
+            const currentDate = new Date();
+            const diff = targetDate - currentDate;
+            
+            if (diff <= 0) {
+                countdownElement.innerHTML = 'L\'entretien peut commencer!';
+                countdownElement.classList.remove('text-primary');
+                countdownElement.classList.add('text-success');
+                return;
+            }
+            
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            const formattedHours = hours.toString().padStart(2, '0');
+            const formattedMinutes = minutes.toString().padStart(2, '0');
+            const formattedSeconds = seconds.toString().padStart(2, '0');
+            
+            countdownElement.innerHTML = `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+        }
+        
+        // Update countdown every second
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    });
+</script>
+{% endif %}
 {% endblock %} 

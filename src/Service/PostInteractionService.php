@@ -24,49 +24,36 @@ class PostInteractionService
     }
 
     /**
-     * Gère l'ajout, la suppression ou la modification d'une réaction sur un post.
+     * Gère l'ajout ou la suppression d'un like sur un post.
      *
-     * @param Post $post Le post concerné.
-     * @param User $user L'utilisateur qui réagit.
-     * @param string $reactionType Le type de réaction choisi (doit être une clé de PostLike::REACTIONS).
-     * @return string|null Le type de réaction final, ou null si la réaction est supprimée.
-     * @throws InvalidArgumentException Si le reactionType est invalide.
+     * @param Post $post Le post concerné
+     * @param User $user L'utilisateur qui like
+     * @return bool true si le post est liké, false s'il est unliké
      */
-    public function toggleLike(Post $post, User $user, string $reactionType): ?string
+    public function toggleLike(Post $post, User $user): bool
     {
-        if (!array_key_exists($reactionType, PostLike::REACTIONS)) {
-            throw new InvalidArgumentException('Type de réaction invalide : ' . $reactionType);
-        }
-
         $existingLike = $this->entityManager->getRepository(PostLike::class)
             ->findOneBy(['post' => $post, 'user' => $user]);
 
         if ($existingLike) {
-            // Si c'est la même réaction, on la supprime
-            if ($existingLike->getReactionType() === $reactionType) {
-                $this->entityManager->remove($existingLike);
-                $this->entityManager->flush();
-                return null;
-            }
-
-            // Si c'est une réaction différente, on met à jour
-            $existingLike->setReactionType($reactionType);
+            $this->entityManager->remove($existingLike);
             $this->entityManager->flush();
-            return $reactionType;
+            return false;
         }
 
-        // Nouvelle réaction
         $like = new PostLike();
         $like->setPost($post);
         $like->setUser($user);
-        $like->setReactionType($reactionType);
+
         $this->entityManager->persist($like);
         $this->entityManager->flush();
 
-        // Notifier uniquement pour une nouvelle réaction
-        $this->notificationService->notifyPostLike($like);
+        // Notifier l'auteur du post
+        if ($post->getAuthor() !== $user) {
+            $this->notificationService->createLikeNotification($post, $user);
+        }
 
-        return $reactionType;
+        return true;
     }
 
     public function addComment(

@@ -14,15 +14,18 @@ class VideoConferenceService
     private $interviewRepository;
     private $urlGenerator;
     private $apiKey;
+    private $jitsiDomain;
 
     public function __construct(
         InterviewRepository $interviewRepository,
         UrlGeneratorInterface $urlGenerator,
-        string $apiKey = 'dummy_api_key' // À remplacer par un paramètre de configuration réel
+        string $apiKey = 'pitcrew_secure_key', // À configurer dans .env ou parameters.yaml
+        string $jitsiDomain = 'meet.jit.si'
     ) {
         $this->interviewRepository = $interviewRepository;
         $this->urlGenerator = $urlGenerator;
         $this->apiKey = $apiKey;
+        $this->jitsiDomain = $jitsiDomain;
     }
 
     /**
@@ -31,18 +34,16 @@ class VideoConferenceService
     public function createRoom(Interview $interview): string
     {
         // Génération d'un identifiant unique pour la salle
-        $roomId = uniqid('room_') . '_' . $interview->getId();
+        $roomId = 'pitcrew_' . $interview->getId() . '_' . bin2hex(random_bytes(8));
 
-        // Dans une vraie implémentation, on appellerait une API externe ici
-        // Par exemple Jitsi, Twilio, Vonage, etc.
-
-        // Pour cet exemple, on simule simplement la création de salle
+        // Stockage de l'ID de la salle
         $interview->setRoomId($roomId);
 
         // Génération de l'URL de la salle
+        $token = $this->generateRoomToken($interview);
         $meetingUrl = $this->urlGenerator->generate('app_interview_room', [
             'id' => $interview->getId(),
-            'token' => $this->generateRoomToken($interview)
+            'token' => $token
         ], UrlGeneratorInterface::ABSOLUTE_URL);
 
         $interview->setMeetingUrl($meetingUrl);
@@ -65,9 +66,8 @@ class VideoConferenceService
      */
     public function generateRoomToken(Interview $interview): string
     {
-        // Dans une vraie implémentation, utilisez un système de token sécurisé
-        // Pour cet exemple, on utilise un hash simple
-        return hash('sha256', $interview->getId() . $interview->getRoomId() . $this->apiKey);
+        // Utilisation d'un hash sécurisé avec sel
+        return hash_hmac('sha256', $interview->getId() . $interview->getRoomId(), $this->apiKey);
     }
 
     /**
@@ -103,8 +103,6 @@ class VideoConferenceService
         $interview->setEndedAt(new DateTime());
         $interview->setStatus('completed');
         $this->interviewRepository->save($interview, true);
-
-        // Dans une vraie implémentation, on pourrait appeler l'API pour fermer la salle
     }
 
     /**
@@ -131,6 +129,23 @@ class VideoConferenceService
             'userEmail' => $user->getEmail(),
             'startWithAudioMuted' => false,
             'startWithVideoMuted' => false,
+            'jitsiDomain' => $this->jitsiDomain,
+            // Configuration supplémentaire pour éviter les problèmes d'accès
+            'enableLobby' => false,
+            'openBridgeChannel' => 'websocket',
+            'startWithVideoMuted' => false,
+            'startWithAudioMuted' => false,
+            'enableWelcomePage' => false,
+            'prejoinPageEnabled' => false,
+            'membersOnly' => false
         ];
+    }
+
+    /**
+     * Obtient l'URL directe de Jitsi Meet pour l'interface externe
+     */
+    public function getDirectJitsiUrl(Interview $interview): string
+    {
+        return 'https://' . $this->jitsiDomain . '/' . $interview->getRoomId();
     }
 }

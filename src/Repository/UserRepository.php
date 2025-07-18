@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
 use App\Entity\User;
 use App\Entity\Friendship;
+use App\Repository\Trait\FlushTrait;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
@@ -21,30 +24,14 @@ use Symfony\Contracts\Cache\CacheInterface;
  */
 class UserRepository extends ServiceEntityRepository implements PasswordUpgraderInterface
 {
-    private $cache;
+    use FlushTrait;
+
+    private CacheInterface $cache;
 
     public function __construct(ManagerRegistry $registry, CacheInterface $cache)
     {
         parent::__construct($registry, User::class);
         $this->cache = $cache;
-    }
-
-    public function save(User $entity, bool $flush = false): void
-    {
-        $this->getEntityManager()->persist($entity);
-
-        if ($flush) {
-            $this->getEntityManager()->flush();
-        }
-    }
-
-    public function remove(User $entity, bool $flush = false): void
-    {
-        $this->getEntityManager()->remove($entity);
-
-        if ($flush) {
-            $this->getEntityManager()->flush();
-        }
     }
 
     /**
@@ -179,24 +166,11 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
      * Trouve tous les utilisateurs sauf celui spécifié
      * Limité aux amis de l'utilisateur
      */
-    public function findAllExcept(User $user): array
+    public function findAllExcept(int $userId): array
     {
-        $friendshipRepository = $this->getEntityManager()->getRepository(Friendship::class);
-        $friends = $friendshipRepository->findFriends($user);
-
-        if (empty($friends)) {
-            return [];
-        }
-
-        $friendIds = array_map(function ($friend) {
-            return $friend->getId();
-        }, $friends);
-
         return $this->createQueryBuilder('u')
             ->andWhere('u.id != :userId')
-            ->andWhere('u.id IN (:friendIds)')
-            ->setParameter('userId', $user->getId())
-            ->setParameter('friendIds', $friendIds)
+            ->setParameter('userId', $userId)
             ->orderBy('u.firstName', 'ASC')
             ->addOrderBy('u.lastName', 'ASC')
             ->getQuery()
@@ -224,25 +198,24 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
      */
     public function findSuggestionsOptimized(string $query, int $limit = 5): array
     {
+        // Utiliser un cache en mémoire avec TTL court
         $cacheKey = 'user_suggestions_' . md5($query . $limit);
+
+        // Simplifier la requête pour de meilleures performances
         $qb = $this->createQueryBuilder('u')
             ->select('PARTIAL u.{id, firstName, lastName, profilePicture}')
-            ->where('LOWER(CONCAT(u.firstName, \' \', u.lastName)) LIKE LOWER(:query)')
-            ->orWhere('LOWER(u.firstName) LIKE LOWER(:query)')
-            ->orWhere('LOWER(u.lastName) LIKE LOWER(:query)')
+            ->where('CONCAT(LOWER(u.firstName), \' \', LOWER(u.lastName)) LIKE LOWER(:query)')
             ->setParameter('query', '%' . $query . '%')
             ->setMaxResults($limit)
-            ->orderBy('u.lastName', 'ASC')
-            ->addOrderBy('u.firstName', 'ASC');
+            ->orderBy('u.lastName', 'ASC');
 
-        // Utiliser le cache de requête Doctrine
+        // Utiliser le cache de requête Doctrine mais avec un TTL plus court
         $query = $qb->getQuery();
         $query->setResultCacheId($cacheKey);
-        $query->setResultCacheLifetime(300); // 5 minutes
+        $query->setResultCacheLifetime(60); // Réduire à 1 minute pour garder les données fraîches
 
         // Optimisations de performance
         $query->setHint(\Doctrine\ORM\Query::HINT_FORCE_PARTIAL_LOAD, true);
-        $query->setHint(\Doctrine\ORM\Query::HINT_CUSTOM_OUTPUT_WALKER, 'Doctrine\ORM\Query\SqlWalker');
 
         try {
             return $query->getArrayResult();

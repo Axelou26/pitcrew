@@ -1,24 +1,45 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Vérification d'email envoyée{% endblock %}
+{% block title %}Email de vérification envoyé{% endblock %}
 
 {% block body %}
     <div class="container mt-5">
         <div class="row justify-content-center">
             <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header">
-                        <h1 class="h3 mb-0">Vérification d'email</h1>
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h2 class="text-center mb-0">Email de vérification envoyé</h2>
                     </div>
                     <div class="card-body">
-                        <p class="mb-0">
-                            Un email de vérification a été envoyé à votre adresse email. 
-                            Veuillez cliquer sur le lien dans cet email pour activer votre compte.
-                        </p>
-                        <p class="mt-3">
-                            Si vous ne recevez pas l'email dans les prochaines minutes, 
-                            veuillez vérifier votre dossier spam ou contactez-nous pour obtenir de l'aide.
-                        </p>
+                        <div class="text-center mb-4">
+                            <i class="fas fa-envelope-open-text fa-5x text-primary mb-3"></i>
+                        </div>
+                        
+                        <h4 class="text-center mb-3">Un email de confirmation a été envoyé à votre adresse email.</h4>
+                        
+                        <div class="alert alert-info">
+                            <p>Veuillez vérifier votre boîte de réception et cliquer sur le lien de confirmation pour activer votre compte.</p>
+                            <p>Si vous ne trouvez pas l'email dans votre boîte de réception, vérifiez votre dossier de spam.</p>
+                        </div>
+
+                        <div class="mt-4 text-center">
+                            <p>Vous n'avez pas reçu l'email de confirmation ?</p>
+                            <a href="{{ path('app_resend_verification_email') }}" class="btn btn-primary">
+                                Renvoyer l'email de vérification
+                            </a>
+                        </div>
+
+                        {% if app.environment == 'dev' %}
+                            <div class="alert alert-warning mt-4">
+                                <h5 class="alert-heading">Mode développement</h5>
+                                <p>En mode développement, les emails sont interceptés par MailHog.</p>
+                                <p>Vous pouvez les consulter à l'adresse : <a href="http://localhost:8025" target="_blank">http://localhost:8025</a></p>
+                                <hr>
+                                <a href="{{ path('app_debug_email_config') }}" class="btn btn-sm btn-secondary">
+                                    Page de débogage des emails
+                                </a>
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

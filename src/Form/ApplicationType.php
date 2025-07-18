@@ -3,15 +3,17 @@
 namespace App\Form;
 
 use App\Entity\Application;
+use App\Form\Trait\FileValidationTrait;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Validator\Constraints\File;
 
 class ApplicationType extends AbstractType
 {
+    use FileValidationTrait;
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -28,17 +30,9 @@ class ApplicationType extends AbstractType
                 'mapped' => false,
                 'required' => true,
                 'constraints' => [
-                    new File([
-                        'maxSize' => '2M',
-                        'mimeTypes' => [
-                            'application/pdf',
-                        ],
-                        'mimeTypesMessage' => 'Veuillez télécharger un document PDF valide',
-                    ])
+                    $this->createPdfFileConstraint(self::MAX_SIZE_SMALL),
                 ],
-                'attr' => [
-                    'accept' => 'application/pdf'
-                ]
+                'attr' => $this->getPdfFileAttributes(),
             ])
         ;
     }

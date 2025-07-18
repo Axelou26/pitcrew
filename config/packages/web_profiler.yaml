@@ -5,8 +5,10 @@ when@dev:
 
     framework:
         profiler:
+            collect_parameter: 'profile'  # Activer seulement avec ?profile=1
             only_exceptions: false
-            collect_serializer_data: true
+            only_main_requests: true
+            collect: false  # Ne collecter que sur demande explicite
 
 when@test:
     web_profiler:

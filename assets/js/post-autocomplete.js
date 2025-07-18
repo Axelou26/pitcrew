@@ -1,148 +1,356 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const postContent = document.querySelector('.post-content');
-    if (!postContent) return;
+    // Stocker les IDs des inputs déjà initialisés
+    const initializedInputs = new Set();
+    
+    // Cache global pour les résultats des requêtes avec TTL
+    const globalSuggestionCache = {
+        mention: new Map(),
+        hashtag: new Map()
+    };
 
-    let mentionTrigger = false;
-    let hashtagTrigger = false;
-    let currentWord = '';
-    let suggestionBox = null;
+    // Map global pour stocker les contrôleurs de requêtes en cours
+    const globalActiveRequests = new Map();
 
-    function createSuggestionBox() {
-        if (!suggestionBox) {
-            suggestionBox = document.createElement('div');
-            suggestionBox.className = 'suggestion-box card shadow-sm';
-            suggestionBox.style.position = 'absolute';
-            suggestionBox.style.display = 'none';
-            document.body.appendChild(suggestionBox);
-        }
+    // Map global pour stocker les timeouts de debounce
+    const globalDebounceTimeouts = new Map();
+    
+    // Map global pour stocker la dernière requête
+    const globalLastQueries = new Map();
+
+    // Durée de validité du cache en millisecondes (1 minute)
+    const CACHE_DURATION = 60 * 1000;
+    
+    // Délai minimum entre les requêtes en millisecondes (150ms au lieu de 300ms)
+    const DEBOUNCE_DELAY = 150;
+    
+    // Nombre minimum de caractères avant de déclencher la recherche
+    const MIN_CHARS_BEFORE_SEARCH = 3;
+    
+    // Temps d'attente maximal pour une requête avant annulation (3 secondes)
+    const REQUEST_TIMEOUT = 3000;
+
+    // Fonction debounce
+    function debounce(func, wait, inputId) {
+        return function executedFunction(...args) {
+            // Annuler le timeout précédent pour cet input spécifique
+            const previousTimeout = globalDebounceTimeouts.get(inputId);
+            if (previousTimeout) {
+                clearTimeout(previousTimeout);
+            }
+
+            // Annuler la requête en cours pour cet input
+            const activeRequest = globalActiveRequests.get(inputId);
+            if (activeRequest) {
+                activeRequest.abort();
+                globalActiveRequests.delete(inputId);
+            }
+
+            const later = () => {
+                globalDebounceTimeouts.delete(inputId);
+                func.apply(this, args);
+            };
+
+            const timeout = setTimeout(later, wait);
+            globalDebounceTimeouts.set(inputId, timeout);
+        };
     }
 
-    function showSuggestions(suggestions, type) {
-        if (!suggestionBox) return;
-
-        const rect = window.getSelection().getRangeAt(0).getBoundingClientRect();
-        suggestionBox.style.left = `${rect.left + window.scrollX}px`;
-        suggestionBox.style.top = `${rect.bottom + window.scrollY}px`;
-        
-        if (suggestions.length > 0) {
-            suggestionBox.innerHTML = suggestions.map(suggestion => `
-                <div class="suggestion-item p-2" data-value="${suggestion.value}" data-type="${type}">
-                    ${type === 'mention' ? `
-                        <div class="d-flex align-items-center">
-                            <img src="${suggestion.avatar}" class="rounded-circle me-2" width="24" height="24">
-                            <div>
-                                <div class="fw-bold">${suggestion.name}</div>
-                                <small class="text-muted">@${suggestion.username}</small>
-                            </div>
-                        </div>
-                    ` : `
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-hash me-2"></i>
-                            <span>${suggestion.value}</span>
-                        </div>
-                    `}
-                </div>
-            `).join('');
-            suggestionBox.style.display = 'block';
-
-            // Gestionnaire de clic pour les suggestions
-            suggestionBox.querySelectorAll('.suggestion-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    const value = this.getAttribute('data-value');
-                    const type = this.getAttribute('data-type');
-                    insertSuggestion(value, type);
-                });
-            });
-        } else {
-            suggestionBox.style.display = 'none';
-        }
+    // Fonction pour vérifier si une entrée du cache est valide
+    function isCacheValid(cacheEntry) {
+        return cacheEntry && 
+               (Date.now() - cacheEntry.timestamp) < CACHE_DURATION;
     }
 
-    function insertSuggestion(value, type) {
-        const selection = window.getSelection();
-        const range = selection.getRangeAt(0);
-        const prefix = type === 'mention' ? '@' : '#';
-        
-        // Supprimer le texte de déclenchement
-        range.setStart(range.startContainer, range.startOffset - currentWord.length - 1);
-        range.deleteContents();
-        
-        // Insérer la suggestion
-        const suggestionNode = document.createTextNode(`${prefix}${value} `);
-        range.insertNode(suggestionNode);
-        
-        // Placer le curseur après la suggestion
-        range.setStartAfter(suggestionNode);
-        range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
-        
-        // Réinitialiser
-        resetTriggers();
-    }
-
-    function resetTriggers() {
-        mentionTrigger = false;
-        hashtagTrigger = false;
-        currentWord = '';
-        if (suggestionBox) {
-            suggestionBox.style.display = 'none';
-        }
-    }
-
-    function searchSuggestions(query, type) {
-        // Simuler une recherche d'API
-        return fetch(`/api/${type}-suggestions?q=${encodeURIComponent(query)}`)
-            .then(response => response.json())
-            .catch(error => {
-                console.error('Erreur lors de la recherche de suggestions:', error);
-                return [];
-            });
-    }
-
-    postContent.addEventListener('input', function() {
-        const selection = window.getSelection();
-        if (!selection.rangeCount) return;
-
-        const range = selection.getRangeAt(0);
-        const text = range.startContainer.textContent;
-        const cursorPosition = range.startOffset;
-
-        // Détecter les déclencheurs @ et #
-        if (text[cursorPosition - 1] === '@') {
-            mentionTrigger = true;
-            hashtagTrigger = false;
-            currentWord = '';
-            createSuggestionBox();
-        } else if (text[cursorPosition - 1] === '#') {
-            hashtagTrigger = true;
-            mentionTrigger = false;
-            currentWord = '';
-            createSuggestionBox();
-        }
-
-        // Si un déclencheur est actif, mettre à jour la recherche
-        if (mentionTrigger || hashtagTrigger) {
-            const lastChar = text[cursorPosition - 1];
-            if (lastChar === ' ' || lastChar === null) {
-                resetTriggers();
-            } else {
-                const words = text.slice(0, cursorPosition).split(/\s+/);
-                currentWord = words[words.length - 1].slice(1);
-                
-                if (currentWord.length > 0) {
-                    const type = mentionTrigger ? 'mention' : 'hashtag';
-                    searchSuggestions(currentWord, type)
-                        .then(suggestions => showSuggestions(suggestions, type));
+    // Fonction pour nettoyer le cache périodiquement
+    function cleanCache() {
+        const now = Date.now();
+        for (const type of ['mention', 'hashtag']) {
+            for (const [key, value] of globalSuggestionCache[type]) {
+                if (now - value.timestamp >= CACHE_DURATION) {
+                    globalSuggestionCache[type].delete(key);
                 }
             }
         }
+    }
+    
+    function initializeMentionInput(input) {
+        const inputId = input.id || `mention-input-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Vérifier si l'input a déjà été initialisé
+        if (initializedInputs.has(inputId)) {
+            return;
+        }
+        
+        // Marquer l'input comme initialisé
+        initializedInputs.add(inputId);
+
+        let suggestionContainer = input.nextElementSibling;
+        if (!suggestionContainer || !suggestionContainer.classList.contains('mention-suggestions')) {
+            suggestionContainer = document.createElement('div');
+            suggestionContainer.className = 'mention-suggestions dropdown-menu';
+            input.parentNode.appendChild(suggestionContainer);
+        }
+        
+        let selectedIndex = -1;
+        let currentSuggestions = [];
+
+        // Nettoyer le cache toutes les 5 minutes
+        const cacheCleanupInterval = setInterval(cleanCache, CACHE_DURATION);
+
+        async function fetchSuggestions(type, searchTerm) {
+            // Vérifier la longueur minimale
+            if (searchTerm.length < MIN_CHARS_BEFORE_SEARCH) {
+                hideSuggestions();
+                return;
+            }
+
+            // Vérifier si la recherche est identique à la précédente
+            const lastQuery = globalLastQueries.get(inputId);
+            if (searchTerm === lastQuery) {
+                return;
+            }
+            globalLastQueries.set(inputId, searchTerm);
+
+            // Vérifier le cache
+            const cacheKey = `${type}-${searchTerm.toLowerCase()}`;
+            const cachedResult = globalSuggestionCache[type].get(cacheKey);
+            
+            if (isCacheValid(cachedResult)) {
+                showSuggestions(cachedResult.suggestions);
+                return;
+            }
+
+            // Créer un nouveau controller pour cette requête
+            const controller = new AbortController();
+            globalActiveRequests.set(inputId, controller);
+
+            try {
+                const endpoint = type === 'mention' ? 'mention-suggestions' : 'hashtag-suggestions';
+                
+                // Créer un timeout pour abandonner la requête si elle prend trop de temps
+                const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+                
+                const response = await fetch(
+                    `/api/${endpoint}?q=${encodeURIComponent(searchTerm)}`,
+                    { 
+                        signal: controller.signal,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'Cache-Control': 'max-age=60'
+                        }
+                    }
+                );
+                
+                // Annuler le timeout puisque la requête est terminée
+                clearTimeout(timeoutId);
+
+                // Supprimer le contrôleur de la map une fois la requête terminée
+                globalActiveRequests.delete(inputId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    const suggestions = type === 'mention' 
+                        ? data.results.map(user => ({
+                            text: `${user.firstName} ${user.lastName}`,
+                            prefix: '@',
+                            displayText: `@${user.firstName} ${user.lastName}`,
+                            profilePicture: user.profilePicture
+                        }))
+                        : data.results.map(hashtag => ({
+                            text: hashtag.name,
+                            prefix: '#',
+                            displayText: `#${hashtag.name} (${hashtag.usageCount} utilisations)`
+                        }));
+
+                    // Mettre en cache les résultats avec timestamp
+                    globalSuggestionCache[type].set(cacheKey, {
+                        suggestions,
+                        timestamp: Date.now()
+                    });
+
+                    // Vérifier si c'est toujours la dernière requête
+                    if (globalLastQueries.get(inputId) === searchTerm) {
+                        showSuggestions(suggestions);
+                    }
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    console.log('Requête annulée ou timeout');
+                } else {
+                    console.error(`Erreur lors de la recherche des ${type}s:`, error);
+                    hideSuggestions();
+                }
+            }
+        }
+        
+        const debouncedFetchSuggestions = debounce(fetchSuggestions, DEBOUNCE_DELAY, inputId);
+        
+        function handleInput() {
+            const cursorPosition = this.selectionStart;
+            const textBeforeCursor = this.value.substring(0, cursorPosition);
+            
+            const lastMentionMatch = textBeforeCursor.match(/@([a-zA-ZÀ-ÿ]+(?:\s+[a-zA-ZÀ-ÿ]+)*)$/);
+            const lastHashtagMatch = textBeforeCursor.match(/#([a-zA-Z0-9_-]+)$/);
+            
+            if (lastMentionMatch && lastMentionMatch[1].length > 0) {
+                debouncedFetchSuggestions('mention', lastMentionMatch[1]);
+            } else if (lastHashtagMatch && lastHashtagMatch[1].length > 0) {
+                debouncedFetchSuggestions('hashtag', lastHashtagMatch[1]);
+            } else {
+                hideSuggestions();
+            }
+        }
+
+        function handleKeydown(e) {
+            if (!suggestionContainer.style.display || suggestionContainer.style.display === 'none') {
+                return;
+            }
+
+            switch(e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    selectedIndex = Math.min(selectedIndex + 1, currentSuggestions.length - 1);
+                    updateSelection();
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    selectedIndex = Math.max(selectedIndex - 1, 0);
+                    updateSelection();
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    if (selectedIndex >= 0 && selectedIndex < currentSuggestions.length) {
+                        insertSuggestion(currentSuggestions[selectedIndex]);
+                    }
+                    break;
+                case 'Escape':
+                    hideSuggestions();
+                    break;
+            }
+        }
+
+        function handleClickOutside(e) {
+            if (!input.contains(e.target) && !suggestionContainer.contains(e.target)) {
+                hideSuggestions();
+            }
+        }
+
+        function showSuggestions(suggestions) {
+            suggestionContainer.innerHTML = '';
+            currentSuggestions = suggestions;
+            selectedIndex = -1;
+
+            if (suggestions.length === 0) {
+                hideSuggestions();
+                return;
+            }
+
+            suggestions.forEach((suggestion, index) => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.innerHTML = suggestion.displayText;
+                div.addEventListener('click', () => {
+                    insertSuggestion(suggestion);
+                });
+                suggestionContainer.appendChild(div);
+            });
+
+            suggestionContainer.style.display = 'block';
+            updateSelection();
+        }
+
+        function hideSuggestions() {
+            suggestionContainer.style.display = 'none';
+            selectedIndex = -1;
+            currentSuggestions = [];
+        }
+
+        function updateSelection() {
+            const items = suggestionContainer.querySelectorAll('.suggestion-item');
+            items.forEach((item, index) => {
+                item.classList.toggle('active', index === selectedIndex);
+            });
+        }
+
+        function insertSuggestion(suggestion) {
+            const cursorPosition = input.selectionStart;
+            const textBeforeCursor = input.value.substring(0, cursorPosition);
+            const textAfterCursor = input.value.substring(cursorPosition);
+            
+            const lastMentionIndex = textBeforeCursor.lastIndexOf('@');
+            const lastHashtagIndex = textBeforeCursor.lastIndexOf('#');
+            const lastIndex = Math.max(lastMentionIndex, lastHashtagIndex);
+            
+            if (lastIndex >= 0) {
+                const newText = textBeforeCursor.substring(0, lastIndex) + 
+                              suggestion.prefix + suggestion.text + ' ' + 
+                              textAfterCursor;
+                input.value = newText;
+                input.selectionStart = input.selectionEnd = lastIndex + suggestion.prefix.length + suggestion.text.length + 1;
+            }
+            
+            hideSuggestions();
+            input.focus();
+        }
+
+        // Ajouter les event listeners
+        input.addEventListener('input', handleInput);
+        input.addEventListener('keydown', handleKeydown);
+        document.addEventListener('click', handleClickOutside);
+
+        // Nettoyer les event listeners lors de la suppression de l'input
+        input._cleanup = function() {
+            input.removeEventListener('input', handleInput);
+            input.removeEventListener('keydown', handleKeydown);
+            document.removeEventListener('click', handleClickOutside);
+            clearInterval(cacheCleanupInterval);
+            initializedInputs.delete(inputId);
+        };
+    }
+
+    // Fonction pour initialiser tous les inputs de mention
+    function initializeAllMentionInputs() {
+        document.querySelectorAll('.mention-input').forEach(input => {
+            initializeMentionInput(input);
+        });
+    }
+
+    // Initialiser les inputs existants
+    initializeAllMentionInputs();
+
+    // Observer les changements dans le DOM pour initialiser les nouveaux inputs
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.addedNodes.length) {
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === 1 && node.matches('.mention-input')) {
+                        initializeMentionInput(node);
+                    }
+                    if (node.nodeType === 1 && node.querySelectorAll) {
+                        node.querySelectorAll('.mention-input').forEach(input => {
+                            initializeMentionInput(input);
+                        });
+                    }
+                });
+            }
+            if (mutation.removedNodes.length) {
+                mutation.removedNodes.forEach(function(node) {
+                    if (node.nodeType === 1 && node._cleanup) {
+                        node._cleanup();
+                    }
+                });
+            }
+        });
     });
 
-    // Fermer la boîte de suggestions lors d'un clic en dehors
-    document.addEventListener('click', function(e) {
-        if (suggestionBox && !suggestionBox.contains(e.target) && !postContent.contains(e.target)) {
-            resetTriggers();
-        }
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
     });
 }); 

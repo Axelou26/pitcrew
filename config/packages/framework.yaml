@@ -5,23 +5,18 @@ framework:
 
     # Note that the session will be started ONLY if you read or write from it.
     session: true
-
-    #esi: true
-    #fragments: true
-
-    # Optimisations de performance
+    
+    # Optimisations d'initialisation
+    http_method_override: false
+    handle_all_throwables: true
+    
+    # Optimisations de performance pour le routage
     router:
         cache_dir: '%kernel.cache_dir%/router'
         default_uri: null
+        utf8: true
 
-    cache:
-        app: cache.adapter.filesystem
-        system: cache.adapter.filesystem
-        pools:
-            doctrine.result_cache_pool:
-                adapter: cache.adapter.filesystem
-            doctrine.system_cache_pool:
-                adapter: cache.adapter.filesystem
+    # Configuration du cache déplacée dans cache.yaml
 
     assets:
         json_manifest_path: '%kernel.project_dir%/public/build/manifest.json'
@@ -33,3 +28,11 @@ when@test:
             storage_factory_id: session.storage.factory.mock_file
         assets:
             json_manifest_path: false
+
+when@dev:
+    framework:
+        # Optimisations pour le développement
+        router:
+            strict_requirements: true
+        profiler:
+            collect: false  # Ne collecter que sur demande explicite

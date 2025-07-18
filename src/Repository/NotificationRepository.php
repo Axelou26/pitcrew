@@ -18,7 +18,7 @@ use Doctrine\Persistence\ManagerRegistry;
 class NotificationRepository extends ServiceEntityRepository
 {
     private const CACHE_KEY_UNREAD_COUNT = 'notification_unread_count_%d';
-    private const CACHE_TTL = 30; // 30 secondes
+    private const CACHE_TTL = 60; // 1 minute au lieu de 30 secondes
 
     public function __construct(ManagerRegistry $registry)
     {
@@ -28,15 +28,19 @@ class NotificationRepository extends ServiceEntityRepository
     /**
      * @return Notification[] Returns an array of unread notifications for a user
      */
-    public function findUnreadByUser(User $user): array
+    public function findUnreadByUser(User $user, int $limit = 20): array
     {
+        $cacheKey = sprintf('notification_unread_list_%d_%d', $user->getId(), $limit);
+
         return $this->createQueryBuilder('n')
             ->andWhere('n.user = :user')
             ->andWhere('n.isRead = :isRead')
             ->setParameter('user', $user)
             ->setParameter('isRead', false)
             ->orderBy('n.createdAt', 'DESC')
+            ->setMaxResults($limit)
             ->getQuery()
+            ->enableResultCache(15, $cacheKey) // Cache de 15 secondes
             ->getResult();
     }
 
@@ -61,23 +65,43 @@ class NotificationRepository extends ServiceEntityRepository
     {
         $cacheKey = sprintf(self::CACHE_KEY_UNREAD_COUNT, $user->getId());
 
-        return $this->createQueryBuilder('n')
-            ->select('COUNT(n.id)')
-            ->andWhere('n.user = :user')
-            ->andWhere('n.isRead = :isRead')
+        try {
+            // Utiliser une requête DQL directe et optimisée
+            $query = $this->getEntityManager()->createQuery(
+                'SELECT COUNT(n.id) FROM App\Entity\Notification n 
+                 WHERE n.user = :user AND n.isRead = :isRead'
+            )
             ->setParameter('user', $user)
-            ->setParameter('isRead', false)
-            ->getQuery()
-            ->enableResultCache(self::CACHE_TTL, $cacheKey)
-            ->getSingleScalarResult();
+            ->setParameter('isRead', false);
+
+            // Utiliser le cache de requête avec un TTL court
+            $query->enableResultCache(self::CACHE_TTL, $cacheKey);
+
+            // Définir un timeout de requête court
+            $query->setHint('doctrine.query.timeout', 2); // 2 secondes max
+
+            return (int) $query->getSingleScalarResult();
+        } catch (\Exception $e) {
+            // En cas d'erreur, retourner 0 pour éviter de bloquer l'UI
+            return 0;
+        }
     }
 
     public function invalidateUserCache(User $user): void
     {
-        $cacheKey = sprintf(self::CACHE_KEY_UNREAD_COUNT, $user->getId());
+        // Invalider le cache du compteur
+        $countCacheKey = sprintf(self::CACHE_KEY_UNREAD_COUNT, $user->getId());
         $this->getEntityManager()->getConfiguration()
             ->getResultCache()
-            ->delete($cacheKey);
+            ->delete($countCacheKey);
+
+        // Invalider le cache de la liste (pour différentes limites)
+        for ($limit = 10; $limit <= 50; $limit += 10) {
+            $listCacheKey = sprintf('notification_unread_list_%d_%d', $user->getId(), $limit);
+            $this->getEntityManager()->getConfiguration()
+                ->getResultCache()
+                ->delete($listCacheKey);
+        }
     }
 
     /**

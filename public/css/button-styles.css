@@ -1,0 +1,190 @@
+/* Styles centralisés pour les boutons */
+
+/* Bouton primaire */
+.btn-primary {
+    background-color: #e10600;
+    border-color: #e10600;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #b30000;
+    border-color: #b30000;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary:focus {
+    background-color: #b30000;
+    border-color: #b30000;
+    box-shadow: 0 0 0 0.25rem rgba(225, 6, 0, 0.25);
+}
+
+.btn-primary:active {
+    background-color: #800000;
+    border-color: #800000;
+    transform: translateY(0);
+}
+
+/* Bouton outline primaire */
+.btn-outline-primary {
+    color: #e10600;
+    border-color: #e10600;
+    background-color: transparent;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+    background-color: rgba(225, 6, 0, 0.1);
+    color: #e10600;
+    border-color: #e10600;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-outline-primary:focus {
+    box-shadow: 0 0 0 0.25rem rgba(225, 6, 0, 0.25);
+}
+
+/* Bouton outline secondaire */
+.btn-outline-secondary {
+    color: #6c757d;
+    border-color: #6c757d;
+    background-color: transparent;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-outline-secondary:focus {
+    box-shadow: 0 0 0 0.25rem rgba(108, 117, 125, 0.25);
+}
+
+/* Variantes de taille */
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    border-radius: 0.25rem;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.25rem;
+    border-radius: 0.5rem;
+}
+
+/* Boutons arrondis */
+.btn-rounded {
+    border-radius: 50px;
+}
+
+.rounded-pill {
+    border-radius: 50rem;
+}
+
+.rounded-end-pill {
+    border-top-right-radius: 50rem;
+    border-bottom-right-radius: 50rem;
+}
+
+.rounded-start-pill {
+    border-top-left-radius: 50rem;
+    border-bottom-left-radius: 50rem;
+}
+
+/* Boutons avec icônes */
+.btn .bi {
+    margin-right: 0.5rem;
+}
+
+.btn-sm .bi {
+    margin-right: 0.25rem;
+}
+
+/* Boutons de soumission de formulaire */
+.btn[type="submit"] {
+    font-weight: 600;
+}
+
+/* Boutons d'action */
+.btn-action {
+    min-width: 100px;
+}
+
+/* Boutons de navigation */
+.btn-nav {
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+/* Boutons de carte */
+.btn-card {
+    border-radius: 0.375rem;
+    font-weight: 500;
+}
+
+/* États spéciaux */
+.btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.btn-loading {
+    position: relative;
+    color: transparent;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .btn-lg {
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+    }
+    
+    .btn {
+        font-size: 0.875rem;
+    }
+}
+
+/* Styles pour les boutons dans les cartes */
+.card .btn-primary {
+    margin-bottom: 0.5rem;
+}
+
+/* Styles pour les boutons dans les modales */
+.modal .btn-primary {
+    margin-right: 0.5rem;
+}
+
+/* Styles pour les boutons dans les formulaires */
+.form-group .btn-primary {
+    margin-top: 1rem;
+} 

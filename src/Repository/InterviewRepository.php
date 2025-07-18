@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Interview;
 use App\Entity\User;
+use App\Repository\Trait\FlushTrait;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use DateTime;
@@ -13,6 +14,8 @@ use DateTime;
  */
 class InterviewRepository extends ServiceEntityRepository
 {
+    use FlushTrait;
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Interview::class);
@@ -98,19 +101,17 @@ class InterviewRepository extends ServiceEntityRepository
 
     public function save(Interview $entity, bool $flush = false): void
     {
-        $this->getEntityManager()->persist($entity);
-
+        $this->persist($entity);
         if ($flush) {
-            $this->getEntityManager()->flush();
+            $this->flush();
         }
     }
 
     public function remove(Interview $entity, bool $flush = false): void
     {
         $this->getEntityManager()->remove($entity);
-
         if ($flush) {
-            $this->getEntityManager()->flush();
+            $this->flush();
         }
     }
 }
