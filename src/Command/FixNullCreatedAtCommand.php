@@ -95,12 +95,13 @@ class FixNullCreatedAtCommand extends Command
             $fixedCount++;
         }
 
-        if ($fixedCount > 0) {
-            $this->entityManager->flush();
-            $io->success(sprintf('%d entités ont été corrigées avec une date de création valide.', $fixedCount));
-        } else {
+        if ($fixedCount === 0) {
             $io->info('Aucune entité avec createdAt null n\'a été trouvée.');
+            return Command::SUCCESS;
         }
+
+        $this->entityManager->flush();
+        $io->success(sprintf('%d entités ont été corrigées avec une date de création valide.', $fixedCount));
 
         return Command::SUCCESS;
     }

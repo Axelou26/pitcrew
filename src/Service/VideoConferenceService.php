@@ -127,8 +127,6 @@ class VideoConferenceService
             'subject' => $interview->getTitle(),
             'userRole' => $isRecruiter ? 'host' : 'participant',
             'userEmail' => $user->getEmail(),
-            'startWithAudioMuted' => false,
-            'startWithVideoMuted' => false,
             'jitsiDomain' => $this->jitsiDomain,
             // Configuration supplémentaire pour éviter les problèmes d'accès
             'enableLobby' => false,

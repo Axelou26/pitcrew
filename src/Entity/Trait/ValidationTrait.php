@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity\Trait;
 
 use Symfony\Component\Validator\Constraints as Assert;
+use DateTime;
 
 trait ValidationTrait
 {
@@ -269,7 +270,7 @@ trait ValidationTrait
                 'message' => 'La date est obligatoire'
             ]),
             new Assert\GreaterThan([
-                'value' => new \DateTime(),
+                'value' => new DateTime(),
                 'message' => 'La date doit être dans le futur'
             ])
         ];

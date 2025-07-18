@@ -47,8 +47,9 @@ class CreateFriendshipsCommand extends Command
         $friendshipsCreated = 0;
 
         // Pour chaque utilisateur, créer une amitié avec les autres utilisateurs
-        for ($i = 0; $i < count($users); $i++) {
-            for ($j = $i + 1; $j < count($users); $j++) {
+        $userCount = count($users);
+        for ($i = 0; $i < $userCount; $i++) {
+            for ($j = $i + 1; $j < $userCount; $j++) {
                 $user1 = $users[$i];
                 $user2 = $users[$j];
 

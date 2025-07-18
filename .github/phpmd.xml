@@ -38,6 +38,7 @@
     <rule ref="rulesets/naming.xml">
         <exclude name="ShortVariable" />
         <exclude name="LongVariable" />
+        <exclude name="ShortMethodName" />
     </rule>
 
     <!-- Customize the ShortVariable rule -->

@@ -87,9 +87,10 @@ class CheckDuplicatesCommand extends Command
                         $migrations[$className],
                         $file->getRelativePathname()
                     );
-                } else {
-                    $migrations[$className] = $file->getRelativePathname();
+                    continue;
                 }
+
+                $migrations[$className] = $file->getRelativePathname();
             }
         }
 

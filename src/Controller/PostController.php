@@ -129,8 +129,8 @@ class PostController extends AbstractController
             }
 
             // 5. Trier par date de création (du plus récent au plus ancien)
-            usort($uniquePosts, function ($a, $b) {
-                return $b->getCreatedAt() <=> $a->getCreatedAt();
+            usort($uniquePosts, function ($postA, $postB) {
+                return $postB->getCreatedAt() <=> $postA->getCreatedAt();
             });
 
             // 6. Limiter le nombre de posts à afficher

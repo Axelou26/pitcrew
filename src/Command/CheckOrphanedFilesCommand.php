@@ -151,21 +151,39 @@ class CheckOrphanedFilesCommand extends Command
     private function isPhpFileReferenced(string $phpFile): bool
     {
         // Ignorer les fichiers de base (Entity, Repository, etc.)
-        if (
-            strpos($phpFile, 'Entity/') === 0 ||
-            strpos($phpFile, 'Repository/') === 0 ||
-            strpos($phpFile, 'Controller/') === 0 ||
-            strpos($phpFile, 'Command/') === 0 ||
-            strpos($phpFile, 'Form/') === 0 ||
-            strpos($phpFile, 'Service/') === 0 ||
-            strpos($phpFile, 'Security/') === 0 ||
-            strpos($phpFile, 'Twig/') === 0 ||
-            strpos($phpFile, 'DataFixtures/') === 0 ||
-            strpos($phpFile, 'Migrations/') === 0
-        ) {
+        if ($this->isBasePhpFile($phpFile)) {
             return true;
         }
 
+        return $this->isPhpFileUsedInCode($phpFile);
+    }
+
+    private function isBasePhpFile(string $phpFile): bool
+    {
+        $baseDirectories = [
+            'Entity/',
+            'Repository/',
+            'Controller/',
+            'Command/',
+            'Form/',
+            'Service/',
+            'Security/',
+            'Twig/',
+            'DataFixtures/',
+            'Migrations/'
+        ];
+
+        foreach ($baseDirectories as $directory) {
+            if (strpos($phpFile, $directory) === 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function isPhpFileUsedInCode(string $phpFile): bool
+    {
         $finder = new Finder();
         $finder->files()->name('*.php')->in('src')->exclude('tests');
 

@@ -158,13 +158,18 @@ class PostRepository extends ServiceEntityRepository
                     // Si l'utilisateur n'a pas d'amis, afficher seulement ses propres posts
                     $qb->where('p.author = :user')
                        ->setParameter('user', $user);
-                } else {
-                    // Sinon, afficher ses posts et ceux de ses amis
-                    $qb->where('p.author = :user')
-                       ->orWhere('p.author IN (:friends)')
-                       ->setParameter('user', $user)
-                       ->setParameter('friends', $friends);
+                    return $qb->orderBy('p.createdAt', 'DESC')
+                             ->setFirstResult($firstResult)
+                             ->setMaxResults($limit)
+                             ->getQuery()
+                             ->getResult();
                 }
+
+                // Sinon, afficher ses posts et ceux de ses amis
+                $qb->where('p.author = :user')
+                   ->orWhere('p.author IN (:friends)')
+                   ->setParameter('user', $user)
+                   ->setParameter('friends', $friends);
 
                 return $qb->orderBy('p.createdAt', 'DESC')
                          ->setFirstResult($firstResult)
