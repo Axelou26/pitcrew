@@ -17,8 +17,8 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: pitcrew_test
+          MYSQL_ROOT_PASSWORD: azerty-26
+          MYSQL_DATABASE: blog_test
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
@@ -49,16 +49,24 @@ jobs:
     - name: Create .env.test
       run: |
         cp .env .env.test
-        sed -i 's/DATABASE_URL=.*/DATABASE_URL="mysql:\/\/root:root@127.0.0.1:3306\/pitcrew_test"/' .env.test
+        sed -i 's/DATABASE_URL=.*/DATABASE_URL="mysql:\/\/root:azerty-26@127.0.0.1:3306\/blog_test?serverVersion=8.0"/' .env.test
 
     - name: Setup database
       run: |
-        php bin/console doctrine:database:create --env=test
-        php bin/console doctrine:schema:create --env=test
-        php bin/console doctrine:fixtures:load --env=test --no-interaction
+        php bin/console --env=test doctrine:database:drop --if-exists --force
+        php bin/console --env=test doctrine:database:create --if-not-exists
+        php bin/console --env=test doctrine:schema:create
+        php bin/console --env=test doctrine:fixtures:load --no-interaction
+      env:
+        DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog_test?serverVersion=8.0"
+        APP_ENV: test
 
     - name: Run PHPUnit tests
-      run: vendor/bin/phpunit --coverage-clover=coverage.xml
+      run: |
+        XDEBUG_MODE=coverage php bin/phpunit --coverage-clover=coverage.xml --testdox
+      env:
+        DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog_test?serverVersion=8.0"
+        APP_ENV: test
 
     - name: Run PHPStan analysis
       run: vendor/bin/phpstan analyse src/ --level=8 --no-progress
