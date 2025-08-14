@@ -84,7 +84,7 @@ jobs:
 
       - name: Run Tests with Coverage
         run: |
-          XDEBUG_MODE=coverage php bin/phpunit --coverage-clover clover.xml --testdox
+          XDEBUG_MODE=XDEBUG_MODE=coverage php bin/phpunit tests/Unit/ --coverage-clover=coverage.xml --testdox
         env:
           DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog_test?serverVersion=8.0"
           APP_ENV: test

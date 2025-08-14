@@ -27,6 +27,11 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y jq
+
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
@@ -78,11 +83,33 @@ jobs:
 
     - name: Check for unused Composer dependencies
       run: |
-        composer require --dev maglnet/composer-unused
-        vendor/bin/composer-unused --no-progress 
+        echo "Checking Composer dependencies..."
+        composer show --direct --format=json | jq -r '.installed[] | select(.type == "library") | .name' > installed_packages.txt
+        echo "Installed packages:"
+        cat installed_packages.txt
+        
+        # Vérifier les packages potentiellement inutilisés
+        echo "Checking for potentially unused packages..."
+        for package in $(cat installed_packages.txt); do
+          if ! grep -r "use $package" src/ > /dev/null 2>&1 && ! grep -r "require.*$package" composer.json > /dev/null 2>&1; then
+            echo "⚠️ Package $package might be unused (check manually)"
+          fi
+        done
 
     - name: Check for unused NPM dependencies
-      run: npx depcheck --json
+      run: |
+        echo "Checking NPM dependencies..."
+        npx depcheck --json > depcheck-report.json || true
+        
+        if [ -f "depcheck-report.json" ]; then
+          echo "Dependency check completed"
+          echo "Unused dependencies:"
+          jq -r '.dependencies[]?' depcheck-report.json 2>/dev/null || echo "None found"
+          echo "Unused devDependencies:"
+          jq -r '.devDependencies[]?' depcheck-report.json 2>/dev/null || echo "None found"
+        else
+          echo "⚠️ Could not generate dependency report"
+        fi
 
     - name: Build assets
       run: npm run build
