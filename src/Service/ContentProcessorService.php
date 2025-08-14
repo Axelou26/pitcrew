@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
-use App\Entity\Post;
 use App\Entity\Hashtag;
-use App\Entity\User;
+use App\Entity\Post;
 use App\Repository\HashtagRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -25,15 +26,15 @@ class ContentProcessorService
         EntityManagerInterface $entityManager,
         LoggerInterface $logger
     ) {
-        $this->hashtagRepository = $hashtagRepository;
-        $this->userRepository = $userRepository;
+        $this->hashtagRepository   = $hashtagRepository;
+        $this->userRepository      = $userRepository;
         $this->notificationService = $notificationService;
-        $this->entityManager = $entityManager;
-        $this->logger = $logger;
+        $this->entityManager       = $entityManager;
+        $this->logger              = $logger;
     }
 
     /**
-     * Traite le contenu d'un nouveau post
+     * Traite le contenu d'un nouveau post.
      */
     public function processNewPostContent(Post $post): void
     {
@@ -41,20 +42,41 @@ class ContentProcessorService
     }
 
     /**
-     * Traite le contenu d'un post mis à jour
+     * Traite le contenu d'un post mis à jour.
      */
     public function processUpdatedPostContent(Post $post): void
     {
         $this->processContentInternal($post, true);
     }
 
+    public function processHashtags(Post $post): void
+    {
+        $hashtags = $post->getHashtags();
+        if ($hashtags === null) {
+            return;
+        }
+
+        $hashtagCount = \count($hashtags);
+        if ($hashtagCount === 0) {
+            return;
+        }
+
+        $hashtagArray = $hashtags->toArray();
+        foreach ($hashtagArray as $hashtag) {
+            if (method_exists($hashtag, 'incrementUsageCount')) {
+                $hashtag->incrementUsageCount();
+            }
+        }
+    }
+
     /**
-     * Logique interne de traitement du contenu
+     * Logique interne de traitement du contenu.
      */
     private function processContentInternal(Post $post, bool $isUpdate): void
     {
         if (!$post->getContent() || trim($post->getContent()) === '') {
             $this->logger->info('Contenu vide, rien à traiter', ['post_id' => $post->getId()]);
+
             return;
         }
 
@@ -71,21 +93,21 @@ class ContentProcessorService
             $this->processMentions($post);
 
             $this->logger->info('Contenu traité avec succès', [
-                'post_id' => $post->getId(),
-                'hashtags_count' => count($post->getHashtags()),
-                'mentions_count' => count($post->getMentions() ?? [])
+                'post_id'        => $post->getId(),
+                'hashtags_count' => \count($post->getHashtags()),
+                'mentions_count' => \count($post->getMentions() ?? []),
             ]);
         } catch (\Throwable $e) {
             $this->logger->error('Erreur lors du traitement du contenu: ' . $e->getMessage(), [
-                'post_id' => $post->getId(),
-                'exception' => get_class($e),
-                'trace' => $e->getTraceAsString()
+                'post_id'   => $post->getId(),
+                'exception' => $e::class,
+                'trace'     => $e->getTraceAsString(),
             ]);
         }
     }
 
     /**
-     * Traite les hashtags d'un nouveau post
+     * Traite les hashtags d'un nouveau post.
      */
     private function processNewHashtags(Post $post): void
     {
@@ -99,7 +121,7 @@ class ContentProcessorService
     }
 
     /**
-     * Traite les hashtags d'un post mis à jour
+     * Traite les hashtags d'un post mis à jour.
      */
     private function processUpdatedHashtags(Post $post): void
     {
@@ -155,9 +177,10 @@ class ContentProcessorService
     }
 
     /**
-     * Traite les mentions d'un post
+     * Traite les mentions d'un post.
      *
      * @param Post $post Le post à traiter
+     *
      * @return void
      */
     private function processMentions(Post $post): void

@@ -1,54 +1,50 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
-use App\Repository\JobOfferRepository;
+use App\Entity\Trait\JobOfferContactTrait;
 use App\Entity\Trait\JobOfferDetailsTrait;
 use App\Entity\Trait\JobOfferMediaTrait;
-use App\Entity\Trait\JobOfferContactTrait;
+use App\Repository\JobOfferRepository;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Validator\Constraints as Assert;
-use DateTimeImmutable;
-use DateTimeInterface;
 
 #[ORM\Entity(repositoryClass: JobOfferRepository::class)]
 #[ORM\Table(name: 'job_offer')]
 #[ORM\HasLifecycleCallbacks]
 class JobOffer
 {
+    use JobOfferContactTrait;
     use JobOfferDetailsTrait;
     use JobOfferMediaTrait;
-    use JobOfferContactTrait;
 
-    /**
-     * @SuppressWarnings("PHPMD.ShortVariable")
-     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\Column(type: 'integer')]
+    private int $id;
 
     #[ORM\Column(name: 'created_at')]
-    private ?DateTimeImmutable $createdAt = null;
+    private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\ManyToOne(targetEntity: Recruiter::class, inversedBy: 'jobOffers')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Recruiter $recruiter = null;
 
-    #[ORM\OneToMany(mappedBy: 'jobOffer', targetEntity: JobApplication::class, orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Application::class, mappedBy: 'jobOffer', orphanRemoval: true)]
     private Collection $applications;
 
-    #[ORM\OneToMany(mappedBy: 'jobOffer', targetEntity: Interview::class)]
+    #[ORM\OneToMany(targetEntity: Interview::class, mappedBy: 'jobOffer', orphanRemoval: true)]
     private Collection $interviews;
 
     public function __construct()
     {
-        $this->createdAt = new DateTimeImmutable();
+        $this->createdAt    = new DateTimeImmutable();
         $this->applications = new ArrayCollection();
-        $this->interviews = new ArrayCollection();
+        $this->interviews   = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -56,7 +52,7 @@ class JobOffer
         return $this->id;
     }
 
-    public function getCreatedAt(): ?DateTimeImmutable
+    public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
     }
@@ -69,33 +65,36 @@ class JobOffer
     public function setRecruiter(?Recruiter $recruiter): static
     {
         $this->recruiter = $recruiter;
+
         return $this;
     }
 
     /**
-     * @return Collection<int, JobApplication>
+     * @return Collection<int, Application>
      */
     public function getApplications(): Collection
     {
         return $this->applications;
     }
 
-    public function addApplication(JobApplication $application): static
+    public function addApplication(Application $application): static
     {
         if (!$this->applications->contains($application)) {
             $this->applications->add($application);
             $application->setJobOffer($this);
         }
+
         return $this;
     }
 
-    public function removeApplication(JobApplication $application): static
+    public function removeApplication(Application $application): static
     {
         if ($this->applications->removeElement($application)) {
             if ($application->getJobOffer() === $this) {
                 $application->setJobOffer(null);
             }
         }
+
         return $this;
     }
 

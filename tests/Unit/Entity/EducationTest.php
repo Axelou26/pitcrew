@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit\Entity;
 
 use App\Entity\Education;
@@ -15,17 +17,17 @@ class EducationTest extends TestCase
     {
         parent::setUp();
         $this->education = new Education();
-        $this->user = new User();
+        $this->user      = new User();
         $this->user->setEmail('user@example.com');
     }
 
     public function testBasicInformation(): void
     {
-        $degree = 'Master en Informatique';
+        $degree      = 'Master en Informatique';
         $institution = 'Université Test';
-        $location = 'Paris';
-        $startDate = '09/2021';
-        $endDate = '06/2023';
+        $location    = 'Paris';
+        $startDate   = '09/2021';
+        $endDate     = '06/2023';
         $description = 'Description de la formation';
 
         $this->education
@@ -36,12 +38,12 @@ class EducationTest extends TestCase
             ->setEndDate($endDate)
             ->setDescription($description);
 
-        $this->assertEquals($degree, $this->education->getDegree());
-        $this->assertEquals($institution, $this->education->getInstitution());
-        $this->assertEquals($location, $this->education->getLocation());
-        $this->assertEquals($startDate, $this->education->getStartDate());
-        $this->assertEquals($endDate, $this->education->getEndDate());
-        $this->assertEquals($description, $this->education->getDescription());
+        $this->assertSame($degree, $this->education->getDegree());
+        $this->assertSame($institution, $this->education->getInstitution());
+        $this->assertSame($location, $this->education->getLocation());
+        $this->assertSame($startDate, $this->education->getStartDate());
+        $this->assertSame($endDate, $this->education->getEndDate());
+        $this->assertSame($description, $this->education->getDescription());
     }
 
     public function testUserAssociation(): void

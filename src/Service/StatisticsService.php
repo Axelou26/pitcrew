@@ -1,224 +1,171 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
-use App\Entity\User;
-use App\Repository\JobApplicationRepository;
+use App\Repository\ApplicationRepository;
 use App\Repository\JobOfferRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 class StatisticsService
 {
-    private $jobOfferRepository;
-    private $appRepo;
-    private $entityManager;
+    private JobOfferRepository $jobOfferRepository;
+    private ApplicationRepository $appRepo;
+    private EntityManagerInterface $entityManager;
 
     public function __construct(
         JobOfferRepository $jobOfferRepository,
-        JobApplicationRepository $appRepo,
+        ApplicationRepository $appRepo,
         EntityManagerInterface $entityManager
     ) {
         $this->jobOfferRepository = $jobOfferRepository;
-        $this->appRepo = $appRepo;
-        $this->entityManager = $entityManager;
+        $this->appRepo            = $appRepo;
+        $this->entityManager      = $entityManager;
     }
 
     /**
-     * Obtenir les statistiques de base pour un recruteur
-     * Disponible pour les abonnements Premium et Business
+     * Récupère les statistiques de base.
+     *
+     * @return array<string, mixed>
      */
-    public function getBasicStatistics(User $recruiter): array
+    public function getBasicStatistics(): array
     {
         // Nombre total d'offres publiées
-        $totalOffers = $this->jobOfferRepository->count(['recruiter' => $recruiter]);
+        $totalJobOffers = $this->jobOfferRepository->count([]);
+
+        // Nombre total de candidatures
+        $totalApplications = $this->appRepo->count([]);
 
         // Nombre d'offres actives
-        $activeOffers = $this->jobOfferRepository->count(['recruiter' => $recruiter, 'isActive' => true]);
+        $activeJobOffers = $this->jobOfferRepository->count(['isActive' => true]);
 
-        // Nombre total de candidatures reçues
-        $totalApplications = $this->appRepo->countForRecruiter($recruiter);
-
-        // Nombre moyen de candidatures par offre
-        $averageApplications = $totalOffers > 0 ? $totalApplications / $totalOffers : 0;
-
-        // Taux de conversion (candidatures / vues)
-        $conversionRate = $this->calculateConversionRate($recruiter);
+        // Taux de conversion (candidatures par offre)
+        $conversionRate = $totalJobOffers > 0 ? round(($totalApplications / $totalJobOffers) * 100, 2) : 0;
 
         return [
-            'totalOffers' => $totalOffers,
-            'activeOffers' => $activeOffers,
+            'totalJobOffers'    => $totalJobOffers,
             'totalApplications' => $totalApplications,
-            'averageApplications' => round($averageApplications, 1),
-            'conversionRate' => $conversionRate
+            'activeJobOffers'   => $activeJobOffers,
+            'conversionRate'    => $conversionRate,
         ];
     }
 
     /**
-     * Obtenir des statistiques détaillées pour un recruteur
-     * Disponible uniquement pour l'abonnement Business
+     * Récupère les statistiques détaillées.
+     *
+     * @return array<string, mixed>
      */
-    public function getDetailedStatistics(User $recruiter): array
+    public function getDetailedStatistics(): array
     {
         // Récupérer les statistiques de base
-        $basicStats = $this->getBasicStatistics($recruiter);
+        $basicStats = $this->getBasicStatistics();
 
-        // Statistiques par catégorie d'offre
-        $statsByCategory = $this->getStatsByCategory($recruiter);
+        // Statistiques par catégorie
+        $categoryStats = $this->getStatsByCategory();
 
-        // Évolution mensuelle des candidatures (6 derniers mois)
-        $monthlyApplications = $this->getMonthlyApplicationsStats($recruiter);
+        // Statistiques mensuelles
+        $monthlyStats = $this->getMonthlyApplicationsStats();
 
-        // Top 5 des offres avec le plus de candidatures
-        $topOffers = $this->getTopOffersByApplications($recruiter);
+        // Top des offres
+        $topOffers = $this->getTopOffersByApplications();
 
-        // Provenance des candidats (LinkedIn, site web, etc.)
-        $applicationsSources = $this->getApplicationsSources($recruiter);
+        // Sources des candidatures
+        $sources = $this->getApplicationsSources();
 
-        // Répartition des candidats par compétences
-        $skillsDistribution = $this->getSkillsDistribution($recruiter);
+        // Distribution des compétences
+        $skillsDistribution = $this->getSkillsDistribution();
 
         return array_merge($basicStats, [
-            'statsByCategory' => $statsByCategory,
-            'monthlyApplications' => $monthlyApplications,
-            'topOffers' => $topOffers,
-            'applicationsSources' => $applicationsSources,
-            'skillsDistribution' => $skillsDistribution
+            'categoryStats'      => $categoryStats,
+            'monthlyStats'       => $monthlyStats,
+            'topOffers'          => $topOffers,
+            'sources'            => $sources,
+            'skillsDistribution' => $skillsDistribution,
         ]);
     }
 
     /**
-     * Calculer le taux de conversion (candidatures / vues)
+     * Récupère les statistiques par catégorie.
+     *
+     * @return array<string, mixed>
      */
-    private function calculateConversionRate(User $recruiter): float
+    private function getStatsByCategory(): array
     {
-        $totalViews = $this->jobOfferRepository->getTotalViewsForRecruiter($recruiter);
-        $totalApplications = $this->appRepo->countForRecruiter($recruiter);
+        $qb = $this->entityManager->createQueryBuilder();
+        $qb->select('jo.category, COUNT(jo.id) as count')
+            ->from('App\Entity\JobOffer', 'jo')
+            ->groupBy('jo.category');
 
-        if ($totalViews > 0) {
-            return round(($totalApplications / $totalViews) * 100, 1);
+        $result = $qb->getQuery()->getResult();
+
+        $stats = [];
+        foreach ($result as $row) {
+            $stats[$row['category']] = $row['count'];
         }
 
-        return 0;
+        return $stats;
     }
 
     /**
-     * Obtenir les statistiques par catégorie d'offre
+     * Récupère les statistiques mensuelles des candidatures.
+     *
+     * @return array<int, array<string, mixed>>
      */
-    private function getStatsByCategory(User $recruiter): array
+    private function getMonthlyApplicationsStats(): array
     {
-        $conn = $this->entityManager->getConnection();
+        $qb = $this->entityManager->createQueryBuilder();
+        $qb->select('SUBSTRING(a.createdAt, 1, 7) as month, COUNT(a.id) as count')
+            ->from('App\Entity\Application', 'a')
+            ->groupBy('month')
+            ->orderBy('month', 'DESC')
+            ->setMaxResults(12);
 
-        $sql = '
-            SELECT 
-                jo.category, 
-                COUNT(jo.id) as total_offers,
-                SUM(CASE WHEN jo.is_active = 1 THEN 1 ELSE 0 END) as active_offers,
-                COUNT(ja.id) as applications
-            FROM job_offer jo
-            LEFT JOIN job_application ja ON ja.job_offer_id = jo.id
-            WHERE jo.recruiter_id = :recruiterId
-            GROUP BY jo.category
-            ORDER BY applications DESC
-        ';
-
-        $stmt = $conn->prepare($sql);
-        $result = $stmt->executeQuery(['recruiterId' => $recruiter->getId()]);
-
-        return $result->fetchAllAssociative();
+        return $qb->getQuery()->getResult();
     }
 
     /**
-     * Obtenir l'évolution mensuelle des candidatures
+     * Récupère les offres les plus populaires.
+     *
+     * @return array<int, array<string, mixed>>
      */
-    private function getMonthlyApplicationsStats(User $recruiter): array
+    private function getTopOffersByApplications(): array
     {
-        $conn = $this->entityManager->getConnection();
+        $qb = $this->entityManager->createQueryBuilder();
+        $qb->select('jo.title, COUNT(a.id) as applicationCount')
+            ->from('App\Entity\JobOffer', 'jo')
+            ->leftJoin('jo.applications', 'a')
+            ->groupBy('jo.id')
+            ->orderBy('applicationCount', 'DESC')
+            ->setMaxResults(5);
 
-        $sql = '
-            SELECT 
-                DATE_FORMAT(ja.created_at, "%Y-%m") as month,
-                COUNT(ja.id) as applications
-            FROM job_application ja
-            JOIN job_offer jo ON ja.job_offer_id = jo.id
-            WHERE jo.recruiter_id = :recruiterId
-            AND ja.created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-            GROUP BY month
-            ORDER BY month ASC
-        ';
-
-        $stmt = $conn->prepare($sql);
-        $result = $stmt->executeQuery(['recruiterId' => $recruiter->getId()]);
-
-        return $result->fetchAllAssociative();
+        return $qb->getQuery()->getResult();
     }
 
     /**
-     * Obtenir le top 5 des offres avec le plus de candidatures
+     * Récupère les sources des candidatures.
+     *
+     * @return array<int, array<string, mixed>>
      */
-    private function getTopOffersByApplications(User $recruiter): array
+    private function getApplicationsSources(): array
     {
-        $conn = $this->entityManager->getConnection();
+        $qb = $this->entityManager->createQueryBuilder();
+        $qb->select('a.source, COUNT(a.id) as count')
+            ->from('App\Entity\Application', 'a')
+            ->groupBy('a.source');
 
-        $sql = '
-            SELECT 
-                jo.id,
-                jo.title,
-                COUNT(ja.id) as applications
-            FROM job_offer jo
-            LEFT JOIN job_application ja ON ja.job_offer_id = jo.id
-            WHERE jo.recruiter_id = :recruiterId
-            GROUP BY jo.id
-            ORDER BY applications DESC
-            LIMIT 5
-        ';
-
-        $stmt = $conn->prepare($sql);
-        $result = $stmt->executeQuery(['recruiterId' => $recruiter->getId()]);
-
-        return $result->fetchAllAssociative();
+        return $qb->getQuery()->getResult();
     }
 
     /**
-     * Obtenir les sources des candidatures
+     * Récupère la distribution des compétences.
+     *
+     * @return array<int, array<string, mixed>>
      */
-    private function getApplicationsSources(User $recruiter): array
+    private function getSkillsDistribution(): array
     {
-        $conn = $this->entityManager->getConnection();
-
-        $sql = '
-            SELECT 
-                ja.source,
-                COUNT(ja.id) as count
-            FROM job_application ja
-            JOIN job_offer jo ON ja.job_offer_id = jo.id
-            WHERE jo.recruiter_id = :recruiterId
-            GROUP BY ja.source
-            ORDER BY count DESC
-        ';
-
-        $stmt = $conn->prepare($sql);
-        $result = $stmt->executeQuery(['recruiterId' => $recruiter->getId()]);
-
-        return $result->fetchAllAssociative();
-    }
-
-    /**
-     * Obtenir la répartition des candidats par compétences
-     */
-    private function getSkillsDistribution(User $recruiter): array
-    {
-        // Cette fonction nécessiterait une structure de données spécifique
-        // pour stocker les compétences des candidats. Pour cet exemple,
-        // nous renvoyons des données simulées.
-
-        return [
-            ['skill' => 'PHP', 'count' => 75],
-            ['skill' => 'JavaScript', 'count' => 68],
-            ['skill' => 'Symfony', 'count' => 52],
-            ['skill' => 'React', 'count' => 45],
-            ['skill' => 'Docker', 'count' => 35],
-            ['skill' => 'DevOps', 'count' => 28],
-            ['skill' => 'UX/UI', 'count' => 25]
-        ];
+        // Cette méthode nécessiterait une analyse plus complexe des compétences
+        // Pour l'instant, retournons un tableau vide
+        return [];
     }
 }

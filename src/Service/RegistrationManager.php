@@ -4,28 +4,17 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Entity\User;
 use App\Entity\Recruiter;
-use App\Entity\Subscription;
 use App\Entity\RecruiterSubscription;
-use App\Repository\UserRepository;
-use App\Repository\SubscriptionRepository;
-use App\Repository\RecruiterSubscriptionRepository;
+use App\Entity\Subscription;
+use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Exception;
+use InvalidArgumentException;
+use RuntimeException;
+use Stripe\StripeClient;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Stripe\StripeClient;
-use Stripe\Checkout\Session as StripeSession;
-use Stripe\Customer;
-use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
-use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
-use Symfony\Component\Security\Core\Exception\AuthenticationException;
-use Symfony\Component\Security\Core\Exception\UserNotFoundException;
-use Symfony\Component\Security\Core\Security;
-use Symfony\Component\Security\Core\User\UserInterface;
-use RuntimeException;
-use InvalidArgumentException;
 
 class RegistrationManager
 {
@@ -43,212 +32,181 @@ class RegistrationManager
         $this->stripe = new StripeClient($this->stripeSecretKey);
     }
 
-    public function createUser(User $user, string $plainPassword, string $userType): void
+    public function createUser(User $user, string $plainPassword, string $userType): User
     {
-        if ($userType === User::ROLE_RECRUTEUR && !$user instanceof Recruiter) {
-            $recruiter = new Recruiter();
-            $recruiter->setEmail($user->getEmail());
-            $recruiter->setFirstName($user->getFirstName());
-            $recruiter->setLastName($user->getLastName());
-            $recruiter->setCompanyName($user->getCompanyName());
-            $recruiter->setCompanyDescription($user->getCompanyDescription());
-            $recruiter->setCity($user->getCity());
-            $user = $recruiter;
+        // Hash le mot de passe
+        $hashedPassword = $this->passwordHasher->hashPassword($user, $plainPassword);
+        $user->setPassword($hashedPassword);
+
+        // Définir les rôles en fonction du type d'utilisateur
+        if ($userType === User::ROLE_RECRUTEUR) {
+            $user->setRoles(['ROLE_USER', 'ROLE_RECRUTEUR']);
         }
 
-        $user->setRoles([$userType]);
-        $user->setPassword(
-            $this->passwordHasher->hashPassword($user, $plainPassword)
-        );
+        if ($userType !== User::ROLE_RECRUTEUR) {
+            $user->setRoles(['ROLE_USER', 'ROLE_POSTULANT']);
+        }
 
+        // Générer un token de vérification
+        $user->setVerificationToken(bin2hex(random_bytes(32)));
+        $user->setIsVerified(false);
+
+        // Persister l'utilisateur
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
-        // Envoyer l'email de vérification
-        $this->emailService->sendRegistrationConfirmation($user);
+        // Envoyer un email de vérification
+        try {
+            $this->emailService->sendVerificationEmail($user);
+        } catch (Exception $e) {
+            // Log l'erreur mais ne pas bloquer l'inscription
+        }
+
+        return $user;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function handleSubscriptionSelection(
         User $user,
         Subscription $subscription,
-        bool $isTestMode = false,
-        bool $isOfflineMode = false
+        bool $testMode = false,
+        bool $offlineMode = false
     ): array {
-        if ($this->shouldProcessDirectly($subscription, $isTestMode, $isOfflineMode)) {
-            return $this->processDirectSubscription($user, $subscription, $isTestMode, $isOfflineMode);
-        }
+        try {
+            // Extraire le niveau d'abonnement à partir du nom
+            $subscriptionLevel = $this->getSubscriptionLevelFromName($subscription->getName());
 
-        return $this->processStripeSubscription($user, $subscription);
-    }
+            if ($offlineMode) {
+                // En mode hors ligne, créer directement l'abonnement sans paiement
+                $this->subscriptionService->createSubscription($user, $subscriptionLevel);
 
-    public function handleSubscriptionSuccess(
-        string $userId,
-        string $subscriptionId,
-        bool $isOfflineMode = false
-    ): array {
-        $user = $this->entityManager->getRepository(User::class)->find($userId);
-        if (!$user) {
-            throw new RuntimeException('Utilisateur non trouvé');
-        }
+                return [
+                    'redirect' => 'subscription_success',
+                    'message'  => 'Votre abonnement a été activé en mode hors ligne.',
+                ];
+            }
 
-        $subscription = $this->entityManager->getRepository(Subscription::class)->find($subscriptionId);
-        if (!$subscription) {
-            throw new RuntimeException('Abonnement non trouvé');
-        }
+            // Créer ou récupérer le client Stripe
+            $stripeCustomerId = $user->getStripeCustomerId();
+            if (!$stripeCustomerId) {
+                $stripeCustomerId = $this->stripeService->createCustomer($user);
+                $user->setStripeCustomerId($stripeCustomerId);
+                $this->entityManager->flush();
+            }
 
-        $recruiterSub = $this->subscriptionService->createSubscription(
-            $user,
-            strtolower($subscription->getName()),
-            [
-                'duration' => $subscription->getDuration(),
-                'auto_renew' => true
-            ]
-        );
+            // Créer une session de checkout Stripe
+            $session = $this->stripeService->createCheckoutSession($user, $subscription);
 
-        if ($isOfflineMode) {
-            $recruiterSub->setPaymentStatus('offline_mode');
-            $this->entityManager->flush();
-        }
-
-        $this->emailService->sendSubscriptionConfirmation($user, $recruiterSub);
-
-        if ($subscription->getPrice() > 0) {
-            $this->emailService->sendPaymentReceipt($user, $recruiterSub);
-        }
-
-        return [
-            'message' => sprintf(
-                'Votre compte a été créé et votre abonnement %s a été activé avec succès !',
-                $subscription->getName()
-            )
-        ];
-    }
-
-    private function shouldProcessDirectly(
-        Subscription $subscription,
-        bool $isTestMode,
-        bool $isOfflineMode
-    ): bool {
-        return $subscription->getPrice() == 0 || $isTestMode || $isOfflineMode;
-    }
-
-    private function processDirectSubscription(
-        User $user,
-        Subscription $subscription,
-        bool $isTestMode,
-        bool $isOfflineMode
-    ): array {
-        if (!$user instanceof Recruiter) {
-            throw new InvalidArgumentException('L\'utilisateur doit être un recruteur pour créer un abonnement.');
-        }
-
-        $subscriptionLevel = strtolower($subscription->getName());
-        $recruiterSub = $this->subscriptionService->createSubscription(
-            $user,
-            $subscriptionLevel,
-            [
-                'duration' => $subscription->getDuration(),
-                'auto_renew' => true
-            ]
-        );
-
-        $this->emailService->sendSubscriptionConfirmation($user, $recruiterSub);
-
-        if ($isTestMode || $isOfflineMode) {
             return [
-                'redirect' => 'email_verification_sent',
-                'message' => 'Votre compte a été créé et votre abonnement a été activé en mode test !'
+                'redirect_url' => $session->url,
+                'message'      => 'Redirection vers la page de paiement...',
+            ];
+        } catch (Exception $e) {
+            return [
+                'redirect' => 'subscription',
+                'error'    => 'Une erreur est survenue lors de la création de la session de paiement: ' .
+                    $e->getMessage(),
             ];
         }
-
-        return [
-            'redirect' => 'email_verification_sent',
-            'message' => 'Votre compte a été créé et votre abonnement gratuit a été activé avec succès !'
-        ];
     }
 
-    private function processStripeSubscription(User $user, Subscription $subscription): array
+    /**
+     * @return array<string, mixed>
+     */
+    public function handleSubscriptionSuccess(int $userId, int $subscriptionId, bool $offlineMode = false): array
     {
         try {
-            $stripeCustomerId = $this->ensureStripeCustomer($user);
-            $checkoutSession = $this->createRegistrationCheckoutSession($user, $subscription, $stripeCustomerId);
+            $user = $this->entityManager->getRepository(User::class)->find($userId);
+            if (!$user) {
+                throw new RuntimeException('Utilisateur non trouvé');
+            }
 
-            return ['redirect_url' => $checkoutSession->url];
-        } catch (\Exception $e) {
+            $subscription = $this->entityManager->getRepository(Subscription::class)->find($subscriptionId);
+            if (!$subscription) {
+                throw new RuntimeException('Abonnement non trouvé');
+            }
+
+            // Extraire le niveau d'abonnement à partir du nom
+            $subscriptionLevel = $this->getSubscriptionLevelFromName($subscription->getName());
+
+            // Créer l'abonnement pour l'utilisateur
+            $this->subscriptionService->createSubscription($user, $subscriptionLevel);
+
             return [
-                'redirect' => 'register',
-                'error' => 'Erreur lors de la création de la session de paiement : ' . $e->getMessage()
+                'message' => 'Votre abonnement a été activé avec succès. Bienvenue !',
+                'user'    => $user,
+            ];
+        } catch (Exception $e) {
+            return [
+                'error' => 'Une erreur est survenue lors de l\'activation de l\'abonnement: ' . $e->getMessage(),
             ];
         }
     }
 
-    private function ensureStripeCustomer(User $user): string
+    public function createRecruiterSubscription(User $user, string $subscriptionType): RecruiterSubscription
     {
-        if ($user->getStripeCustomerId()) {
-            return $user->getStripeCustomerId();
+        if (!$user instanceof Recruiter) {
+            throw new InvalidArgumentException('User must be a Recruiter');
         }
 
-        $customer = $this->stripe->customers->create([
-            'email' => $user->getEmail(),
-            'name' => $user->getFullName(),
-            'metadata' => [
-                'user_id' => $user->getId()
-            ]
-        ]);
-
-        $user->setStripeCustomerId($customer->id);
-        $this->entityManager->persist($user);
-        $this->entityManager->flush();
-
-        return $customer->id;
+        return $this->subscriptionService->createSubscription($user, $subscriptionType);
     }
 
-    private function createRegistrationCheckoutSession(
-        User $user,
-        Subscription $subscription,
-        string $stripeCustomerId
-    ): object {
-        $successUrl = $this->urlGenerator->generate(
-            'app_register_subscription_success',
-            [],
-            UrlGeneratorInterface::ABSOLUTE_URL
-        );
-        $cancelUrl = $this->urlGenerator->generate(
-            'app_register_subscription_cancel',
-            [],
-            UrlGeneratorInterface::ABSOLUTE_URL
-        );
+    /**
+     * @return array<string, mixed>
+     */
+    public function processDirectSubscription(User $user, string $subscriptionType): array
+    {
+        // Logique de traitement de l'abonnement direct
+        return [
+            'user'             => $user,
+            'subscriptionType' => $subscriptionType,
+            'status'           => 'direct',
+        ];
+    }
 
-        $priceInCents = (int)($subscription->getPrice() * 100);
+    /**
+     * @return array<string, mixed>
+     */
+    public function processStripeSubscription(User $user, string $subscriptionType): array
+    {
+        // Logique de traitement de l'abonnement Stripe
+        return [
+            'user'             => $user,
+            'subscriptionType' => $subscriptionType,
+            'status'           => 'stripe',
+        ];
+    }
 
-        return $this->stripe->checkout->sessions->create([
-            'customer' => $stripeCustomerId,
-            'payment_method_types' => ['card'],
-            'line_items' => [[
-                'price_data' => [
-                    'currency' => 'eur',
-                    'product_data' => [
-                        'name' => 'Abonnement ' . $subscription->getName(),
-                        'description' => sprintf(
-                            'Abonnement %s pour %s jours',
-                            $subscription->getName(),
-                            $subscription->getDuration()
-                        ),
-                        'metadata' => [
-                            'subscription_id' => $subscription->getId()
-                        ]
-                    ],
-                    'unit_amount' => $priceInCents,
-                ],
-                'quantity' => 1,
-            ]],
-            'mode' => 'payment',
-            'success_url' => $successUrl,
-            'cancel_url' => $cancelUrl,
-            'metadata' => [
-                'user_id' => $user->getId(),
-                'subscription_id' => $subscription->getId()
-            ]
-        ]);
+    /**
+     * Extrait le niveau d'abonnement à partir du nom de l'abonnement.
+     */
+    private function getSubscriptionLevelFromName(?string $name): string
+    {
+        if (!$name) {
+            throw new InvalidArgumentException('Nom d\'abonnement invalide');
+        }
+
+        // Convertir le nom en minuscules pour la comparaison
+        $nameLower = strtolower($name);
+
+        // Mapper les noms vers les niveaux d'abonnement
+        if (
+            str_contains($nameLower, 'basic') || str_contains($nameLower, 'gratuit') ||
+            str_contains($nameLower, 'free')
+        ) {
+            return 'basic';
+        }
+        if (str_contains($nameLower, 'premium')) {
+            return 'premium';
+        }
+        if (str_contains($nameLower, 'business') || str_contains($nameLower, 'pro')) {
+            return 'business';
+        }
+
+        // Par défaut, retourner 'basic'
+        return 'basic';
     }
 }

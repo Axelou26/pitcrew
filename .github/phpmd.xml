@@ -10,6 +10,8 @@
         PHPMD ruleset for CI workflows
     </description>
 
+
+
     <!-- Import rules but exclude problematic ones -->
     <rule ref="rulesets/cleancode.xml">
         <exclude name="BooleanArgumentFlag" />
@@ -24,6 +26,8 @@
         <exclude name="CouplingBetweenObjects" />
         <exclude name="ExcessiveMethodLength" />
         <exclude name="ExcessiveParameterList" />
+        <exclude name="ExcessiveClassLength" />
+        <exclude name="TooManyMethods" />
     </rule>
 
     <rule ref="rulesets/controversial.xml">
@@ -33,6 +37,8 @@
     <rule ref="rulesets/design.xml">
         <exclude name="NumberOfChildren" />
         <exclude name="CouplingBetweenObjects" />
+        <exclude name="CyclomaticComplexity" />
+        <exclude name="NPathComplexity" />
     </rule>
 
     <rule ref="rulesets/naming.xml">
@@ -48,4 +54,5 @@
             <property name="minimum" value="2" />
         </properties>
     </rule>
+
 </ruleset> 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -48,6 +50,7 @@ class CheckDuplicatesCommand extends Command
 
         if (empty($duplicates)) {
             $io->success('Aucun doublon détecté !');
+
             return Command::SUCCESS;
         }
 
@@ -56,7 +59,7 @@ class CheckDuplicatesCommand extends Command
         foreach ($duplicates as $type => $files) {
             $io->section($type);
             foreach ($files as $file) {
-                $io->writeln(sprintf('  • %s', $file));
+                $io->writeln(\sprintf('  • %s', $file));
             }
         }
 
@@ -81,7 +84,7 @@ class CheckDuplicatesCommand extends Command
                 $className = $matches[1];
 
                 if (isset($migrations[$className])) {
-                    $duplicates[] = sprintf(
+                    $duplicates[] = \sprintf(
                         'Classe %s dupliquée dans %s et %s',
                         $className,
                         $migrations[$className],
@@ -124,7 +127,7 @@ class CheckDuplicatesCommand extends Command
         // Trouver les fichiers en double
         $commonFiles = array_intersect($publicJsFiles, $assetsJsFiles);
         foreach ($commonFiles as $file) {
-            $duplicates[] = sprintf(
+            $duplicates[] = \sprintf(
                 'Fichier JS %s présent dans public/js/ et assets/js/',
                 $file
             );
@@ -160,7 +163,7 @@ class CheckDuplicatesCommand extends Command
         // Trouver les fichiers en double
         $commonFiles = array_intersect($publicCssFiles, $assetsCssFiles);
         foreach ($commonFiles as $file) {
-            $duplicates[] = sprintf(
+            $duplicates[] = \sprintf(
                 'Fichier CSS %s présent dans public/css/ et assets/styles/',
                 $file
             );
@@ -183,7 +186,7 @@ class CheckDuplicatesCommand extends Command
             'phpstan.neon',
             '.phpstan.neon',
             'phpstan.neon.dist',
-            '.phpstan.neon.dist'
+            '.phpstan.neon.dist',
         ];
 
         $existingConfigs = [];
@@ -193,8 +196,8 @@ class CheckDuplicatesCommand extends Command
             }
         }
 
-        if (count($existingConfigs) > 1) {
-            $duplicates[] = sprintf(
+        if (\count($existingConfigs) > 1) {
+            $duplicates[] = \sprintf(
                 'Plusieurs fichiers de configuration PHPStan détectés: %s',
                 implode(', ', $existingConfigs)
             );

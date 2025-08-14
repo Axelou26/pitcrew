@@ -1,20 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Security\Voter;
 
 use App\Entity\Post;
 use App\Entity\User;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
-use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Security\Core\User\UserInterface;
 
+/**
+ * @extends Voter<string, Post>
+ */
 class PostVoter extends Voter
 {
-    public const POST_EDIT = 'POST_EDIT';
+    public const POST_EDIT   = 'POST_EDIT';
     public const POST_DELETE = 'POST_DELETE';
 
-    private $security;
+    private Security $security;
 
     public function __construct(Security $security)
     {
@@ -23,7 +28,7 @@ class PostVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        return in_array($attribute, [self::POST_EDIT, self::POST_DELETE])
+        return \in_array($attribute, [self::POST_EDIT, self::POST_DELETE], true)
             && $subject instanceof Post;
     }
 
@@ -44,21 +49,21 @@ class PostVoter extends Voter
         $post = $subject;
 
         return match ($attribute) {
-            self::POST_EDIT => $this->canEdit($post, $user),
+            self::POST_EDIT   => $this->canEdit($post, $user),
             self::POST_DELETE => $this->canDelete($post, $user),
-            default => false,
+            default           => false,
         };
     }
 
-    private function canEdit(Post $post, User $user): bool
+    private function canEdit(Post $post, UserInterface $user): bool
     {
         // Seul l'auteur du post peut le modifier
-        return $post->getAuthor() === $user;
+        return $user instanceof User && $post->getAuthor() === $user;
     }
 
-    private function canDelete(Post $post, User $user): bool
+    private function canDelete(Post $post, UserInterface $user): bool
     {
         // Seul l'auteur du post peut le supprimer
-        return $post->getAuthor() === $user;
+        return $user instanceof User && $post->getAuthor() === $user;
     }
 }

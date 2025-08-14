@@ -1,14 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
+use LogicException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\Cache;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
-use LogicException;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Attribute\Cache;
 
 class SecurityController extends AbstractController
 {
@@ -31,7 +33,7 @@ class SecurityController extends AbstractController
         // Optimisation: compression gzip pour les réponses HTML
         $response = $this->render('security/login.html.twig', [
             'last_username' => $lastUsername,
-            'error' => $error
+            'error'         => $error,
         ]);
 
         // Optimiser les en-têtes de cache pour la page de login
@@ -45,8 +47,9 @@ class SecurityController extends AbstractController
     #[Route(path: '/logout', name: 'app_logout')]
     public function logout(): void
     {
-        throw new LogicException('This method can be blank - it will be intercepted by the logout key on your firewall
-            .');
+        throw new LogicException(
+            'This method can be blank - it will be intercepted by the logout key on your firewall.'
+        );
     }
 
     #[Route('/forgot-password', name: 'app_forgot_password')]

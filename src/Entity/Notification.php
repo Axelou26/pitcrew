@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\NotificationRepository;
+use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use DateTimeImmutable;
 
 #[ORM\Entity(repositoryClass: NotificationRepository::class)]
 #[ORM\Index(columns: ['user_id', 'is_read'], name: 'idx_notification_user_read')]
@@ -14,57 +16,87 @@ use DateTimeImmutable;
 class Notification
 {
     // Types de notifications
-    public const TYPE_INFO = 'info';
-    public const TYPE_MENTION = 'mention';
-    public const TYPE_LIKE = 'like';
-    public const TYPE_COMMENT = 'comment';
-    public const TYPE_SHARE = 'share';
+    public const TYPE_INFO           = 'info';
+    public const TYPE_MENTION        = 'mention';
+    public const TYPE_LIKE           = 'like';
+    public const TYPE_COMMENT        = 'comment';
+    public const TYPE_SHARE          = 'share';
     public const TYPE_FRIEND_REQUEST = 'friend_request';
-    public const TYPE_APPLICATION = 'application';
+    public const TYPE_APPLICATION    = 'application';
 
     /**
-     * @SuppressWarnings("PHPMD.ShortVariable")
+     * ID de la notification.
      */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
+    #[ORM\Column(type: 'integer')]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(inversedBy: 'notifications')]
+    /**
+     * Indique si la notification a été lue.
+     */
+    #[ORM\Column(type: 'boolean')]
+    private bool $isRead = false;
+
+    /**
+     * Type de notification.
+     */
+    #[ORM\Column(type: 'string', length: 255)]
+    private string $type;
+
+    /**
+     * Utilisateur destinataire de la notification.
+     */
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'notifications')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
-    #[ORM\Column(length: 255)]
-    private ?string $title = null;
+    /**
+     * Titre de la notification.
+     */
+    #[ORM\Column(type: 'string', length: 255)]
+    private string $title;
 
-    #[ORM\Column(type: Types::TEXT)]
-    private ?string $message = null;
+    /**
+     * Message de la notification.
+     */
+    #[ORM\Column(type: 'text')]
+    private string $message;
 
-    #[ORM\Column]
-    private ?bool $isRead = false;
+    /**
+     * Date de création de la notification.
+     */
+    #[ORM\Column(type: 'datetime_immutable')]
+    private DateTimeImmutable $createdAt;
 
-    #[ORM\Column]
-    private ?DateTimeImmutable $createdAt = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
+    /**
+     * Lien associé à la notification.
+     */
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $link = null;
 
-    #[ORM\Column(length: 50)]
-    private ?string $type = self::TYPE_INFO;
-
-    #[ORM\Column(length: 50, nullable: true)]
+    /**
+     * Type d'entité associée.
+     */
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private ?string $entityType = null;
 
-    #[ORM\Column(nullable: true)]
+    /**
+     * ID de l'entité associée.
+     */
+    #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $entityId = null;
 
-    #[ORM\Column(nullable: true)]
+    /**
+     * ID de l'utilisateur qui a déclenché la notification.
+     */
+    #[ORM\Column(type: 'integer', nullable: true)]
     private ?int $actorId = null;
 
     public function __construct()
     {
         $this->createdAt = new DateTimeImmutable();
-        $this->isRead = false;
+        $this->isRead    = false;
     }
 
     public function getId(): ?int
@@ -186,7 +218,7 @@ class Notification
     }
 
     /**
-     * Alias pour getLink() pour compatibilité avec les templates
+     * Alias pour getLink() pour compatibilité avec les templates.
      */
     public function getTargetUrl(): ?string
     {

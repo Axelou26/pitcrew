@@ -1,0 +1,13 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: true
+
+    # Services spécifiques pour les tests
+    App\Service\VideoConferenceService:
+        arguments:
+            $apiKey: 'test_api_key'
+            $jitsiDomain: 'meet.jitsi.test'
+
+    # Autres services qui pourraient nécessiter une configuration spécifique pour les tests 

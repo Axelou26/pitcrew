@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit\Entity;
 
-use App\Entity\Post;
-use App\Entity\User;
-use App\Entity\PostLike;
-use App\Entity\PostComment;
 use App\Entity\Hashtag;
+use App\Entity\Post;
+use App\Entity\PostComment;
+use App\Entity\PostLike;
+use App\Entity\User;
 use Doctrine\Common\Collections\Collection;
 use PHPUnit\Framework\TestCase;
 
@@ -18,7 +20,7 @@ class PostTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->post = new Post();
+        $this->post   = new Post();
         $this->author = new User();
         $this->author->setEmail('author@example.com');
     }
@@ -33,8 +35,8 @@ class PostTest extends TestCase
         $this->assertNull($this->post->getOriginalPost());
 
         // Test des compteurs
-        $this->assertEquals(0, $this->post->getLikesCount());
-        $this->assertEquals(0, $this->post->getCommentsCount());
+        $this->assertSame(0, $this->post->getLikesCount());
+        $this->assertSame(0, $this->post->getCommentsCount());
 
         // Test des tableaux
         $this->assertIsArray($this->post->getMentions());
@@ -43,20 +45,20 @@ class PostTest extends TestCase
 
     public function testBasicInformation(): void
     {
-        $title = "Mon titre de post";
-        $content = "Le contenu de mon post";
-        $image = "image.jpg";
-        $imageName = "Mon image";
+        $title     = 'Mon titre de post';
+        $content   = 'Le contenu de mon post';
+        $image     = 'image.jpg';
+        $imageName = 'Mon image';
 
         $this->post->setTitle($title)
             ->setContent($content)
             ->setImage($image)
             ->setImageName($imageName);
 
-        $this->assertEquals($title, $this->post->getTitle());
-        $this->assertEquals($content, $this->post->getContent());
-        $this->assertEquals($image, $this->post->getImage());
-        $this->assertEquals($imageName, $this->post->getImageName());
+        $this->assertSame($title, $this->post->getTitle());
+        $this->assertSame($content, $this->post->getContent());
+        $this->assertSame($image, $this->post->getImage());
+        $this->assertSame($imageName, $this->post->getImageName());
     }
 
     public function testAuthorAssociation(): void
@@ -78,19 +80,19 @@ class PostTest extends TestCase
         // Test d'ajout d'un like
         $this->post->addLike($like);
         $this->assertTrue($this->post->getLikes()->contains($like));
-        $this->assertEquals(1, $this->post->getLikesCount());
+        $this->assertSame(1, $this->post->getLikesCount());
         $this->assertTrue($this->post->isLikedByUser($user));
 
         // Test de suppression d'un like
         $this->post->removeLike($like);
         $this->assertFalse($this->post->getLikes()->contains($like));
-        $this->assertEquals(0, $this->post->getLikesCount());
+        $this->assertSame(0, $this->post->getLikesCount());
         $this->assertFalse($this->post->isLikedByUser($user));
 
         // Test de mise à jour du compteur
         $this->post->addLike($like);
         $this->post->updateLikesCounter();
-        $this->assertEquals(1, $this->post->getLikesCount());
+        $this->assertSame(1, $this->post->getLikesCount());
     }
 
     public function testComments(): void
@@ -100,23 +102,23 @@ class PostTest extends TestCase
         // Test d'ajout d'un commentaire
         $this->post->addComment($comment);
         $this->assertTrue($this->post->getComments()->contains($comment));
-        $this->assertEquals(1, $this->post->getCommentsCount());
+        $this->assertSame(1, $this->post->getCommentsCount());
 
         // Test de suppression d'un commentaire
         $this->post->removeComment($comment);
         $this->assertFalse($this->post->getComments()->contains($comment));
-        $this->assertEquals(0, $this->post->getCommentsCount());
+        $this->assertSame(0, $this->post->getCommentsCount());
 
         // Test de mise à jour du compteur
         $this->post->addComment($comment);
         $this->post->updateCommentsCounter();
-        $this->assertEquals(1, $this->post->getCommentsCount());
+        $this->assertSame(1, $this->post->getCommentsCount());
     }
 
     public function testShares(): void
     {
         $originalPost = new Post();
-        $originalPost->setContent("Post original");
+        $originalPost->setContent('Post original');
 
         // Test du partage
         $this->post->setOriginalPost($originalPost);
@@ -133,7 +135,7 @@ class PostTest extends TestCase
         $repost2->setOriginalPost($originalPost);
 
         // Vérifie que les reposts sont bien ajoutés à la collection de l'original
-        $this->assertEquals(2, count([$repost1, $repost2]));
+        $this->assertSame(2, \count([$repost1, $repost2]));
     }
 
     public function testHashtags(): void
@@ -154,17 +156,17 @@ class PostTest extends TestCase
     {
         $mentions = ['user1', 'user2'];
         $this->post->setMentions($mentions);
-        $this->assertEquals($mentions, $this->post->getMentions());
+        $this->assertSame($mentions, $this->post->getMentions());
     }
 
     public function testFluentInterface(): void
     {
         // Test de l'interface fluide
         $returnedPost = $this->post
-            ->setTitle("Test")
-            ->setContent("Test content")
-            ->setImage("test.jpg")
-            ->setImageName("Test Image")
+            ->setTitle('Test')
+            ->setContent('Test content')
+            ->setImage('test.jpg')
+            ->setImageName('Test Image')
             ->setAuthor($this->author)
             ->setMentions(['user1']);
 
@@ -174,7 +176,7 @@ class PostTest extends TestCase
     public function testSharing(): void
     {
         $originalPost = new Post();
-        $originalPost->setContent("Post original");
+        $originalPost->setContent('Post original');
 
         // Test du partage
         $this->post->setOriginalPost($originalPost);

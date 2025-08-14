@@ -1,13 +1,13 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Functional\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Component\HttpFoundation\Response;
-use App\Repository\UserRepository;
-use Doctrine\ORM\EntityManagerInterface;
 use App\Entity\User;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\DomCrawler\Crawler;
+use Symfony\Component\HttpFoundation\Response;
 
 class UserRegistrationTest extends WebTestCase
 {
@@ -17,59 +17,31 @@ class UserRegistrationTest extends WebTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->client = static::createClient();
+        $this->client        = static::createClient();
         $this->entityManager = $this->client->getContainer()->get('doctrine')->getManager();
         $this->cleanDatabase();
     }
 
-    private function cleanDatabase(): void
+    protected function tearDown(): void
     {
-        if (!$this->entityManager) {
-            return;
+        parent::tearDown();
+
+        // Nettoyage de la base de données après les tests
+        $user = $this->entityManager->getRepository(User::class)->findOneBy(['email' => 'nouveau@example.com']);
+
+        if ($user) {
+            // Supprimer d'abord les relations d'amitié
+            $this->entityManager->createQuery('DELETE FROM App\Entity\Friendship f WHERE f.requester = :user OR f.addressee = :user')
+                ->setParameter('user', $user)
+                ->execute();
+
+            // Puis supprimer l'utilisateur
+            $this->entityManager->remove($user);
+            $this->entityManager->flush();
         }
 
-        $this->entityManager->getConnection()->executeQuery('SET FOREIGN_KEY_CHECKS=0');
-
-        $tables = [
-            'job_application',
-            'job_offer',
-            'post_hashtag',
-            'post',
-            'hashtag',
-            'user',
-            'friendship',
-            'notification',
-            'favorite',
-            'post_like',
-            'post_comment',
-            'recruiter_subscription',
-            'interview',
-            'education',
-            'work_experience',
-            'support_ticket'
-        ];
-
-        foreach ($tables as $table) {
-            $this->entityManager->getConnection()->executeQuery("TRUNCATE TABLE {$table}");
-        }
-
-        $this->entityManager->getConnection()->executeQuery('SET FOREIGN_KEY_CHECKS=1');
-        $this->entityManager->clear();
-    }
-
-    private function submitRegistrationForm(Crawler $crawler, array $formData): Crawler
-    {
-        $form = $crawler->filter('form[name="registration_form"]')->form(array_merge([
-            'registration_form[email]' => 'test@example.com',
-            'registration_form[plainPassword]' => 'MotDePasse123!',
-            'registration_form[firstName]' => 'John',
-            'registration_form[lastName]' => 'Doe',
-            'registration_form[agreeTerms]' => true,
-            'registration_form[jobTitle]' => 'Ingénieur F1',
-            'registration_form[skills]' => 'Mécanique, Aérodynamique',
-        ], $formData));
-
-        return $this->client->submit($form);
+        $this->entityManager->close();
+        $this->entityManager = null;
     }
 
     public function testCompleteRegistrationProcess(): void
@@ -80,7 +52,7 @@ class UserRegistrationTest extends WebTestCase
 
         // 2. Sélection du type d'utilisateur
         $form = $crawler->filter('form[name="user_type_form"]')->form([
-            'user_type_form[userType]' => 'ROLE_POSTULANT'
+            'user_type_form[userType]' => 'ROLE_POSTULANT',
         ]);
         $this->client->submit($form);
 
@@ -91,7 +63,7 @@ class UserRegistrationTest extends WebTestCase
 
         // 4. Soumission du formulaire d'inscription
         $crawler = $this->submitRegistrationForm($crawler, [
-            'registration_form[email]' => 'nouveau@example.com'
+            'registration_form[email]' => 'nouveau@example.com',
         ]);
 
         // 5. Vérifier la redirection
@@ -99,12 +71,12 @@ class UserRegistrationTest extends WebTestCase
 
         // 6. Vérification en base de données
         $userRepository = $this->entityManager->getRepository(User::class);
-        $user = $userRepository->findOneByEmail('nouveau@example.com');
+        $user           = $userRepository->findOneByEmail('nouveau@example.com');
 
         $this->assertNotNull($user);
         $this->assertFalse($user->isVerified());
-        $this->assertEquals('John', $user->getFirstName());
-        $this->assertEquals('Doe', $user->getLastName());
+        $this->assertSame('John', $user->getFirstName());
+        $this->assertSame('Doe', $user->getLastName());
         $this->assertContains('ROLE_POSTULANT', $user->getRoles());
     }
 
@@ -116,7 +88,7 @@ class UserRegistrationTest extends WebTestCase
 
         // 2. Sélection du type d'utilisateur
         $form = $crawler->filter('form[name="user_type_form"]')->form([
-            'user_type_form[userType]' => 'ROLE_POSTULANT'
+            'user_type_form[userType]' => 'ROLE_POSTULANT',
         ]);
         $this->client->submit($form);
 
@@ -127,13 +99,13 @@ class UserRegistrationTest extends WebTestCase
 
         // 4. Soumission du formulaire avec données invalides
         $crawler = $this->submitRegistrationForm($crawler, [
-            'registration_form[email]' => 'invalid-email',
+            'registration_form[email]'         => 'invalid-email',
             'registration_form[plainPassword]' => 'short',
-            'registration_form[firstName]' => '',
-            'registration_form[lastName]' => '',
-            'registration_form[agreeTerms]' => false,
-            'registration_form[jobTitle]' => '',
-            'registration_form[skills]' => '',
+            'registration_form[firstName]'     => '',
+            'registration_form[lastName]'      => '',
+            'registration_form[agreeTerms]'    => false,
+            'registration_form[jobTitle]'      => '',
+            'registration_form[skills]'        => '',
         ]);
 
         // 5. Vérification des erreurs
@@ -155,11 +127,11 @@ class UserRegistrationTest extends WebTestCase
             'Veuillez entrer le poste recherché',
             'Veuillez entrer vos compétences',
             'Le mot de passe doit contenir au moins 8 caractères',
-            'Vous devez accepter les conditions d\'utilisation'
+            'Vous devez accepter les conditions d\'utilisation',
         ];
 
         foreach ($expectedErrors as $expectedError) {
-            $this->assertTrue(in_array($expectedError, $errorMessages), "Le message d'erreur '$expectedError' n'a pas été trouvé");
+            $this->assertTrue(\in_array($expectedError, $errorMessages, true), "Le message d'erreur '$expectedError' n'a pas été trouvé");
         }
     }
 
@@ -171,7 +143,7 @@ class UserRegistrationTest extends WebTestCase
 
         // 2. Sélection du type d'utilisateur
         $form = $crawler->filter('form[name="user_type_form"]')->form([
-            'user_type_form[userType]' => 'ROLE_POSTULANT'
+            'user_type_form[userType]' => 'ROLE_POSTULANT',
         ]);
         $this->client->submit($form);
 
@@ -199,7 +171,7 @@ class UserRegistrationTest extends WebTestCase
 
         foreach ($invalidEmails as $invalidEmail) {
             $crawler = $this->submitRegistrationForm($crawler, [
-                'registration_form[email]' => $invalidEmail
+                'registration_form[email]' => $invalidEmail,
             ]);
 
             $this->assertResponseStatusCodeSame(Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -207,25 +179,53 @@ class UserRegistrationTest extends WebTestCase
         }
     }
 
-    protected function tearDown(): void
+    private function cleanDatabase(): void
     {
-        parent::tearDown();
-
-        // Nettoyage de la base de données après les tests
-        $user = $this->entityManager->getRepository(User::class)->findOneBy(['email' => 'nouveau@example.com']);
-
-        if ($user) {
-            // Supprimer d'abord les relations d'amitié
-            $this->entityManager->createQuery('DELETE FROM App\Entity\Friendship f WHERE f.requester = :user OR f.addressee = :user')
-                ->setParameter('user', $user)
-                ->execute();
-
-            // Puis supprimer l'utilisateur
-            $this->entityManager->remove($user);
-            $this->entityManager->flush();
+        if (!$this->entityManager) {
+            return;
         }
 
-        $this->entityManager->close();
-        $this->entityManager = null;
+        $this->entityManager->getConnection()->executeQuery('SET FOREIGN_KEY_CHECKS=0');
+
+        $tables = [
+            'job_application',
+            'job_offer',
+            'post_hashtag',
+            'post',
+            'hashtag',
+            'user',
+            'friendship',
+            'notification',
+            'favorite',
+            'post_like',
+            'post_comment',
+            'recruiter_subscription',
+            'interview',
+            'education',
+            'work_experience',
+            'support_ticket',
+        ];
+
+        foreach ($tables as $table) {
+            $this->entityManager->getConnection()->executeQuery("TRUNCATE TABLE {$table}");
+        }
+
+        $this->entityManager->getConnection()->executeQuery('SET FOREIGN_KEY_CHECKS=1');
+        $this->entityManager->clear();
+    }
+
+    private function submitRegistrationForm(Crawler $crawler, array $formData): Crawler
+    {
+        $form = $crawler->filter('form[name="registration_form"]')->form(array_merge([
+            'registration_form[email]'         => 'test@example.com',
+            'registration_form[plainPassword]' => 'MotDePasse123!',
+            'registration_form[firstName]'     => 'John',
+            'registration_form[lastName]'      => 'Doe',
+            'registration_form[agreeTerms]'    => true,
+            'registration_form[jobTitle]'      => 'Ingénieur sport automobile',
+            'registration_form[skills]'        => 'Mécanique, Aérodynamique',
+        ], $formData));
+
+        return $this->client->submit($form);
     }
 }

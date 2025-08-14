@@ -1,6 +1,12 @@
-document.addEventListener('DOMContentLoaded', function() {
+// Module feed.js
+export function initFeed() {
+    // Rendre la fonction accessible globalement pour le script de secours
+    window.initFeed = initFeed;
+    
+    console.log('Feed.js chargé et exécuté');
+    console.log('Vérification des boutons de commentaire:', document.querySelectorAll('.comment-toggle-button').length);
     const postForm = document.querySelector('#post-form');
-    const feedContainer = document.querySelector('#feed-container');
+    const feedContainer = document.querySelector('#feed-container') || document.querySelector('.posts-container');
     const MAX_CHARACTERS = 500;
     let currentPage = 1;
     let isLoading = false;
@@ -8,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Ne pas continuer avec la fonctionnalité de chargement infini si feedContainer n'existe pas
     if (!feedContainer) {
-        console.log('Feed container non trouvé, fonctionnalité de chargement infini désactivée.');
+        // La page actuelle n'a probablement pas de feed, donc on désactive silencieusement
         hasMore = false;
     }
 
@@ -72,6 +78,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const isLiked = isPostLiked(postId);
             updateLikeButtonAppearance(button, isLiked);
         }
+    });
+    
+    // Initialiser les interactions pour tous les posts existants
+    document.querySelectorAll('.post-card').forEach(postElement => {
+        initializePostInteractions(postElement);
     });
 
     // Fonction pour synchroniser l'état des likes avec le serveur
@@ -198,76 +209,78 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Ajouter la classe pour le style
             contentElement.classList.add('truncated');
-
-            // Créer le lien "Voir plus"
-            const readMoreLink = document.createElement('a');
-            readMoreLink.href = `/post/${postId}`;
-            readMoreLink.className = 'read-more-link';
-            readMoreLink.innerHTML = `
-                <span class="read-more-text">Voir l'article complet</span>
-                <i class="bi bi-arrow-right"></i>
-            `;
-            
-            // Insérer le lien après le contenu
-            contentElement.parentNode.insertBefore(readMoreLink, contentElement.nextSibling);
         }
     }
 
     // Fonction pour initialiser les interactions sur un post
     function initializePostInteractions(postElement) {
-        // Likes
+        // Note: La gestion de suppression est maintenant dans post-delete.js
+        
+        // Likes - La gestion des likes est maintenant dans like-fix.js
         const likeButton = postElement.querySelector('.like-button');
         if (likeButton) {
-            // Initialiser l'état du bouton like avec la persistance
-            const postId = likeButton.dataset.postId;
-            if (postId) {
-                const isLiked = isPostLiked(postId);
-                updateLikeButtonAppearance(likeButton, isLiked);
-            }
-
-            likeButton.addEventListener('click', async function(e) {
-                e.preventDefault();
-                const postId = this.dataset.postId;
-                if (!postId) {
-                    console.error('Erreur: postId indéfini ou vide sur le bouton like.', this);
-                    alert('Erreur technique: impossible de liker ce post.');
-                    return;
-                }
-                const response = await fetch(`/post/${postId}/like`, {
-                    method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'same-origin'
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success) {
-                        // Mettre à jour la persistance locale
-                        if (data.isLiked) {
-                            addLikedPost(postId);
-                        } else {
-                            removeLikedPost(postId);
-                        }
-                        
-                        // Mettre à jour l'apparence du bouton
-                        updateLikeButtonAppearance(this, data.isLiked);
-                        
-                        // Mise à jour du compteur de likes
-                        const likesSummary = this.closest('.post-card').querySelector('.likes-summary');
-                        if (likesSummary && data.likesCount !== undefined) {
-                            if (data.likesCount > 0) {
-                                likesSummary.innerHTML = `<span class="likes-count me-1">${data.likesCount}</span> j'aime${data.likesCount > 1 ? 's' : ''}`;
-                            } else {
-                                likesSummary.innerHTML = '';
-                            }
-                        }
-                    }
-                }
-            });
+            // Note: L'initialisation et la gestion des événements ont été déplacées 
+            // vers le module like-fix.js pour éviter les conflits
+            console.log('Bouton like détecté - sera géré par like-fix.js');
         }
+
+        // Gestion du bouton Commenter
+        const commentToggleButton = postElement.querySelector('.comment-toggle-button');
+        if (!commentToggleButton) {
+            console.error('Bouton de commentaires non trouvé pour le post:', postElement.dataset.postId);
+            return;
+        }
+        
+        // Log pour débogage
+        console.log('Initialisation du bouton de commentaires pour le post:', postElement.dataset.postId);
+        
+        commentToggleButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Récupérer l'ID du post
+            const postId = this.dataset.postId || postElement.dataset.postId;
+            if (!postId) {
+                console.error('Erreur: postId indéfini ou vide sur le bouton de commentaire.', this);
+                return;
+            }
+            
+            console.log('Clic sur le bouton de commentaires pour le post', postId);
+            
+            // Trouver la section de commentaires
+            const commentsId = `comments-${postId}`;
+            const commentsSection = document.getElementById(commentsId);
+            
+            if (!commentsSection) {
+                console.error(`Section de commentaires #${commentsId} non trouvée`);
+                return;
+            }
+            
+            console.log('Section de commentaires trouvée:', commentsSection);
+            
+            // Vérifier l'état actuel et inverser
+            const isVisible = commentsSection.style.display !== 'none';
+            
+            if (isVisible) {
+                // Masquer la section
+                console.log('Masquage de la section de commentaires');
+                commentsSection.style.display = 'none';
+            } else {
+                // Afficher la section
+                console.log('Affichage de la section de commentaires');
+                commentsSection.style.display = 'block';
+                
+                // Charger les commentaires depuis le serveur
+                loadComments(postId, commentsSection);
+                
+                // Mettre le focus sur le champ de commentaire
+                setTimeout(() => {
+                    const commentInput = commentsSection.querySelector('.comment-input');
+                    if (commentInput) {
+                        commentInput.focus();
+                    }
+                }, 100);
+            }
+        });
 
         // Commentaires
         const commentForm = postElement.querySelector('.comment-form');
@@ -416,6 +429,145 @@ document.addEventListener('DOMContentLoaded', function() {
         observeLastPost();
     }
 
+    // Fonction pour charger les commentaires d'un post
+    async function loadComments(postId, commentsSection) {
+        console.log('Fonction loadComments appelée avec postId:', postId);
+        console.log('Section de commentaires:', commentsSection);
+        
+        try {
+            // Récupérer l'élément qui contient la liste des commentaires
+            let commentsListContainer = commentsSection.querySelector('.comments-list');
+            console.log('Container de commentaires initial:', commentsListContainer);
+            
+            if (!commentsListContainer) {
+                // Créer le conteneur s'il n'existe pas
+                console.log('Container de commentaires non trouvé, création...');
+                commentsListContainer = document.createElement('div');
+                commentsListContainer.className = 'comments-list mb-3';
+                commentsListContainer.style.maxHeight = '300px';
+                commentsListContainer.style.overflowY = 'auto';
+                commentsSection.appendChild(commentsListContainer);
+            }
+            
+            // Ajouter un indicateur de chargement
+            commentsListContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm" role="status"></div> Chargement des commentaires...</div>';
+            
+            console.log(`Envoi de la requête AJAX vers /post/${postId}/comments`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 secondes de timeout
+            
+            const response = await fetch(`/post/${postId}/comments`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            console.log('Réponse reçue:', response.status);
+            
+            if (!response.ok) {
+                throw new Error(`Erreur HTTP: ${response.status}`);
+            }
+            
+            // Vérifier le type de contenu
+            const contentType = response.headers.get('content-type');
+            console.log('Content-Type:', contentType);
+            
+            // Traiter la réponse selon son type
+            let html;
+            if (contentType && contentType.includes('application/json')) {
+                const data = await response.json();
+                console.log('JSON reçu');
+                html = data.html || '<div class="text-center p-3">Aucun commentaire pour le moment.</div>';
+            } else {
+                html = await response.text();
+                console.log('HTML reçu (longueur):', html.length);
+                
+                // Si la réponse est vide ou très courte, considérer qu'il n'y a pas de commentaires
+                if (!html || html.trim().length < 10) {
+                    html = '<div class="text-center p-3">Aucun commentaire pour le moment.</div>';
+                }
+            }
+            
+            // Mettre à jour le contenu
+            commentsListContainer.innerHTML = html;
+            
+            // Initialiser les gestionnaires d'événements pour les nouveaux commentaires
+            initializeCommentEvents(commentsListContainer);
+            
+        } catch (error) {
+            console.error('Erreur lors du chargement des commentaires:', error);
+            
+            // Message d'erreur spécifique en cas de timeout
+            let errorMessage = 'Erreur lors du chargement des commentaires. Veuillez réessayer.';
+            if (error.name === 'AbortError') {
+                errorMessage = 'Le chargement des commentaires a pris trop de temps. Veuillez réessayer.';
+            }
+            
+            const commentsListContainer = commentsSection.querySelector('.comments-list');
+            if (commentsListContainer) {
+                commentsListContainer.innerHTML = 
+                    `<div class="alert alert-danger">${errorMessage}</div>`;
+            }
+        }
+    }
+    
+    // Fonction pour initialiser les gestionnaires d'événements sur les commentaires
+    function initializeCommentEvents(commentsContainer) {
+        // Gestion des boutons de suppression de commentaire
+        const deleteButtons = commentsContainer.querySelectorAll('.delete-comment');
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', async function() {
+                const commentId = this.dataset.commentId;
+                const token = this.dataset.token;
+                if (!commentId) return;
+                
+                if (confirm('Êtes-vous sûr de vouloir supprimer ce commentaire ?')) {
+                    try {
+                        const response = await fetch(`/comment/${commentId}/delete`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({ token })
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success) {
+                                // Supprimer l'élément du commentaire
+                                const commentElement = this.closest('.comment');
+                                if (commentElement) {
+                                    commentElement.remove();
+                                }
+                                
+                                // Mettre à jour le compteur de commentaires
+                                const postCard = commentsContainer.closest('.post-card');
+                                if (postCard) {
+                                    const commentCount = postCard.querySelector('.comments-count');
+                                    if (commentCount && data.commentsCount !== undefined) {
+                                        commentCount.textContent = `${data.commentsCount} commentaire${data.commentsCount > 1 ? 's' : ''}`;
+                                    }
+                                }
+                                
+                                // Vérifier s'il reste des commentaires
+                                if (data.commentsCount === 0) {
+                                    commentsContainer.innerHTML = '<div class="text-center text-muted p-3 comments-placeholder">Soyez le premier à commenter.</div>';
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Erreur lors de la suppression du commentaire:', error);
+                        showNotification('Une erreur est survenue lors de la suppression du commentaire', 'danger');
+                    }
+                }
+            });
+        });
+    }
+    
     // Fonction pour afficher les notifications
     function showNotification(message, type = 'info') {
         const alertDiv = document.createElement('div');
@@ -439,7 +591,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Rendre la fonction disponible globalement
     window.showNotification = showNotification;
 
-    // Style pour l'animation des nouveaux posts
+    // Style pour l'animation des nouveaux posts et suppression
     const style = document.createElement('style');
     style.textContent = `
         .new-post {
@@ -451,6 +603,17 @@ document.addEventListener('DOMContentLoaded', function() {
             opacity: 1;
             transform: translateY(0);
         }
+        .fade-out {
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+        }
+        .delete-post {
+            cursor: pointer !important;
+        }
     `;
     document.head.appendChild(style);
-}); 
+}
+
+// L'initialisation se fait maintenant depuis main.js
+// document.addEventListener('DOMContentLoaded', initFeed);

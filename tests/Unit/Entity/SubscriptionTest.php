@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit\Entity;
 
-use App\Entity\Subscription;
 use App\Entity\RecruiterSubscription;
+use App\Entity\Subscription;
 use Doctrine\Common\Collections\Collection;
 use PHPUnit\Framework\TestCase;
 
@@ -26,23 +28,23 @@ class SubscriptionTest extends TestCase
 
     public function testName(): void
     {
-        $name = "Premium";
+        $name = 'Premium';
         $this->subscription->setName($name);
-        $this->assertEquals($name, $this->subscription->getName());
+        $this->assertSame($name, $this->subscription->getName());
     }
 
     public function testPrice(): void
     {
         $price = 49.99;
         $this->subscription->setPrice($price);
-        $this->assertEquals($price, $this->subscription->getPrice());
+        $this->assertSame($price, $this->subscription->getPrice());
     }
 
     public function testDuration(): void
     {
         $duration = 30;
         $this->subscription->setDuration($duration);
-        $this->assertEquals($duration, $this->subscription->getDuration());
+        $this->assertSame($duration, $this->subscription->getDuration());
     }
 
     public function testFeatures(): void
@@ -50,10 +52,10 @@ class SubscriptionTest extends TestCase
         $features = [
             'Publication illimitée d\'offres',
             'Accès aux CV complets',
-            'Statistiques avancées'
+            'Statistiques avancées',
         ];
         $this->subscription->setFeatures($features);
-        $this->assertEquals($features, $this->subscription->getFeatures());
+        $this->assertSame($features, $this->subscription->getFeatures());
     }
 
     public function testMaxJobOffers(): void
@@ -61,7 +63,7 @@ class SubscriptionTest extends TestCase
         // Test avec une valeur numérique
         $maxOffers = 5;
         $this->subscription->setMaxJobOffers($maxOffers);
-        $this->assertEquals($maxOffers, $this->subscription->getMaxJobOffers());
+        $this->assertSame($maxOffers, $this->subscription->getMaxJobOffers());
 
         // Test avec une valeur null (illimité)
         $this->subscription->setMaxJobOffers(null);

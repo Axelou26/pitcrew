@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Security;
 
-use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,7 +16,6 @@ use Symfony\Component\Security\Http\Authenticator\Passport\Credentials\PasswordC
 use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
 use Symfony\Component\Security\Http\SecurityRequestAttributes;
 use Symfony\Component\Security\Http\Util\TargetPathTrait;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
 {
@@ -24,6 +24,7 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
     public const LOGIN_ROUTE = 'app_login';
 
     // Cache local pour éviter les calculs répétés
+    /** @var array<string, string> */
     private array $cache = [];
 
     public function __construct(private UrlGeneratorInterface $urlGenerator)
@@ -32,8 +33,8 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
 
     public function authenticate(Request $request): Passport
     {
-        $email = $request->request->get('email', '');
-        $password = $request->request->get('password', '');
+        $email     = $request->request->get('email', '');
+        $password  = $request->request->get('password', '');
         $csrfToken = $request->request->get('_csrf_token');
 
         // Optimisation: stockage minimal en session
@@ -41,9 +42,9 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
 
         // Création optimisée du Passport
         return new Passport(
-            new UserBadge($email, null),
-            new PasswordCredentials($password),
-            [new CsrfTokenBadge('authenticate', $csrfToken)]
+            new UserBadge((string) $email, null),
+            new PasswordCredentials((string) $password),
+            [new CsrfTokenBadge('authenticate', $csrfToken ? (string) $csrfToken : null)]
         );
     }
 
@@ -59,11 +60,12 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
         $targetPath = $this->getTargetPath($request->getSession(), $firewallName);
         if ($targetPath) {
             $this->cache[$cacheKey] = $targetPath;
+
             return new RedirectResponse($targetPath);
         }
 
         // Redirection par défaut avec réponse mise en cache
-        $dashboardUrl = $this->urlGenerator->generate('app_dashboard');
+        $dashboardUrl           = $this->urlGenerator->generate('app_dashboard');
         $this->cache[$cacheKey] = $dashboardUrl;
 
         return new RedirectResponse($dashboardUrl);

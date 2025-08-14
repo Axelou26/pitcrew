@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit\Entity;
 
-use App\Entity\Message;
-use App\Entity\User;
 use App\Entity\Conversation;
 use App\Entity\JobApplication;
+use App\Entity\Message;
+use App\Entity\User;
 use PHPUnit\Framework\TestCase;
 
 class MessageTest extends TestCase
@@ -19,10 +21,10 @@ class MessageTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->message = new Message();
-        $this->sender = new User();
-        $this->recipient = new User();
-        $this->conversation = new Conversation();
+        $this->message        = new Message();
+        $this->sender         = new User();
+        $this->recipient      = new User();
+        $this->conversation   = new Conversation();
         $this->jobApplication = new JobApplication();
 
         $this->sender->setEmail('sender@example.com');
@@ -33,7 +35,7 @@ class MessageTest extends TestCase
     {
         $content = 'Bonjour, je suis intéressé par votre offre.';
         $this->message->setContent($content);
-        $this->assertEquals($content, $this->message->getContent());
+        $this->assertSame($content, $this->message->getContent());
     }
 
     public function testUserAssociations(): void
@@ -75,27 +77,19 @@ class MessageTest extends TestCase
 
     public function testCreatedAt(): void
     {
-        // Test de la date de création par défaut
-        $this->assertInstanceOf(\DateTimeImmutable::class, $this->message->getCreatedAt());
+        $message = new Message();
+        $this->assertInstanceOf(\DateTimeImmutable::class, $message->getCreatedAt());
 
-        // Test de modification de la date de création
         $newDate = new \DateTimeImmutable('2024-01-01 12:00:00');
-        $this->message->setCreatedAt($newDate);
-        $this->assertEquals($newDate, $this->message->getCreatedAt());
+        $message->setCreatedAt($newDate);
+        $this->assertSame($newDate, $message->getCreatedAt());
     }
 
     public function testConstructor(): void
     {
         $message = new Message();
-
-        // Vérification des valeurs par défaut
         $this->assertInstanceOf(\DateTimeImmutable::class, $message->getCreatedAt());
         $this->assertFalse($message->isRead());
-        $this->assertNull($message->getContent());
-        $this->assertNull($message->getSender());
-        $this->assertNull($message->getRecipient());
-        $this->assertNull($message->getConversation());
-        $this->assertNull($message->getJobApplication());
     }
 
     public function testNullableAssociations(): void

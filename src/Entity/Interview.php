@@ -1,79 +1,72 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\InterviewRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Validator\Constraints as Assert;
-use DateTime;
-use DateTimeInterface;
 
 #[ORM\Entity(repositoryClass: InterviewRepository::class)]
 class Interview
 {
-    /**
-     * @SuppressWarnings("PHPMD.ShortVariable")
-     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
+    #[ORM\Column(type: 'integer')]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(inversedBy: 'recruiterInterviews')]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?User $recruiter = null;
+    #[ORM\Column(type: 'string', length: 255)]
+    private string $title;
 
-    #[ORM\ManyToOne(inversedBy: 'applicantInterviews')]
-    #[ORM\JoinColumn(nullable: false)]
-    private ?User $applicant = null;
+    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    private \DateTimeInterface $scheduledAt;
 
-    #[ORM\ManyToOne(inversedBy: 'interviews')]
-    private ?JobOffer $jobOffer = null;
-
-    #[ORM\Column(length: 255)]
-    #[Assert\NotBlank]
-    private ?string $title = null;
-
-    #[ORM\Column(type: 'datetime')]
-    #[Assert\NotBlank]
-    private ?DateTimeInterface $scheduledAt = null;
-
-    #[ORM\Column(type: 'datetime', nullable: true)]
-    private ?DateTimeInterface $endedAt = null;
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $endedAt = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $roomId = null;
 
-    #[ORM\Column(type: 'text', nullable: true)]
-    private ?string $notes = null;
-
-    #[ORM\Column(length: 20)]
-    private ?string $status = 'scheduled';
-
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $meetingUrl = null;
 
-    public function __construct()
-    {
-        $this->scheduledAt = new DateTime();
-    }
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $notes = null;
+
+    #[ORM\ManyToOne(targetEntity: JobOffer::class)]
+    #[ORM\JoinColumn(nullable: false)]
+    private JobOffer $jobOffer;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?User $applicant = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?User $recruiter = null;
+
+    #[ORM\Column(type: 'string', length: 50)]
+    private string $status = 'scheduled';
+
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private ?string $meetingId = null;
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getRecruiter(): ?User
+    public function setJobOffer(?JobOffer $jobOffer): static
     {
-        return $this->recruiter;
-    }
-
-    public function setRecruiter(?User $recruiter): self
-    {
-        $this->recruiter = $recruiter;
+        $this->jobOffer = $jobOffer;
 
         return $this;
+    }
+
+    public function getJobOffer(): ?JobOffer
+    {
+        return $this->jobOffer;
     }
 
     public function getApplicant(): ?User
@@ -88,14 +81,21 @@ class Interview
         return $this;
     }
 
-    public function getJobOffer(): ?JobOffer
+    public function getRecruiter(): ?User
     {
-        return $this->jobOffer;
+        return $this->recruiter;
     }
 
-    public function setJobOffer(?JobOffer $jobOffer): self
+    public function setRecruiter(?User $recruiter): self
     {
-        $this->jobOffer = $jobOffer;
+        $this->recruiter = $recruiter;
+
+        return $this;
+    }
+
+    public function setTitle(string $title): static
+    {
+        $this->title = $title;
 
         return $this;
     }
@@ -105,33 +105,33 @@ class Interview
         return $this->title;
     }
 
-    public function setTitle(string $title): self
-    {
-        $this->title = $title;
-
-        return $this;
-    }
-
-    public function getScheduledAt(): ?DateTimeInterface
-    {
-        return $this->scheduledAt;
-    }
-
-    public function setScheduledAt(DateTimeInterface $scheduledAt): self
+    public function setScheduledAt(\DateTimeInterface $scheduledAt): static
     {
         $this->scheduledAt = $scheduledAt;
 
         return $this;
     }
 
-    public function getEndedAt(): ?DateTimeInterface
+    public function getScheduledAt(): ?\DateTimeInterface
+    {
+        return $this->scheduledAt;
+    }
+
+    public function setEndedAt(?\DateTimeInterface $endedAt): static
+    {
+        $this->endedAt = $endedAt;
+
+        return $this;
+    }
+
+    public function getEndedAt(): ?\DateTimeInterface
     {
         return $this->endedAt;
     }
 
-    public function setEndedAt(?DateTimeInterface $endedAt): self
+    public function setRoomId(?string $roomId): static
     {
-        $this->endedAt = $endedAt;
+        $this->roomId = $roomId;
 
         return $this;
     }
@@ -141,9 +141,9 @@ class Interview
         return $this->roomId;
     }
 
-    public function setRoomId(?string $roomId): self
+    public function setNotes(?string $notes): static
     {
-        $this->roomId = $roomId;
+        $this->notes = $notes;
 
         return $this;
     }
@@ -153,9 +153,9 @@ class Interview
         return $this->notes;
     }
 
-    public function setNotes(?string $notes): self
+    public function setStatus(string $status): static
     {
-        $this->notes = $notes;
+        $this->status = $status;
 
         return $this;
     }
@@ -165,9 +165,29 @@ class Interview
         return $this->status;
     }
 
-    public function setStatus(string $status): self
+    public function isCompleted(): bool
     {
-        $this->status = $status;
+        return $this->status === 'completed';
+    }
+
+    public function isScheduled(): bool
+    {
+        return $this->status === 'scheduled';
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->status === 'cancelled';
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === 'active';
+    }
+
+    public function setMeetingUrl(?string $meetingUrl): static
+    {
+        $this->meetingUrl = $meetingUrl;
 
         return $this;
     }
@@ -177,30 +197,15 @@ class Interview
         return $this->meetingUrl;
     }
 
-    public function setMeetingUrl(?string $meetingUrl): self
+    public function setCandidate(?User $candidate): static
     {
-        $this->meetingUrl = $meetingUrl;
+        $this->applicant = $candidate;
 
         return $this;
     }
 
-    public function isActive(): bool
+    public function getCandidate(): ?User
     {
-        return $this->status === 'active';
-    }
-
-    public function isScheduled(): bool
-    {
-        return $this->status === 'scheduled';
-    }
-
-    public function isCompleted(): bool
-    {
-        return $this->status === 'completed';
-    }
-
-    public function isCancelled(): bool
-    {
-        return $this->status === 'cancelled';
+        return $this->applicant;
     }
 }

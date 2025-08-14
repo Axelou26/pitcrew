@@ -6,16 +6,16 @@ namespace App\DataFixtures;
 
 use App\Entity\Recruiter;
 use App\Entity\RecruiterSubscription;
+use DateTimeImmutable;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use DateTimeImmutable;
 
 class RecruiterFixtures extends Fixture implements DependentFixtureInterface
 {
-    private const PASSWORD = 'password';
     public const RECRUITER_REFERENCE_PREFIX = 'recruiter_';
+    private const PASSWORD                  = 'password';
 
     public function __construct(
         private readonly UserPasswordHasherInterface $passwordHasher
@@ -67,96 +67,97 @@ class RecruiterFixtures extends Fixture implements DependentFixtureInterface
     {
         return [
             [
-                'email' => 'recruteur1@exemple.fr',
-                'firstName' => 'Jean',
-                'lastName' => 'Dupont',
-                'companyName' => 'Alpine F1 Team',
+                'email'              => 'recruteur1@exemple.fr',
+                'firstName'          => 'Jean',
+                'lastName'           => 'Dupont',
+                'companyName'        => 'Alpine F1 Team',
                 'companyDescription' => 'Écurie de Formule 1 basée à Enstone (UK) et Viry-Châtillon, ' .
                     'représentant les couleurs françaises en F1',
-                'city' => 'Viry-Châtillon',
-                'subscriptionReference' => 'subscription-business'
+                'city'                  => 'Viry-Châtillon',
+                'subscriptionReference' => 'subscription-business',
             ],
             [
-                'email' => 'recruteur2@exemple.fr',
-                'firstName' => 'Marie',
-                'lastName' => 'Laurent',
-                'companyName' => 'Toyota Gazoo Racing',
-                'companyDescription' => 'Division compétition de Toyota, multiple vainqueur des 24h du Mans',
-                'city' => 'Le Mans',
-                'subscriptionReference' => 'subscription-premium'
+                'email'                 => 'recruteur2@exemple.fr',
+                'firstName'             => 'Marie',
+                'lastName'              => 'Laurent',
+                'companyName'           => 'Toyota Gazoo Racing',
+                'companyDescription'    => 'Division compétition de Toyota, multiple vainqueur des 24h du Mans',
+                'city'                  => 'Le Mans',
+                'subscriptionReference' => 'subscription-premium',
             ],
             [
-                'email' => 'recruteur3@exemple.fr',
-                'firstName' => 'Pierre',
-                'lastName' => 'Martin',
-                'companyName' => 'ORECA',
-                'companyDescription' => 'Constructeur et préparateur français de voitures de course',
-                'city' => 'Magny-Cours',
-                'subscriptionReference' => 'subscription-basic'
+                'email'                 => 'recruteur3@exemple.fr',
+                'firstName'             => 'Pierre',
+                'lastName'              => 'Martin',
+                'companyName'           => 'ORECA',
+                'companyDescription'    => 'Constructeur et préparateur français de voitures de course',
+                'city'                  => 'Magny-Cours',
+                'subscriptionReference' => 'subscription-basic',
             ],
             [
-                'email' => 'recruteur4@exemple.fr',
-                'firstName' => 'Thomas',
-                'lastName' => 'Schmidt',
-                'companyName' => 'Porsche Motorsport',
-                'companyDescription' => 'Division sport automobile de Porsche, active en Endurance et en Formule E',
-                'city' => 'Stuttgart',
-                'subscriptionReference' => 'subscription-premium'
+                'email'                 => 'recruteur4@exemple.fr',
+                'firstName'             => 'Thomas',
+                'lastName'              => 'Schmidt',
+                'companyName'           => 'Porsche Motorsport',
+                'companyDescription'    => 'Division sport automobile de Porsche, active en Endurance et en Formule E',
+                'city'                  => 'Stuttgart',
+                'subscriptionReference' => 'subscription-premium',
             ],
             [
-                'email' => 'recruteur5@exemple.fr',
-                'firstName' => 'Eva',
-                'lastName' => 'Novotná',
-                'companyName' => 'Praga Racing',
-                'companyDescription' => 'Constructeur de voitures de course et de karts de compétition',
-                'city' => 'Prague',
-                'subscriptionReference' => 'subscription-business'
+                'email'                 => 'recruteur5@exemple.fr',
+                'firstName'             => 'Eva',
+                'lastName'              => 'Novotná',
+                'companyName'           => 'Praga Racing',
+                'companyDescription'    => 'Constructeur de voitures de course et de karts de compétition',
+                'city'                  => 'Prague',
+                'subscriptionReference' => 'subscription-business',
             ],
             [
-                'email' => 'recruteur6@exemple.fr',
-                'firstName' => 'Sophie',
-                'lastName' => 'Lefevre',
-                'companyName' => 'Ferrari GT Racing',
-                'companyDescription' => 'Division GT de Ferrari, spécialisée dans les championnats GT et l\'endurance',
-                'city' => 'Maranello',
-                'subscriptionReference' => 'subscription-premium'
+                'email'              => 'recruteur6@exemple.fr',
+                'firstName'          => 'Sophie',
+                'lastName'           => 'Lefevre',
+                'companyName'        => 'Ferrari GT Racing',
+                'companyDescription' => 'Division GT de Ferrari, spécialisée dans les
+                                                championnats GT et l\'endurance',
+                'city'                  => 'Maranello',
+                'subscriptionReference' => 'subscription-premium',
             ],
             [
-                'email' => 'recruteur7@exemple.fr',
-                'firstName' => 'Marc',
-                'lastName' => 'Dubois',
-                'companyName' => 'Michelin Motorsport',
-                'companyDescription' => 'Leader mondial des pneumatiques de compétition',
-                'city' => 'Clermont-Ferrand',
-                'subscriptionReference' => 'subscription-business'
+                'email'                 => 'recruteur7@exemple.fr',
+                'firstName'             => 'Marc',
+                'lastName'              => 'Dubois',
+                'companyName'           => 'Michelin Motorsport',
+                'companyDescription'    => 'Leader mondial des pneumatiques de compétition',
+                'city'                  => 'Clermont-Ferrand',
+                'subscriptionReference' => 'subscription-business',
             ],
             [
-                'email' => 'recruteur8@exemple.fr',
-                'firstName' => 'Laura',
-                'lastName' => 'Garcia',
-                'companyName' => 'McLaren Automotive',
-                'companyDescription' => 'Constructeur de voitures de luxe et de course, pionnier en F1',
-                'city' => 'Woking',
-                'subscriptionReference' => 'subscription-premium'
+                'email'                 => 'recruteur8@exemple.fr',
+                'firstName'             => 'Laura',
+                'lastName'              => 'Garcia',
+                'companyName'           => 'McLaren Automotive',
+                'companyDescription'    => 'Constructeur de voitures de luxe et de course, pionnier en F1',
+                'city'                  => 'Woking',
+                'subscriptionReference' => 'subscription-premium',
             ],
             [
-                'email' => 'recruteur9@exemple.fr',
-                'firstName' => 'Alexandre',
-                'lastName' => 'Moreau',
-                'companyName' => 'Peugeot Sport',
-                'companyDescription' => 'Division sportive de Peugeot, engagée en WEC et rallye-raid',
-                'city' => 'Sochaux',
-                'subscriptionReference' => 'subscription-business'
+                'email'                 => 'recruteur9@exemple.fr',
+                'firstName'             => 'Alexandre',
+                'lastName'              => 'Moreau',
+                'companyName'           => 'Peugeot Sport',
+                'companyDescription'    => 'Division sportive de Peugeot, engagée en WEC et rallye-raid',
+                'city'                  => 'Sochaux',
+                'subscriptionReference' => 'subscription-business',
             ],
             [
-                'email' => 'recruteur10@exemple.fr',
-                'firstName' => 'Claire',
-                'lastName' => 'Bernard',
-                'companyName' => 'Aston Martin Racing',
-                'companyDescription' => 'Équipe officielle Aston Martin en compétition GT et F1',
-                'city' => 'Gaydon',
-                'subscriptionReference' => 'subscription-premium'
-            ]
+                'email'                 => 'recruteur10@exemple.fr',
+                'firstName'             => 'Claire',
+                'lastName'              => 'Bernard',
+                'companyName'           => 'Aston Martin Racing',
+                'companyDescription'    => 'Équipe officielle Aston Martin en compétition GT et F1',
+                'city'                  => 'Gaydon',
+                'subscriptionReference' => 'subscription-premium',
+            ],
         ];
     }
 }

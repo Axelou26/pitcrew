@@ -21,6 +21,7 @@ trait PostCommentsTrait
             $comment->setPost($this);
             $this->commentsCounter++;
         }
+
         return $this;
     }
 
@@ -32,6 +33,7 @@ trait PostCommentsTrait
             }
             $this->commentsCounter = max(0, $this->commentsCounter - 1);
         }
+
         return $this;
     }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
 use App\Entity\Conversation;
@@ -10,10 +12,18 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<Conversation>
  *
- * @method Conversation|null find($id, $lockMode = null, $lockVersion = null)
- * @method Conversation|null findOneBy(array $criteria, array $orderBy = null)
+ * @method null|Conversation find($id, $lockMode = null, $lockVersion = null)
+ * @method null|Conversation findOneBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null
+ * )
  * @method Conversation[]    findAll()
- * @method Conversation[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method Conversation[]    findBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null,
+ *     int $limit = null,
+ *     int $offset = null
+ * )
  */
 class ConversationRepository extends ServiceEntityRepository
 {
@@ -23,7 +33,7 @@ class ConversationRepository extends ServiceEntityRepository
     }
 
     /**
-     * Find a conversation between two users
+     * Find a conversation between two users.
      */
     public function findBetweenUsers(User $user1, User $user2): ?Conversation
     {
@@ -39,7 +49,9 @@ class ConversationRepository extends ServiceEntityRepository
     }
 
     /**
-     * Find all conversations for a user
+     * Trouve les conversations d'un utilisateur.
+     *
+     * @return Conversation[]
      */
     public function findConversationsForUser(User $user): array
     {
@@ -52,7 +64,7 @@ class ConversationRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve une conversation entre deux utilisateurs
+     * Trouve une conversation entre deux utilisateurs.
      */
     public function findConversationBetweenUsers(User $user1, User $user2): ?Conversation
     {

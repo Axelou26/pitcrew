@@ -1,35 +1,38 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 use App\Entity\Interview;
 use App\Entity\User;
 use App\Repository\InterviewRepository;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use DateTime;
+use DateTimeInterface;
+use RuntimeException;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 class VideoConferenceService
 {
-    private $interviewRepository;
-    private $urlGenerator;
-    private $apiKey;
-    private $jitsiDomain;
+    private InterviewRepository $interviewRepository;
+    private UrlGeneratorInterface $urlGenerator;
+    private string $apiKey;
+    private string $jitsiDomain;
 
     public function __construct(
         InterviewRepository $interviewRepository,
         UrlGeneratorInterface $urlGenerator,
-        string $apiKey = 'pitcrew_secure_key', // À configurer dans .env ou parameters.yaml
-        string $jitsiDomain = 'meet.jit.si'
+        string $apiKey,
+        string $jitsiDomain
     ) {
         $this->interviewRepository = $interviewRepository;
-        $this->urlGenerator = $urlGenerator;
-        $this->apiKey = $apiKey;
-        $this->jitsiDomain = $jitsiDomain;
+        $this->urlGenerator        = $urlGenerator;
+        $this->apiKey              = $apiKey;
+        $this->jitsiDomain         = $jitsiDomain;
     }
 
     /**
-     * Crée une nouvelle salle de visioconférence pour un entretien
+     * Crée une nouvelle salle de visioconférence pour un entretien.
      */
     public function createRoom(Interview $interview): string
     {
@@ -40,10 +43,10 @@ class VideoConferenceService
         $interview->setRoomId($roomId);
 
         // Génération de l'URL de la salle
-        $token = $this->generateRoomToken($interview);
+        $token      = $this->generateRoomToken($interview);
         $meetingUrl = $this->urlGenerator->generate('app_interview_room', [
-            'id' => $interview->getId(),
-            'token' => $token
+            'id'    => $interview->getId(),
+            'token' => $token,
         ], UrlGeneratorInterface::ABSOLUTE_URL);
 
         $interview->setMeetingUrl($meetingUrl);
@@ -53,7 +56,7 @@ class VideoConferenceService
     }
 
     /**
-     * Vérifie si un utilisateur a le droit d'accéder à une salle
+     * Vérifie si un utilisateur a le droit d'accéder à une salle.
      */
     public function canAccessRoom(Interview $interview, User $user): bool
     {
@@ -62,7 +65,7 @@ class VideoConferenceService
     }
 
     /**
-     * Génère un jeton d'accès pour la salle
+     * Génère un jeton d'accès pour la salle.
      */
     public function generateRoomToken(Interview $interview): string
     {
@@ -71,32 +74,33 @@ class VideoConferenceService
     }
 
     /**
-     * Vérifie la validité d'un jeton d'accès
+     * Vérifie la validité d'un jeton d'accès.
      */
     public function validateRoomToken(Interview $interview, string $token): bool
     {
         $expectedToken = $this->generateRoomToken($interview);
+
         return hash_equals($expectedToken, $token);
     }
 
     /**
-     * Vérifie si l'entretien est actif (peut être rejoint)
+     * Vérifie si l'entretien est actif (peut être rejoint).
      */
     public function isInterviewActive(Interview $interview): bool
     {
-        $now = new DateTime();
+        $now           = new DateTime();
         $scheduledTime = $interview->getScheduledAt();
 
         // Entretien actif si on est dans la fenêtre de 15 minutes avant à 1 heure après
         $earliestJoin = (clone $scheduledTime)->modify('-15 minutes');
-        $latestJoin = (clone $scheduledTime)->modify('+1 hour');
+        $latestJoin   = (clone $scheduledTime)->modify('+1 hour');
 
         // On vérifie seulement la fenêtre de temps et que l'entretien n'est pas annulé
         return $now >= $earliestJoin && $now <= $latestJoin && !$interview->isCancelled();
     }
 
     /**
-     * Termine une session d'entretien
+     * Termine une session d'entretien.
      */
     public function endInterview(Interview $interview): void
     {
@@ -106,7 +110,7 @@ class VideoConferenceService
     }
 
     /**
-     * Annule un entretien planifié
+     * Annule un entretien planifié.
      */
     public function cancelInterview(Interview $interview): void
     {
@@ -115,35 +119,112 @@ class VideoConferenceService
     }
 
     /**
-     * Génère les données de configuration côté client pour la visioconférence
+     * Génère les données de configuration côté client pour la visioconférence.
+     *
+     * @return array<string, mixed>
      */
     public function getClientConfig(Interview $interview, User $user): array
     {
         $isRecruiter = $interview->getRecruiter() === $user;
 
         return [
-            'roomName' => $interview->getRoomId(),
+            'roomName'        => $interview->getRoomId(),
             'userDisplayName' => $user->getFullName(),
-            'subject' => $interview->getTitle(),
-            'userRole' => $isRecruiter ? 'host' : 'participant',
-            'userEmail' => $user->getEmail(),
-            'jitsiDomain' => $this->jitsiDomain,
+            'subject'         => $interview->getTitle(),
+            'userRole'        => $isRecruiter ? 'host' : 'participant',
+            'userEmail'       => $user->getEmail(),
+            'jitsiDomain'     => $this->jitsiDomain,
             // Configuration supplémentaire pour éviter les problèmes d'accès
-            'enableLobby' => false,
-            'openBridgeChannel' => 'websocket',
+            'enableLobby'         => false,
+            'openBridgeChannel'   => 'websocket',
             'startWithVideoMuted' => false,
             'startWithAudioMuted' => false,
-            'enableWelcomePage' => false,
-            'prejoinPageEnabled' => false,
-            'membersOnly' => false
+            'enableWelcomePage'   => false,
+            'prejoinPageEnabled'  => false,
+            'membersOnly'         => false,
         ];
     }
 
     /**
-     * Obtient l'URL directe de Jitsi Meet pour l'interface externe
+     * Obtient l'URL directe de Jitsi Meet pour l'interface externe.
      */
     public function getDirectJitsiUrl(Interview $interview): string
     {
         return 'https://' . $this->jitsiDomain . '/' . $interview->getRoomId();
+    }
+
+    public function generateMeetingUrl(Interview $interview): string
+    {
+        $scheduledTime = $interview->getScheduledAt();
+        if ($scheduledTime === null) {
+            throw new RuntimeException('Interview scheduled time is not set');
+        }
+
+        $startTime = clone $scheduledTime;
+        $startTime = $startTime->modify('-15 minutes');
+
+        $endTime = clone $scheduledTime;
+        $endTime = $endTime->modify('+1 hour');
+
+        $meetingId = $this->generateMeetingId($interview);
+
+        $jobOffer  = $interview->getJobOffer();
+        $candidate = $interview->getCandidate();
+
+        $params = [
+            'meetingId' => $meetingId,
+            'startTime' => $startTime->format('c'),
+            'endTime'   => $endTime->format('c'),
+            'subject'   => 'Entretien - ' . ($jobOffer?->getTitle() ?? 'Offre d\'emploi'),
+            'userInfo'  => [
+                'displayName' => $candidate
+                    ? ($candidate->getFirstName() . ' ' . $candidate->getLastName())
+                    : 'Candidat',
+            ],
+        ];
+
+        return $this->jitsiDomain . '/' . $meetingId . '?' . http_build_query($params);
+    }
+
+    public function createMeeting(Interview $interview): array
+    {
+        $meetingId  = $this->generateMeetingId();
+        $meetingUrl = $this->generateMeetingUrl($meetingId);
+
+        $interview->setRoomId($meetingId);
+        $interview->setMeetingUrl($meetingUrl);
+
+        return [
+            'meetingId'  => $meetingId,
+            'meetingUrl' => $meetingUrl,
+        ];
+    }
+
+    public function generateMeetingId(): string
+    {
+        return uniqid('meeting_', true);
+    }
+
+    private function getTimeSlots(DateTimeInterface $scheduledTime, int $durationMinutes): array
+    {
+        $startTime = $scheduledTime instanceof DateTime
+            ? clone $scheduledTime
+            : DateTime::createFromInterface($scheduledTime);
+
+        $endTime = $scheduledTime instanceof DateTime
+            ? clone $scheduledTime
+            : DateTime::createFromInterface($scheduledTime);
+
+        $endTime->modify("+{$durationMinutes} minutes");
+
+        $slots   = [];
+        $current = clone $startTime;
+
+        while ($current < $endTime) {
+            $slots[] = clone $current;
+            $current->modify('+15 minutes');
+        }
+
+        return $slots;
     }
 }

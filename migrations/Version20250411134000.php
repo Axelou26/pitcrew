@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace DoctrineMigrations;
 
@@ -23,4 +23,4 @@ final class Version20250411134000 extends AbstractMigration
     {
         $this->addSql('ALTER TABLE post MODIFY title VARCHAR(255) NOT NULL');
     }
-} 
+}

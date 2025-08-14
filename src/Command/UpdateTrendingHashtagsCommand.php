@@ -1,21 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Entity\Hashtag;
 use App\Repository\HashtagRepository;
 use App\Repository\PostRepository;
 use DateInterval;
-use DateTime;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
+use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Psr\Cache\CacheItemPoolInterface;
 
 #[AsCommand(
     name: 'app:update-trending-hashtags',
@@ -23,7 +24,7 @@ use Psr\Cache\CacheItemPoolInterface;
 )]
 class UpdateTrendingHashtagsCommand extends Command
 {
-    protected static $defaultName = 'app:update-trending-hashtags';
+    protected static $defaultName        = 'app:update-trending-hashtags';
     protected static $defaultDescription = 'Met à jour les hashtags tendance';
 
     private EntityManagerInterface $entityManager;
@@ -38,10 +39,10 @@ class UpdateTrendingHashtagsCommand extends Command
         CacheItemPoolInterface $cache
     ) {
         parent::__construct();
-        $this->entityManager = $entityManager;
+        $this->entityManager     = $entityManager;
         $this->hashtagRepository = $hashtagRepository;
-        $this->postRepository = $postRepository;
-        $this->cache = $cache;
+        $this->postRepository    = $postRepository;
+        $this->cache             = $cache;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -52,7 +53,7 @@ class UpdateTrendingHashtagsCommand extends Command
             $io->info('Début de la mise à jour des hashtags tendance...');
 
             // Récupérer tous les posts des dernières 24 heures
-            $yesterday = new DateTime('-24 hours');
+            $yesterday   = new DateTimeImmutable('-24 hours');
             $recentPosts = $this->postRepository->findPostsSince($yesterday);
 
             // Compteur pour chaque hashtag
@@ -60,12 +61,14 @@ class UpdateTrendingHashtagsCommand extends Command
 
             foreach ($recentPosts as $post) {
                 $hashtags = $post->getHashtags();
-                foreach ($hashtags as $hashtag) {
-                    $hashtagName = $hashtag->getName();
-                    if (!isset($hashtagCounts[$hashtagName])) {
-                        $hashtagCounts[$hashtagName] = 0;
+                if ($hashtags !== null) {
+                    foreach ($hashtags as $hashtag) {
+                        $hashtagName = $hashtag->getName();
+                        if (!isset($hashtagCounts[$hashtagName])) {
+                            $hashtagCounts[$hashtagName] = 0;
+                        }
+                        $hashtagCounts[$hashtagName]++;
                     }
-                    $hashtagCounts[$hashtagName]++;
                 }
             }
 
@@ -90,15 +93,17 @@ class UpdateTrendingHashtagsCommand extends Command
 
             // Mettre en cache les hashtags tendance
             $trendingHashtags = $this->hashtagRepository->findTrending(5);
-            $cacheItem = $this->cache->getItem('trending_hashtags');
-            $cacheItem->set(array_map(fn($h) => $h->getId(), $trendingHashtags));
+            $cacheItem        = $this->cache->getItem('trending_hashtags');
+            $cacheItem->set(array_map(fn ($h) => $h->getId(), $trendingHashtags));
             $cacheItem->expiresAfter(new DateInterval('PT24H')); // Expire après 24 heures
             $this->cache->save($cacheItem);
 
             $io->success('Les hashtags tendance ont été mis à jour avec succès.');
+
             return Command::SUCCESS;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $io->error('Une erreur est survenue : ' . $e->getMessage());
+
             return Command::FAILURE;
         }
     }

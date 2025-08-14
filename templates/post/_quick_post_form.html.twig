@@ -13,7 +13,7 @@
                       placeholder="Que voulez-vous partager ? Utilisez # pour les hashtags et @ pour mentionner quelqu'un"
                       maxlength="5000"></textarea>
             <div class="invalid-feedback"></div>
-            <div id="mention-suggestions" class="mention-suggestions dropdown-menu"></div>
+            <div class="mention-suggestions dropdown-menu suggestion-container"></div>
             <small class="text-muted d-flex justify-content-between">
                 <span>Utilisez @ pour mentionner un utilisateur et # pour ajouter un hashtag</span>
                 <span><span id="content-length">0</span>/5000 caractères</span>
@@ -93,6 +93,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const contentLength = document.getElementById('content-length');
     const previewContent = document.querySelector('#quick-post-preview .preview-content');
     
+    if (!contentTextarea || !contentLength || !previewContent) return;
+    
     // Mettre à jour le compteur de caractères et la prévisualisation
     contentTextarea.addEventListener('input', function() {
         const length = this.value.length;
@@ -113,12 +115,22 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Gérer le bouton Annuler
-    document.getElementById('quick-post-cancel').addEventListener('click', function() {
-        document.getElementById('quick-post-form').classList.add('d-none');
-        contentTextarea.value = '';
-        document.getElementById('quick-post-title').value = '';
-        document.getElementById('quick-post-image').value = '';
-        document.getElementById('quick-post-preview').classList.add('d-none');
-    });
+    const cancelButton = document.getElementById('quick-post-cancel');
+    if (cancelButton) {
+        cancelButton.addEventListener('click', function() {
+            const form = document.getElementById('quick-post-form');
+            if (form) form.classList.add('d-none');
+            if (contentTextarea) contentTextarea.value = '';
+            
+            const titleInput = document.getElementById('quick-post-title');
+            if (titleInput) titleInput.value = '';
+            
+            const imageInput = document.getElementById('quick-post-image');
+            if (imageInput) imageInput.value = '';
+            
+            const preview = document.getElementById('quick-post-preview');
+            if (preview) preview.classList.add('d-none');
+        });
+    }
 });
 </script> 

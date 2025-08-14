@@ -123,8 +123,8 @@
                 <i class="fas fa-video me-2"></i> Ouvrir la visioconférence
             </button>
             
-            <a href="{{ path('app_interview_show', {'id': interview.id}) }}" class="visio-button visio-button-secondary">
-                <i class="fas fa-arrow-left me-2"></i> Retour à l'entretien
+            <a href="{{ path('app_home') }}" class="visio-button visio-button-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Retour à l'accueil
             </a>
         </div>
         
@@ -183,7 +183,7 @@
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle me-2"></i>
                                 La visioconférence a été fermée. 
-                                <a href="{{ path('app_interview_show', {'id': interview.id}) }}">Retourner à la page de l'entretien</a>.
+                                <a href="{{ path('app_home') }}">Retourner à la page d'accueil</a>.
                             </div>
                         `;
                     }

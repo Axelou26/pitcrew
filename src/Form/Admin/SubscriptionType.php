@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Form\Admin;
 
 use App\Entity\Subscription;
@@ -18,32 +20,32 @@ class SubscriptionType extends AbstractType
     {
         $builder
             ->add('name', TextType::class, [
-                'label' => 'Nom'
+                'label' => 'Nom',
             ])
             ->add('description', TextareaType::class, [
                 'label' => 'Description',
-                'attr' => ['rows' => 5]
+                'attr'  => ['rows' => 5],
             ])
             ->add('price', MoneyType::class, [
-                'label' => 'Prix',
-                'currency' => 'EUR'
+                'label'    => 'Prix',
+                'currency' => 'EUR',
             ])
             ->add('durationMonths', IntegerType::class, [
-                'label' => 'Durée (mois)'
+                'label' => 'Durée (mois)',
             ])
             ->add('maxJobOffers', IntegerType::class, [
-                'label' => 'Nombre max d\'offres d\'emploi'
+                'label' => 'Nombre max d\'offres d\'emploi',
             ])
             ->add('stripePriceId', TextType::class, [
-                'label' => 'ID Prix Stripe',
+                'label'    => 'ID Prix Stripe',
                 'required' => false,
             ])
             ->add('stripeProductId', TextType::class, [
-                'label' => 'ID Produit Stripe',
+                'label'    => 'ID Produit Stripe',
                 'required' => false,
             ])
             ->add('isActive', CheckboxType::class, [
-                'label' => 'Actif',
+                'label'    => 'Actif',
                 'required' => false,
             ])
         ;

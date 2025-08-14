@@ -1,14 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 use App\Entity\Post;
-use App\Entity\User;
-use App\Entity\PostLike;
 use App\Entity\PostComment;
-use App\Entity\PostReaction;
+use App\Entity\PostLike;
+use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
-use InvalidArgumentException;
 
 class PostInteractionService
 {
@@ -28,6 +28,7 @@ class PostInteractionService
      *
      * @param Post $post Le post concerné
      * @param User $user L'utilisateur qui like
+     *
      * @return bool true si le post est liké, false s'il est unliké
      */
     public function toggleLike(Post $post, User $user): bool
@@ -38,6 +39,7 @@ class PostInteractionService
         if ($existingLike) {
             $this->entityManager->remove($existingLike);
             $this->entityManager->flush();
+
             return false;
         }
 

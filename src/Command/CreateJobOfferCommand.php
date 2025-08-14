@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Entity\JobOffer;
@@ -32,6 +34,7 @@ class CreateJobOfferCommand extends Command
 
         if (!$recruiter) {
             $output->writeln('No recruiter found. Please create a recruiter user first.');
+
             return Command::FAILURE;
         }
 

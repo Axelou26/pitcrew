@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Service\SubscriptionService;
@@ -26,9 +28,7 @@ class CheckExpiredSubscriptionsCommand extends Command
     protected function configure(): void
     {
         $this
-
-
-                    ->setHelp('Cette commande vérifie les abonnements expirés et met à jour leur statut
+            ->setHelp('Cette commande vérifie les abonnements expirés et met à jour leur statut
                         . Elle est conçue pour être exécutée quotidiennement via un cron job.');
     }
 
@@ -46,7 +46,8 @@ class CheckExpiredSubscriptionsCommand extends Command
         } catch (\Exception $e) {
             $ioStyle
                 ->error('Une erreur est survenue lors de la vérification des abonnements expirés : ' . $e
-                ->getMessage());
+                    ->getMessage());
+
             return Command::FAILURE;
         }
     }

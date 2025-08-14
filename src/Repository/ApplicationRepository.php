@@ -1,20 +1,33 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
+use App\Entity\Applicant;
 use App\Entity\Application;
+use App\Entity\JobOffer;
+use App\Entity\Recruiter;
 use App\Entity\User;
+use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
-use DateTime;
 
 /**
  * @extends ServiceEntityRepository<Application>
  *
- * @method Application|null find($id, $lockMode = null, $lockVersion = null)
- * @method Application|null findOneBy(array $criteria, array $orderBy = null)
+ * @method null|Application find($id, $lockMode = null, $lockVersion = null)
+ * @method null|Application findOneBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null
+ * )
  * @method Application[]    findAll()
- * @method Application[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method Application[]    findBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null,
+ *     int $limit = null,
+ *     int $offset = null
+ * )
  */
 class ApplicationRepository extends ServiceEntityRepository
 {
@@ -26,37 +39,88 @@ class ApplicationRepository extends ServiceEntityRepository
     /**
      * @return Application[] Returns an array of Application objects for a recruiter
      */
-    public function findByRecruiter(User $recruiter): array
+    public function findByRecruiter(Recruiter $recruiter): array
     {
-        return $this->createQueryBuilder('a')
-            ->join('a.jobOffer', 'j')
-            ->where('j.recruiter = :recruiter')
+        $qb = $this->createQueryBuilder('a')
+            ->join('a.jobOffer', 'jo')
+            ->where('jo.recruiter = :recruiter')
             ->setParameter('recruiter', $recruiter)
+            ->orderBy('a.createdAt', 'DESC');
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * Trouve les candidatures d'un recruteur.
+     *
+     * @return Application[]
+     */
+    public function findApplicationsByRecruiter(User $recruiter): array
+    {
+        $jobOfferId = $recruiter->getJobOffer()?->getId();
+        if ($jobOfferId === null) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.jobOffer = :jobOfferId')
+            ->setParameter('jobOfferId', $jobOfferId)
             ->orderBy('a.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
     }
 
     /**
-     * @return array Returns an array of applications grouped by job offer
+     * @return Application[] Returns an array of Application objects for a user
      */
-    public function findApplicationsByRecruiter(User $recruiter): array
+    public function findByUser(User $user): array
     {
-        $applications = $this->findByRecruiter($recruiter);
-        $grouped = [];
-
-        foreach ($applications as $application) {
-            $jobOffer = $application->getJobOffer();
-            if (!isset($grouped[$jobOffer->getId()])) {
-                $grouped[$jobOffer->getId()] = [
-                    'jobOffer' => $jobOffer,
-                    'applications' => []
-                ];
-            }
-            $grouped[$jobOffer->getId()]['applications'][] = $application;
+        // Si l'utilisateur est déjà un Applicant, l'utiliser directement
+        if ($user instanceof Applicant) {
+            return $this->createQueryBuilder('a')
+                ->where('a.applicant = :applicant')
+                ->setParameter('applicant', $user)
+                ->orderBy('a.createdAt', 'DESC')
+                ->getQuery()
+                ->getResult();
         }
 
-        return $grouped;
+        // Sinon, vérifier si un Applicant avec le même ID existe
+        // Cela fonctionne parce qu'Applicant hérite de User et partage la même table et ID
+        $applicant = $this->getEntityManager()
+            ->getRepository(Applicant::class)
+            ->find($user->getId());
+
+        if (!$applicant) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('a')
+            ->where('a.applicant = :applicant')
+            ->setParameter('applicant', $applicant)
+            ->orderBy('a.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Trouve les candidatures pour une offre d'emploi.
+     *
+     * @return Application[]
+     */
+    public function findApplicationsByJobOffer(JobOffer $jobOffer): array
+    {
+        $jobOfferId = $jobOffer->getId();
+        if ($jobOfferId === null) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.jobOffer = :jobOfferId')
+            ->setParameter('jobOfferId', $jobOfferId)
+            ->orderBy('a.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
     }
 
     /**
@@ -73,9 +137,11 @@ class ApplicationRepository extends ServiceEntityRepository
     }
 
     /**
-     * @return array Returns statistics about applications
+     * Récupère les statistiques des candidatures.
+     *
+     * @return array<string, mixed>
      */
-    public function getStatistics(User $recruiter): array
+    public function getStatistics(Recruiter $recruiter): array
     {
         $queryBuilder = $this->createQueryBuilder('a')
             ->select('COUNT(a.id) as total')
@@ -98,7 +164,7 @@ class ApplicationRepository extends ServiceEntityRepository
      */
     public function findRecentApplications(User $recruiter, int $days = 7): array
     {
-        $date = new DateTime();
+        $date = new DateTimeImmutable();
         $date->modify('-' . $days . ' days');
 
         return $this->createQueryBuilder('a')
@@ -110,5 +176,48 @@ class ApplicationRepository extends ServiceEntityRepository
             ->orderBy('a.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Compte les candidatures pour un recruteur.
+     */
+    public function countForRecruiter(User $recruiter): int
+    {
+        $qb = $this->createQueryBuilder('a')
+            ->select('COUNT(a.id)')
+            ->join('a.jobOffer', 'jo')
+            ->where('jo.recruiter = :recruiter')
+            ->setParameter('recruiter', $recruiter);
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    public function findApplicationsByUser(User $user): array
+    {
+        return $this->createQueryBuilder('a')
+            ->select('a', 'j')
+            ->leftJoin('a.jobOffer', 'j')
+            ->where('a.applicant = :user')
+            ->setParameter('user', $user)
+            ->orderBy('a.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Compte le nombre de candidatures pour une offre d'emploi.
+     */
+    public function countByJobOffer(JobOffer $jobOffer): int
+    {
+        if ($jobOffer->getId() === null) {
+            return 0;
+        }
+
+        return (int) $this->createQueryBuilder('a')
+            ->select('COUNT(a.id)')
+            ->andWhere('a.jobOffer = :jobOfferId')
+            ->setParameter('jobOfferId', $jobOffer->getId())
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 }

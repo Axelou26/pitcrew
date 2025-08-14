@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -27,9 +29,9 @@ class CheckOrphanedFilesCommand extends Command
         foreach ($cssFiles as $cssFile) {
             if (!$this->isCssFileReferenced($cssFile)) {
                 $orphanedFiles[] = [
-                    'type' => 'CSS',
-                    'file' => $cssFile,
-                    'reason' => 'Non référencé dans les templates'
+                    'type'   => 'CSS',
+                    'file'   => $cssFile,
+                    'reason' => 'Non référencé dans les templates',
                 ];
             }
         }
@@ -39,9 +41,9 @@ class CheckOrphanedFilesCommand extends Command
         foreach ($jsFiles as $jsFile) {
             if (!$this->isJsFileReferenced($jsFile)) {
                 $orphanedFiles[] = [
-                    'type' => 'JS',
-                    'file' => $jsFile,
-                    'reason' => 'Non référencé dans les templates'
+                    'type'   => 'JS',
+                    'file'   => $jsFile,
+                    'reason' => 'Non référencé dans les templates',
                 ];
             }
         }
@@ -51,22 +53,23 @@ class CheckOrphanedFilesCommand extends Command
         foreach ($phpFiles as $phpFile) {
             if (!$this->isPhpFileReferenced($phpFile)) {
                 $orphanedFiles[] = [
-                    'type' => 'PHP',
-                    'file' => $phpFile,
-                    'reason' => 'Non référencé dans le code'
+                    'type'   => 'PHP',
+                    'file'   => $phpFile,
+                    'reason' => 'Non référencé dans le code',
                 ];
             }
         }
 
         if (empty($orphanedFiles)) {
             $io->success('Aucun fichier orphelin détecté !');
+
             return Command::SUCCESS;
         }
 
-        $io->warning(sprintf('%d fichiers orphelins détectés :', count($orphanedFiles)));
+        $io->warning(\sprintf('%d fichiers orphelins détectés :', \count($orphanedFiles)));
 
         foreach ($orphanedFiles as $file) {
-            $io->writeln(sprintf(
+            $io->writeln(\sprintf(
                 '  • %s: %s (%s)',
                 $file['type'],
                 $file['file'],
@@ -125,7 +128,7 @@ class CheckOrphanedFilesCommand extends Command
 
         foreach ($finder as $file) {
             $content = $file->getContents();
-            if (strpos($content, $cssFile) !== false) {
+            if (str_contains($content, $cssFile)) {
                 return true;
             }
         }
@@ -140,7 +143,7 @@ class CheckOrphanedFilesCommand extends Command
 
         foreach ($finder as $file) {
             $content = $file->getContents();
-            if (strpos($content, $jsFile) !== false) {
+            if (str_contains($content, $jsFile)) {
                 return true;
             }
         }
@@ -170,11 +173,11 @@ class CheckOrphanedFilesCommand extends Command
             'Security/',
             'Twig/',
             'DataFixtures/',
-            'Migrations/'
+            'Migrations/',
         ];
 
         foreach ($baseDirectories as $directory) {
-            if (strpos($phpFile, $directory) === 0) {
+            if (str_starts_with($phpFile, $directory)) {
                 return true;
             }
         }
@@ -187,7 +190,7 @@ class CheckOrphanedFilesCommand extends Command
         $finder = new Finder();
         $finder->files()->name('*.php')->in('src')->exclude('tests');
 
-        $className = pathinfo($phpFile, PATHINFO_FILENAME);
+        $className = pathinfo($phpFile, \PATHINFO_FILENAME);
 
         foreach ($finder as $file) {
             if ($file->getRelativePathname() === $phpFile) {
@@ -195,7 +198,7 @@ class CheckOrphanedFilesCommand extends Command
             }
 
             $content = $file->getContents();
-            if (strpos($content, $className) !== false) {
+            if (str_contains($content, $className)) {
                 return true;
             }
         }

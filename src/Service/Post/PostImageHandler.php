@@ -26,11 +26,11 @@ class PostImageHandler
             return $this->fileUploader->upload(
                 $imageFile,
                 'posts_directory',
-                $existingImage
+                $existingImage ?? ''
             );
         } catch (\Exception $e) {
             $this->logger->error('Erreur lors du traitement de l\'image', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }

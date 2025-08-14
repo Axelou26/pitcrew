@@ -1,58 +1,64 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Form;
 
 use App\Entity\JobApplication;
-use App\Form\Trait\FileValidationTrait;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Validator\Constraints\NotNull;
+use Symfony\Component\Validator\Constraints\File;
+use Symfony\Component\Validator\Constraints\All;
 
 class JobApplicationType extends AbstractType
 {
-    use FileValidationTrait;
-
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
             ->add('coverLetter', TextareaType::class, [
-                'label' => 'Lettre de motivation',
+                'label'    => 'Lettre de motivation',
                 'required' => true,
-                'attr' => [
-                    'rows' => 10,
-                    'placeholder' => 'Rédigez votre lettre de motivation...',
-                    'class' => 'form-control'
+                'attr'     => [
+                    'rows'        => 5,
+                    'placeholder' => 'Décrivez votre motivation pour ce poste...',
                 ],
             ])
-            ->add('resume', FileType::class, [
-                'label' => 'CV (PDF)',
-                'required' => true,
-                'data_class' => null,
+            ->add('cvFile', FileType::class, [
+                'label'       => 'CV (PDF)',
+                'required'    => false,
+                'mapped'      => false,
                 'constraints' => [
-                    new NotNull([
-                        'message' => 'Le CV est obligatoire'
+                    new File([
+                        'maxSize'   => '2M',
+                        'mimeTypes' => [
+                            'application/pdf',
+                            'application/msword',
+                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                        ],
+                        'mimeTypesMessage' => 'Veuillez télécharger un fichier PDF ou Word valide.',
                     ]),
-                    $this->createPdfFileConstraint(),
                 ],
-                'attr' => $this->getPdfFileAttributes(),
-                'help' => 'Format accepté : PDF, taille maximale : 5 Mo',
-                'invalid_message' => 'Le CV est obligatoire et doit être au format PDF',
             ])
             ->add('additionalDocuments', FileType::class, [
-                'label' => 'Documents complémentaires (PDF)',
-                'mapped' => false,
-                'required' => false,
-                'multiple' => true,
+                'label'       => 'Documents supplémentaires (PDF)',
+                'required'    => false,
+                'mapped'      => false,
+                'multiple'    => true,
                 'constraints' => [
-                    $this->createFileCountConstraint(),
-                    $this->createMultipleFilesConstraint(),
+                    new All([
+                        'constraints' => [
+                            new File([
+                                'maxSize'   => '2M',
+                                'mimeTypes' => ['application/pdf'],
+                                'mimeTypesMessage' => 'Veuillez télécharger des fichiers PDF valides.',
+                            ]),
+                        ],
+                    ]),
                 ],
-                'attr' => $this->getMultipleFilesAttributes(),
-            ])
-        ;
+            ]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

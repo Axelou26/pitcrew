@@ -1,17 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Entity\Hashtag;
 use App\Repository\HashtagRepository;
 use App\Repository\PostRepository;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use DateTimeImmutable;
 
 #[AsCommand(
     name: 'app:fix-hashtags',
@@ -29,9 +31,9 @@ class FixHashtagsCommand extends Command
         PostRepository $postRepository
     ) {
         parent::__construct();
-        $this->entityManager = $entityManager;
+        $this->entityManager     = $entityManager;
         $this->hashtagRepository = $hashtagRepository;
-        $this->postRepository = $postRepository;
+        $this->postRepository    = $postRepository;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -44,10 +46,11 @@ class FixHashtagsCommand extends Command
 
         if (empty($hashtags)) {
             $ioStyle->warning('Aucun hashtag trouvé dans la base de données.');
+
             return Command::SUCCESS;
         }
 
-        $ioStyle->progressStart(count($hashtags));
+        $ioStyle->progressStart(\count($hashtags));
 
         foreach ($hashtags as $hashtag) {
             try {
@@ -66,8 +69,8 @@ class FixHashtagsCommand extends Command
             } catch (\Exception $e) {
                 $ioStyle
                     ->error('Erreur lors de la mise à jour du hashtag #' . $hashtag
-                    ->getName() . ': ' . $e
-                    ->getMessage());
+                        ->getName() . ': ' . $e
+                        ->getMessage());
             }
         }
 

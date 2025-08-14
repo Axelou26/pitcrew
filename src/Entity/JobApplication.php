@@ -1,50 +1,67 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\JobApplicationRepository;
-use Doctrine\DBAL\Types\Types;
-use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Validator\Constraints as Assert;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use DateTimeImmutable;
+use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: JobApplicationRepository::class)]
 class JobApplication
 {
     /**
-     * @SuppressWarnings("PHPMD.ShortVariable")
+     * Identifiant de la candidature.
      */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\Column(type: 'integer')]
+    private int $id;
 
-    #[ORM\ManyToOne(inversedBy: 'applications')]
+    /**
+     * Statut de la candidature.
+     */
+    #[ORM\Column(type: 'string', length: 255)]
+    private string $status = 'pending';
+
+    /**
+     * Candidat qui a postulé.
+     */
+    #[ORM\ManyToOne(targetEntity: Applicant::class, inversedBy: 'applications')]
     #[ORM\JoinColumn(nullable: false)]
-    private ?User $applicant = null;
+    private ?Applicant $applicant = null;
 
-    #[ORM\ManyToOne(inversedBy: 'applications')]
+    #[ORM\ManyToOne(targetEntity: JobOffer::class, inversedBy: 'applications')]
     #[ORM\JoinColumn(nullable: false)]
     private ?JobOffer $jobOffer = null;
 
-    #[ORM\Column(type: Types::TEXT)]
-    #[Assert\NotBlank(message: 'La lettre de motivation est obligatoire')]
+    /**
+     * Lettre de motivation.
+     */
+    #[ORM\Column(type: 'text', nullable: true)]
     private ?string $coverLetter = null;
 
-    #[ORM\Column(length: 255)]
-    #[Assert\NotBlank(message: 'Le CV est obligatoire')]
-    #[Assert\NotNull(message: 'Le CV est obligatoire')]
+    /**
+     * CV du candidat.
+     */
+    #[ORM\Column(type: 'string', nullable: true)]
     private ?string $resume = null;
 
-    #[ORM\Column]
-    private ?\DateTimeImmutable $createdAt = null;
+    /**
+     * Date de création de la candidature.
+     */
+    #[ORM\Column(type: 'datetime_immutable')]
+    private DateTimeImmutable $createdAt;
 
-    #[ORM\Column(length: 20)]
-    private ?string $status = 'pending';
-
-    #[ORM\Column(type: Types::JSON)]
+    /**
+     * Documents supplémentaires.
+     *
+     * @var array<int, string>
+     */
+    #[ORM\Column(type: 'json')]
     private array $documents = [];
 
     #[ORM\Column(nullable: true)]
@@ -53,22 +70,37 @@ class JobApplication
     #[ORM\Column(nullable: true)]
     private ?string $resumeUrl = null;
 
-    #[ORM\Column(type: Types::JSON, nullable: true)]
+    /**
+     * Clés S3 des documents.
+     *
+     * @var array<int, string>
+     */
+    #[ORM\Column(type: 'json', nullable: true)]
     private ?array $documentsS3Keys = null;
 
-    #[ORM\Column(type: Types::JSON, nullable: true)]
+    /**
+     * URLs des documents.
+     *
+     * @var array<int, string>
+     */
+    #[ORM\Column(type: 'json', nullable: true)]
     private ?array $documentsUrls = null;
 
-    #[ORM\OneToMany(mappedBy: 'jobApplication', targetEntity: Message::class, orphanRemoval: true)]
+    /**
+     * Messages associés à la candidature.
+     *
+     * @var Collection<int, Message>
+     */
+    #[ORM\OneToMany(targetEntity: Message::class, mappedBy: 'jobApplication', orphanRemoval: true)]
     private Collection $messages;
 
     public function __construct()
     {
-        $this->createdAt = new DateTimeImmutable();
-        $this->documents = [];
+        $this->createdAt       = new DateTimeImmutable();
+        $this->documents       = [];
         $this->documentsS3Keys = [];
-        $this->documentsUrls = [];
-        $this->messages = new ArrayCollection();
+        $this->documentsUrls   = [];
+        $this->messages        = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -76,14 +108,15 @@ class JobApplication
         return $this->id;
     }
 
-    public function getApplicant(): ?User
+    public function getApplicant(): ?Applicant
     {
         return $this->applicant;
     }
 
-    public function setApplicant(?User $applicant): static
+    public function setApplicant(?Applicant $applicant): static
     {
         $this->applicant = $applicant;
+
         return $this;
     }
 
@@ -95,6 +128,7 @@ class JobApplication
     public function setJobOffer(?JobOffer $jobOffer): static
     {
         $this->jobOffer = $jobOffer;
+
         return $this;
     }
 
@@ -106,21 +140,23 @@ class JobApplication
     public function setCoverLetter(?string $coverLetter): static
     {
         $this->coverLetter = $coverLetter;
+
         return $this;
     }
 
     public function getResume(): ?string
     {
-        return $this->resume;
+        return $this->resume ?? null;
     }
 
     public function setResume(?string $resume): static
     {
         $this->resume = $resume;
+
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeImmutable
+    public function getCreatedAt(): ?DateTimeImmutable
     {
         return $this->createdAt;
     }
@@ -133,6 +169,16 @@ class JobApplication
     public function setStatus(string $status): static
     {
         $this->status = $status;
+
+        return $this;
+    }
+
+    public function addDocument(string $document): static
+    {
+        if (!in_array($document, $this->documents, true)) {
+            $this->documents[] = $document;
+        }
+
         return $this;
     }
 
@@ -144,24 +190,18 @@ class JobApplication
     public function setDocuments(array $documents): static
     {
         $this->documents = $documents;
-        return $this;
-    }
 
-    public function addDocument(string $document): static
-    {
-        if (!in_array($document, $this->documents)) {
-            $this->documents[] = $document;
-        }
         return $this;
     }
 
     public function removeDocument(string $document): static
     {
-        $key = array_search($document, $this->documents);
+        $key = array_search($document, $this->documents, true);
         if ($key !== false) {
             unset($this->documents[$key]);
             $this->documents = array_values($this->documents);
         }
+
         return $this;
     }
 
@@ -173,6 +213,7 @@ class JobApplication
     public function setResumeS3Key(?string $resumeS3Key): static
     {
         $this->resumeS3Key = $resumeS3Key;
+
         return $this;
     }
 
@@ -184,28 +225,43 @@ class JobApplication
     public function setResumeUrl(?string $resumeUrl): static
     {
         $this->resumeUrl = $resumeUrl;
+
         return $this;
     }
 
-    public function getDocumentsS3Keys(): ?array
+    /**
+     * @return array<int, string>
+     */
+    public function getDocumentsS3Keys(): array
     {
-        return $this->documentsS3Keys;
+        return $this->documentsS3Keys ?? [];
     }
 
+    /**
+     * @param array<int, string> $documentsS3Keys
+     */
     public function setDocumentsS3Keys(?array $documentsS3Keys): static
     {
         $this->documentsS3Keys = $documentsS3Keys;
+
         return $this;
     }
 
-    public function getDocumentsUrls(): ?array
+    /**
+     * @return array<int, string>
+     */
+    public function getDocumentsUrls(): array
     {
-        return $this->documentsUrls;
+        return $this->documentsUrls ?? [];
     }
 
-    public function setDocumentsUrls(?array $documentsUrls): static
+    /**
+     * @param array<int, string> $documentsUrls
+     */
+    public function setDocumentsUrls(array $documentsUrls): self
     {
         $this->documentsUrls = $documentsUrls;
+
         return $this;
     }
 

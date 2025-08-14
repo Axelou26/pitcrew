@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit\Entity;
 
-use App\Entity\Application;
 use App\Entity\Applicant;
+use App\Entity\Application;
 use App\Entity\JobOffer;
 use PHPUnit\Framework\TestCase;
 
@@ -17,8 +19,8 @@ class ApplicationTest extends TestCase
     {
         parent::setUp();
         $this->application = new Application();
-        $this->applicant = new Applicant();
-        $this->jobOffer = new JobOffer();
+        $this->applicant   = new Applicant();
+        $this->jobOffer    = new JobOffer();
 
         $this->applicant->setEmail('applicant@example.com');
     }
@@ -26,7 +28,7 @@ class ApplicationTest extends TestCase
     public function testConstructor(): void
     {
         $this->assertInstanceOf(\DateTimeImmutable::class, $this->application->getCreatedAt());
-        $this->assertEquals('pending', $this->application->getStatus());
+        $this->assertSame('pending', $this->application->getStatus());
     }
 
     public function testApplicantAssociation(): void
@@ -43,9 +45,9 @@ class ApplicationTest extends TestCase
 
     public function testCoverLetter(): void
     {
-        $coverLetter = "Lettre de motivation détaillée";
+        $coverLetter = 'Lettre de motivation détaillée';
         $this->application->setCoverLetter($coverLetter);
-        $this->assertEquals($coverLetter, $this->application->getCoverLetter());
+        $this->assertSame($coverLetter, $this->application->getCoverLetter());
 
         // Test avec une valeur null
         $this->application->setCoverLetter(null);
@@ -54,9 +56,9 @@ class ApplicationTest extends TestCase
 
     public function testCvFilename(): void
     {
-        $filename = "cv_john_doe.pdf";
+        $filename = 'cv_john_doe.pdf';
         $this->application->setCvFilename($filename);
-        $this->assertEquals($filename, $this->application->getCvFilename());
+        $this->assertSame($filename, $this->application->getCvFilename());
 
         // Test avec une valeur null
         $this->application->setCvFilename(null);
@@ -65,9 +67,9 @@ class ApplicationTest extends TestCase
 
     public function testRecommendationLetterFilename(): void
     {
-        $filename = "recommendation.pdf";
+        $filename = 'recommendation.pdf';
         $this->application->setRecLetterFilename($filename);
-        $this->assertEquals($filename, $this->application->getRecLetterFilename());
+        $this->assertSame($filename, $this->application->getRecLetterFilename());
 
         // Test avec une valeur null
         $this->application->setRecLetterFilename(null);
@@ -81,7 +83,7 @@ class ApplicationTest extends TestCase
 
         foreach ($validStatuses as $status) {
             $this->application->setStatus($status);
-            $this->assertEquals($status, $this->application->getStatus());
+            $this->assertSame($status, $this->application->getStatus());
         }
 
         // Test avec un statut invalide
@@ -93,7 +95,7 @@ class ApplicationTest extends TestCase
     {
         $date = new \DateTimeImmutable('2024-01-01 12:00:00');
         $this->application->setCreatedAt($date);
-        $this->assertEquals($date, $this->application->getCreatedAt());
+        $this->assertSame($date, $this->application->getCreatedAt());
     }
 
     public function testFluentInterface(): void
@@ -101,10 +103,10 @@ class ApplicationTest extends TestCase
         $returnedApplication = $this->application
             ->setApplicant($this->applicant)
             ->setJobOffer($this->jobOffer)
-            ->setCoverLetter("Lettre de motivation")
-            ->setCvFilename("cv.pdf")
-            ->setRecLetterFilename("recommendation.pdf")
-            ->setStatus("pending")
+            ->setCoverLetter('Lettre de motivation')
+            ->setCvFilename('cv.pdf')
+            ->setRecLetterFilename('recommendation.pdf')
+            ->setStatus('pending')
             ->setCreatedAt(new \DateTimeImmutable());
 
         $this->assertSame($this->application, $returnedApplication);

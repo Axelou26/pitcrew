@@ -1,12 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Form;
 
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
-use Symfony\Component\Form\Extension\Core\Type\DateType;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -16,29 +16,29 @@ class WorkExperienceEntryType extends AbstractType
     {
         $builder
             ->add('title', TextType::class, [
-                'label' => 'Titre du poste',
+                'label'    => 'Titre du poste',
                 'required' => true,
             ])
             ->add('company', TextType::class, [
-                'label' => 'Entreprise / Organisation',
+                'label'    => 'Entreprise / Organisation',
                 'required' => true,
             ])
             ->add('location', TextType::class, [
-                'label' => 'Lieu',
+                'label'    => 'Lieu',
                 'required' => false,
             ])
             ->add('startDate', TextType::class, [
-                'label' => 'Date de début (MM/AAAA)',
+                'label'    => 'Date de début (MM/AAAA)',
                 'required' => true,
             ])
             ->add('endDate', TextType::class, [
-                'label' => 'Date de fin (MM/AAAA) ou "present" si en cours',
+                'label'    => 'Date de fin (MM/AAAA) ou "present" si en cours',
                 'required' => true,
             ])
             ->add('description', TextareaType::class, [
-                'label' => 'Description des responsabilités et accomplissements',
+                'label'    => 'Description des responsabilités et accomplissements',
                 'required' => false,
-                'attr' => ['rows' => 4],
+                'attr'     => ['rows' => 4],
             ]);
     }
 

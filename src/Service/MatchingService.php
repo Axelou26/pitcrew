@@ -4,41 +4,55 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Entity\User;
 use App\Entity\Applicant;
 use App\Entity\JobOffer;
-use App\Repository\UserRepository;
+use App\Entity\User;
+use App\Repository\ApplicantRepository;
 use App\Repository\JobOfferRepository;
-use App\Service\ScoreCalculator\TechnicalScoreCalculator;
-use App\Service\ScoreCalculator\SoftSkillsCalculator;
 use App\Service\ScoreCalculator\ExperienceScoreCalculator;
 use App\Service\ScoreCalculator\LocationScoreCalculator;
+use App\Service\ScoreCalculator\ScoreCalculatorInterface;
+use App\Service\ScoreCalculator\SoftSkillsCalculator;
+use App\Service\ScoreCalculator\TechnicalScoreCalculator;
 use Doctrine\ORM\EntityManagerInterface;
 use RuntimeException;
 
 class MatchingService
 {
-    private TechnicalScoreCalculator $techScore;
-    private SoftSkillsCalculator $softScore;
-    private ExperienceScoreCalculator $expScore;
-    private LocationScoreCalculator $locScore;
+    private EntityManagerInterface $entityManager;
+    private JobOfferRepository $jobOfferRepository;
+    private ApplicantRepository $applicantRepository;
+    private ScoreCalculatorInterface $experienceCalculator;
+    private ScoreCalculatorInterface $locationCalculator;
+    private ScoreCalculatorInterface $technicalCalculator;
+    private ScoreCalculatorInterface $softSkillsCalculator;
 
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly UserRepository $userRepository,
-        private readonly JobOfferRepository $jobOfferRepository
+        EntityManagerInterface $entityManager,
+        JobOfferRepository $jobOfferRepository,
+        ApplicantRepository $applicantRepository,
+        ExperienceScoreCalculator $experienceCalculator,
+        LocationScoreCalculator $locationCalculator,
+        TechnicalScoreCalculator $technicalCalculator,
+        SoftSkillsCalculator $softSkillsCalculator
     ) {
-        $this->techScore = new TechnicalScoreCalculator();
-        $this->softScore = new SoftSkillsCalculator();
-        $this->expScore = new ExperienceScoreCalculator();
-        $this->locScore = new LocationScoreCalculator();
+        $this->entityManager        = $entityManager;
+        $this->jobOfferRepository   = $jobOfferRepository;
+        $this->applicantRepository  = $applicantRepository;
+        $this->experienceCalculator = $experienceCalculator;
+        $this->locationCalculator   = $locationCalculator;
+        $this->technicalCalculator  = $technicalCalculator;
+        $this->softSkillsCalculator = $softSkillsCalculator;
     }
 
     /**
-     * Calcule un score de compatibilité entre un candidat et une offre d'emploi
+     * Calcule un score de compatibilité entre un candidat et une offre d'emploi.
      *
      * @param Applicant $applicant
      * @param JobOffer $jobOffer
+     *
+     * @throws \RuntimeException Si les données requises sont manquantes
+     *
      * @return array{
      *     score: int,
      *     reasons: array<array{
@@ -51,7 +65,6 @@ class MatchingService
      *     applicant: int,
      *     jobOffer: int
      * }
-     * @throws RuntimeException Si les données requises sont manquantes
      */
     public function calculateCompatibilityScore(Applicant $applicant, JobOffer $jobOffer): array
     {
@@ -59,16 +72,16 @@ class MatchingService
             throw new RuntimeException('L\'applicant et l\'offre d\'emploi doivent avoir des IDs valides');
         }
 
-        $score = 0;
+        $score    = 0;
         $maxScore = 0;
-        $reasons = [];
+        $reasons  = [];
 
         // Calculer les scores pour chaque critère
         $scores = [
-            $this->techScore->calculate($applicant, $jobOffer),
-            $this->expScore->calculate($applicant, $jobOffer),
-            $this->softScore->calculate($applicant, $jobOffer),
-            $this->locScore->calculate($applicant, $jobOffer)
+            $this->technicalCalculator->calculate($applicant, $jobOffer),
+            $this->experienceCalculator->calculate($applicant, $jobOffer),
+            $this->softSkillsCalculator->calculate($applicant, $jobOffer),
+            $this->locationCalculator->calculate($applicant, $jobOffer),
         ];
 
         // Agréger les scores
@@ -77,46 +90,33 @@ class MatchingService
             $maxScore += $scoreData['maxScore'];
             $reasons[] = [
                 'category' => $scoreData['category'],
-                'score' => $scoreData['score'],
+                'score'    => $scoreData['score'],
                 'maxScore' => $scoreData['maxScore'],
-                'matches' => $scoreData['matches'] ?? [],
-                'details' => $scoreData['details'] ?? []
+                'matches'  => $scoreData['matches'] ?? [],
+                'details'  => $scoreData['details'] ?? [],
             ];
         }
 
         return [
-            'score' => $this->normalizeScore($score, $maxScore),
-            'reasons' => $reasons,
+            'score'     => $this->normalizeScore($score, $maxScore),
+            'reasons'   => $reasons,
             'applicant' => $applicant->getId(),
-            'jobOffer' => $jobOffer->getId()
+            'jobOffer'  => $jobOffer->getId(),
         ];
     }
 
     /**
-     * @throws RuntimeException
+     * Trouve les meilleures offres d'emploi pour un candidat.
+     *
+     * @return array<int, array<string, mixed>>
      */
-    private function ensureApplicant($user): Applicant
-    {
-        if (!$user instanceof User) {
-            throw new RuntimeException('Invalid user provided');
-        }
-        if (!$user instanceof Applicant) {
-            throw new RuntimeException('User is not an applicant');
-        }
-        return $user;
-    }
-
-    /**
-     * @return array<array{jobOffer: JobOffer, score: int, reasons: array}>
-     * @throws RuntimeException Si l'utilisateur n'est pas un candidat valide
-     */
-    public function findBestJobOffersForCandidate($user, int $limit = 5): array
+    public function findBestJobOffersForCandidate(User $user, int $limit = 10): array
     {
         if ($limit < 1) {
             throw new RuntimeException('La limite doit être supérieure à 0');
         }
 
-        $applicant = $this->ensureApplicant($user);
+        $applicant       = $this->ensureApplicant($user);
         $activeJobOffers = $this->jobOfferRepository->findBy(['isActive' => true]);
 
         if (empty($activeJobOffers)) {
@@ -127,65 +127,139 @@ class MatchingService
         foreach ($activeJobOffers as $jobOffer) {
             try {
                 $compatibilityScore = $this->calculateCompatibilityScore($applicant, $jobOffer);
-                $scoredOffers[] = [
+                $scoredOffers[]     = [
                     'jobOffer' => $jobOffer,
-                    'score' => $compatibilityScore['score'],
-                    'reasons' => $compatibilityScore['reasons']
+                    'score'    => $compatibilityScore['score'],
+                    'reasons'  => $compatibilityScore['reasons'],
                 ];
-            } catch (RuntimeException $e) {
+            } catch (\RuntimeException $e) {
                 continue;
             }
         }
 
-        return $this->sortByScore($scoredOffers, $limit);
+        return $this->sortByScore($scoredOffers);
     }
 
     /**
-     * @return array<array{applicant: Applicant, score: int}>
+     * Trouve les meilleurs candidats pour une offre d'emploi.
+     *
+     * @return array<int, array{applicant: Applicant, score: int}>
      */
     public function findBestCandidatesForJobOffer(JobOffer $jobOffer, int $limit = 10): array
     {
-        $allApplicants = $this->entityManager->getRepository(Applicant::class)->findAll();
+        $candidates       = $this->applicantRepository->findMatchingCandidates($jobOffer, $limit * 2);
         $scoredCandidates = [];
 
-        foreach ($allApplicants as $applicant) {
-            $compatibilityScore = $this->calculateCompatibilityScore($applicant, $jobOffer);
+        foreach ($candidates as $candidate) {
+            $score              = $this->calculateMatchScore($candidate, $jobOffer);
             $scoredCandidates[] = [
-                'applicant' => $applicant,
-                'score' => $compatibilityScore['score'],
-                'reasons' => $compatibilityScore['reasons']
+                'applicant' => $candidate,
+                'score'     => $score,
             ];
         }
 
-        return $this->sortByScore($scoredCandidates, $limit);
+        // Trier par score décroissant
+        usort($scoredCandidates, function (array $first, array $second) {
+            return $second['score'] <=> $first['score'];
+        });
+
+        return \array_slice($scoredCandidates, 0, $limit);
     }
 
     /**
-     * @throws RuntimeException
+     * Trouve les meilleurs candidats pour une offre d'emploi.
+     *
+     * @return array<int, Applicant>
+     */
+    public function findMatchingCandidates(JobOffer $jobOffer, int $limit = 10): array
+    {
+        $candidates = $this->applicantRepository->findMatchingCandidates($jobOffer, $limit);
+
+        // Trier les candidats par score de correspondance
+        usort($candidates, function (Applicant $first, Applicant $second) use ($jobOffer) {
+            $scoreFirst  = $this->calculateMatchScore($first, $jobOffer);
+            $scoreSecond = $this->calculateMatchScore($second, $jobOffer);
+
+            return $scoreSecond <=> $scoreFirst;
+        });
+
+        return \array_slice($candidates, 0, $limit);
+    }
+
+    /**
+     * @throws \RuntimeException
      */
     public function getApplicantById(int $applicantId): Applicant
     {
         $applicant = $this->entityManager->getRepository(Applicant::class)->find($applicantId);
         if (!$applicant instanceof Applicant) {
-            throw new RuntimeException(sprintf('Applicant with ID %d not found', $applicantId));
+            throw new RuntimeException(\sprintf('Applicant with ID %d not found', $applicantId));
         }
+
         return $applicant;
     }
 
-    private function sortByScore(array $items, int $limit): array
+    public function calculateMatchScore(Applicant $applicant, JobOffer $jobOffer): int
     {
-        usort($items, fn($first, $second) => $second['score'] <=> $first['score']);
-        return array_slice($items, 0, $limit);
+        $score = 0;
+
+        // Score basé sur les compétences techniques
+        $technicalSkills = $applicant->getTechnicalSkills();
+        $requiredSkills  = $jobOffer->getRequiredSkills();
+
+        foreach ($requiredSkills as $requiredSkill) {
+            if (\in_array($requiredSkill, $technicalSkills, true)) {
+                $score += 10;
+            }
+        }
+
+        // Score basé sur l'expérience
+        $experience = $applicant->getWorkExperience();
+        if (!empty($experience)) {
+            $score += 5;
+        }
+
+        return $score;
     }
 
     /**
-     * Normalise un score entre 0 et 100
+     * S'assure qu'un utilisateur est un candidat.
+     */
+    private function ensureApplicant(User $user): Applicant
+    {
+        if (!$user instanceof User) {
+            throw new RuntimeException('Invalid user provided');
+        }
+        if (!$user instanceof Applicant) {
+            throw new RuntimeException('User is not an applicant');
+        }
+
+        return $user;
+    }
+
+    /**
+     * Trie les éléments par score.
+     *
+     * @param array<int, array<string, mixed>> $items
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function sortByScore(array $items): array
+    {
+        usort($items, fn ($first, $second) => $second['score'] <=> $first['score']);
+
+        return \array_slice($items, 0, 5); // Keep original limit logic
+    }
+
+    /**
+     * Normalise un score entre 0 et 100.
      */
     private function normalizeScore(float $score, float $maxScore): int
     {
         if ($maxScore <= 0) {
             return 0;
         }
-        return (int)round(($score / $maxScore) * 100);
+
+        return (int) round(($score / $maxScore) * 100);
     }
 }

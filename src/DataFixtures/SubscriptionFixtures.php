@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\DataFixtures;
 
 use App\Entity\Subscription;
@@ -21,7 +23,7 @@ class SubscriptionFixtures extends Fixture
             'Messagerie limitée',
             'Profil entreprise standard',
             'Pas d\'accès complet aux CV',
-            'Pas de statistiques'
+            'Pas de statistiques',
         ]);
         $basic->setMaxJobOffers(3);
         $basic->setIsActive(true);
@@ -39,7 +41,7 @@ class SubscriptionFixtures extends Fixture
             'Accès aux CV complets des candidats',
             'Messagerie illimitée',
             'Statistiques de base sur les offres',
-            'Profil entreprise amélioré'
+            'Profil entreprise amélioré',
         ]);
         $premium->setMaxJobOffers(null); // illimité
         $premium->setIsActive(true);
@@ -57,7 +59,7 @@ class SubscriptionFixtures extends Fixture
             'Recommandations automatiques',
             'Statistiques détaillées',
             'Badge "Entreprise vérifiée"',
-            'Support prioritaire'
+            'Support prioritaire',
         ]);
         $business->setMaxJobOffers(null); // illimité
         $business->setIsActive(true);

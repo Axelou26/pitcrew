@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller\Admin;
 
 use App\Entity\User;
@@ -23,7 +25,7 @@ class UserAdminController extends AbstractController
         EntityManagerInterface $entityManager,
         UserRepository $userRepository
     ) {
-        $this->entityManager = $entityManager;
+        $this->entityManager  = $entityManager;
         $this->userRepository = $userRepository;
     }
 
@@ -68,7 +70,7 @@ class UserAdminController extends AbstractController
             ->getForm();
 
         return $this->render('admin/user/show.html.twig', [
-            'user' => $user,
+            'user'        => $user,
             'delete_form' => $deleteForm,
         ]);
     }
@@ -93,8 +95,8 @@ class UserAdminController extends AbstractController
             ->getForm();
 
         return $this->render('admin/user/edit.html.twig', [
-            'user' => $user,
-            'form' => $form,
+            'user'        => $user,
+            'form'        => $form,
             'delete_form' => $deleteForm,
         ]);
     }

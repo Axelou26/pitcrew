@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Form\Admin;
 
 use App\Entity\JobOffer;
@@ -21,64 +23,64 @@ class JobOfferType extends AbstractType
     {
         $builder
             ->add('title', TextType::class, [
-                'label' => 'Titre'
+                'label' => 'Titre',
             ])
             ->add('description', TextareaType::class, [
                 'label' => 'Description',
-                'attr' => ['rows' => 10]
+                'attr'  => ['rows' => 10],
             ])
             ->add('company', TextType::class, [
-                'label' => 'Entreprise'
+                'label' => 'Entreprise',
             ])
             ->add('location', TextType::class, [
-                'label' => 'Lieu'
+                'label' => 'Lieu',
             ])
             ->add('contractType', ChoiceType::class, [
-                'label' => 'Type de contrat',
+                'label'   => 'Type de contrat',
                 'choices' => [
-                    'CDI' => 'CDI',
-                    'CDD' => 'CDD',
-                    'Intérim' => 'INTERIM',
-                    'Stage' => 'STAGE',
+                    'CDI'        => 'CDI',
+                    'CDD'        => 'CDD',
+                    'Intérim'    => 'INTERIM',
+                    'Stage'      => 'STAGE',
                     'Alternance' => 'ALTERNANCE',
-                    'Freelance' => 'FREELANCE',
-                ]
+                    'Freelance'  => 'FREELANCE',
+                ],
             ])
             ->add('salary', MoneyType::class, [
-                'label' => 'Salaire',
+                'label'    => 'Salaire',
                 'currency' => 'EUR',
                 'required' => false,
             ])
             ->add('expiresAt', DateType::class, [
-                'label' => 'Date d\'expiration',
-                'widget' => 'single_text',
+                'label'    => 'Date d\'expiration',
+                'widget'   => 'single_text',
                 'required' => false,
             ])
             ->add('isActive', CheckboxType::class, [
-                'label' => 'Actif',
+                'label'    => 'Actif',
                 'required' => false,
             ])
             ->add('isRemote', CheckboxType::class, [
-                'label' => 'Télétravail',
+                'label'    => 'Télétravail',
                 'required' => false,
             ])
             ->add('isPromoted', CheckboxType::class, [
-                'label' => 'Mise en avant',
+                'label'    => 'Mise en avant',
                 'required' => false,
             ])
             ->add('contactEmail', TextType::class, [
-                'label' => 'Email de contact',
+                'label'    => 'Email de contact',
                 'required' => false,
             ])
             ->add('contactPhone', TextType::class, [
-                'label' => 'Téléphone de contact',
+                'label'    => 'Téléphone de contact',
                 'required' => false,
             ])
             ->add('recruiter', EntityType::class, [
-                'label' => 'Recruteur',
-                'class' => Recruiter::class,
+                'label'        => 'Recruteur',
+                'class'        => Recruiter::class,
                 'choice_label' => function (Recruiter $recruiter) {
-                    return sprintf('%s %s (%s)', $recruiter
+                    return \sprintf('%s %s (%s)', $recruiter
                         ->getFirstName(), $recruiter
                         ->getLastName(), $recruiter
                         ->getEmail());

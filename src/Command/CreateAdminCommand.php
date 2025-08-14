@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Entity\User;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -11,7 +14,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use DateTimeImmutable;
 
 #[AsCommand(
     name: 'app:create-admin',
@@ -27,7 +29,7 @@ class CreateAdminCommand extends Command
         UserPasswordHasherInterface $passwordHasher
     ) {
         parent::__construct();
-        $this->entityManager = $entityManager;
+        $this->entityManager  = $entityManager;
         $this->passwordHasher = $passwordHasher;
     }
 
@@ -42,16 +44,17 @@ class CreateAdminCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $ioStyle = new SymfonyStyle($input, $output);
-        $email = $input->getArgument('email');
-        $password = $input->getArgument('password');
+        $ioStyle   = new SymfonyStyle($input, $output);
+        $email     = $input->getArgument('email');
+        $password  = $input->getArgument('password');
         $firstName = $input->getArgument('firstName');
-        $lastName = $input->getArgument('lastName');
+        $lastName  = $input->getArgument('lastName');
 
         // Vérifier si l'utilisateur existe déjà
         $existingUser = $this->entityManager->getRepository(User::class)->findOneBy(['email' => $email]);
         if ($existingUser) {
-            $ioStyle->error(sprintf('Un utilisateur avec l\'email "%s" existe déjà.', $email));
+            $ioStyle->error(\sprintf('Un utilisateur avec l\'email "%s" existe déjà.', $email));
+
             return Command::FAILURE;
         }
 
@@ -67,7 +70,7 @@ class CreateAdminCommand extends Command
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
-        $ioStyle->success(sprintf('Administrateur "%s" créé avec succès !', $email));
+        $ioStyle->success(\sprintf('Administrateur "%s" créé avec succès !', $email));
 
         return Command::SUCCESS;
     }

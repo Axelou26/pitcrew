@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\JobApplication;
 use App\Entity\JobOffer;
 use App\Form\JobApplicationType;
 use App\Repository\JobApplicationRepository;
-use App\Service\NotificationService;
 use App\Service\EmailService;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
@@ -35,7 +37,7 @@ class JobApplicationController extends AbstractController
         if ($this->isGranted('ROLE_POSTULANT')) {
             return $this->render('job_application/index.html.twig', [
                 'applications' => $this->appRepo->findBy([
-                    'applicant' => $this->getUser()
+                    'applicant' => $this->getUser(),
                 ]),
             ]);
         }
@@ -71,6 +73,7 @@ class JobApplicationController extends AbstractController
     ): Response {
         if ($this->hasExistingApplication($jobOffer)) {
             $this->addFlash('warning', 'Vous avez déjà postulé à cette offre.');
+
             return $this->redirectToRoute(
                 'app_job_offer_show',
                 ['id' => $jobOffer->getId()]
@@ -78,7 +81,7 @@ class JobApplicationController extends AbstractController
         }
 
         $application = $this->createApplication($jobOffer);
-        $form = $this->createForm(JobApplicationType::class, $application);
+        $form        = $this->createForm(JobApplicationType::class, $application);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -106,6 +109,7 @@ class JobApplicationController extends AbstractController
                     'error',
                     'Une erreur est survenue lors du traitement de votre candidature : ' . $e->getMessage()
                 );
+
                 return $this->redirectToRoute(
                     'app_job_application_new',
                     ['id' => $jobOffer->getId()]
@@ -115,105 +119,8 @@ class JobApplicationController extends AbstractController
 
         return $this->render('job_application/new.html.twig', [
             'job_offer' => $jobOffer,
-            'form' => $form->createView(),
+            'form'      => $form->createView(),
         ]);
-    }
-
-    private function hasExistingApplication(JobOffer $jobOffer): bool
-    {
-        return (bool) $this->entityManager
-            ->getRepository(JobApplication::class)
-            ->findOneBy([
-                'applicant' => $this->getUser(),
-                'jobOffer' => $jobOffer,
-            ]);
-    }
-
-    private function createApplication(JobOffer $jobOffer): JobApplication
-    {
-        $application = new JobApplication();
-        $application->setApplicant($this->getUser());
-        $application->setJobOffer($jobOffer);
-        return $application;
-    }
-
-    private function validateResume($form): bool
-    {
-        if (!$form->get('resume')->getData()) {
-            $this->addFlash('error', 'Le CV est obligatoire.');
-            return false;
-        }
-        return true;
-    }
-
-    private function processResume($form, JobApplication $application, SluggerInterface $slugger): void
-    {
-        $resumeFile = $form->get('resume')->getData();
-        $uploadDir = $this->getParameter('resumes_directory');
-
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
-        }
-
-        $originalFilename = pathinfo($resumeFile->getClientOriginalName(), PATHINFO_FILENAME);
-        $safeFilename = $slugger->slug($originalFilename);
-        $newFilename = sprintf(
-            '%s-%s.%s',
-            $safeFilename,
-            uniqid(),
-            $resumeFile->guessExtension()
-        );
-
-        $resumeFile->move($uploadDir, $newFilename);
-        $application->setResume($newFilename);
-        $application->setResumeS3Key(null);
-        $application->setResumeUrl(null);
-    }
-
-    private function processAdditionalDocuments($form, JobApplication $application, SluggerInterface $slugger): void
-    {
-        $additionalFiles = $form->get('additionalDocuments')->getData();
-        if (!$additionalFiles) {
-            $application->setDocumentsS3Keys([]);
-            $application->setDocumentsUrls([]);
-            return;
-        }
-
-        $documentsDirectory = $this->getParameter('documents_directory');
-        if (!is_dir($documentsDirectory)) {
-            mkdir($documentsDirectory, 0777, true);
-        }
-
-        foreach ($additionalFiles as $file) {
-            try {
-                $newFilename = $this->processDocument($file, $documentsDirectory, $slugger);
-                $application->addDocument($newFilename);
-            } catch (FileException $e) {
-                $this->addFlash(
-                    'warning',
-                    'Un des documents n\'a pas pu être téléchargé : ' . $e->getMessage()
-                );
-                continue;
-            }
-        }
-
-        $application->setDocumentsS3Keys([]);
-        $application->setDocumentsUrls([]);
-    }
-
-    private function processDocument($file, string $documentsDirectory, SluggerInterface $slugger): string
-    {
-        $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-        $safeFilename = $slugger->slug($originalFilename);
-        $newFilename = sprintf(
-            '%s-%s.%s',
-            $safeFilename,
-            uniqid(),
-            $file->guessExtension()
-        );
-
-        $file->move($documentsDirectory, $newFilename);
-        return $newFilename;
     }
 
     #[Route('/{id}', name: 'app_job_application_show', methods: ['GET'])]
@@ -226,19 +133,19 @@ class JobApplicationController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $resumePath = $this->getParameter('resumes_directory') . '/' . $application->getResume();
+        $resumePath   = $this->getParameter('resumes_directory') . '/' . $application->getResume();
         $resumeExists = file_exists($resumePath);
 
         $documentExists = [];
         foreach ($application->getDocuments() as $document) {
-            $documentPath = $this->getParameter('documents_directory') . '/' . $document;
+            $documentPath              = $this->getParameter('documents_directory') . '/' . $document;
             $documentExists[$document] = file_exists($documentPath);
         }
 
         return $this->render('job_application/show.html.twig', [
-            'application' => $application,
-            'resumeExists' => $resumeExists,
-            'documentExists' => $documentExists
+            'application'    => $application,
+            'resumeExists'   => $resumeExists,
+            'documentExists' => $documentExists,
         ]);
     }
 
@@ -273,7 +180,7 @@ class JobApplicationController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        if (!in_array($document, $application->getDocuments())) {
+        if (!\in_array($document, $application->getDocuments(), true)) {
             throw $this->createNotFoundException(
                 'Le document demandé n\'appartient pas à cette candidature.'
             );
@@ -300,10 +207,10 @@ class JobApplicationController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $status = $request->request->get('status');
+        $status        = $request->request->get('status');
         $validStatuses = ['pending', 'accepted', 'rejected', 'interview'];
 
-        if (in_array($status, $validStatuses)) {
+        if (\in_array($status, $validStatuses, true)) {
             $application->setStatus($status);
             $entityManager->flush();
 
@@ -322,7 +229,110 @@ class JobApplicationController extends AbstractController
         JobOffer $jobOffer,
         NotificationService $notificationService
     ): Response {
-        // ... existing code ...
+        // Rediriger vers la page de candidature
+        return $this->redirectToRoute('app_job_application_new', ['id' => $jobOffer->getId()]);
+    }
+
+    private function hasExistingApplication(JobOffer $jobOffer): bool
+    {
+        return (bool) $this->entityManager
+            ->getRepository(JobApplication::class)
+            ->findOneBy([
+                'applicant' => $this->getUser(),
+                'jobOffer'  => $jobOffer,
+            ]);
+    }
+
+    private function createApplication(JobOffer $jobOffer): JobApplication
+    {
+        $application = new JobApplication();
+        $application->setApplicant($this->getUser());
+        $application->setJobOffer($jobOffer);
+
+        return $application;
+    }
+
+    private function validateResume($form): bool
+    {
+        if (!$form->get('cvFile')->getData()) {
+            $this->addFlash('error', 'Le CV est obligatoire.');
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private function processResume($form, JobApplication $application, SluggerInterface $slugger): void
+    {
+        $resumeFile = $form->get('cvFile')->getData();
+        $uploadDir  = $this->getParameter('resumes_directory');
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $originalFilename = pathinfo($resumeFile->getClientOriginalName(), \PATHINFO_FILENAME);
+        $safeFilename     = $slugger->slug($originalFilename);
+        $newFilename      = \sprintf(
+            '%s-%s.%s',
+            $safeFilename,
+            uniqid(),
+            $resumeFile->guessExtension()
+        );
+
+        $resumeFile->move($uploadDir, $newFilename);
+        $application->setResume($newFilename);
+        $application->setResumeS3Key(null);
+        $application->setResumeUrl(null);
+    }
+
+    private function processAdditionalDocuments($form, JobApplication $application, SluggerInterface $slugger): void
+    {
+        $additionalFiles = $form->get('additionalDocuments')->getData();
+        if (!$additionalFiles) {
+            $application->setDocumentsS3Keys([]);
+            $application->setDocumentsUrls([]);
+
+            return;
+        }
+
+        $documentsDirectory = $this->getParameter('documents_directory');
+        if (!is_dir($documentsDirectory)) {
+            mkdir($documentsDirectory, 0777, true);
+        }
+
+        foreach ($additionalFiles as $file) {
+            try {
+                $newFilename = $this->processDocument($file, $documentsDirectory, $slugger);
+                $application->addDocument($newFilename);
+            } catch (FileException $e) {
+                $this->addFlash(
+                    'warning',
+                    'Un des documents n\'a pas pu être téléchargé : ' . $e->getMessage()
+                );
+                continue;
+            }
+        }
+
+        $application->setDocumentsS3Keys([]);
+        $application->setDocumentsUrls([]);
+    }
+
+    private function processDocument($file, string $documentsDirectory, SluggerInterface $slugger): string
+    {
+        $originalFilename = pathinfo($file->getClientOriginalName(), \PATHINFO_FILENAME);
+        $safeFilename     = $slugger->slug($originalFilename);
+        $newFilename      = \sprintf(
+            '%s-%s.%s',
+            $safeFilename,
+            uniqid(),
+            $file->guessExtension()
+        );
+
+        $file->move($documentsDirectory, $newFilename);
+
+        return $newFilename;
     }
 
     private function handleApplicationSubmission(
@@ -330,5 +340,15 @@ class JobApplicationController extends AbstractController
         JobOffer $jobOffer
     ): void {
         // ... existing code ...
+    }
+
+    private function getUploadPath(): string
+    {
+        $uploadDir = $this->getParameter('uploads_directory');
+        if (!$uploadDir) {
+            $uploadDir = 'uploads';
+        }
+
+        return $uploadDir . '/applications';
     }
 }

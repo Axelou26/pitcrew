@@ -4,60 +4,52 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Entity\Post;
 use App\Entity\Hashtag;
+use App\Entity\Post;
 use App\Entity\User;
-use App\Repository\Trait\PostQueryTrait;
 use App\Repository\Trait\FlushTrait;
+use App\Repository\Trait\PostQueryTrait;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Contracts\Cache\CacheInterface;
-use Symfony\Component\Cache\CacheItem;
+use Symfony\Contracts\Cache\ItemInterface;
 
 /**
  * @extends ServiceEntityRepository<Post>
  *
- * @method Post|null find($id, $lockMode = null, $lockVersion = null)
- * @method Post|null findOneBy(array $criteria, array $orderBy = null)
+ * @method null|Post find($id, $lockMode = null, $lockVersion = null)
+ * @method null|Post findOneBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null
+ * )
  * @method Post[]    findAll()
- * @method Post[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method Post[]    findBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null,
+ *     int $limit = null,
+ *     int $offset = null
+ * )
  */
 class PostRepository extends ServiceEntityRepository
 {
-    use PostQueryTrait;
+    /** @use FlushTrait<Post> */
     use FlushTrait;
+    use PostQueryTrait;
 
-    private const CACHE_TTL = 3600; // 1 heure
-    private const CACHE_KEY_RECENT_POSTS = 'recent_posts_%d';
-    private const CACHE_KEY_ALL_POSTS = 'all_posts';
-    private const CACHE_KEY_POSTS_BY_HASHTAG = 'posts_by_hashtag_%d';
-    private const CACHE_KEY_POSTS_BY_MENTION = 'posts_by_mention_%d';
-    private const CACHE_KEY_SEARCH_POSTS = 'search_posts_%s';
-    private const CACHE_KEY_FEED_POSTS = 'feed_posts';
+    private const CACHE_TTL                     = 3600; // 1 heure
+    private const CACHE_KEY_RECENT_POSTS        = 'recent_posts_%d';
+    private const CACHE_KEY_ALL_POSTS           = 'all_posts';
+    private const CACHE_KEY_POSTS_BY_HASHTAG    = 'posts_by_hashtag_%d';
+    private const CACHE_KEY_POSTS_BY_MENTION    = 'posts_by_mention_%d';
+    private const CACHE_KEY_SEARCH_POSTS        = 'search_posts_%s';
+    private const CACHE_KEY_FEED_POSTS          = 'feed_posts';
     private const CACHE_KEY_RECENT_WITH_AUTHORS = 'recent_with_authors_%d';
 
-    private CacheInterface $cache;
-
-    public function __construct(ManagerRegistry $registry, CacheInterface $cache)
-    {
+    public function __construct(
+        ManagerRegistry $registry,
+        private CacheInterface $cache
+    ) {
         parent::__construct($registry, Post::class);
-        $this->cache = $cache;
-    }
-
-    /**
-     * Récupère un résultat depuis le cache ou l'enregistre s'il n'existe pas
-     */
-    private function getCachedResult(string $key, callable $callback): mixed
-    {
-        try {
-            return $this->cache->get($key, function (CacheItem $item) use ($callback) {
-                $item->expiresAfter(self::CACHE_TTL);
-                return $callback();
-            });
-        } catch (\Exception $e) {
-            // En cas d'erreur de cache, exécuter directement la callback
-            return $callback();
-        }
     }
 
     /**
@@ -66,8 +58,8 @@ class PostRepository extends ServiceEntityRepository
     public function findRecentPosts(int $limit = 10): array
     {
         return $this->getCachedResult(
-            sprintf(self::CACHE_KEY_RECENT_POSTS, $limit),
-            fn(): array => $this->createBasePostQuery()
+            \sprintf(self::CACHE_KEY_RECENT_POSTS, $limit),
+            fn (): array => $this->createBasePostQuery()
                 ->setMaxResults($limit)
                 ->getQuery()
                 ->getResult()
@@ -81,7 +73,7 @@ class PostRepository extends ServiceEntityRepository
     {
         return $this->getCachedResult(
             self::CACHE_KEY_ALL_POSTS,
-            fn(): array => $this->createBasePostQuery()
+            fn (): array => $this->createBasePostQuery()
                 ->getQuery()
                 ->getResult()
         );
@@ -93,7 +85,7 @@ class PostRepository extends ServiceEntityRepository
     public function findByHashtag(Hashtag $hashtag): array
     {
         return $this->getCachedResult(
-            sprintf(self::CACHE_KEY_POSTS_BY_HASHTAG, $hashtag->getId()),
+            \sprintf(self::CACHE_KEY_POSTS_BY_HASHTAG, $hashtag->getId()),
             function () use ($hashtag): array {
                 $qb = $this->createQueryBuilder('p')
                     ->select('p', 'a', 'c', 'h', 'o')
@@ -116,8 +108,8 @@ class PostRepository extends ServiceEntityRepository
     public function findByMentionedUser(User $user): array
     {
         return $this->getCachedResult(
-            sprintf(self::CACHE_KEY_POSTS_BY_MENTION, $user->getId()),
-            fn(): array => $this->createBasePostQuery()
+            \sprintf(self::CACHE_KEY_POSTS_BY_MENTION, $user->getId()),
+            fn (): array => $this->createBasePostQuery()
                 ->where('JSON_CONTAINS(p.mentions, :userId) = 1')
                 ->setParameter('userId', $user->getId())
                 ->getQuery()
@@ -131,8 +123,8 @@ class PostRepository extends ServiceEntityRepository
     public function search(string $query): array
     {
         return $this->getCachedResult(
-            sprintf(self::CACHE_KEY_SEARCH_POSTS, md5($query)),
-            fn(): array => $this->createBasePostQuery()
+            \sprintf(self::CACHE_KEY_SEARCH_POSTS, md5($query)),
+            fn (): array => $this->createBasePostQuery()
                 ->where('p.content LIKE :query OR p.title LIKE :query')
                 ->setParameter('query', '%' . $query . '%')
                 ->setMaxResults(50)
@@ -147,41 +139,43 @@ class PostRepository extends ServiceEntityRepository
     public function findPostsForFeed(User $user, int $page = 1, int $limit = 10): array
     {
         $firstResult = ($page - 1) * $limit;
-        $friends = $user->getFriends();
+        $friendships = $user->getFriendships();
+        $friends     = $friendships->map(fn ($friendship) => $friendship->getOtherUser($user))->toArray();
 
         return $this->getCachedResult(
-            sprintf(self::CACHE_KEY_FEED_POSTS . '_%d_%d', $user->getId(), $page),
+            \sprintf(self::CACHE_KEY_FEED_POSTS . '_%d_%d', $user->getId(), $page),
             function () use ($user, $friends, $firstResult, $limit): array {
                 $qb = $this->createBasePostQuery();
 
                 if (empty($friends)) {
                     // Si l'utilisateur n'a pas d'amis, afficher seulement ses propres posts
                     $qb->where('p.author = :user')
-                       ->setParameter('user', $user);
+                        ->setParameter('user', $user);
+
                     return $qb->orderBy('p.createdAt', 'DESC')
-                             ->setFirstResult($firstResult)
-                             ->setMaxResults($limit)
-                             ->getQuery()
-                             ->getResult();
+                        ->setFirstResult($firstResult)
+                        ->setMaxResults($limit)
+                        ->getQuery()
+                        ->getResult();
                 }
 
                 // Sinon, afficher ses posts et ceux de ses amis
                 $qb->where('p.author = :user')
-                   ->orWhere('p.author IN (:friends)')
-                   ->setParameter('user', $user)
-                   ->setParameter('friends', $friends);
+                    ->orWhere('p.author IN (:friends)')
+                    ->setParameter('user', $user)
+                    ->setParameter('friends', $friends);
 
                 return $qb->orderBy('p.createdAt', 'DESC')
-                         ->setFirstResult($firstResult)
-                         ->setMaxResults($limit)
-                         ->getQuery()
-                         ->getResult();
+                    ->setFirstResult($firstResult)
+                    ->setMaxResults($limit)
+                    ->getQuery()
+                    ->getResult();
             }
         );
     }
 
     /**
-     * Compte le nombre de posts qui utilisent un hashtag spécifique
+     * Compte le nombre de posts qui utilisent un hashtag spécifique.
      */
     public function countByHashtag(Hashtag $hashtag): int
     {
@@ -208,30 +202,47 @@ class PostRepository extends ServiceEntityRepository
     }
 
     /**
-     * Récupère les posts récents avec leurs auteurs
+     * Récupère les posts récents avec leurs auteurs.
+     *
      * @return array<Post>
      */
-    public function findRecentWithAuthors(int $limit): array
+    public function findRecentWithAuthors(int $limit = 10): array
     {
-        return $this
-            ->getCachedResult(sprintf(self::CACHE_KEY_RECENT_WITH_AUTHORS, $limit), function () use ($limit): array {
-                $qb = $this->createQueryBuilder('p')
-                ->select('p', 'a', 'c', 'h', 'o')
+        $cacheKey = \sprintf(self::CACHE_KEY_RECENT_WITH_AUTHORS, $limit);
+
+        return $this->cache->get($cacheKey, function () use ($limit) {
+            return $this->createQueryBuilder('p')
+                ->select('p', 'a', 'c', 'l')
                 ->leftJoin('p.author', 'a')
                 ->leftJoin('p.comments', 'c')
-                ->leftJoin('p.hashtags', 'h')
-                ->leftJoin('p.originalPost', 'o')
+                ->leftJoin('p.likes', 'l')
                 ->orderBy('p.createdAt', 'DESC')
-                ->setMaxResults($limit);
+                ->setMaxResults($limit)
+                ->getQuery()
+                ->getResult();
+        });
+    }
 
-                return $qb->getQuery()->getResult();
-            });
+    public function findByHashtags(array $hashtags, int $limit = 20): array
+    {
+        return $this->createQueryBuilder('p')
+            ->select('p', 'a', 'h')
+            ->leftJoin('p.author', 'a')
+            ->leftJoin('p.hashtags', 'h')
+            ->where('h.name IN (:hashtags)')
+            ->setParameter('hashtags', $hashtags)
+            ->orderBy('p.createdAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
     }
 
     /**
-     * Trouve tous les posts depuis une date donnée
+     * Trouve tous les posts depuis une date donnée.
+     *
+     * @return Post[]
      */
-    public function findPostsSince(\DateTime $date): array
+    public function findPostsSince(\DateTimeImmutable $date): array
     {
         return $this->createQueryBuilder('p')
             ->where('p.createdAt >= :date')
@@ -239,5 +250,38 @@ class PostRepository extends ServiceEntityRepository
             ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * @return array<int, Post>
+     */
+    public function findTrendingPosts(int $limit = 10): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->select('p, COUNT(pl.id) as likeCount')
+            ->leftJoin('p.likes', 'pl')
+            ->groupBy('p.id')
+            ->orderBy('likeCount', 'DESC')
+            ->addOrderBy('p.createdAt', 'DESC')
+            ->setMaxResults($limit);
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * Récupère un résultat depuis le cache ou l'enregistre s'il n'existe pas.
+     */
+    private function getCachedResult(string $key, callable $callback): mixed
+    {
+        try {
+            return $this->cache->get($key, function (ItemInterface $item) use ($callback) {
+                $item->expiresAfter(self::CACHE_TTL);
+
+                return $callback();
+            });
+        } catch (\Exception $e) {
+            // En cas d'erreur de cache, exécuter directement la callback
+            return $callback();
+        }
     }
 }

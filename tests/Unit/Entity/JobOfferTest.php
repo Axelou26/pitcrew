@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit\Entity;
 
+use App\Entity\Application;
+use App\Entity\Interview;
 use App\Entity\JobOffer;
 use App\Entity\Recruiter;
-use App\Entity\JobApplication;
-use App\Entity\Interview;
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use PHPUnit\Framework\TestCase;
 
@@ -17,7 +20,7 @@ class JobOfferTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->jobOffer = new JobOffer();
+        $this->jobOffer  = new JobOffer();
         $this->recruiter = new Recruiter();
 
         $this->recruiter->setEmail('recruiter@example.com');
@@ -34,12 +37,12 @@ class JobOfferTest extends TestCase
 
     public function testBasicInformation(): void
     {
-        $title = 'Développeur PHP Senior';
-        $description = 'Description du poste';
-        $company = 'Entreprise Test';
+        $title        = 'Développeur PHP Senior';
+        $description  = 'Description du poste';
+        $company      = 'Entreprise Test';
         $contractType = 'CDI';
-        $location = 'Paris';
-        $salary = 45000;
+        $location     = 'Paris';
+        $salary       = 45000;
 
         $this->jobOffer
             ->setTitle($title)
@@ -49,12 +52,12 @@ class JobOfferTest extends TestCase
             ->setLocation($location)
             ->setSalary($salary);
 
-        $this->assertEquals($title, $this->jobOffer->getTitle());
-        $this->assertEquals($description, $this->jobOffer->getDescription());
-        $this->assertEquals($company, $this->jobOffer->getCompany());
-        $this->assertEquals($contractType, $this->jobOffer->getContractType());
-        $this->assertEquals($location, $this->jobOffer->getLocation());
-        $this->assertEquals($salary, $this->jobOffer->getSalary());
+        $this->assertSame($title, $this->jobOffer->getTitle());
+        $this->assertSame($description, $this->jobOffer->getDescription());
+        $this->assertSame($company, $this->jobOffer->getCompany());
+        $this->assertSame($contractType, $this->jobOffer->getContractType());
+        $this->assertSame($location, $this->jobOffer->getLocation());
+        $this->assertSame($salary, $this->jobOffer->getSalary());
     }
 
     public function testRecruiterAssociation(): void
@@ -69,7 +72,7 @@ class JobOfferTest extends TestCase
 
     public function testApplications(): void
     {
-        $application = new JobApplication();
+        $application = new Application();
 
         // Test d'ajout d'une candidature
         $this->jobOffer->addApplication($application);
@@ -85,14 +88,14 @@ class JobOfferTest extends TestCase
     {
         $skills = ['PHP', 'Symfony', 'MySQL'];
         $this->jobOffer->setRequiredSkills($skills);
-        $this->assertEquals($skills, $this->jobOffer->getRequiredSkills());
+        $this->assertSame($skills, $this->jobOffer->getRequiredSkills());
     }
 
     public function testExpiresAt(): void
     {
-        $date = new \DateTime('2024-12-31');
+        $date = new \DateTimeImmutable('2024-12-31');
         $this->jobOffer->setExpiresAt($date);
-        $this->assertEquals($date, $this->jobOffer->getExpiresAt());
+        $this->assertSame($date, $this->jobOffer->getExpiresAt());
 
         // Test avec une valeur null
         $this->jobOffer->setExpiresAt(null);
@@ -127,8 +130,8 @@ class JobOfferTest extends TestCase
         $this->jobOffer->setContactEmail($email);
         $this->jobOffer->setContactPhone($phone);
 
-        $this->assertEquals($email, $this->jobOffer->getContactEmail());
-        $this->assertEquals($phone, $this->jobOffer->getContactPhone());
+        $this->assertSame($email, $this->jobOffer->getContactEmail());
+        $this->assertSame($phone, $this->jobOffer->getContactPhone());
     }
 
     public function testFluentInterface(): void
@@ -151,26 +154,39 @@ class JobOfferTest extends TestCase
 
     public function testInterviews(): void
     {
-        $interview = new Interview();
+        $jobOffer = new JobOffer();
 
-        // Test d'ajout
-        $this->jobOffer->addInterview($interview);
-        $this->assertTrue($this->jobOffer->getInterviews()->contains($interview));
-        $this->assertSame($this->jobOffer, $interview->getJobOffer());
+        // Créer un mock pour Interview avec setJobOffer qui retourne self
+        $interview = $this->createMock(Interview::class);
+        $interview->expects($this->once())
+            ->method('setJobOffer')
+            ->with($jobOffer)
+            ->willReturnSelf();
 
-        // Test de suppression
-        $this->jobOffer->removeInterview($interview);
-        $this->assertFalse($this->jobOffer->getInterviews()->contains($interview));
+        // Utiliser la réflexion pour accéder à la collection privée
+        $reflection = new \ReflectionClass(JobOffer::class);
+        $property   = $reflection->getProperty('interviews');
+        $property->setAccessible(true);
+        $collection = new ArrayCollection();
+        $property->setValue($jobOffer, $collection);
+
+        // Tester l'ajout
+        $jobOffer->addInterview($interview);
+        $this->assertTrue($collection->contains($interview));
+
+        // Tester la suppression
+        $jobOffer->removeInterview($interview);
+        $this->assertFalse($collection->contains($interview));
     }
 
     public function testLogoAndImage(): void
     {
-        $logoUrl = "https://example.com/logo.png";
+        $logoUrl = 'https://example.com/logo.png';
         $this->jobOffer->setLogoUrl($logoUrl);
-        $this->assertEquals($logoUrl, $this->jobOffer->getLogoUrl());
+        $this->assertSame($logoUrl, $this->jobOffer->getLogoUrl());
 
-        $image = "job-image.jpg";
+        $image = 'job-image.jpg';
         $this->jobOffer->setImage($image);
-        $this->assertEquals($image, $this->jobOffer->getImage());
+        $this->assertSame($image, $this->jobOffer->getImage());
     }
 }

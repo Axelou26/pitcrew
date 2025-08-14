@@ -1,43 +1,39 @@
 <?php
 
-namespace App\Service;
+declare(strict_types=1);
 
-use App\Entity\Post;
-use App\Entity\User;
+namespace App\Service;
 
 class PostContentManager
 {
-    /**
-     * Extrait les hashtags du contenu
-     */
-    public function extractHashtags(string $content): array
-    {
-        if (trim($content) === '') {
-            return [];
-        }
+    private $postContentProcessor;
 
-        try {
-            preg_match_all('/#([a-zA-ZÀ-ÿ0-9_-]+)/', $content, $matches);
-            return array_unique($matches[1] ?? []);
-        } catch (\Throwable $e) {
-            return [];
-        }
+    public function __construct($postContentProcessor)
+    {
+        $this->postContentProcessor = $postContentProcessor;
     }
 
     /**
-     * Extrait les mentions (@username) du contenu
+     * Extrait les hashtags d'un contenu.
+     *
+     * @return array<int, string>
+     */
+    public function extractHashtags(string $content): array
+    {
+        $result = $this->postContentProcessor->process($content);
+
+        return $result[1] ?? [];
+    }
+
+    /**
+     * Extrait les mentions d'un contenu.
+     *
+     * @return array<int, string>
      */
     public function extractMentions(string $content): array
     {
-        if (trim($content) === '') {
-            return [];
-        }
+        $result = $this->postContentProcessor->process($content);
 
-        try {
-            preg_match_all('/@([a-zA-Z0-9_]+)/', $content, $matches);
-            return array_unique($matches[1] ?? []);
-        } catch (\Throwable $e) {
-            return [];
-        }
+        return $result[1] ?? [];
     }
 }

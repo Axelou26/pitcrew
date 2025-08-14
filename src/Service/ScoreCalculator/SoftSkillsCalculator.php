@@ -9,59 +9,65 @@ use App\Entity\JobOffer;
 
 class SoftSkillsCalculator extends BaseScoreCalculator implements ScoreCalculatorInterface
 {
-    private const WEIGHT = 0.2;
+    private const WEIGHT              = 0.2;
     private const DEFAULT_SOFT_SKILLS = [
         'communication', 'travail d\'équipe', 'adaptabilité',
-        'résolution de problèmes', 'organisation'
+        'résolution de problèmes', 'organisation',
     ];
 
+    /**
+     * Calcule le score de soft skills pour un candidat.
+     *
+     * @return array<string, mixed>
+     */
     public function calculate(Applicant $applicant, JobOffer $jobOffer): array
     {
-        $score = 0;
-        $maxScore = 0;
-        $matches = [];
+        $candidateSkills = $applicant->getSoftSkills() ?? [];
+        $jobSkills       = $this->extractSoftSkillsFromJobDescription($jobOffer->getDescription() ?? '');
 
-        $requiredSkills = $jobOffer->getSoftSkills() ?? [];
-        $applicantSkills = $applicant->getSoftSkills() ?? [];
-
-        foreach ($requiredSkills as $skill) {
-            $maxScore++;
-            if (in_array($skill, $applicantSkills, true)) {
-                $score++;
-                $matches[] = $skill;
-            }
+        if (empty($candidateSkills) || empty($jobSkills)) {
+            return $this->createEmptyResult();
         }
 
+        $matchingSkills = $this->findMatchingSoftSkills($candidateSkills, $jobSkills);
+        $score          = \count($matchingSkills) * 10;
+        $maxScore       = \count($jobSkills) * 10;
+
         return [
-            'category' => 'Compétences humaines',
-            'score' => $score,
-            'maxScore' => $maxScore ?: 1,
-            'matches' => $matches,
-            'details' => [
-                sprintf('%d/%d soft skills requis maîtrisés', $score, $maxScore)
-            ]
+            'category' => 'Soft Skills',
+            'score'    => min($score, $maxScore),
+            'maxScore' => $maxScore,
+            'details'  => $matchingSkills,
+            'matches'  => $matchingSkills,
         ];
     }
 
+    /**
+     * Trouve les soft skills correspondantes.
+     *
+     * @param array<int, string> $candidateSkills
+     * @param array<int, string> $jobSkills
+     *
+     * @return array<int, string>
+     */
     private function findMatchingSoftSkills(array $candidateSkills, array $jobSkills): array
     {
-        $matches = [];
-        foreach ($candidateSkills as $skill) {
-            if ($this->hasMatchingSkill($skill, $jobSkills)) {
-                $matches[] = $skill;
+        $matchingSkills = [];
+
+        foreach ($candidateSkills as $candidateSkill) {
+            if ($this->hasMatchingSkill($candidateSkill, $jobSkills)) {
+                $matchingSkills[] = $candidateSkill;
             }
         }
 
-        $matchCount = count($matches);
-        $maxScore = min(5, count($jobSkills));
-
-        return [
-            'score' => min($matchCount, $maxScore),
-            'maxScore' => $maxScore,
-            'matches' => $matches
-        ];
+        return $matchingSkills;
     }
 
+    /**
+     * Vérifie si un candidat a une compétence spécifique.
+     *
+     * @param array<int, string> $jobSkills
+     */
     private function hasMatchingSkill(string $candidateSkill, array $jobSkills): bool
     {
         foreach ($jobSkills as $jobSkill) {
@@ -69,6 +75,7 @@ class SoftSkillsCalculator extends BaseScoreCalculator implements ScoreCalculato
                 return true;
             }
         }
+
         return false;
     }
 
@@ -77,17 +84,27 @@ class SoftSkillsCalculator extends BaseScoreCalculator implements ScoreCalculato
         return strtolower(trim($skill1)) === strtolower(trim($skill2));
     }
 
+    /**
+     * Extrait les soft skills d'une description d'emploi.
+     *
+     * @return array<int, string>
+     */
     private function extractSoftSkillsFromJobDescription(string $description): array
     {
         $description = strtolower($description);
         $foundSkills = array_filter(
             $this->getCommonSoftSkills(),
-            fn($skill) => stripos($description, $skill) !== false
+            fn ($skill) => stripos($description, $skill) !== false
         );
 
         return empty($foundSkills) ? self::DEFAULT_SOFT_SKILLS : array_values($foundSkills);
     }
 
+    /**
+     * Retourne la liste des soft skills communes.
+     *
+     * @return array<int, string>
+     */
     private function getCommonSoftSkills(): array
     {
         return [
@@ -109,17 +126,22 @@ class SoftSkillsCalculator extends BaseScoreCalculator implements ScoreCalculato
 
             // Organisation
             'organisation', 'planification', 'gestion du temps', 'priorisation',
-            'autonomie', 'efficacité', 'rigueur', 'méthode'
+            'autonomie', 'efficacité', 'rigueur', 'méthode',
         ];
     }
 
+    /**
+     * Crée un résultat vide.
+     *
+     * @return array<string, mixed>
+     */
     private function createEmptyResult(): array
     {
         return [
-            'score' => 0,
+            'score'    => 0,
             'maxScore' => 0,
-            'matches' => [],
-            'category' => 'Soft skills'
+            'matches'  => [],
+            'category' => 'Soft skills',
         ];
     }
 }

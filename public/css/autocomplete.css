@@ -1,0 +1,66 @@
+/* Styles pour l'autocomplétion */
+.suggestion-container {
+    position: absolute;
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 9999;
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    margin-top: 2px;
+    display: none;
+    left: 0;
+    right: 0;
+}
+
+.suggestion-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.suggestion-item:hover,
+.suggestion-item.active {
+    background-color: #f8f9fa;
+}
+
+.suggestion-item .hashtag {
+    color: #e10600;
+    font-weight: 500;
+}
+
+.suggestion-item .mention {
+    color: #0066cc;
+    font-weight: 500;
+}
+
+.suggestion-item .usage-count {
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+/* Styles spécifiques pour les positions différentes selon le type de champ */
+.input-group .suggestion-container {
+    top: 100%;
+}
+
+/* Meilleure visibilité pour les conteneurs de suggestions */
+.suggestion-container.show,
+.mention-suggestions.show {
+    display: block !important;
+}
+
+/* Pour les petits écrans */
+@media (max-width: 576px) {
+    .suggestion-container {
+        max-width: 100vw;
+        left: 0;
+        right: 0;
+    }
+}

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Form;
 
 use App\Entity\PostComment;
@@ -17,22 +19,22 @@ class PostCommentType extends AbstractType
         $builder
             ->add('content', TextareaType::class, [
                 'label' => 'Votre commentaire',
-                'attr' => [
+                'attr'  => [
                     'placeholder' => 'Écrivez votre commentaire...',
-                    'rows' => 3,
-                    'class' => 'form-control'
+                    'rows'        => 3,
+                    'class'       => 'form-control',
                 ],
                 'constraints' => [
                     new NotBlank([
-                        'message' => 'Veuillez entrer un commentaire'
+                        'message' => 'Veuillez entrer un commentaire',
                     ]),
                     new Length([
-                        'min' => 2,
-                        'max' => 1000,
+                        'min'        => 2,
+                        'max'        => 1000,
                         'minMessage' => 'Le commentaire doit contenir au moins {{ limit }} caractères',
-                        'maxMessage' => 'Le commentaire ne peut pas dépasser {{ limit }} caractères'
-                    ])
-                ]
+                        'maxMessage' => 'Le commentaire ne peut pas dépasser {{ limit }} caractères',
+                    ]),
+                ],
             ])
         ;
     }

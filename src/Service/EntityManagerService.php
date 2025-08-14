@@ -6,8 +6,8 @@ namespace App\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
+use Exception;
+use RuntimeException;
 
 class EntityManagerService
 {
@@ -20,15 +20,15 @@ class EntityManagerService
         FlashMessageService $flashMessageService,
         AccessControlService $accessControlService
     ) {
-        $this->entityManager = $entityManager;
-        $this->flashMessageService = $flashMessageService;
+        $this->entityManager        = $entityManager;
+        $this->flashMessageService  = $flashMessageService;
         $this->accessControlService = $accessControlService;
     }
 
     /**
-     * Crée une nouvelle entité
+     * Crée une nouvelle entité.
      */
-    public function create(object $entity, string $entityName = null): void
+    public function create(object $entity, ?string $entityName = null): void
     {
         try {
             $this->entityManager->persist($entity);
@@ -36,32 +36,32 @@ class EntityManagerService
 
             $entityName = $entityName ?? $this->getEntityName($entity);
             $this->flashMessageService->entityCreated($entityName);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->flashMessageService->operationFailed('création', $e->getMessage());
             throw $e;
         }
     }
 
     /**
-     * Met à jour une entité existante
+     * Met à jour une entité existante.
      */
-    public function update(object $entity, string $entityName = null): void
+    public function update(object $entity, ?string $entityName = null): void
     {
         try {
             $this->entityManager->flush();
 
             $entityName = $entityName ?? $this->getEntityName($entity);
             $this->flashMessageService->entityUpdated($entityName);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->flashMessageService->operationFailed('mise à jour', $e->getMessage());
             throw $e;
         }
     }
 
     /**
-     * Supprime une entité
+     * Supprime une entité.
      */
-    public function delete(object $entity, string $entityName = null): void
+    public function delete(object $entity, ?string $entityName = null): void
     {
         try {
             $this->entityManager->remove($entity);
@@ -69,23 +69,25 @@ class EntityManagerService
 
             $entityName = $entityName ?? $this->getEntityName($entity);
             $this->flashMessageService->entityDeleted($entityName);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->flashMessageService->operationFailed('suppression', $e->getMessage());
             throw $e;
         }
     }
 
     /**
-     * Trouve une entité par son ID
+     * Trouve une entité par son ID.
      */
     public function find(string $entityClass, int $id): ?object
     {
+        /** @var class-string<object> $entityClass */
         $repository = $this->entityManager->getRepository($entityClass);
+
         return $repository->find($id);
     }
 
     /**
-     * Trouve une entité ou lance une exception si elle n'existe pas
+     * Trouve une entité ou lance une exception si elle n'existe pas.
      */
     public function findOrFail(string $entityClass, int $id): object
     {
@@ -94,21 +96,29 @@ class EntityManagerService
         if (!$entity) {
             $entityName = $this->getEntityNameFromClass($entityClass);
             $this->accessControlService->denyAccess('entity_not_found');
+            throw new RuntimeException('Entity not found');
         }
 
         return $entity;
     }
 
     /**
-     * Obtient le repository pour une classe d'entité
+     * Obtient le repository pour une classe d'entité.
+     *
+     * @template T of object
+     *
+     * @param class-string<T> $entityClass
+     *
+     * @return EntityRepository<T>
      */
     public function getRepository(string $entityClass): EntityRepository
     {
+        // @var class-string<object> $entityClass
         return $this->entityManager->getRepository($entityClass);
     }
 
     /**
-     * Vérifie si une entité existe
+     * Vérifie si une entité existe.
      */
     public function exists(string $entityClass, int $id): bool
     {
@@ -116,39 +126,55 @@ class EntityManagerService
     }
 
     /**
-     * Compte le nombre d'entités
+     * Compte le nombre d'entités.
+     *
+     * @param array<string, mixed> $criteria
      */
     public function count(string $entityClass, array $criteria = []): int
     {
         $repository = $this->getRepository($entityClass);
+
         return $repository->count($criteria);
     }
 
     /**
-     * Trouve toutes les entités
+     * Trouve toutes les entités.
+     *
+     * @param array<string, mixed> $criteria
+     * @param null|array<string, string> $orderBy
+     *
+     * @return array<int, object>
      */
     public function findAll(
         string $entityClass,
         array $criteria = [],
-        array $orderBy = null,
-        int $limit = null,
-        int $offset = null
+        ?array $orderBy = null,
+        ?int $limit = null,
+        ?int $offset = null
     ): array {
         $repository = $this->getRepository($entityClass);
+
         return $repository->findBy($criteria, $orderBy, $limit, $offset);
     }
 
     /**
-     * Trouve une entité par critères
+     * Trouve une entité par critères.
+     *
+     * @param array<string, mixed> $criteria
      */
     public function findOneBy(string $entityClass, array $criteria): ?object
     {
         $repository = $this->getRepository($entityClass);
+
         return $repository->findOneBy($criteria);
     }
 
     /**
-     * Exécute une requête personnalisée
+     * Exécute une requête personnalisée.
+     *
+     * @param array<string, mixed> $parameters
+     *
+     * @return array<int, mixed>
      */
     public function executeQuery(string $dql, array $parameters = []): array
     {
@@ -162,12 +188,16 @@ class EntityManagerService
     }
 
     /**
-     * Exécute une requête native
+     * Exécute une requête native.
+     *
+     * @param array<string, mixed> $parameters
+     *
+     * @return array<int, mixed>
      */
     public function executeNativeQuery(string $sql, array $parameters = []): array
     {
         $connection = $this->entityManager->getConnection();
-        $statement = $connection->prepare($sql);
+        $statement  = $connection->prepare($sql);
 
         foreach ($parameters as $key => $value) {
             $statement->bindValue($key, $value);
@@ -177,31 +207,7 @@ class EntityManagerService
     }
 
     /**
-     * Obtient le nom de l'entité à partir de l'objet
-     */
-    private function getEntityName(object $entity): string
-    {
-        $className = get_class($entity);
-        return $this->getEntityNameFromClass($className);
-    }
-
-    /**
-     * Obtient le nom de l'entité à partir de la classe
-     */
-    private function getEntityNameFromClass(string $className): string
-    {
-        $parts = explode('\\', $className);
-        $entityName = end($parts);
-
-        // Convertir CamelCase en nom lisible
-        $entityName = preg_replace('/([a-z])([A-Z])/', '$1 $2', $entityName);
-        $entityName = strtolower($entityName);
-
-        return $entityName;
-    }
-
-    /**
-     * Obtient l'EntityManager
+     * Obtient l'EntityManager.
      */
     public function getEntityManager(): EntityManagerInterface
     {
@@ -209,7 +215,7 @@ class EntityManagerService
     }
 
     /**
-     * Obtient le FlashMessageService
+     * Obtient le FlashMessageService.
      */
     public function getFlashMessageService(): FlashMessageService
     {
@@ -217,10 +223,35 @@ class EntityManagerService
     }
 
     /**
-     * Obtient l'AccessControlService
+     * Obtient l'AccessControlService.
      */
     public function getAccessControlService(): AccessControlService
     {
         return $this->accessControlService;
+    }
+
+    /**
+     * Obtient le nom de l'entité à partir de l'objet.
+     */
+    private function getEntityName(object $entity): string
+    {
+        $className = $entity::class;
+
+        return $this->getEntityNameFromClass($className);
+    }
+
+    /**
+     * Obtient le nom de l'entité à partir de la classe.
+     */
+    private function getEntityNameFromClass(string $className): string
+    {
+        $parts      = explode('\\', $className);
+        $entityName = end($parts);
+
+        // Convertir CamelCase en nom lisible
+        $entityName = preg_replace('/([a-z])([A-Z])/', '$1 $2', $entityName);
+        $entityName = strtolower($entityName ?? '');
+
+        return $entityName;
     }
 }

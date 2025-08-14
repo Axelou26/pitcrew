@@ -6,6 +6,9 @@ framework:
     # Note that the session will be started ONLY if you read or write from it.
     session: true
     
+    # Configuration des assets - activation pour permettre l'utilisation de la fonction asset
+    assets: true
+    
     # Optimisations d'initialisation
     http_method_override: false
     handle_all_throwables: true
@@ -18,16 +21,11 @@ framework:
 
     # Configuration du cache déplacée dans cache.yaml
 
-    assets:
-        json_manifest_path: '%kernel.project_dir%/public/build/manifest.json'
-
 when@test:
     framework:
         test: true
         session:
             storage_factory_id: session.storage.factory.mock_file
-        assets:
-            json_manifest_path: false
 
 when@dev:
     framework:

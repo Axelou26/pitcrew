@@ -1,157 +1,390 @@
-# PITCREW - Plateforme de Recrutement Sport Automobile
+# 🏎️ PITCREW - Plateforme de Recrutement Sport Automobile
 
-PITCREW est une application web innovante destinée à faciliter la mise en relation entre les professionnels du sport automobile.
+**PITCREW** est une plateforme web innovante spécialisée dans le recrutement du secteur du sport automobile. Elle facilite la mise en relation entre les professionnels du secteur (recruteurs et candidats) en offrant des fonctionnalités avancées de matching intelligent, de gestion de candidatures et de communication intégrée.
 
-## Structure du Projet
+## 🚀 Vue d'ensemble
 
-Le projet est construit avec Symfony 6.4 et utilise les composants suivants :
+### Mission
+Révolutionner le processus de recrutement dans le sport automobile en créant un écosystème numérique complet qui répond aux besoins spécifiques de ce secteur passionnant.
 
-### Entités
+### Technologies
 
-- `User` : Classe de base abstraite pour les utilisateurs
-  - `Recruiter` : Profil recruteur
-  - `Applicant` : Profil postulant
-- `JobOffer` : Offres d'emploi
-- `Application` : Candidatures
+**Stack Technique :**
+- **Backend** : Symfony 7.0 avec PHP 8.2+
+- **Base de données** : MySQL 8.0 avec Doctrine ORM
+- **Cache** : Redis (Predis) pour sessions et données temporaires
+- **Frontend** : Twig, JavaScript ES6+, CSS responsive, Vite 5.0
+- **Paiements** : Stripe pour les abonnements
+- **Vidéoconférence** : Jitsi Meet pour les entretiens
+- **Monitoring** : Prometheus, Grafana, AlertManager
+- **Tests** : PHPUnit 10.0, PHPStan, PHP CS Fixer, PHPMD
+- **CI/CD** : GitHub Actions avec environnements multiples
 
-### Fonctionnalités Principales
+### Architecture
 
-1. **Système d'Authentification**
-   - Inscription
-   - Connexion
-   - Réinitialisation de mot de passe
+Le projet suit une **architecture hexagonale** avec les principes **Domain-Driven Design (DDD)** :
 
-2. **Gestion des Profils**
-   - Profil Recruteur (entreprise)
-   - Profil Postulant (candidat)
-   - Upload de documents (CV, lettres de recommandation)
+- **Couche de Présentation** : Contrôleurs Symfony + Templates Twig
+- **Couche Service** : Logique métier et orchestration
+- **Couche Données** : Entités Doctrine + Repositories
+- **Couche Infrastructure** : Services externes et configuration
 
-3. **Gestion des Offres d'Emploi**
-   - Création d'offres
-   - Recherche et filtrage
-   - Système de favoris
+### Entités Principales
 
-4. **Gestion des Candidatures**
-   - Soumission de candidatures
-   - Suivi des candidatures
-   - Système de statuts (en attente, acceptée, refusée)
+- **`User`** : Classe de base avec héritage (Single Table Inheritance)
+  - **`Applicant`** : Profil candidat avec compétences, expériences, documents
+  - **`Recruiter`** : Profil recruteur avec informations entreprise
+- **`JobOffer`** : Offres d'emploi avec traits modulaires
+- **`Application`** : Candidatures avec statuts et documents
+- **`Interview`** : Entretiens avec intégration Jitsi Meet
+- **`Post`** : Système de réseau social intégré
+- **`Conversation`** : Messagerie privée
+- **`Notification`** : Système de notifications temps réel
 
-## Installation
+## 🚀 Installation et Déploiement
 
-1. Cloner le projet :
+### Prérequis Système
+- **PHP** : 8.2 ou supérieur
+- **MySQL** : 8.0 ou supérieur
+- **Redis** : 6.0 ou supérieur
+- **Composer** : 2.0 ou supérieur
+- **Node.js** : 18+ (pour Vite et les assets frontend)
+- **Docker** : 20.10+ et Docker Compose 2.0+
+
+### Installation Locale
+
+1. **Cloner le projet :**
 ```bash
 git clone [URL_DU_REPO]
+cd pitcrew
 ```
 
-2. Installer les dépendances :
+2. **Installer les dépendances :**
 ```bash
 composer install
+npm install
 ```
 
-3. Configurer la base de données dans `.env` :
-```
+3. **Configurer la base de données dans `.env` :**
+```env
 DATABASE_URL="mysql://[user]:[password]@127.0.0.1:3306/pitcrew?serverVersion=8.0"
+REDIS_URL="redis://127.0.0.1:6379"
 ```
 
-4. Créer la base de données et appliquer les migrations :
+4. **Créer la base de données et appliquer les migrations :**
 ```bash
 php bin/console doctrine:database:create
 php bin/console doctrine:migrations:migrate
+php bin/console doctrine:fixtures:load
 ```
 
-5. Lancer le serveur de développement :
+5. **Lancer le serveur de développement :**
 ```bash
+# Symfony CLI
 symfony serve
+
+# Ou avec Vite pour les assets
+npm run dev
 ```
 
-## Configuration Requise
+## 🐳 Déploiement avec Docker (Recommandé)
 
-- PHP 8.1 ou supérieur
-- MySQL 8.0 ou supérieur
-- Composer
-- Symfony CLI
+### 🚀 Démarrage Rapide
 
-## Configuration de la couverture de code
-
-Pour exécuter les tests avec la couverture de code, vous devez installer et configurer Xdebug :
-
-1. Téléchargez l'extension Xdebug appropriée depuis https://xdebug.org/download
-2. Placez le fichier DLL dans le répertoire des extensions PHP
-3. Ajoutez ces lignes à votre php.ini :
-   ```ini
-   [xdebug]
-   zend_extension=xdebug
-   xdebug.mode=coverage
-   ```
-4. Redémarrez votre serveur PHP
-
-Ensuite, vous pouvez exécuter les tests avec la couverture de code :
 ```bash
-composer test:coverage
+# Démarrer l'environnement de développement
+./manage-environments.sh dev
+
+# Ou utiliser les scripts individuels
+./docker-start-dev.sh
 ```
 
-## 🧹 Outils de nettoyage et maintenance
+### 🌍 Environnements Disponibles
 
-### Scripts de nettoyage automatisé
+- **🔧 Développement** : Port 8888 - `./manage-environments.sh dev`
+- **🔧 Pré-production** : Port 8889 - `./manage-environments.sh preprod`
+- **🔧 Production** : Ports 80/443 - `./manage-environments.sh prod`
 
-Le projet inclut plusieurs outils pour maintenir la qualité du code et détecter les fichiers obsolètes :
+### 📋 Services Docker
 
-#### Scripts Composer
+| Service | Port | URL | Description |
+|---------|------|-----|-------------|
+| **Application** | 8888 | http://localhost:8888 | Nginx + PHP-FPM |
+| **PhpMyAdmin** | 8080 | http://localhost:8080 | Gestion BDD |
+| **MailHog** | 8025 | http://localhost:8025 | Serveur mail test |
+| **Redis** | 6379 | - | Cache et sessions |
+| **MySQL** | 33306 | - | Base de données |
+
+### 🛠️ Commandes Docker Utiles
+
 ```bash
-# Vérification complète de la qualité du code
+# Gestion des environnements
+./manage-environments.sh status    # Statut des services
+./manage-environments.sh logs      # Logs en temps réel
+./manage-environments.sh clean     # Nettoyer tout
+
+# Commandes Symfony dans Docker
+docker-compose exec app php bin/console cache:clear
+docker-compose exec app composer install
+docker-compose exec app npm install
+```
+
+## 🧪 Tests et Qualité
+
+### 🧪 Exécution des Tests
+
+```bash
+# Tests complets avec base de données de test
+composer test:all
+
+# Tests par catégorie
+composer test:unit          # Tests unitaires
+composer test:integration   # Tests d'intégration
+composer test:functional    # Tests fonctionnels
+
+# Tests avec couverture de code
+composer test:coverage      # Génère rapport HTML dans coverage/
+```
+
+### 🔍 Qualité du Code
+
+```bash
+# Vérification complète de la qualité
 composer quality:check
 
-# Vérification des fichiers orphelins
-composer cleanup:orphaned-files
+# Outils individuels
+composer phpstan           # Analyse statique PHPStan
+composer php-cs-fixer      # Standards de code PSR-12
+composer phpmd             # Détection de problèmes de design
+```
 
-# Vérification des doublons
-composer cleanup:duplicates
+### 🧹 Maintenance et Nettoyage
 
-# Vérification complète de nettoyage
+```bash
+# Vérification des fichiers orphelins et doublons
 composer cleanup:check
-```
 
-#### Scripts de nettoyage (Linux/Mac)
-```bash
-# Nettoyage complet automatisé
-./bin/cleanup.sh
-```
-
-#### Scripts de nettoyage (Windows)
-```cmd
-# Nettoyage complet automatisé
-bin\cleanup.bat
-```
-
-### Commandes Symfony personnalisées
-
-```bash
-# Détecter les fichiers orphelins
+# Commandes Symfony personnalisées
 php bin/console app:check-orphaned-files
-
-# Détecter les doublons
 php bin/console app:check-duplicates
+php bin/console app:check-expired-subscriptions
+
+# Scripts de nettoyage
+./bin/cleanup.sh           # Linux/Mac
+bin\cleanup.bat            # Windows
 ```
 
-### CI/CD
+## 📚 Documentation Complète
 
-Le projet inclut un workflow GitHub Actions (`/.github/workflows/code-quality.yml`) qui :
-- Exécute automatiquement les tests
-- Vérifie la qualité du code (PHPStan, PHP CS Fixer, PHPMD)
-- Détecte les fichiers orphelins et doublons
-- Génère des rapports de nettoyage
+### 📖 Guides Principaux
 
-### Recommandations de maintenance
+- **🐳 Docker** : [`DOCKER_README.md`](DOCKER_README.md) - Configuration Docker complète
+- **🌍 Environnements** : [`ENVIRONNEMENTS.md`](ENVIRONNEMENTS.md) - Gestion des environnements
+- **🔧 Maintenance** : [`refactoring.md`](refactoring.md) - Guide de maintenance
 
-1. **Exécuter les scripts de nettoyage régulièrement** (hebdomadaire)
-2. **Vérifier manuellement** les fichiers signalés avant suppression
-3. **Maintenir les dépendances à jour** avec `composer update` et `npm update`
-4. **Utiliser les outils de qualité** avant chaque commit
+### 📋 Structure du Projet
 
-## Contribution
+```
+pitcrew/
+├── 📁 src/                    # Code source Symfony
+│   ├── 📁 Controller/        # Contrôleurs de l'application
+│   ├── 📁 Entity/           # Entités Doctrine
+│   ├── 📁 Service/          # Services métier
+│   ├── 📁 Repository/       # Repositories Doctrine
+│   └── 📁 Form/             # Formulaires Symfony
+├── 📁 templates/             # Templates Twig
+├── 📁 assets/               # Assets frontend (Vite)
+├── 📁 docker/               # Configuration Docker
+├── 📁 bin/                  # Scripts utilitaires
+├── 📁 tests/                # Tests PHPUnit
+└── 📁 config/               # Configuration Symfony
+```
 
-1. Fork le projet
-2. Créer une branche pour votre fonctionnalité
-3. Commiter vos changements
-4. Pousser vers la branche
-5. Créer une Pull Request 
+## 🔄 Workflow de Développement
+
+### 🌿 Stratégie de Branches
+
+```bash
+# 1. Développement
+git checkout -b feature/nouvelle-fonctionnalite
+# ... développer et tester ...
+git push origin feature/nouvelle-fonctionnalite
+# Créer PR vers dev
+
+# 2. Pré-production
+git checkout -b pré-prod/merge-dev
+git push origin pré-prod/merge-dev
+# Créer PR vers pré-prod
+
+# 3. Production
+git checkout production
+git merge pré-prod
+git push origin production
+# Déploiement automatique via GitHub Actions
+```
+
+### 🚀 CI/CD avec GitHub Actions
+
+Le projet inclut des workflows automatisés :
+- **Développement** : Déclenché par les PR vers `dev`
+- **Pré-production** : Déclenché par les push sur `pré-prod`
+- **Production** : Déclenché par les push sur `production`
+
+### 📊 Monitoring et Métriques
+
+```bash
+# Health checks
+curl http://localhost:8888/health     # Développement
+curl http://localhost:8889/health     # Pré-production
+
+# Métriques Prometheus
+curl http://localhost:8888/metrics    # Métriques de l'application
+
+# Logs en temps réel
+./manage-environments.sh logs
+```
+
+## 🛠️ Outils de Développement
+
+### 🔧 Scripts Utilitaires
+
+```bash
+# Configuration automatique GitHub
+./bin/setup-github-environments.sh
+
+# Optimisation des performances
+./bin/optimize.sh              # Linux/Mac
+bin\optimize.bat               # Windows
+
+# Tests de performance
+./bin/run_tests.sh             # Linux/Mac
+bin\run-tests-simple.bat       # Windows
+```
+
+### 📦 Gestion des Dépendances
+
+```bash
+# Mise à jour des dépendances
+composer update
+npm update
+
+# Vérification de sécurité
+composer audit
+npm audit
+```
+
+## 🤝 Contribution
+
+### Standards de Code
+
+- Suivre les standards **PSR-12**
+- Ajouter des tests pour les nouvelles fonctionnalités
+- Documenter les changements importants
+- Vérifier la qualité du code avant commit
+
+### Processus de Contribution
+
+1. **Fork le projet**
+2. **Créer une branche de fonctionnalité**
+3. **Développer et tester localement**
+4. **Commiter avec des messages conventionnels**
+5. **Créer une Pull Request vers `dev`**
+
+### Messages de Commit
+
+```bash
+feat: nouvelle fonctionnalité
+fix: correction de bug
+docs: mise à jour documentation
+style: formatage du code
+refactor: refactorisation
+test: ajout de tests
+chore: tâches de maintenance
+```
+
+## 🔒 Sécurité
+
+### Bonnes Pratiques
+
+- ✅ Variables d'environnement sécurisées
+- ✅ Protection CSRF activée
+- ✅ Validation des entrées utilisateur
+- ✅ Headers de sécurité configurés
+- ✅ Sessions sécurisées
+- ✅ Limites de taux (rate limiting)
+
+### Configuration de Production
+
+```bash
+# Configuration SSL/TLS
+./manage-environments.sh setup-prod
+
+# Variables d'environnement sécurisées
+cp env.prod.example .env.prod
+# Modifier .env.prod avec vos vraies valeurs
+```
+
+## 📈 Performance et Optimisation
+
+### 🚀 Optimisations Intégrées
+
+- **OpCache** activé avec 128MB de mémoire
+- **Redis** pour le cache et les sessions
+- **Compression Gzip** sur Nginx
+- **Cache des assets statiques** (1 an)
+- **Pool PHP-FPM** optimisé
+
+### 📊 Métriques de Performance
+
+```bash
+# Tests de performance
+./tests/performance/HomepagePerformanceTest.php
+
+# Monitoring en temps réel
+# Prometheus + Grafana configurés
+```
+
+## 🆘 Support et Dépannage
+
+### 🔍 Problèmes Courants
+
+#### Ports déjà utilisés
+```bash
+# Vérifier les ports utilisés
+netstat -tulpn | grep :8888
+
+# Changer les ports dans docker-compose.yml
+```
+
+#### Cache corrompu
+```bash
+# Vider le cache
+php bin/console cache:clear
+rm -rf var/cache/*
+```
+
+#### Base de données inaccessible
+```bash
+# Vérifier le statut
+docker-compose ps database
+
+# Redémarrer
+docker-compose restart database
+```
+
+### 📞 Obtenir de l'Aide
+
+1. **Vérifier les logs** : `./manage-environments.sh logs`
+2. **Consulter la documentation** : Voir les fichiers `.md`
+3. **Vérifier la configuration** : Variables d'environnement
+4. **Exécuter les tests** : `composer test:all`
+
+## 📄 Licence
+
+Ce projet est sous licence propriétaire. Tous droits réservés.
+
+---
+
+**🎉 Merci d'utiliser PitCrew ! Pour toute question, consultez la documentation ou créez une issue sur GitHub.**
+
+**🚀 Démarrage rapide : `./manage-environments.sh dev`** 

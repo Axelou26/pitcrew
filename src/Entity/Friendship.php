@@ -1,51 +1,69 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\FriendshipRepository;
-use Doctrine\ORM\Mapping as ORM;
 use DateTimeImmutable;
+use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: FriendshipRepository::class)]
 #[ORM\Table(name: 'friendship')]
 class Friendship
 {
-    public const STATUS_PENDING = 'pending';
+    public const STATUS_PENDING  = 'pending';
     public const STATUS_ACCEPTED = 'accepted';
     public const STATUS_DECLINED = 'declined';
 
     /**
-     * @SuppressWarnings("PHPMD.ShortVariable")
+     * Identifiant de l'amitié.
      */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
+    #[ORM\Column(type: 'integer')]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'sentFriendRequests')]
+    /**
+     * Utilisateur qui a envoyé la demande d'amitié.
+     */
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'sentFriendships')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $requester = null;
 
-    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'receivedRequests')]
+    /**
+     * Utilisateur qui a reçu la demande d'amitié.
+     */
+    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'receivedFriendships')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $addressee = null;
 
-    #[ORM\Column(length: 20)]
-    private ?string $status = self::STATUS_PENDING;
+    /**
+     * Statut de la demande d'amitié.
+     */
+    #[ORM\Column(type: 'string', length: 255)]
+    private string $status = 'pending';
 
-    #[ORM\Column]
-    private ?DateTimeImmutable $createdAt = null;
+    /**
+     * Date de création de la demande d'amitié.
+     */
+    #[ORM\Column(type: 'datetime_immutable')]
+    private DateTimeImmutable $createdAt;
 
-    #[ORM\Column(nullable: true)]
-    private ?DateTimeImmutable $updatedAt = null;
+    /**
+     * Date de dernière mise à jour de la demande d'amitié.
+     */
+    #[ORM\Column(type: 'datetime_immutable')]
+    private DateTimeImmutable $updatedAt;
 
     public function __construct()
     {
         $this->createdAt = new DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 
     /**
-     * Crée une nouvelle amitié acceptée entre deux utilisateurs
+     * Crée une nouvelle amitié acceptée entre deux utilisateurs.
      */
     public static function createAccepted(User $user1, User $user2): self
     {
@@ -54,6 +72,7 @@ class Friendship
         $friendship->setAddressee($user2);
         $friendship->setStatus(self::STATUS_ACCEPTED);
         $friendship->updatedAt = new DateTimeImmutable();
+
         return $friendship;
     }
 
@@ -70,6 +89,7 @@ class Friendship
     public function setRequester(?User $requester): self
     {
         $this->requester = $requester;
+
         return $this;
     }
 
@@ -81,6 +101,7 @@ class Friendship
     public function setAddressee(?User $addressee): self
     {
         $this->addressee = $addressee;
+
         return $this;
     }
 
@@ -91,8 +112,9 @@ class Friendship
 
     public function setStatus(string $status): self
     {
-        $this->status = $status;
+        $this->status    = $status;
         $this->updatedAt = new DateTimeImmutable();
+
         return $this;
     }
 
@@ -104,6 +126,7 @@ class Friendship
     public function setCreatedAt(DateTimeImmutable $createdAt): self
     {
         $this->createdAt = $createdAt;
+
         return $this;
     }
 
@@ -112,38 +135,65 @@ class Friendship
         return $this->updatedAt;
     }
 
-    public function setUpdatedAt(?DateTimeImmutable $updatedAt): self
+    public function setUpdatedAt(DateTimeImmutable $updatedAt): self
     {
         $this->updatedAt = $updatedAt;
+
         return $this;
+    }
+
+    // Méthodes manquantes ajoutées pour PHPStan
+
+    public function getFriend(User $user): ?User
+    {
+        if ($this->requester === $user) {
+            return $this->addressee;
+        }
+        if ($this->addressee === $user) {
+            return $this->requester;
+        }
+
+        return null;
+    }
+
+    public function getOtherUser(User $user): ?User
+    {
+        return $this->getFriend($user);
+    }
+
+    public function getUser(User $user): ?User
+    {
+        return $this->getFriend($user);
     }
 
     public function isPending(): bool
     {
-        return $this->status === self::STATUS_PENDING;
+        return $this->status === 'pending';
     }
 
     public function isAccepted(): bool
     {
-        return $this->status === self::STATUS_ACCEPTED;
+        return $this->status === 'accepted';
     }
 
-    public function isDeclined(): bool
+    public function isRejected(): bool
     {
-        return $this->status === self::STATUS_DECLINED;
+        return $this->status === 'rejected';
     }
 
     public function accept(): self
     {
-        $this->status = self::STATUS_ACCEPTED;
+        $this->status    = 'accepted';
         $this->updatedAt = new DateTimeImmutable();
+
         return $this;
     }
 
-    public function decline(): self
+    public function reject(): self
     {
-        $this->status = self::STATUS_DECLINED;
+        $this->status    = 'rejected';
         $this->updatedAt = new DateTimeImmutable();
+
         return $this;
     }
 }

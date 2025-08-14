@@ -1,18 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\Notification;
 use App\Repository\NotificationRepository;
-use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Psr\Log\LoggerInterface;
 
 #[Route('/notifications')]
 #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
@@ -22,10 +23,11 @@ class NotificationController extends AbstractController
         private LoggerInterface $logger
     ) {
     }
+
     #[Route('/', name: 'app_notification_index', methods: ['GET'])]
     public function index(NotificationRepository $notifRepo): Response
     {
-        $user = $this->getUser();
+        $user          = $this->getUser();
         $notifications = $notifRepo->findBy(['user' => $user], ['createdAt' => 'DESC']);
 
         return $this->render('notification/index.html.twig', [
@@ -45,10 +47,10 @@ class NotificationController extends AbstractController
             ]);
 
             return new Response($html, 200, [
-                'Content-Type' => 'text/html',
+                'Content-Type'  => 'text/html',
                 'Cache-Control' => 'no-cache, no-store, must-revalidate',
-                'Pragma' => 'no-cache',
-                'Expires' => '0'
+                'Pragma'        => 'no-cache',
+                'Expires'       => '0',
             ]);
         }
 
@@ -64,7 +66,7 @@ class NotificationController extends AbstractController
         EntityManagerInterface $entityManager,
         NotificationRepository $notificationRepository,
         Request $request
-    ) {
+    ): Response {
         // Vérifier que la notification appartient à l'utilisateur connecté
         if ($notification->getUser() !== $this->getUser()) {
             throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à accéder à cette notification.');
@@ -84,6 +86,7 @@ class NotificationController extends AbstractController
 
         // Rediriger vers l'URL cible de la notification
         $targetUrl = $notification->getTargetUrl() ?: $this->generateUrl('app_notification_index');
+
         return $this->redirect($targetUrl);
     }
 
@@ -92,8 +95,8 @@ class NotificationController extends AbstractController
         NotificationRepository $notifRepo,
         EntityManagerInterface $entityManager,
         Request $request
-    ) {
-        $user = $this->getUser();
+    ): Response {
+        $user                = $this->getUser();
         $unreadNotifications = $notifRepo->findBy(['user' => $user, 'isRead' => false]);
 
         foreach ($unreadNotifications as $notification) {

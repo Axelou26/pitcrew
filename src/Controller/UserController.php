@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\Friendship;
@@ -22,16 +24,58 @@ class UserController extends AbstractController
         ?int $userId = null,
         ?string $username = null
     ): Response {
-        $user = $this->findUser($entityManager, $userId, $username);
-        $currentUser = $this->getUser();
-        $posts = $this->getUserPosts($entityManager, $user);
+        $user           = $this->findUser($entityManager, $userId, $username);
+        $currentUser    = $this->getUser();
+        $posts          = $this->getUserPosts($entityManager, $user);
         $friendshipInfo = $this->getFriendshipInfo($entityManager, $currentUser, $user);
 
         return $this->render('user/profile.html.twig', [
-            'user' => $user,
-            'posts' => $posts,
-            'postsCount' => count($posts),
-            'friendshipInfo' => $friendshipInfo
+            'user'           => $user,
+            'posts'          => $posts,
+            'postsCount'     => \count($posts),
+            'friendshipInfo' => $friendshipInfo,
+        ]);
+    }
+
+    #[Route('/search', name: 'app_user_search', methods: ['GET'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function searchUsers(Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $query          = $request->query->get('q', '');
+        $userRepository = $entityManager->getRepository(User::class);
+
+        if (\strlen($query) < 2) {
+            return $this->json(['users' => []]);
+        }
+
+        $users = $userRepository->searchUsers($query, $this->getUser());
+
+        $results = [];
+        foreach ($users as $user) {
+            $results[] = [
+                'id'             => $user->getId(),
+                'fullName'       => $user->getFullName(),
+                'username'       => $user->getUsername() ?? $user->getId(),
+                'profilePicture' => $user->getProfilePicture(),
+                'isFriend'       => $user->isFriend,
+            ];
+        }
+
+        return $this->json(['users' => $results]);
+    }
+
+    #[Route('/suggestions', name: 'app_user_suggestions')]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function suggestions(EntityManagerInterface $entityManager): Response
+    {
+        $user           = $this->getUser();
+        $userRepository = $entityManager->getRepository(User::class);
+
+        // Récupérer plus de suggestions (par exemple 20)
+        $suggestedUsers = $userRepository->findSuggestedUsers($user, 20);
+
+        return $this->render('user/suggestions.html.twig', [
+            'suggestedUsers' => $suggestedUsers,
         ]);
     }
 
@@ -70,10 +114,10 @@ class UserController extends AbstractController
         User $user
     ): array {
         $friendshipInfo = [
-            'isFriend' => false,
+            'isFriend'              => false,
             'hasPendingRequestFrom' => false,
-            'hasPendingRequestTo' => false,
-            'pendingRequestId' => null
+            'hasPendingRequestTo'   => false,
+            'pendingRequestId'      => null,
         ];
 
         if (!$currentUser || $currentUser === $user) {
@@ -82,7 +126,7 @@ class UserController extends AbstractController
 
         $friendshipRepository = $entityManager->getRepository(Friendship::class);
 
-        $friendship = $friendshipRepository->findAcceptedBetweenUsers($currentUser, $user);
+        $friendship                 = $friendshipRepository->findAcceptedBetweenUsers($currentUser, $user);
         $friendshipInfo['isFriend'] = ($friendship !== null);
 
         $pendingRequest = $friendshipRepository->findPendingRequestBetween($currentUser, $user);
@@ -93,51 +137,9 @@ class UserController extends AbstractController
         $pendingRequestTo = $friendshipRepository->findPendingRequestBetween($user, $currentUser);
         if ($pendingRequestTo && $pendingRequestTo->getRequester() === $user) {
             $friendshipInfo['hasPendingRequestTo'] = true;
-            $friendshipInfo['pendingRequestId'] = $pendingRequestTo->getId();
+            $friendshipInfo['pendingRequestId']    = $pendingRequestTo->getId();
         }
 
         return $friendshipInfo;
-    }
-
-    #[Route('/search', name: 'app_user_search', methods: ['GET'])]
-    #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function searchUsers(Request $request, EntityManagerInterface $entityManager): Response
-    {
-        $query = $request->query->get('q', '');
-        $userRepository = $entityManager->getRepository(User::class);
-
-        if (strlen($query) < 2) {
-            return $this->json(['users' => []]);
-        }
-
-        $users = $userRepository->searchUsers($query, $this->getUser());
-
-        $results = [];
-        foreach ($users as $user) {
-            $results[] = [
-                'id' => $user->getId(),
-                'fullName' => $user->getFullName(),
-                'username' => $user->getUsername() ?? $user->getId(),
-                'profilePicture' => $user->getProfilePicture(),
-                'isFriend' => $user->isFriend
-            ];
-        }
-
-        return $this->json(['users' => $results]);
-    }
-
-    #[Route('/suggestions', name: 'app_user_suggestions')]
-    #[IsGranted('IS_AUTHENTICATED_FULLY')]
-    public function suggestions(EntityManagerInterface $entityManager): Response
-    {
-        $user = $this->getUser();
-        $userRepository = $entityManager->getRepository(User::class);
-
-        // Récupérer plus de suggestions (par exemple 20)
-        $suggestedUsers = $userRepository->findSuggestedUsers($user, 20);
-
-        return $this->render('user/suggestions.html.twig', [
-            'suggestedUsers' => $suggestedUsers
-        ]);
     }
 }

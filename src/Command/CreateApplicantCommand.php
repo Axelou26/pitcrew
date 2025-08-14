@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Entity\User;
@@ -22,7 +24,7 @@ class CreateApplicantCommand extends Command
     public function __construct(EntityManagerInterface $entityManager, UserPasswordHasherInterface $passwordHasher)
     {
         parent::__construct();
-        $this->entityManager = $entityManager;
+        $this->entityManager  = $entityManager;
         $this->passwordHasher = $passwordHasher;
     }
 

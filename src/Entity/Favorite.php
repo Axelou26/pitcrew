@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\FavoriteRepository;
-use Doctrine\ORM\Mapping as ORM;
 use DateTimeImmutable;
+use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: FavoriteRepository::class)]
 #[ORM\UniqueConstraint(
-    name: "unique_favorite",
-    columns: ["user_id", "job_offer_id", "candidate_id", "type"]
+    name: 'unique_favorite',
+    columns: ['user_id', 'job_offer_id', 'candidate_id', 'type']
 )]
 class Favorite
 {
@@ -17,12 +19,12 @@ class Favorite
     public const TYPE_CANDIDATE = 'candidate';   // Recruteur qui favorise un candidat
 
     /**
-     * @SuppressWarnings("PHPMD.ShortVariable")
+     * Identifiant du favori.
      */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\Column(type: 'integer')]
+    private int $id;
 
     #[ORM\ManyToOne(inversedBy: 'favorites')]
     #[ORM\JoinColumn(nullable: false)]

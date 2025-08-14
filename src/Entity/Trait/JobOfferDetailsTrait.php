@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity\Trait;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use DateTimeInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
 trait JobOfferDetailsTrait
@@ -25,14 +26,14 @@ trait JobOfferDetailsTrait
     #[ORM\Column(nullable: true)]
     private ?int $salary = null;
 
-    #[ORM\Column(name: 'required_skills', type: Types::JSON)]
+    #[ORM\Column(type: 'json')]
     private array $requiredSkills = [];
 
-    #[ORM\Column(name: 'soft_skills', type: Types::JSON)]
+    #[ORM\Column(type: 'json')]
     private array $softSkills = [];
 
     #[ORM\Column(name: 'expires_at', type: Types::DATE_MUTABLE, nullable: true)]
-    private ?DateTimeInterface $expiresAt = null;
+    private ?\DateTimeInterface $expiresAt = null;
 
     #[ORM\Column(name: 'is_remote')]
     private ?bool $isRemote = false;
@@ -64,6 +65,7 @@ trait JobOfferDetailsTrait
     public function setTitle(string $title): static
     {
         $this->title = $title;
+
         return $this;
     }
 
@@ -75,6 +77,7 @@ trait JobOfferDetailsTrait
     public function setDescription(string $description): static
     {
         $this->description = $description;
+
         return $this;
     }
 
@@ -86,6 +89,7 @@ trait JobOfferDetailsTrait
     public function setLocation(string $location): static
     {
         $this->location = $location;
+
         return $this;
     }
 
@@ -97,6 +101,7 @@ trait JobOfferDetailsTrait
     public function setContractType(string $contractType): static
     {
         $this->contractType = $contractType;
+
         return $this;
     }
 
@@ -108,39 +113,55 @@ trait JobOfferDetailsTrait
     public function setSalary(?int $salary): static
     {
         $this->salary = $salary;
+
         return $this;
     }
 
+    /**
+     * @return array<int, string>
+     */
     public function getRequiredSkills(): array
     {
         return $this->requiredSkills;
     }
 
-    public function setRequiredSkills(array $requiredSkills): static
+    /**
+     * @param array<int, string> $requiredSkills
+     */
+    public function setRequiredSkills(array $requiredSkills): self
     {
         $this->requiredSkills = $requiredSkills;
+
         return $this;
     }
 
+    /**
+     * @return array<int, string>
+     */
     public function getSoftSkills(): array
     {
         return $this->softSkills;
     }
 
-    public function setSoftSkills(array $softSkills): static
+    /**
+     * @param array<int, string> $softSkills
+     */
+    public function setSoftSkills(array $softSkills): self
     {
         $this->softSkills = $softSkills;
+
         return $this;
     }
 
-    public function getExpiresAt(): ?DateTimeInterface
+    public function getExpiresAt(): ?\DateTimeInterface
     {
         return $this->expiresAt;
     }
 
-    public function setExpiresAt(?DateTimeInterface $expiresAt): static
+    public function setExpiresAt(?\DateTimeInterface $expiresAt): static
     {
         $this->expiresAt = $expiresAt;
+
         return $this;
     }
 
@@ -152,6 +173,7 @@ trait JobOfferDetailsTrait
     public function setIsRemote(bool $isRemote): static
     {
         $this->isRemote = $isRemote;
+
         return $this;
     }
 
@@ -163,6 +185,7 @@ trait JobOfferDetailsTrait
     public function setIsPromoted(bool $isPromoted): static
     {
         $this->isPromoted = $isPromoted;
+
         return $this;
     }
 
@@ -179,6 +202,7 @@ trait JobOfferDetailsTrait
     public function setExperienceLevel(string $experienceLevel): static
     {
         $this->experienceLevel = $experienceLevel;
+
         return $this;
     }
 
@@ -190,6 +214,7 @@ trait JobOfferDetailsTrait
     public function setCompany(string $company): static
     {
         $this->company = $company;
+
         return $this;
     }
 
@@ -201,6 +226,7 @@ trait JobOfferDetailsTrait
     public function setIsActive(bool $isActive): static
     {
         $this->isActive = $isActive;
+
         return $this;
     }
 
@@ -212,6 +238,7 @@ trait JobOfferDetailsTrait
     public function setIsPublished(bool $isPublished): static
     {
         $this->isPublished = $isPublished;
+
         return $this;
     }
 
@@ -223,6 +250,7 @@ trait JobOfferDetailsTrait
     public function setRequiredExperience(?int $requiredExperience): static
     {
         $this->requiredExperience = $requiredExperience;
+
         return $this;
     }
 }

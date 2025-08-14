@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Form\Admin;
 
-use App\Entity\RecruiterSubscription;
 use App\Entity\Recruiter;
+use App\Entity\RecruiterSubscription;
 use App\Entity\Subscription;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -19,51 +21,51 @@ class RecruiterSubscriptionType extends AbstractType
     {
         $builder
             ->add('subscription', EntityType::class, [
-                'label' => 'Plan d\'abonnement',
-                'class' => Subscription::class,
+                'label'        => 'Plan d\'abonnement',
+                'class'        => Subscription::class,
                 'choice_label' => function (Subscription $subscription) {
-                    return sprintf('%s (%s €)', $subscription->getName(), $subscription->getPrice() / 100);
+                    return \sprintf('%s (%s €)', $subscription->getName(), $subscription->getPrice() / 100);
                 },
             ])
             ->add('recruiter', EntityType::class, [
-                'label' => 'Recruteur',
-                'class' => Recruiter::class,
+                'label'        => 'Recruteur',
+                'class'        => Recruiter::class,
                 'choice_label' => function (Recruiter $recruiter) {
-                    return sprintf('%s %s (%s)', $recruiter
+                    return \sprintf('%s %s (%s)', $recruiter
                         ->getFirstName(), $recruiter
                         ->getLastName(), $recruiter
                         ->getEmail());
                 },
-                'required' => true,
+                'required'    => true,
                 'placeholder' => 'Sélectionner un recruteur',
-                'attr' => [
-                    'class' => 'form-control'
+                'attr'        => [
+                    'class' => 'form-control',
                 ],
-                'invalid_message' => 'Veuillez sélectionner un recruteur valide.'
+                'invalid_message' => 'Veuillez sélectionner un recruteur valide.',
             ])
             ->add('startDate', DateTimeType::class, [
-                'label' => 'Date de début',
+                'label'  => 'Date de début',
                 'widget' => 'single_text',
             ])
             ->add('endDate', DateTimeType::class, [
-                'label' => 'Date de fin',
-                'widget' => 'single_text',
+                'label'    => 'Date de fin',
+                'widget'   => 'single_text',
                 'required' => false,
             ])
             ->add('stripeSubscriptionId', TextType::class, [
-                'label' => 'ID Abonnement Stripe',
+                'label'    => 'ID Abonnement Stripe',
                 'required' => false,
             ])
             ->add('isActive', CheckboxType::class, [
-                'label' => 'Actif',
+                'label'    => 'Actif',
                 'required' => false,
             ])
             ->add('cancelled', CheckboxType::class, [
-                'label' => 'Annulé',
+                'label'    => 'Annulé',
                 'required' => false,
             ])
             ->add('autoRenew', CheckboxType::class, [
-                'label' => 'Renouvellement automatique',
+                'label'    => 'Renouvellement automatique',
                 'required' => false,
             ])
         ;

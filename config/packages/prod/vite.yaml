@@ -1,0 +1,6 @@
+# Configuration Vite pour la production
+framework:
+    assets:
+        packages:
+            vite:
+                json_manifest_path: '%kernel.project_dir%/public/build/.vite/manifest.json'

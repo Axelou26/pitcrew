@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Validator;
 
+use App\Service\EmailValidationService;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
-use App\Service\EmailValidationService;
 
 class EmailValidator extends ConstraintValidator
 {
@@ -25,9 +27,10 @@ class EmailValidator extends ConstraintValidator
             return;
         }
 
-        if (!is_string($value)) {
+        if (!\is_string($value)) {
             $this->context->buildViolation('L\'email doit être une chaîne de caractères')
                 ->addViolation();
+
             return;
         }
 

@@ -1,25 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\ApplicationRepository;
+use DateTimeImmutable;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Validator\Constraints as Assert;
-use DateTimeImmutable;
 use InvalidArgumentException;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ApplicationRepository::class)]
 #[ORM\HasLifecycleCallbacks]
 class Application
 {
-    /**
-     * @SuppressWarnings("PHPMD.ShortVariable")
-     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\Column(type: 'integer')]
+    private int $id;
 
     #[ORM\ManyToOne(inversedBy: 'applications')]
     #[ORM\JoinColumn(nullable: false)]
@@ -49,7 +48,7 @@ class Application
     public function __construct()
     {
         $this->createdAt = new DateTimeImmutable();
-        $this->status = 'pending';
+        $this->status    = 'pending';
     }
 
     #[ORM\PrePersist]
@@ -71,6 +70,7 @@ class Application
     public function setApplicant(?Applicant $applicant): static
     {
         $this->applicant = $applicant;
+
         return $this;
     }
 
@@ -82,6 +82,7 @@ class Application
     public function setJobOffer(?JobOffer $jobOffer): static
     {
         $this->jobOffer = $jobOffer;
+
         return $this;
     }
 
@@ -93,6 +94,7 @@ class Application
     public function setCoverLetter(?string $coverLetter): static
     {
         $this->coverLetter = $coverLetter;
+
         return $this;
     }
 
@@ -104,6 +106,7 @@ class Application
     public function setCvFilename(?string $cvFilename): static
     {
         $this->cvFilename = $cvFilename;
+
         return $this;
     }
 
@@ -115,6 +118,7 @@ class Application
     public function setRecLetterFilename(?string $recLetterFilename): static
     {
         $this->recLetterFilename = $recLetterFilename;
+
         return $this;
     }
 
@@ -126,6 +130,7 @@ class Application
     public function setCreatedAt(DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
+
         return $this;
     }
 
@@ -136,10 +141,25 @@ class Application
 
     public function setStatus(string $status): static
     {
-        if (!in_array($status, ['pending', 'accepted', 'rejected'])) {
+        if (!in_array($status, ['pending', 'accepted', 'rejected'], true)) {
             throw new InvalidArgumentException('Invalid status');
         }
         $this->status = $status;
+
         return $this;
+    }
+
+    // Méthodes manquantes ajoutées pour PHPStan
+
+    public function setResume(?string $resume): static
+    {
+        $this->resume = $resume;
+
+        return $this;
+    }
+
+    public function getResume(): ?string
+    {
+        return $this->resume ?? null;
     }
 }

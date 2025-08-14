@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller\Admin;
 
 use App\Repository\JobOfferRepository;
@@ -23,21 +25,21 @@ class AdminDashboardController extends AbstractController
         JobOfferRepository $jobOfferRepository,
         RecruiterSubscriptionRepository $recruiterSubRepo
     ) {
-        $this->userRepository = $userRepository;
+        $this->userRepository     = $userRepository;
         $this->jobOfferRepository = $jobOfferRepository;
-        $this->recruiterSubRepo = $recruiterSubRepo;
+        $this->recruiterSubRepo   = $recruiterSubRepo;
     }
 
     #[Route('', name: 'index')]
     public function index(): Response
     {
-        $usersCount = $this->userRepository->count([]);
+        $usersCount     = $this->userRepository->count([]);
         $jobOffersCount = $this->jobOfferRepository->count([]);
         $activeSubCount = $this->recruiterSubRepo->count(['isActive' => true]);
 
         return $this->render('admin/dashboard.html.twig', [
-            'usersCount' => $usersCount,
-            'jobOffersCount' => $jobOffersCount,
+            'usersCount'               => $usersCount,
+            'jobOffersCount'           => $jobOffersCount,
             'activeSubscriptionsCount' => $activeSubCount,
         ]);
     }

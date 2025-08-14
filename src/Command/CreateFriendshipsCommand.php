@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Entity\Friendship;
-use App\Entity\User;
 use App\Repository\UserRepository;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -26,7 +28,7 @@ class CreateFriendshipsCommand extends Command
         UserRepository $userRepository
     ) {
         parent::__construct();
-        $this->entityManager = $entityManager;
+        $this->entityManager  = $entityManager;
         $this->userRepository = $userRepository;
     }
 
@@ -36,18 +38,19 @@ class CreateFriendshipsCommand extends Command
 
         $users = $this->userRepository->findAll();
 
-        if (count($users) < 2) {
+        if (\count($users) < 2) {
             $io->error('Il faut au moins 2 utilisateurs pour créer des amitiés');
+
             return Command::FAILURE;
         }
 
-        $io->info(sprintf('Création d\'amitiés entre %d utilisateurs...', count($users)));
+        $io->info(\sprintf('Création d\'amitiés entre %d utilisateurs...', \count($users)));
 
         // Nombre d'amitiés créées
         $friendshipsCreated = 0;
 
         // Pour chaque utilisateur, créer une amitié avec les autres utilisateurs
-        $userCount = count($users);
+        $userCount = \count($users);
         for ($i = 0; $i < $userCount; $i++) {
             for ($j = $i + 1; $j < $userCount; $j++) {
                 $user1 = $users[$i];
@@ -59,11 +62,15 @@ class CreateFriendshipsCommand extends Command
 
                 if ($existingFriendship === null) {
                     // Créer une nouvelle amitié
-                    $friendship = Friendship::createAccepted($user1, $user2);
+                    $friendship = new Friendship();
+                    $friendship->setRequester($user1);
+                    $friendship->setAddressee($user2);
+                    $friendship->setStatus('accepted');
+                    $friendship->setCreatedAt(new DateTimeImmutable());
                     $this->entityManager->persist($friendship);
                     $friendshipsCreated++;
 
-                    $io->writeln(sprintf(
+                    $io->writeln(\sprintf(
                         'Amitié créée entre %s et %s',
                         $user1->getFullName(),
                         $user2->getFullName()
@@ -74,7 +81,7 @@ class CreateFriendshipsCommand extends Command
 
         $this->entityManager->flush();
 
-        $io->success(sprintf('%d amitiés ont été créées avec succès', $friendshipsCreated));
+        $io->success(\sprintf('%d amitiés ont été créées avec succès', $friendshipsCreated));
 
         return Command::SUCCESS;
     }

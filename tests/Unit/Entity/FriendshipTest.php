@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit\Entity;
 
 use App\Entity\Friendship;
@@ -16,8 +18,8 @@ class FriendshipTest extends TestCase
     {
         parent::setUp();
         $this->friendship = new Friendship();
-        $this->requester = new User();
-        $this->addressee = new User();
+        $this->requester  = new User();
+        $this->addressee  = new User();
 
         $this->requester->setEmail('requester@example.com');
         $this->addressee->setEmail('addressee@example.com');
@@ -25,9 +27,12 @@ class FriendshipTest extends TestCase
 
     public function testConstructor(): void
     {
-        $this->assertInstanceOf(\DateTimeImmutable::class, $this->friendship->getCreatedAt());
-        $this->assertEquals(Friendship::STATUS_PENDING, $this->friendship->getStatus());
-        $this->assertNull($this->friendship->getUpdatedAt());
+        $friendship = new Friendship();
+
+        // Les dates sont maintenant initialisées dans le constructeur
+        $this->assertInstanceOf(\DateTimeInterface::class, $friendship->getCreatedAt());
+        $this->assertInstanceOf(\DateTimeInterface::class, $friendship->getUpdatedAt());
+        $this->assertSame('pending', $friendship->getStatus());
     }
 
     public function testUserAssociations(): void
@@ -43,53 +48,51 @@ class FriendshipTest extends TestCase
 
     public function testStatus(): void
     {
-        // Test du statut par défaut
-        $this->assertEquals(Friendship::STATUS_PENDING, $this->friendship->getStatus());
-        $this->assertTrue($this->friendship->isPending());
-        $this->assertFalse($this->friendship->isAccepted());
-        $this->assertFalse($this->friendship->isDeclined());
+        $friendship = new Friendship();
 
-        // Test du statut accepté
-        $this->friendship->setStatus(Friendship::STATUS_ACCEPTED);
-        $this->assertEquals(Friendship::STATUS_ACCEPTED, $this->friendship->getStatus());
-        $this->assertFalse($this->friendship->isPending());
-        $this->assertTrue($this->friendship->isAccepted());
-        $this->assertFalse($this->friendship->isDeclined());
+        $this->assertTrue($friendship->isPending());
+        $this->assertFalse($friendship->isAccepted());
+        $this->assertFalse($friendship->isRejected());
 
-        // Test du statut refusé
-        $this->friendship->setStatus(Friendship::STATUS_DECLINED);
-        $this->assertEquals(Friendship::STATUS_DECLINED, $this->friendship->getStatus());
-        $this->assertFalse($this->friendship->isPending());
-        $this->assertFalse($this->friendship->isAccepted());
-        $this->assertTrue($this->friendship->isDeclined());
+        $friendship->setStatus('accepted');
+        $this->assertFalse($friendship->isPending());
+        $this->assertTrue($friendship->isAccepted());
+        $this->assertFalse($friendship->isRejected());
+
+        $friendship->setStatus('rejected');
+        $this->assertFalse($friendship->isPending());
+        $this->assertFalse($friendship->isAccepted());
+        $this->assertTrue($friendship->isRejected());
     }
 
     public function testDates(): void
     {
-        // Test de la date de création
-        $this->assertInstanceOf(\DateTimeImmutable::class, $this->friendship->getCreatedAt());
+        $friendship = new Friendship();
 
-        // Test de la date de mise à jour
-        $this->assertNull($this->friendship->getUpdatedAt());
+        // Les dates sont maintenant initialisées dans le constructeur
+        $this->assertInstanceOf(\DateTimeInterface::class, $friendship->getCreatedAt());
+        $this->assertInstanceOf(\DateTimeInterface::class, $friendship->getUpdatedAt());
 
-        $newDate = new \DateTimeImmutable('2024-01-01 12:00:00');
-        $this->friendship->setUpdatedAt($newDate);
-        $this->assertEquals($newDate, $this->friendship->getUpdatedAt());
+        $newDate = new \DateTimeImmutable();
+        $friendship->setUpdatedAt($newDate);
+        $this->assertSame($newDate, $friendship->getUpdatedAt());
     }
 
     public function testAcceptAndDecline(): void
     {
-        // Test de l'acceptation
-        $this->friendship->accept();
-        $this->assertEquals(Friendship::STATUS_ACCEPTED, $this->friendship->getStatus());
-        $this->assertTrue($this->friendship->isAccepted());
-        $this->assertInstanceOf(\DateTimeImmutable::class, $this->friendship->getUpdatedAt());
+        $friendship = new Friendship();
 
-        // Test du refus
-        $this->friendship->decline();
-        $this->assertEquals(Friendship::STATUS_DECLINED, $this->friendship->getStatus());
-        $this->assertTrue($this->friendship->isDeclined());
-        $this->assertInstanceOf(\DateTimeImmutable::class, $this->friendship->getUpdatedAt());
+        $this->assertTrue($friendship->isPending());
+
+        $friendship->accept();
+        $this->assertTrue($friendship->isAccepted());
+        $this->assertFalse($friendship->isPending());
+        $this->assertFalse($friendship->isRejected());
+
+        $friendship->reject();
+        $this->assertFalse($friendship->isAccepted());
+        $this->assertFalse($friendship->isPending());
+        $this->assertTrue($friendship->isRejected());
     }
 
     public function testFluentInterface(): void

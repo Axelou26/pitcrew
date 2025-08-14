@@ -1,31 +1,34 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit;
 
 use App\Service\MetricsCollector;
+use PHPUnit\Framework\TestCase;
 use Prometheus\CollectorRegistry;
-use Prometheus\Counter;
-use Prometheus\Gauge;
-use Prometheus\Histogram;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use PHPUnit\Framework\TestCase;
 
 class MetricsCollectorTest extends TestCase
 {
-    private MetricsCollector $metricsCollector;
-    private LoggerInterface $logger;
+    private $metricsCollector;
+    private $registry;
+    private $entityManager;
+    private $logger;
 
     protected function setUp(): void
     {
-        $this->logger = $this->createMock(LoggerInterface::class);
-        $this->metricsCollector = new MetricsCollector($this->logger);
+        $this->registry         = $this->createMock(CollectorRegistry::class);
+        $this->entityManager    = $this->createMock(\Doctrine\ORM\EntityManagerInterface::class);
+        $this->logger           = $this->createMock(LoggerInterface::class);
+        $this->metricsCollector = new MetricsCollector($this->registry, $this->entityManager, $this->logger);
     }
 
     public function testRecordHttpRequest(): void
     {
-        $request = new Request([], [], [], [], [], ['REQUEST_METHOD' => 'GET'], '/test');
+        $request  = new Request([], [], [], [], [], ['REQUEST_METHOD' => 'GET'], '/test');
         $response = new Response('', 200);
         $duration = 0.5;
 
@@ -35,8 +38,8 @@ class MetricsCollectorTest extends TestCase
 
     public function testRecordDatabaseQuery(): void
     {
-        $type = 'SELECT';
-        $table = 'users';
+        $type     = 'SELECT';
+        $table    = 'users';
         $duration = 0.1;
 
         $this->metricsCollector->recordDatabaseQuery($type, $table, $duration);

@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Repository\RecruiterSubscriptionRepository;
 use App\Service\EmailService;
 use App\Service\NotificationService;
-use DateTime;
+use DateTimeImmutable;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -28,9 +30,9 @@ class NotifyExpiringSubscriptionsCommand extends Command
         EmailService $emailService
     ) {
         parent::__construct();
-        $this->subRepo = $subscriptionRepo;
+        $this->subRepo             = $subscriptionRepo;
         $this->notificationService = $notificationService;
-        $this->emailService = $emailService;
+        $this->emailService        = $emailService;
     }
 
     protected function configure(): void
@@ -52,16 +54,17 @@ class NotifyExpiringSubscriptionsCommand extends Command
 
             if (empty($expiringSubs)) {
                 $ioStyle->info('Aucun abonnement n\'expire dans les 7 prochains jours.');
+
                 return Command::SUCCESS;
             }
 
             $ioStyle
-                ->info(sprintf('Envoi de notifications pour %d abonnements expirant bientôt
-                    ...', count($expiringSubs)));
+                ->info(\sprintf('Envoi de notifications pour %d abonnements expirant bientôt
+                    ...', \count($expiringSubs)));
 
             foreach ($expiringSubs as $subscription) {
-                $user = $subscription->getRecruiter();
-                $daysLeft = (new DateTime())->diff($subscription->getEndDate())->days;
+                $user     = $subscription->getRecruiter();
+                $daysLeft = (new DateTimeImmutable())->diff($subscription->getEndDate())->days;
 
                 // Créer une notification dans l'application
                 $this->notificationService->createNotification(
@@ -77,7 +80,7 @@ class NotifyExpiringSubscriptionsCommand extends Command
                 // Envoyer un email de rappel
                 $this->emailService->sendSubscriptionExpirationReminder($user, $subscription);
 
-                $ioStyle->text(sprintf(
+                $ioStyle->text(\sprintf(
                     'Notification envoyée à %s pour l\'abonnement %s expirant dans %d jours',
                     $user->getEmail(),
                     $subscription->getSubscription()->getName(),
@@ -86,9 +89,11 @@ class NotifyExpiringSubscriptionsCommand extends Command
             }
 
             $ioStyle->success('Toutes les notifications ont été envoyées avec succès.');
+
             return Command::SUCCESS;
         } catch (\Exception $e) {
             $ioStyle->error('Une erreur est survenue lors de l\'envoi des notifications : ' . $e->getMessage());
+
             return Command::FAILURE;
         }
     }

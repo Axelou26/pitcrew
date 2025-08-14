@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity\Trait;
 
 use Doctrine\ORM\Mapping as ORM;
@@ -20,6 +22,7 @@ trait JobOfferContactTrait
     public function setContactEmail(?string $contactEmail): static
     {
         $this->contactEmail = $contactEmail;
+
         return $this;
     }
 
@@ -31,6 +34,7 @@ trait JobOfferContactTrait
     public function setContactPhone(?string $contactPhone): static
     {
         $this->contactPhone = $contactPhone;
+
         return $this;
     }
 }

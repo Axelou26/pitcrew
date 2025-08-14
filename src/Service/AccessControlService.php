@@ -9,32 +9,33 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 class AccessControlService
 {
     /**
-     * Messages d'erreur d'accès prédéfinis
+     * Messages d'erreur d'accès prédéfinis.
      */
     private const ERROR_MESSAGES = [
-        'not_authenticated' => 'Vous devez être connecté pour accéder à cette page.',
-        'not_authorized' => 'Vous n\'êtes pas autorisé à effectuer cette action.',
-        'not_authorized_modify_offer' => 'Vous n\'êtes pas autorisé à modifier cette offre.',
-        'not_authorized_delete_offer' => 'Vous n\'êtes pas autorisé à supprimer cette offre.',
-        'not_authorized_schedule_interview' => 'Vous n\'êtes pas autorisé à planifier des entretiens pour cette offre.',
-        'not_authorized_view_interview' => 'Vous n\'êtes pas autorisé à voir cet entretien.',
-        'not_authorized_access_room' => 'Vous n\'êtes pas autorisé à accéder à cette salle.',
-        'not_authorized_cancel_interview' => 'Vous n\'êtes pas autorisé à annuler cet entretien.',
-        'not_authorized_end_interview' => 'Seul le recruteur peut terminer l\'entretien.',
-        'not_authorized_view_interviews' => 'Vous n\'êtes pas autorisé à voir les entretiens pour cette offre.',
-        'not_authorized_view_page' => 'Vous n\'êtes pas autorisé à voir cette page.',
-        'not_authorized_access_notification' => 'Vous n\'êtes pas autorisé à accéder à cette notification.',
-        'not_authorized_access_ticket' => 'Vous n\'êtes pas autorisé à accéder à ce ticket.',
+        'not_authenticated'                 => 'Vous devez être connecté pour accéder à cette page.',
+        'not_authorized'                    => 'Vous n\'êtes pas autorisé à effectuer cette action.',
+        'not_authorized_modify_offer'       => 'Vous n\'êtes pas autorisé à modifier cette offre.',
+        'not_authorized_delete_offer'       => 'Vous n\'êtes pas autorisé à supprimer cette offre.',
+        'not_authorized_schedule_interview' => 'Vous n\'êtes pas autorisé à planifier des entretiens
+                                                        pour cette offre.',
+        'not_authorized_view_interview'         => 'Vous n\'êtes pas autorisé à voir cet entretien.',
+        'not_authorized_access_room'            => 'Vous n\'êtes pas autorisé à accéder à cette salle.',
+        'not_authorized_cancel_interview'       => 'Vous n\'êtes pas autorisé à annuler cet entretien.',
+        'not_authorized_end_interview'          => 'Seul le recruteur peut terminer l\'entretien.',
+        'not_authorized_view_interviews'        => 'Vous n\'êtes pas autorisé à voir les entretiens pour cette offre.',
+        'not_authorized_view_page'              => 'Vous n\'êtes pas autorisé à voir cette page.',
+        'not_authorized_access_notification'    => 'Vous n\'êtes pas autorisé à accéder à cette notification.',
+        'not_authorized_access_ticket'          => 'Vous n\'êtes pas autorisé à accéder à ce ticket.',
         'not_authorized_add_recruiter_favorite' => 'Vous ne pouvez pas ajouter un recruteur en favoris',
-        'invalid_access_link' => 'Lien d\'accès invalide.',
-        'not_authorized_view_application' => 'Vous n\'êtes pas autorisé à voir cette candidature.',
-        'not_authorized_modify_application' => 'Vous n\'êtes pas autorisé à modifier cette candidature.',
-        'not_authorized_delete_application' => 'Vous n\'êtes pas autorisé à supprimer cette candidature.',
-        'not_authorized_view_applications' => 'Vous n\'êtes pas autorisé à voir ces candidatures.',
+        'invalid_access_link'                   => 'Lien d\'accès invalide.',
+        'not_authorized_view_application'       => 'Vous n\'êtes pas autorisé à voir cette candidature.',
+        'not_authorized_modify_application'     => 'Vous n\'êtes pas autorisé à modifier cette candidature.',
+        'not_authorized_delete_application'     => 'Vous n\'êtes pas autorisé à supprimer cette candidature.',
+        'not_authorized_view_applications'      => 'Vous n\'êtes pas autorisé à voir ces candidatures.',
     ];
 
     /**
-     * Lance une exception d'accès refusé avec un message prédéfini
+     * Lance une exception d'accès refusé avec un message prédéfini.
      */
     public function denyAccess(string $messageKey = 'not_authorized'): void
     {
@@ -43,7 +44,7 @@ class AccessControlService
     }
 
     /**
-     * Lance une exception d'accès refusé avec un message personnalisé
+     * Lance une exception d'accès refusé avec un message personnalisé.
      */
     public function denyAccessWithMessage(string $message): void
     {
@@ -51,7 +52,7 @@ class AccessControlService
     }
 
     /**
-     * Vérifie si l'utilisateur est connecté
+     * Vérifie si l'utilisateur est connecté.
      */
     public function requireAuthentication(): void
     {
@@ -61,7 +62,7 @@ class AccessControlService
     }
 
     /**
-     * Vérifie si l'utilisateur a le rôle requis
+     * Vérifie si l'utilisateur a le rôle requis.
      */
     public function requireRole(string $role): void
     {
@@ -71,7 +72,7 @@ class AccessControlService
     }
 
     /**
-     * Messages d'erreur spécifiques aux entités
+     * Messages d'erreur spécifiques aux entités.
      */
     public function denyAccessToEntity(string $entityName, string $action = 'accéder'): void
     {
@@ -80,7 +81,7 @@ class AccessControlService
     }
 
     /**
-     * Messages d'erreur pour les opérations CRUD
+     * Messages d'erreur pour les opérations CRUD.
      */
     public function denyCreate(string $entityName): void
     {

@@ -83,6 +83,12 @@
 
 {% block javascripts %}
     {{ parent() }}
+    <style>
+        .fade-out {
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+        }
+    </style>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const container = document.getElementById('suggested-users-container');
@@ -105,12 +111,22 @@
                     const data = await response.json();
 
                     if (data.success) {
-                        // Remplacer le bouton par "En attente"
-                        addButton.outerHTML = `
-                            <button class="btn btn-light rounded-pill px-3" disabled>
-                                <i class="bi bi-hourglass-split me-2"></i>En attente
-                            </button>
-                        `;
+                        // Faire disparaître l'utilisateur de la liste
+                        userCard.classList.add('fade-out');
+                        setTimeout(() => {
+                            userCard.remove();
+                            
+                            // Vérifier s'il reste des utilisateurs suggérés
+                            if (container.children.length === 0) {
+                                container.innerHTML = `
+                                    <div class="text-center py-5">
+                                        <i class="bi bi-people display-1 text-muted mb-3"></i>
+                                        <h5 class="text-muted mb-3">Aucune suggestion pour le moment</h5>
+                                        <p class="text-muted">Revenez plus tard pour découvrir de nouvelles personnes</p>
+                                    </div>
+                                `;
+                            }
+                        }, 300);
                     } else {
                         // Afficher le message d'erreur
                         alert(data.message);

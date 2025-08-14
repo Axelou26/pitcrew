@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\PostLikeRepository;
-use Doctrine\ORM\Mapping as ORM;
 use DateTimeImmutable;
+use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: PostLikeRepository::class)]
 #[ORM\UniqueConstraint(
@@ -15,8 +17,8 @@ class PostLike
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\Column(type: 'integer')]
+    private int $id;
 
     #[ORM\ManyToOne(inversedBy: 'postLikes')]
     #[ORM\JoinColumn(nullable: false)]
@@ -47,6 +49,7 @@ class PostLike
     public function setUser(?User $user): static
     {
         $this->user = $user;
+
         return $this;
     }
 
@@ -58,6 +61,7 @@ class PostLike
     public function setPost(?Post $post): static
     {
         $this->post = $post;
+
         return $this;
     }
 
@@ -69,6 +73,7 @@ class PostLike
     public function setCreatedAt(DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
+
         return $this;
     }
 }

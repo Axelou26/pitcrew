@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Repository\UserRepository;
@@ -16,7 +18,7 @@ class SearchController extends AbstractController
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function index(Request $request, UserRepository $userRepository): Response
     {
-        $query = $request->query->get('q', '');
+        $query = (string) $request->query->get('q', '');
         $users = [];
 
         if ($query) {

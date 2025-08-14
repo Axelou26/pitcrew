@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit\Entity;
 
-use App\Entity\WorkExperience;
 use App\Entity\User;
+use App\Entity\WorkExperience;
 use PHPUnit\Framework\TestCase;
 
 class WorkExperienceTest extends TestCase
@@ -15,17 +17,17 @@ class WorkExperienceTest extends TestCase
     {
         parent::setUp();
         $this->workExperience = new WorkExperience();
-        $this->user = new User();
+        $this->user           = new User();
         $this->user->setEmail('user@example.com');
     }
 
     public function testBasicInformation(): void
     {
-        $title = 'Développeur Full Stack';
-        $company = 'Entreprise Test';
-        $location = 'Paris';
-        $startDate = '09/2021';
-        $endDate = '06/2023';
+        $title       = 'Développeur Full Stack';
+        $company     = 'Entreprise Test';
+        $location    = 'Paris';
+        $startDate   = '09/2021';
+        $endDate     = '06/2023';
         $description = 'Description du poste';
 
         $this->workExperience
@@ -36,12 +38,12 @@ class WorkExperienceTest extends TestCase
             ->setEndDate($endDate)
             ->setDescription($description);
 
-        $this->assertEquals($title, $this->workExperience->getTitle());
-        $this->assertEquals($company, $this->workExperience->getCompany());
-        $this->assertEquals($location, $this->workExperience->getLocation());
-        $this->assertEquals($startDate, $this->workExperience->getStartDate());
-        $this->assertEquals($endDate, $this->workExperience->getEndDate());
-        $this->assertEquals($description, $this->workExperience->getDescription());
+        $this->assertSame($title, $this->workExperience->getTitle());
+        $this->assertSame($company, $this->workExperience->getCompany());
+        $this->assertSame($location, $this->workExperience->getLocation());
+        $this->assertSame($startDate, $this->workExperience->getStartDate());
+        $this->assertSame($endDate, $this->workExperience->getEndDate());
+        $this->assertSame($description, $this->workExperience->getDescription());
     }
 
     public function testUserAssociation(): void

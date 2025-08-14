@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Commentaires du post{% endblock %}
+
+{% block body %}
+    <div class="container py-4">
+        <h1 class="mb-4">Commentaires</h1>
+        
+        <div class="card shadow-sm rounded-4 border-0 mb-4">
+            <div class="card-body p-4">
+                <h5 class="card-title fw-bold">{{ post.title|default('Post') }}</h5>
+                <p class="card-text">{{ post.content }}</p>
+                
+                <hr class="my-3">
+                
+                <h6 class="fw-bold mb-3">Commentaires ({{ comments|length }})</h6>
+                
+                <div class="comments-list">
+                    {% include 'comment/_list.html.twig' with {'comments': comments, 'post': post} %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

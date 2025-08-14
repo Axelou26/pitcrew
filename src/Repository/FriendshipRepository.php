@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
 use App\Entity\Friendship;
@@ -10,10 +12,18 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<Friendship>
  *
- * @method Friendship|null find($id, $lockMode = null, $lockVersion = null)
- * @method Friendship|null findOneBy(array $criteria, array $orderBy = null)
+ * @method null|Friendship find($id, $lockMode = null, $lockVersion = null)
+ * @method null|Friendship findOneBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null
+ * )
  * @method Friendship[]    findAll()
- * @method Friendship[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method Friendship[]    findBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null,
+ *     int $limit = null,
+ *     int $offset = null
+ * )
  */
 class FriendshipRepository extends ServiceEntityRepository
 {
@@ -23,7 +33,7 @@ class FriendshipRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve une amitié entre deux utilisateurs, quel que soit le statut
+     * Trouve une amitié entre deux utilisateurs, quel que soit le statut.
      */
     public function findBetweenUsers(User $user1, User $user2): ?Friendship
     {
@@ -39,7 +49,7 @@ class FriendshipRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve une amitié acceptée entre deux utilisateurs
+     * Trouve une amitié acceptée entre deux utilisateurs.
      */
     public function findAcceptedBetweenUsers(User $user1, User $user2): ?Friendship
     {
@@ -58,7 +68,7 @@ class FriendshipRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve une demande d'amitié en attente entre deux utilisateurs (peu importe la direction)
+     * Trouve une demande d'amitié en attente entre deux utilisateurs (peu importe la direction).
      */
     public function findPendingRequestBetween(User $user1, User $user2): ?Friendship
     {
@@ -76,7 +86,9 @@ class FriendshipRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve tous les amis d'un utilisateur avec préchargement des entités
+     * Trouve les amis d'un utilisateur.
+     *
+     * @return Friendship[]
      */
     public function findFriends(User $user): array
     {
@@ -104,7 +116,7 @@ class FriendshipRepository extends ServiceEntityRepository
     }
 
     /**
-     * Vérifie si deux utilisateurs sont amis (version optimisée)
+     * Vérifie si deux utilisateurs sont amis (version optimisée).
      */
     public function areFriends(User $user1, User $user2): bool
     {
@@ -125,7 +137,9 @@ class FriendshipRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve les demandes d'amitié reçues en attente (version optimisée)
+     * Trouve les demandes d'amitié reçues en attente.
+     *
+     * @return Friendship[]
      */
     public function findByPendingRequestsReceived(User $user): array
     {
@@ -142,22 +156,24 @@ class FriendshipRepository extends ServiceEntityRepository
     }
 
     /**
-     * Compte les demandes d'amitié reçues en attente (version optimisée)
+     * Compte les demandes d'amitié reçues en attente.
      */
     public function countPendingRequestsReceived(User $user): int
     {
-        return $this->createQueryBuilder('f')
+        return (int) $this->createQueryBuilder('f')
             ->select('COUNT(f.id)')
-            ->where('f.addressee = :user')
+            ->andWhere('f.addressee = :user')
             ->andWhere('f.status = :status')
             ->setParameter('user', $user)
-            ->setParameter('status', Friendship::STATUS_PENDING)
+            ->setParameter('status', 'pending')
             ->getQuery()
             ->getSingleScalarResult();
     }
 
     /**
-     * Trouve les demandes d'amitié envoyées en attente
+     * Trouve les demandes d'amitié envoyées en attente.
+     *
+     * @return Friendship[]
      */
     public function findByPendingRequestsSent(User $user): array
     {
@@ -174,7 +190,9 @@ class FriendshipRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve toutes les amitiés d'un utilisateur avec préchargement
+     * Trouve toutes les amitiés d'un utilisateur.
+     *
+     * @return Friendship[]
      */
     public function findAllFriendshipsForUser(User $user): array
     {
@@ -184,6 +202,26 @@ class FriendshipRepository extends ServiceEntityRepository
             ->addSelect('r', 'a')
             ->where('f.requester = :user OR f.addressee = :user')
             ->setParameter('user', $user)
+            ->orderBy('f.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Trouve toutes les amitiés acceptées d'un utilisateur.
+     *
+     * @return Friendship[]
+     */
+    public function findAcceptedFriendships(User $user): array
+    {
+        return $this->createQueryBuilder('f')
+            ->leftJoin('f.requester', 'r')
+            ->leftJoin('f.addressee', 'a')
+            ->addSelect('r', 'a')
+            ->where('(f.requester = :user OR f.addressee = :user)')
+            ->andWhere('f.status = :status')
+            ->setParameter('user', $user)
+            ->setParameter('status', Friendship::STATUS_ACCEPTED)
             ->orderBy('f.createdAt', 'DESC')
             ->getQuery()
             ->getResult();

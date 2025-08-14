@@ -11,7 +11,8 @@ abstract class BaseScoreCalculator
         if ($maxScore <= 0) {
             return 0;
         }
-        return (int)round(($score / $maxScore) * 100);
+
+        return (int) round(($score / $maxScore) * 100);
     }
 
     protected function calculateWeightedScore(float $score, float $maxScore, float $weight): float

@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit\Entity;
 
-use App\Entity\Recruiter;
 use App\Entity\Applicant;
+use App\Entity\Recruiter;
 use Doctrine\Common\Collections\Collection;
 use PHPUnit\Framework\TestCase;
 
@@ -26,16 +28,16 @@ class RecruiterTest extends TestCase
 
     public function testCompanyName(): void
     {
-        $companyName = "SpeedTech Racing";
+        $companyName = 'SpeedTech Racing';
         $this->recruiter->setCompanyName($companyName);
-        $this->assertEquals($companyName, $this->recruiter->getCompanyName());
+        $this->assertSame($companyName, $this->recruiter->getCompanyName());
     }
 
     public function testCompanyDescription(): void
     {
-        $description = "Une entreprise innovante dans le domaine de la F1";
+        $description = 'Une entreprise innovante dans le domaine du sport automobile';
         $this->recruiter->setCompanyDescription($description);
-        $this->assertEquals($description, $this->recruiter->getCompanyDescription());
+        $this->assertSame($description, $this->recruiter->getCompanyDescription());
 
         // Test avec une valeur null
         $this->recruiter->setCompanyDescription(null);
@@ -59,12 +61,12 @@ class RecruiterTest extends TestCase
     public function testInheritedProperties(): void
     {
         // Test des propriétés héritées de User
-        $email = 'recruiter@example.com';
+        $email     = 'recruiter@example.com';
         $firstName = 'Thomas';
-        $lastName = 'Dubois';
-        $city = 'Paris';
-        $bio = 'Directeur des ressources humaines';
-        $jobTitle = 'DRH';
+        $lastName  = 'Dubois';
+        $city      = 'Paris';
+        $bio       = 'Directeur des ressources humaines';
+        $jobTitle  = 'DRH';
 
         $this->recruiter->setEmail($email);
         $this->recruiter->setFirstName($firstName);
@@ -73,12 +75,12 @@ class RecruiterTest extends TestCase
         $this->recruiter->setBio($bio);
         $this->recruiter->setJobTitle($jobTitle);
 
-        $this->assertEquals($email, $this->recruiter->getEmail());
-        $this->assertEquals($firstName, $this->recruiter->getFirstName());
-        $this->assertEquals($lastName, $this->recruiter->getLastName());
-        $this->assertEquals($city, $this->recruiter->getCity());
-        $this->assertEquals($bio, $this->recruiter->getBio());
-        $this->assertEquals($jobTitle, $this->recruiter->getJobTitle());
+        $this->assertSame($email, $this->recruiter->getEmail());
+        $this->assertSame($firstName, $this->recruiter->getFirstName());
+        $this->assertSame($lastName, $this->recruiter->getLastName());
+        $this->assertSame($city, $this->recruiter->getCity());
+        $this->assertSame($bio, $this->recruiter->getBio());
+        $this->assertSame($jobTitle, $this->recruiter->getJobTitle());
     }
 
     public function testFluentInterface(): void

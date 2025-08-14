@@ -1,14 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Repository\UserRepository;
 use App\Service\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\HttpFoundation\Request;
 
 class EmailVerificationController extends AbstractController
 {
@@ -32,6 +34,7 @@ class EmailVerificationController extends AbstractController
 
         if (!$user) {
             $this->addFlash('error', 'Token de vérification invalide.');
+
             return $this->redirectToRoute('app_login');
         }
 
@@ -40,6 +43,7 @@ class EmailVerificationController extends AbstractController
         $this->entityManager->flush();
 
         $this->addFlash('success', 'Votre adresse email a été vérifiée avec succès.');
+
         return $this->redirectToRoute('app_login');
     }
 
@@ -49,11 +53,13 @@ class EmailVerificationController extends AbstractController
         $user = $this->getUser();
         if (!$user) {
             $this->addFlash('error', 'Vous devez être connecté pour effectuer cette action.');
+
             return $this->redirectToRoute('app_login');
         }
 
         if ($user->isVerified()) {
             $this->addFlash('info', 'Votre adresse email est déjà vérifiée.');
+
             return $this->redirectToRoute('app_home');
         }
 
@@ -63,10 +69,10 @@ class EmailVerificationController extends AbstractController
         // Ajouter des informations supplémentaires en mode développement
         if ($this->getParameter('kernel.environment') === 'dev') {
             $mailerDsn = $_SERVER['MAILER_DSN'] ?? 'non configuré';
-            $message = 'Mode développement : configuration SMTP = ' . $mailerDsn;
+            $message   = 'Mode développement : configuration SMTP = ' . $mailerDsn;
             $this->addFlash('info', $message);
 
-            if (strpos($mailerDsn, 'localhost:1025') !== false) {
+            if (str_contains($mailerDsn, 'localhost:1025')) {
                 $this->addFlash('info', 'Pour voir les emails: ' .
                     '<a href="http://localhost:8025" target="_blank">MailHog</a>');
             }
@@ -85,20 +91,21 @@ class EmailVerificationController extends AbstractController
         $user = $this->getUser();
         if (!$user) {
             $this->addFlash('error', 'Vous devez être connecté pour accéder à cette page.');
+
             return $this->redirectToRoute('app_login');
         }
 
-        $mailerDsn = $_SERVER['MAILER_DSN'] ?? 'non configuré';
+        $mailerDsn   = $_SERVER['MAILER_DSN'] ?? 'non configuré';
         $emailConfig = [
-            'MAILER_DSN' => $mailerDsn,
-            'Environnement' => $this->getParameter('kernel.environment'),
-            'Email utilisateur' => $user->getEmail(),
+            'MAILER_DSN'             => $mailerDsn,
+            'Environnement'          => $this->getParameter('kernel.environment'),
+            'Email utilisateur'      => $user->getEmail(),
             'Statut de vérification' => $user->isVerified() ? 'Vérifié' : 'Non vérifié',
-            'Token de vérification' => $user->getVerificationToken() ?? 'Aucun'
+            'Token de vérification'  => $user->getVerificationToken() ?? 'Aucun',
         ];
 
         return $this->render('emails/debug.html.twig', [
-            'emailConfig' => $emailConfig
+            'emailConfig' => $emailConfig,
         ]);
     }
 
@@ -113,6 +120,7 @@ class EmailVerificationController extends AbstractController
 
         if (!$email) {
             $this->addFlash('error', 'Adresse email requise');
+
             return $this->redirectToRoute('app_debug_email_config');
         }
 

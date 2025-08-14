@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace DoctrineMigrations;
 
@@ -32,4 +32,4 @@ final class Version20250410164854 extends AbstractMigration
         $this->addSql('DROP INDEX idx_notification_created_at ON notification');
         $this->addSql('DROP INDEX idx_notification_type ON notification');
     }
-} 
+}

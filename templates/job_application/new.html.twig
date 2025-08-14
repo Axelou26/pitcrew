@@ -238,8 +238,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.querySelector('form');
             const coverLetterInput = document.getElementById('{{ form.coverLetter.vars.id }}');
-            const resumeInput = document.getElementById('{{ form.resume.vars.id }}');
-            const additionalInput = document.getElementById('{{ form.additionalDocuments.vars.id }}');
+            const resumeInput = document.getElementById('{{ form.cvFile.vars.id }}');
+            const additionalInput = document.getElementById('{{ form.additionalDocuments is defined ? form.additionalDocuments.vars.id : "" }}');
             
             // Fonction pour vérifier le type de fichier
             function isValidPDF(file) {
@@ -262,12 +262,18 @@
                         if (!isValidPDF(file)) {
                             showError('Le CV doit être au format PDF');
                             this.value = '';
-                            document.querySelector('.selected-file-resume').innerHTML = '';
+                            const selectedFileResume = document.querySelector('.selected-file-resume');
+                            if (selectedFileResume) {
+                                selectedFileResume.innerHTML = '';
+                            }
                             return;
                         }
                         const fileName = file.name;
-                        document.querySelector('.selected-file-resume').innerHTML = 
-                            '<i class="bi bi-check-circle-fill text-success me-2"></i>' + fileName;
+                        const selectedFileResume = document.querySelector('.selected-file-resume');
+                        if (selectedFileResume) {
+                            selectedFileResume.innerHTML = 
+                                '<i class="bi bi-check-circle-fill text-success me-2"></i>' + fileName;
+                        }
                     }
                 });
             }
@@ -280,7 +286,10 @@
                     if (files.length > 5) {
                         showError('Vous ne pouvez pas télécharger plus de 5 documents');
                         this.value = '';
-                        document.querySelector('.selected-files-additional').innerHTML = '';
+                        const selectedFilesAdditional = document.querySelector('.selected-files-additional');
+                        if (selectedFilesAdditional) {
+                            selectedFilesAdditional.innerHTML = '';
+                        }
                         return;
                     }
                     
@@ -293,7 +302,10 @@
                     if (hasInvalidFile) {
                         showError('Tous les documents doivent être au format PDF');
                         this.value = '';
-                        document.querySelector('.selected-files-additional').innerHTML = '';
+                        const selectedFilesAdditional = document.querySelector('.selected-files-additional');
+                        if (selectedFilesAdditional) {
+                            selectedFilesAdditional.innerHTML = '';
+                        }
                         return;
                     }
                     
@@ -303,7 +315,10 @@
                             html += '<li><i class="bi bi-check-circle-fill text-success me-2"></i>' + file.name + '</li>';
                         });
                         html += '</ul>';
-                        document.querySelector('.selected-files-additional').innerHTML = html;
+                        const selectedFilesAdditional = document.querySelector('.selected-files-additional');
+                        if (selectedFilesAdditional) {
+                            selectedFilesAdditional.innerHTML = html;
+                        }
                     }
                 });
             }

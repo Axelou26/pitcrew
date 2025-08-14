@@ -28,18 +28,56 @@ class EmailValidationService
         return !$this->checkDns || $this->hasValidDomain($email);
     }
 
+    /**
+     * @return array<int, string>
+     */
+    public function getValidationErrors(string $email): array
+    {
+        $validations = [
+            $this->validateLength($email),
+            $this->validateAtSymbol($email),
+            $this->validateConsecutiveDots($email),
+            $this->validateDotAroundAt($email),
+            $this->validateEndingDot($email),
+            $this->validateStartingDot($email),
+            $this->validateSpaces($email),
+            $this->validateRegex($email),
+            $this->validateDns($email),
+        ];
+
+        return array_values(array_filter($validations));
+    }
+
+    public function validateEmail(mixed $value, ExecutionContextInterface $context): void
+    {
+        if (!\is_string($value)) {
+            $context->buildViolation('L\'email doit être une chaîne de caractères')
+                ->addViolation();
+
+            return;
+        }
+
+        $errors = $this->getValidationErrors($value);
+        if (!empty($errors)) {
+            foreach ($errors as $error) {
+                $context->buildViolation($error)
+                    ->addViolation();
+            }
+        }
+    }
+
     private function isValidLength(string $email): bool
     {
-        return strlen($email) <= 254;
+        return \strlen($email) <= 254;
     }
 
     private function hasValidFormat(string $email): bool
     {
-        if (strpos($email, '..') !== false) {
+        if (str_contains($email, '..')) {
             return false;
         }
 
-        if (strpos($email, '.@') !== false || strpos($email, '@.') !== false) {
+        if (str_contains($email, '.@') || str_contains($email, '@.')) {
             return false;
         }
 
@@ -66,6 +104,7 @@ class EmailValidationService
         }
 
         $domain = substr($email, $atPos + 1);
+
         return checkdnsrr($domain, 'MX') || checkdnsrr($domain, 'A');
     }
 
@@ -81,80 +120,49 @@ class EmailValidationService
 
     private function validateConsecutiveDots(string $email): ?string
     {
-        return strpos($email, '..') !== false ? 'L\'adresse email ne peut pas contenir deux points consécutifs' : null;
+        return str_contains($email, '..') ? 'L\'adresse email ne peut pas contenir deux points consécutifs' : null;
     }
 
     private function validateDotAroundAt(string $email): ?string
     {
-        $hasInvalidDot = strpos($email, '.@') !== false || strpos($email, '@.') !== false;
-        $message = 'L\'adresse email ne peut pas avoir un point juste avant ou après le @';
+        $hasInvalidDot = str_contains($email, '.@') || str_contains($email, '@.');
+        $message       = 'L\'adresse email ne peut pas avoir un point juste avant ou après le @';
+
         return $hasInvalidDot ? $message : null;
     }
 
     private function validateEndingDot(string $email): ?string
     {
         $message = 'L\'adresse email ne peut pas se terminer par un point';
+
         return substr($email, -1) === '.' ? $message : null;
     }
 
     private function validateStartingDot(string $email): ?string
     {
         $message = 'L\'adresse email ne peut pas commencer par un point';
+
         return substr($email, 0, 1) === '.' ? $message : null;
     }
 
     private function validateSpaces(string $email): ?string
     {
         $message = 'L\'adresse email ne peut pas contenir d\'espaces';
-        return strpos($email, ' ') !== false ? $message : null;
+
+        return str_contains($email, ' ') ? $message : null;
     }
 
     private function validateRegex(string $email): ?string
     {
         $message = 'Le format de l\'adresse email n\'est pas valide';
+
         return !preg_match(self::EMAIL_REGEX, $email) ? $message : null;
     }
 
     private function validateDns(string $email): ?string
     {
         $message = 'Le domaine de l\'adresse email n\'existe pas';
+
         return $this->checkDns && !$this->hasValidDomain($email) ? $message : null;
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    public function getValidationErrors(string $email): array
-    {
-        $validations = [
-            $this->validateLength($email),
-            $this->validateAtSymbol($email),
-            $this->validateConsecutiveDots($email),
-            $this->validateDotAroundAt($email),
-            $this->validateEndingDot($email),
-            $this->validateStartingDot($email),
-            $this->validateSpaces($email),
-            $this->validateRegex($email),
-            $this->validateDns($email)
-        ];
-
-        return array_values(array_filter($validations));
-    }
-
-    public function validateEmail(mixed $value, ExecutionContextInterface $context): void
-    {
-        if (!is_string($value)) {
-            $context->buildViolation('L\'email doit être une chaîne de caractères')
-                ->addViolation();
-            return;
-        }
-
-        $errors = $this->getValidationErrors($value);
-        if (!empty($errors)) {
-            foreach ($errors as $error) {
-                $context->buildViolation($error)
-                    ->addViolation();
-            }
-        }
     }
 }

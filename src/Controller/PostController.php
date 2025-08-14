@@ -1,30 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\Post;
 use App\Entity\PostComment;
-use App\Form\PostType;
+use App\Entity\User;
 use App\Form\PostCommentType;
-use App\Repository\PostRepository;
-use App\Repository\PostCommentRepository;
+use App\Form\PostType;
 use App\Repository\HashtagRepository;
+use App\Repository\PostRepository;
+use App\Service\Post\PostSearchCriteria;
+use App\Service\PostInteractionService;
+use App\Service\PostService;
+use App\Service\RecommendationService;
+use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use App\Service\PostService;
-use App\Service\PostInteractionService;
-use App\Service\RecommendationService;
-use Psr\Log\LoggerInterface;
-use Doctrine\ORM\EntityManagerInterface;
-use App\Entity\PostLike;
 use Symfony\Contracts\Cache\CacheInterface;
-use App\Service\Post\PostSearchCriteria;
-use App\Entity\User;
-use Symfony\Component\Security\Core\Security;
 
 #[Route('/post')]
 class PostController extends AbstractController
@@ -41,8 +40,8 @@ class PostController extends AbstractController
         CacheInterface $cache,
         RecommendationService $recommendationService
     ) {
-        $this->entityManager = $entityManager;
-        $this->cache = $cache;
+        $this->entityManager         = $entityManager;
+        $this->cache                 = $cache;
         $this->recommendationService = $recommendationService;
     }
 
@@ -72,6 +71,7 @@ class PostController extends AbstractController
                 );
 
                 $this->addFlash('success', 'Votre post a été créé avec succès !');
+
                 return $this->redirectToRoute('app_dashboard_posts');
             } catch (\Exception $e) {
                 $this->addFlash('error', $e->getMessage());
@@ -88,7 +88,7 @@ class PostController extends AbstractController
     public function feed(Request $request): Response
     {
         try {
-            $page = max(1, $request->query->getInt('page', 1));
+            $page  = max(1, $request->query->getInt('page', 1));
             $limit = max(1, $request->query->getInt('limit', 10));
 
             $user = $this->getUser();
@@ -97,7 +97,7 @@ class PostController extends AbstractController
                 if ($request->isXmlHttpRequest()) {
                     return new JsonResponse([
                         'error' => 'Vous devez être connecté pour voir le feed',
-                        'html' => '<div class="alert alert-warning">Veuillez vous connecter pour voir le feed</div>'
+                        'html'  => '<div class="alert alert-warning">Veuillez vous connecter pour voir le feed</div>',
                     ], Response::HTTP_UNAUTHORIZED);
                 }
 
@@ -119,11 +119,11 @@ class PostController extends AbstractController
 
             // 4. Supprimer les doublons (posts qui pourraient être à la fois d'amis et recommandés)
             $uniquePosts = [];
-            $postIds = [];
+            $postIds     = [];
 
             foreach ($allPosts as $post) {
-                if (!in_array($post->getId(), $postIds)) {
-                    $postIds[] = $post->getId();
+                if (!\in_array($post->getId(), $postIds, true)) {
+                    $postIds[]     = $post->getId();
                     $uniquePosts[] = $post;
                 }
             }
@@ -134,33 +134,33 @@ class PostController extends AbstractController
             });
 
             // 6. Limiter le nombre de posts à afficher
-            $posts = array_slice($uniquePosts, 0, $limit);
+            $posts = \array_slice($uniquePosts, 0, $limit);
 
             if ($request->isXmlHttpRequest()) {
                 return new JsonResponse([
                     'html' => $this->renderView('post/_feed.html.twig', [
-                        'posts' => $posts
+                        'posts' => $posts,
                     ]),
-                    'hasMore' => count($posts) === $limit
+                    'hasMore' => \count($posts) === $limit,
                 ]);
             }
 
             return $this->render('post/_feed.html.twig', [
-                'posts' => $posts,
+                'posts'       => $posts,
                 'currentPage' => $page,
-                'hasMore' => count($posts) === $limit
+                'hasMore'     => \count($posts) === $limit,
             ]);
         } catch (\Exception $e) {
             $this->logger->error('Erreur lors du chargement du feed: ' . $e->getMessage(), [
                 'exception' => $e,
-                'user_id' => $this->getUser()?->getId(),
-                'page' => $page ?? 1
+                'user_id'   => $this->getUser()?->getId(),
+                'page'      => $page ?? 1,
             ]);
 
             if ($request->isXmlHttpRequest()) {
                 return new JsonResponse([
                     'error' => 'Une erreur est survenue lors du chargement des publications',
-                    'html' => '<div class="alert alert-danger">Erreur lors du chargement des publications</div>'
+                    'html'  => '<div class="alert alert-danger">Erreur lors du chargement des publications</div>',
                 ], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
 
@@ -177,9 +177,9 @@ class PostController extends AbstractController
         $commentForm = $this->createForm(PostCommentType::class, $comment);
 
         return $this->render('post/show.html.twig', [
-            'post' => $post,
+            'post'        => $post,
             'commentForm' => $commentForm->createView(),
-            'comments' => $post->getComments(),
+            'comments'    => $post->getComments(),
         ]);
     }
 
@@ -192,19 +192,19 @@ class PostController extends AbstractController
             if (!$this->isCsrfTokenValid('edit' . $post->getId(), $token)) {
                 return $this->json([
                     'success' => false,
-                    'message' => 'Token CSRF invalide'
+                    'message' => 'Token CSRF invalide',
                 ], Response::HTTP_BAD_REQUEST);
             }
 
             try {
-                $content = $request->request->get('content');
-                $title = $request->request->get('title');
-                $imageFile = $request->files->get('image');
+                $content   = $request->request->get('content');
+                $title     = $request->request->get('title');
+                $imageFile = $request->files->get('images');
 
                 if (empty($content)) {
                     return $this->json([
                         'success' => false,
-                        'message' => 'Le contenu est obligatoire'
+                        'message' => 'Le contenu est obligatoire',
                     ], Response::HTTP_BAD_REQUEST);
                 }
 
@@ -217,12 +217,12 @@ class PostController extends AbstractController
 
                 return $this->json([
                     'success' => true,
-                    'message' => 'Post modifié avec succès'
+                    'message' => 'Post modifié avec succès',
                 ]);
             } catch (\Exception $e) {
                 return $this->json([
                     'success' => false,
-                    'message' => $e->getMessage()
+                    'message' => $e->getMessage(),
                 ], Response::HTTP_BAD_REQUEST);
             }
         }
@@ -236,10 +236,11 @@ class PostController extends AbstractController
                     $post,
                     $post->getContent(),
                     $post->getTitle(),
-                    $form->get('imageFile')->getData()
+                    $form->get('images')->getData()
                 );
 
                 $this->addFlash('success', 'Votre post a été modifié avec succès !');
+
                 return $this->redirectToRoute('app_post_show', ['id' => $post->getId()]);
             } catch (\Exception $e) {
                 $this->addFlash('error', $e->getMessage());
@@ -252,15 +253,6 @@ class PostController extends AbstractController
         ]);
     }
 
-    private function getFormErrors($form): array
-    {
-        $errors = [];
-        foreach ($form->getErrors(true) as $error) {
-            $errors[] = $error->getMessage();
-        }
-        return $errors;
-    }
-
     #[Route('/{id}/delete', name: 'app_post_delete', methods: ['POST'])]
     public function delete(Request $request, PostRepository $postRepository, int $id): Response
     {
@@ -270,10 +262,11 @@ class PostController extends AbstractController
             if ($request->isXmlHttpRequest()) {
                 return $this->json([
                     'success' => true,
-                    'message' => 'Post déjà supprimé.'
+                    'message' => 'Post déjà supprimé.',
                 ]);
             }
             $this->addFlash('info', 'Post déjà supprimé.');
+
             return $this->redirectToRoute('app_home');
         }
 
@@ -283,12 +276,14 @@ class PostController extends AbstractController
         if ($request->isXmlHttpRequest()) {
             try {
                 $this->postService->deletePost($post);
+
                 return $this->json(['success' => true]);
             } catch (\Exception $e) {
                 $this->logger->error('Erreur AJAX lors de la suppression du post: ' . $e->getMessage());
+
                 return $this->json([
                     'success' => false,
-                    'message' => 'Erreur lors de la suppression.'
+                    'message' => 'Erreur lors de la suppression.',
                 ], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
         }
@@ -296,6 +291,7 @@ class PostController extends AbstractController
         // Pour les requêtes non-AJAX (formulaire standard)
         if (!$this->isCsrfTokenValid('delete' . $post->getId(), $request->request->get('_token'))) {
             $this->addFlash('error', 'Token CSRF invalide.');
+
             return $this->redirectToRoute('app_home');
         }
 
@@ -310,39 +306,79 @@ class PostController extends AbstractController
         return $this->redirectToRoute('app_home');
     }
 
-    #[Route('/{id}/like', name: 'post_like', methods: ['POST'])]
+    #[Route('/{id}/like', name: 'post_like', methods: ['POST', 'GET'])]
     #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
     public function toggleLike(
         Post $post,
         Request $request
-    ): JsonResponse {
+    ): Response {
         $user = $this->getUser();
 
         if (!$user) {
+            if ($request->isMethod('GET')) {
+                // Rediriger vers la page de connexion
+                return $this->redirectToRoute('app_login');
+            }
             return $this->json([
                 'success' => false,
-                'message' => 'Vous devez être connecté pour liker un post.'
+                'message' => 'Vous devez être connecté pour liker un post.',
             ], Response::HTTP_UNAUTHORIZED);
         }
 
         try {
+            // Log pour le débogage
+            $this->logger->info('Requête like reçue', [
+                'method' => $request->getMethod(),
+                'userId' => $user->getId(),
+                'postId' => $post->getId(),
+                'headers' => $request->headers->all(),
+            ]);
+
+            // Si c'est une requête GET, rediriger vers la page du post
+            if ($request->isMethod('GET')) {
+                // On effectue quand même l'action de like
+                $this->interactionService->toggleLike($post, $user);
+                // Mettre à jour le compteur de likes
+                $post->updateLikesCounter();
+                $this->entityManager->flush();
+
+                // Rediriger vers la page du post
+                return $this->redirectToRoute('app_post_show', ['id' => $post->getId()]);
+            }
+
+            // Traitement pour les requêtes AJAX (POST)
             $isLiked = $this->interactionService->toggleLike($post, $user);
 
             // Mettre à jour le compteur de likes
             $post->updateLikesCounter();
             $this->entityManager->flush();
 
-            return $this->json([
-                'success' => true,
-                'isLiked' => $isLiked,
+            $response = [
+                'success'    => true,
+                'isLiked'    => $isLiked,
                 'likesCount' => $post->getLikesCount(),
-                'message' => $isLiked ? 'Post liké !' : 'Like retiré !'
-            ]);
+                'message'    => $isLiked ? 'Post liké !' : 'Like retiré !',
+            ];
+
+            $this->logger->info('Réponse like envoyée', $response);
+
+            return $this->json($response);
         } catch (\Exception $e) {
-            $this->logger->error('Erreur lors du like/unlike: ' . $e->getMessage());
+            $this->logger->error('Erreur lors du like/unlike: ' . $e->getMessage(), [
+                'exception' => $e,
+                'userId' => $user->getId(),
+                'postId' => $post->getId(),
+            ]);
+
+            if ($request->isMethod('GET')) {
+                // En cas d'erreur sur une requête GET, rediriger vers la page du post
+                return $this->redirectToRoute('app_post_show', ['id' => $post->getId()]);
+            }
+
             return $this->json([
                 'success' => false,
-                'message' => 'Une erreur est survenue lors du like.'
+                'message' => 'Une erreur est survenue lors du like.',
+                'error' => $this->getParameter('kernel.debug') ? $e->getMessage() : null,
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -356,14 +392,14 @@ class PostController extends AbstractController
             if ($originalPost->getOriginalPost() !== null) {
                 return $this->json([
                     'success' => false,
-                    'message' => 'Un post repartagé ne peut pas être repartagé.'
+                    'message' => 'Un post repartagé ne peut pas être repartagé.',
                 ], Response::HTTP_BAD_REQUEST);
             }
 
             // Récupérer le commentaire soit du JSON soit des paramètres de formulaire
             $comment = $request->request->get('share-comment', '');
             if ($request->getContentTypeFormat() === 'json') {
-                $data = json_decode($request->getContent(), true);
+                $data    = json_decode($request->getContent(), true);
                 $comment = $data['comment'] ?? $comment;
             }
 
@@ -374,7 +410,7 @@ class PostController extends AbstractController
 
             // Définir un titre basé sur le post original
             $originalTitle = $originalPost->getTitle();
-            $sharedPost->setTitle($originalTitle ? "Repost: {$originalTitle}" : "Repost");
+            $sharedPost->setTitle($originalTitle ? "Repost: {$originalTitle}" : 'Repost');
 
             // Définir le contenu du post
             $content = trim($comment) ?: $originalPost->getContent();
@@ -393,16 +429,17 @@ class PostController extends AbstractController
             $this->entityManager->flush();
 
             return $this->json([
-                'success' => true,
-                'message' => 'Post repartagé avec succès !',
-                'postId' => $sharedPost->getId(),
-                'sharesCount' => $originalPost->getReposts()->count()
+                'success'     => true,
+                'message'     => 'Post repartagé avec succès !',
+                'postId'      => $sharedPost->getId(),
+                'sharesCount' => $originalPost->getReposts()->count(),
             ]);
         } catch (\Exception $e) {
             $this->logger->error('Erreur lors du partage du post: ' . $e->getMessage());
+
             return $this->json([
                 'success' => false,
-                'message' => 'Une erreur est survenue lors du partage.'
+                'message' => 'Une erreur est survenue lors du partage.',
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -425,73 +462,19 @@ class PostController extends AbstractController
     ): Response {
         $hashtag = $hashtagRepository->findOneBy(['name' => $name]);
         if (!$hashtag) {
-            $this->addFlash('warning', sprintf('Le hashtag #%s n\'existe pas.', $name));
+            $this->addFlash('warning', \sprintf('Le hashtag #%s n\'existe pas.', $name));
+
             return $this->redirectToRoute('app_hashtags_trending');
         }
 
-        $posts = $postRepository->findByHashtag($hashtag);
+        $posts            = $postRepository->findByHashtag($hashtag);
         $trendingHashtags = $hashtagRepository->findTrending(10);
 
         return $this->render('post/hashtag.html.twig', [
-            'hashtag' => $hashtag,
-            'posts' => $posts,
+            'hashtag'          => $hashtag,
+            'posts'            => $posts,
             'trendingHashtags' => $trendingHashtags,
         ]);
-    }
-
-    private function validateContent(?string $content): ?array
-    {
-        if (empty($content)) {
-            return [
-                'error' => 'Le contenu est obligatoire',
-                'field' => 'content'
-            ];
-        }
-
-        if (strlen($content) > 5000) {
-            return [
-                'error' => 'Le contenu ne peut pas dépasser 5000 caractères',
-                'field' => 'content'
-            ];
-        }
-
-        return null;
-    }
-
-    private function validateTitle(?string $title): ?array
-    {
-        if ($title && strlen($title) > 255) {
-            return [
-                'error' => 'Le titre ne peut pas dépasser 255 caractères',
-                'field' => 'title'
-            ];
-        }
-
-        return null;
-    }
-
-    private function validateImage($imageFile): ?array
-    {
-        if (!$imageFile) {
-            return null;
-        }
-
-        $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif'];
-        if (!in_array($imageFile->getMimeType(), $allowedMimeTypes)) {
-            return [
-                'error' => 'Format d\'image non supporté. Utilisez JPG, PNG ou GIF',
-                'field' => 'imageFile'
-            ];
-        }
-
-        if ($imageFile->getSize() > 5 * 1024 * 1024) { // 5MB
-            return [
-                'error' => 'L\'image ne doit pas dépasser 5MB',
-                'field' => 'imageFile'
-            ];
-        }
-
-        return null;
     }
 
     #[Route('/quick', name: 'app_post_quick', methods: ['POST'])]
@@ -499,15 +482,15 @@ class PostController extends AbstractController
     public function quick(Request $request): JsonResponse
     {
         try {
-            $title = $request->request->get('title');
-            $content = $request->request->get('content');
+            $title     = $request->request->get('title');
+            $content   = $request->request->get('content');
             $imageFile = $request->files->get('imageFile');
 
             // Validation du contenu
             if (empty($content)) {
                 return $this->json([
                     'success' => false,
-                    'error' => 'Le contenu est obligatoire'
+                    'error'   => 'Le contenu est obligatoire',
                 ], Response::HTTP_BAD_REQUEST);
             }
 
@@ -521,26 +504,26 @@ class PostController extends AbstractController
 
             // Récupérer le HTML du post pour l'afficher sans rechargement
             $postHtml = $this->renderView('post/_post_card.html.twig', [
-                'post' => $post,
+                'post'            => $post,
                 'showCommentForm' => false,
                 'showFullContent' => true,
             ]);
 
             return $this->json([
-                'success' => true,
-                'postId' => $post->getId(),
-                'message' => 'Post créé avec succès!',
+                'success'  => true,
+                'postId'   => $post->getId(),
+                'message'  => 'Post créé avec succès!',
                 'postHtml' => $postHtml,
             ]);
         } catch (\Exception $e) {
             $this->logger->error('Erreur lors de la création rapide du post: ' . $e->getMessage(), [
                 'exception' => $e,
-                'user_id' => $this->getUser()?->getId()
+                'user_id'   => $this->getUser()?->getId(),
             ]);
 
             return $this->json([
                 'success' => false,
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage(),
             ], Response::HTTP_BAD_REQUEST);
         }
     }
@@ -567,14 +550,14 @@ class PostController extends AbstractController
             }
 
             // Validation du titre
-            $title = $request->request->get('title');
+            $title           = $request->request->get('title');
             $titleValidation = $this->validateTitle($title);
             if ($titleValidation !== null) {
                 return new JsonResponse($titleValidation, Response::HTTP_BAD_REQUEST);
             }
 
             // Validation de l'image
-            $imageFile = $request->files->get('imageFile');
+            $imageFile       = $request->files->get('imageFile');
             $imageValidation = $this->validateImage($imageFile);
             if ($imageValidation !== null) {
                 return new JsonResponse($imageValidation, Response::HTTP_BAD_REQUEST);
@@ -592,70 +575,13 @@ class PostController extends AbstractController
             return $this->prepareQuickCreateResponse($post);
         } catch (\Exception $e) {
             $this->logger->error('Erreur lors de la création du post: ' . $e->getMessage());
+
             return new JsonResponse([
-                'error' => 'Une erreur est survenue lors de la création de la publication',
-                'details' => $this->getParameter('kernel.debug') ? $e->getMessage() : null
+                'error'   => 'Une erreur est survenue lors de la création de la publication',
+                'details' => $this->getParameter('kernel.debug') ? $e->getMessage() : null,
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-
-    private function prepareQuickCreateResponse(Post $post): JsonResponse
-    {
-        $author = $this->getUser();
-        $authorPicture = $author->getProfilePicture()
-            ? '/uploads/profile_pictures/' . $author->getProfilePicture()
-            : null;
-
-        // Extraction des hashtags
-        $hashtags = [];
-        foreach ($post->getHashtags() as $hashtag) {
-            $hashtags[] = [
-                'name' => $hashtag->getName(),
-                'url' => $this->generateUrl('app_hashtag_show', ['name' => $hashtag->getName()])
-            ];
-        }
-
-        // Extraction des mentions
-        $mentions = [];
-        $userRepository = $this->entityManager->getRepository(User::class);
-        foreach ($post->getMentions() as $mentionId) {
-            $mentionedUser = $userRepository->find($mentionId);
-            if ($mentionedUser) {
-                $mentions[] = [
-                    'fullName' => $mentionedUser->getFullName(),
-                    'profileUrl' => $this->generateUrl('app_user_profile', ['userId' => $mentionedUser->getId()])
-                ];
-            }
-        }
-
-        return new JsonResponse([
-            'success' => true,
-            'message' => 'Publication créée avec succès',
-            'post' => [
-                'id' => $post->getId(),
-                'content' => $post->getContent(),
-                'title' => $post->getTitle(),
-                'image' => $post->getImage(),
-                'createdAt' => $post->getCreatedAt()->format('d/m/Y H:i'),
-                'author' => [
-                    'name' => $author->getFullName(),
-                    'picture' => $authorPicture,
-                    'id' => $author->getId()
-                ],
-                'hashtags' => $hashtags,
-                'mentions' => $mentions,
-                'stats' => [
-                    'likes' => 0,
-                    'comments' => 0,
-                    'shares' => 0
-                ]
-            ],
-            'token' => $this->renderView('csrf_token.html.twig', ['id' => $post->getId()]),
-            'html' => $this->renderView('post/_post_card.html.twig', ['post' => $post])
-        ], Response::HTTP_CREATED);
-    }
-
-
 
     #[Route('/comment/{id}/reply', name: 'app_post_comment_reply', methods: ['GET'])]
     #[IsGranted('IS_AUTHENTICATED_REMEMBERED')]
@@ -668,7 +594,7 @@ class PostController extends AbstractController
         $replyForm = $this->createForm(PostCommentType::class, $reply);
 
         return $this->render('post/reply.html.twig', [
-            'comment' => $comment,
+            'comment'   => $comment,
             'replyForm' => $replyForm->createView(),
         ]);
     }
@@ -690,11 +616,12 @@ class PostController extends AbstractController
             $this->entityManager->flush();
 
             $this->addFlash('success', 'Votre réponse a été publiée avec succès !');
+
             return $this->redirectToRoute('app_post_show', ['id' => $comment->getPost()->getId()]);
         }
 
         return $this->render('post/reply.html.twig', [
-            'comment' => $comment,
+            'comment'   => $comment,
             'replyForm' => $replyForm->createView(),
         ]);
     }
@@ -707,16 +634,16 @@ class PostController extends AbstractController
         if (!$user) {
             return $this->json([
                 'success' => false,
-                'message' => 'Vous devez être connecté pour synchroniser les likes.'
+                'message' => 'Vous devez être connecté pour synchroniser les likes.',
             ], Response::HTTP_UNAUTHORIZED);
         }
 
         try {
-            $data = json_decode($request->getContent(), true);
+            $data             = json_decode($request->getContent(), true);
             $clientLikedPosts = $data['likedPosts'] ?? [];
 
             // Récupérer les posts réellement likés par l'utilisateur
-            $postRepository = $this->entityManager->getRepository(Post::class);
+            $postRepository   = $this->entityManager->getRepository(Post::class);
             $serverLikedPosts = [];
 
             foreach ($clientLikedPosts as $postId) {
@@ -727,16 +654,141 @@ class PostController extends AbstractController
             }
 
             return $this->json([
-                'success' => true,
+                'success'          => true,
                 'serverLikedPosts' => $serverLikedPosts,
-                'message' => 'Synchronisation des likes terminée'
+                'message'          => 'Synchronisation des likes terminée',
             ]);
         } catch (\Exception $e) {
             $this->logger->error('Erreur lors de la synchronisation des likes: ' . $e->getMessage());
+
             return $this->json([
                 'success' => false,
-                'message' => 'Une erreur est survenue lors de la synchronisation'
+                'message' => 'Une erreur est survenue lors de la synchronisation',
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private function getFormErrors($form): array
+    {
+        $errors = [];
+        foreach ($form->getErrors(true) as $error) {
+            $errors[] = $error->getMessage();
+        }
+
+        return $errors;
+    }
+
+    private function validateContent(?string $content): ?array
+    {
+        if (empty($content)) {
+            return [
+                'error' => 'Le contenu est obligatoire',
+                'field' => 'content',
+            ];
+        }
+
+        if (\strlen($content) > 1000) {
+            return [
+                'error' => 'Le contenu ne peut pas dépasser 1000 caractères',
+                'field' => 'content',
+            ];
+        }
+
+        return null;
+    }
+
+    private function validateTitle(?string $title): ?array
+    {
+        if ($title && \strlen($title) > 255) {
+            return [
+                'error' => 'Le titre ne peut pas dépasser 255 caractères',
+                'field' => 'title',
+            ];
+        }
+
+        return null;
+    }
+
+    private function validateImage($imageFile): ?array
+    {
+        if (!$imageFile) {
+            return null;
+        }
+
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        if (!\in_array($imageFile->getMimeType(), $allowedTypes, true)) {
+            return [
+                'error' => 'Seuls les formats JPEG, PNG et GIF sont autorisés',
+                'field' => 'imageFile',
+            ];
+        }
+
+        if ($imageFile->getSize() > 5 * 1024 * 1024) { // 5MB
+            return [
+                'error' => 'L\'image ne peut pas dépasser 5MB',
+                'field' => 'imageFile',
+            ];
+        }
+
+        return null;
+    }
+
+    private function prepareQuickCreateResponse(Post $post): JsonResponse
+    {
+        $author        = $this->getUser();
+        $authorPicture = $author->getProfilePicture()
+            ? '/uploads/profile_pictures/' . $author->getProfilePicture()
+            : null;
+
+        // Extraction des hashtags
+        $hashtags     = [];
+        $postHashtags = $post->getHashtags();
+        if ($postHashtags !== null) {
+            foreach ($postHashtags as $hashtag) {
+                $hashtags[] = [
+                    'name' => $hashtag->getName(),
+                    'url'  => $this->generateUrl('app_hashtag_show', ['name' => $hashtag->getName()]),
+                ];
+            }
+        }
+
+        // Extraction des mentions
+        $mentions       = [];
+        $userRepository = $this->entityManager->getRepository(User::class);
+        foreach ($post->getMentions() as $mentionId) {
+            $mentionedUser = $userRepository->find($mentionId);
+            if ($mentionedUser) {
+                $mentions[] = [
+                    'fullName'   => $mentionedUser->getFullName(),
+                    'profileUrl' => $this->generateUrl('app_user_profile', ['userId' => $mentionedUser->getId()]),
+                ];
+            }
+        }
+
+        return new JsonResponse([
+            'success' => true,
+            'message' => 'Publication créée avec succès',
+            'post'    => [
+                'id'        => $post->getId(),
+                'content'   => $post->getContent(),
+                'title'     => $post->getTitle(),
+                'image'     => $post->getImage(),
+                'createdAt' => $post->getCreatedAt()->format('d/m/Y H:i'),
+                'author'    => [
+                    'name'    => $author->getFullName(),
+                    'picture' => $authorPicture,
+                    'id'      => $author->getId(),
+                ],
+                'hashtags' => $hashtags,
+                'mentions' => $mentions,
+                'stats'    => [
+                    'likes'    => 0,
+                    'comments' => 0,
+                    'shares'   => 0,
+                ],
+            ],
+            'token' => $this->renderView('csrf_token.html.twig', ['id' => $post->getId()]),
+            'html'  => $this->renderView('post/_post_card.html.twig', ['post' => $post]),
+        ], Response::HTTP_CREATED);
     }
 }

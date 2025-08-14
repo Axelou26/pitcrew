@@ -1,40 +1,46 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit\Service;
 
 use App\Entity\User;
+use App\Service\EmailService;
 use App\Service\UserService;
-use PHPUnit\Framework\TestCase;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class UserServiceTest extends TestCase
 {
     private UserService $userService;
-    private $passwordHasher;
-    private $entityManager;
-    private $mailer;
+    private UserPasswordHasherInterface $passwordHasher;
+    private EntityManagerInterface $entityManager;
+    private MailerInterface $mailer;
+    private EmailService $emailService;
+    private LoggerInterface $logger;
 
     protected function setUp(): void
     {
-        // Création des mocks
+        $this->entityManager  = $this->createMock(EntityManagerInterface::class);
         $this->passwordHasher = $this->createMock(UserPasswordHasherInterface::class);
-        $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        $this->mailer = $this->createMock(MailerInterface::class);
+        $this->emailService   = $this->createMock(EmailService::class);
+        $this->logger         = $this->createMock(LoggerInterface::class);
 
-        // Initialisation du service
         $this->userService = new UserService(
             $this->passwordHasher,
             $this->entityManager,
-            $this->mailer
+            $this->emailService,
+            $this->logger
         );
     }
 
     public function testCreateUser(): void
     {
         // Données de test
-        $email = 'test@example.com';
+        $email         = 'test@example.com';
         $plainPassword = 'password123';
 
         // Configuration des mocks
@@ -57,8 +63,8 @@ class UserServiceTest extends TestCase
 
         // Assertions
         $this->assertInstanceOf(User::class, $user);
-        $this->assertEquals($email, $user->getEmail());
-        $this->assertEquals('hashed_password', $user->getPassword());
+        $this->assertSame($email, $user->getEmail());
+        $this->assertSame('hashed_password', $user->getPassword());
         $this->assertContains('ROLE_USER', $user->getRoles());
         $this->assertFalse($user->isVerified());
     }
@@ -85,7 +91,7 @@ class UserServiceTest extends TestCase
     public function testChangePassword(): void
     {
         // Création d'un utilisateur de test
-        $user = new User();
+        $user        = new User();
         $newPassword = 'newPassword123';
 
         // Configuration des mocks
@@ -103,7 +109,7 @@ class UserServiceTest extends TestCase
         $this->userService->changePassword($user, $newPassword);
 
         // Assertions
-        $this->assertEquals('new_hashed_password', $user->getPassword());
+        $this->assertSame('new_hashed_password', $user->getPassword());
     }
 
     public function testSendVerificationEmail(): void
@@ -113,9 +119,10 @@ class UserServiceTest extends TestCase
         $user->setEmail('test@example.com');
 
         // Configuration des mocks
-        $this->mailer
+        $this->emailService
             ->expects($this->once())
-            ->method('send');
+            ->method('sendVerificationEmail')
+            ->with($user);
 
         // Exécution du test
         $this->userService->sendVerificationEmail($user);

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Form\Admin;
 
 use App\Entity\User;
@@ -19,55 +21,55 @@ class UserType extends AbstractType
     {
         $builder
             ->add('email', EmailType::class, [
-                'label' => 'Email'
+                'label' => 'Email',
             ])
             ->add('roles', ChoiceType::class, [
-                'label' => 'Rôles',
+                'label'   => 'Rôles',
                 'choices' => [
-                    'Recruteur' => 'ROLE_RECRUTEUR',
-                    'Postulant' => 'ROLE_POSTULANT',
+                    'Recruteur'      => 'ROLE_RECRUTEUR',
+                    'Postulant'      => 'ROLE_POSTULANT',
                     'Administrateur' => 'ROLE_ADMIN',
                 ],
                 'multiple' => true,
                 'expanded' => true,
             ])
             ->add('firstName', TextType::class, [
-                'label' => 'Prénom',
+                'label'    => 'Prénom',
                 'required' => false,
             ])
             ->add('lastName', TextType::class, [
-                'label' => 'Nom',
+                'label'    => 'Nom',
                 'required' => false,
             ])
             ->add('company', TextType::class, [
-                'label' => 'Entreprise',
+                'label'    => 'Entreprise',
                 'required' => false,
             ])
             ->add('jobTitle', TextType::class, [
-                'label' => 'Poste',
+                'label'    => 'Poste',
                 'required' => false,
             ])
             ->add('stripeCustomerId', TextType::class, [
-                'label' => 'ID Client Stripe',
+                'label'    => 'ID Client Stripe',
                 'required' => false,
             ])
             ->add('profilePictureFile', FileType::class, [
-                'label' => 'Photo de profil',
-                'required' => false,
-                'mapped' => false,
+                'label'       => 'Photo de profil',
+                'required'    => false,
+                'mapped'      => false,
                 'constraints' => [
                     new Image([
-                        'maxSize' => '5M',
+                        'maxSize'   => '5M',
                         'mimeTypes' => [
                             'image/jpeg',
                             'image/png',
                         ],
                         'mimeTypesMessage' => 'Veuillez télécharger une image valide (JPEG ou PNG)',
-                    ])
+                    ]),
                 ],
             ])
             ->add('bio', TextareaType::class, [
-                'label' => 'Biographie',
+                'label'    => 'Biographie',
                 'required' => false,
             ])
         ;

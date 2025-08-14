@@ -1,0 +1,174 @@
+name: Déploiement Développement
+
+on:
+  pull_request:
+    branches: [ dev ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environnement à déployer'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - preprod
+
+jobs:
+  test-and-quality:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: azerty-26
+          MYSQL_DATABASE: blog_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, xdebug
+          coverage: xdebug
+          tools: composer:v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm install
+
+      - name: Build assets
+        run: npm run build
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.composer/cache
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install Dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Code Quality Checks
+        run: |
+          vendor/bin/phpcs --standard=PSR12 src/
+          vendor/bin/phpmd src/ text .github/phpmd.xml
+
+      - name: Security Check
+        uses: symfonycorp/security-checker-action@v3
+
+      - name: Setup Test Database
+        run: |
+          php bin/console --env=test doctrine:database:drop --if-exists --force
+          php bin/console --env=test doctrine:database:create --if-not-exists
+          php bin/console --env=test doctrine:schema:create
+          php bin/console --env=test doctrine:fixtures:load --no-interaction
+        env:
+          DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog_test?serverVersion=8.0"
+          APP_ENV: test
+
+      - name: Run Tests with Coverage
+        run: |
+          XDEBUG_MODE=coverage php bin/phpunit --coverage-clover clover.xml --testdox
+        env:
+          DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog_test?serverVersion=8.0"
+          APP_ENV: test
+
+  deploy-dev:
+    needs: test-and-quality
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
+    runs-on: ubuntu-latest
+    environment: 
+      name: development
+      url: http://localhost:8888
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-dev-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-dev-
+
+    - name: Build and push Docker image (dev)
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_HUB_USERNAME }}/pitcrew:dev
+          ${{ secrets.DOCKER_HUB_USERNAME }}/pitcrew:dev-${{ github.sha }}
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+    - name: Move cache
+      run: |
+        rm -rf /tmp/.buildx-cache
+        mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+    - name: Deploy to Development Environment
+      run: |
+        # Créer le fichier .env.dev
+        cat > .env.dev << EOL
+        APP_ENV=dev
+        APP_SECRET=${{ secrets.APP_SECRET_DEV }}
+        DATABASE_URL="${{ secrets.DATABASE_URL_DEV }}"
+        EOL
+        
+        # Pull des images en parallèle
+        docker compose pull -q
+        
+        # Arrêter les conteneurs existants
+        docker compose down --remove-orphans
+        
+        # Démarrer les nouveaux conteneurs en arrière-plan
+        docker compose --env-file .env.dev up -d
+        
+        # Attendre que la base de données soit prête
+        docker compose exec -T database mysqladmin ping -h localhost -u root -pazerty-26 --wait=30
+
+        # Exécuter les migrations et le cache en parallèle
+        docker compose exec -T app php bin/console doctrine:migrations:migrate --no-interaction --env=dev &
+        docker compose exec -T app php bin/console cache:clear --env=dev &
+        wait
+
+    - name: Health Check (Dev)
+      run: |
+        curl --retry 10 --retry-delay 5 --retry-connrefused http://localhost:8888/health
+        curl --retry 10 --retry-delay 5 --retry-connrefused http://localhost:8888/api/health
+
+    - name: Notify Slack (Dev)
+      if: always()
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_MESSAGE: ${{ job.status == 'success' && '🟢 Déploiement DEV réussi' || '🔴 Échec du déploiement DEV' }}
+        SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
+        SLACK_FOOTER: "Commit: ${{ github.sha }} | PR: #${{ github.event.pull_request.number }}" 

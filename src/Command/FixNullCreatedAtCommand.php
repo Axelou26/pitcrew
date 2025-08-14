@@ -1,19 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
-use App\Entity\Post;
-use App\Entity\JobOffer;
 use App\Entity\Application;
 use App\Entity\JobApplication;
+use App\Entity\JobOffer;
 use App\Entity\Notification;
+use App\Entity\Post;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use DateTimeImmutable;
 
 #[AsCommand(
     name: 'app:fix-null-created-at',
@@ -32,7 +34,7 @@ class FixNullCreatedAtCommand extends Command
         $io = new SymfonyStyle($input, $output);
         $io->title('Correction des valeurs null pour createdAt');
 
-        $now = new DateTimeImmutable();
+        $now        = new DateTimeImmutable();
         $fixedCount = 0;
 
         // Corriger les Posts
@@ -97,11 +99,12 @@ class FixNullCreatedAtCommand extends Command
 
         if ($fixedCount === 0) {
             $io->info('Aucune entité avec createdAt null n\'a été trouvée.');
+
             return Command::SUCCESS;
         }
 
         $this->entityManager->flush();
-        $io->success(sprintf('%d entités ont été corrigées avec une date de création valide.', $fixedCount));
+        $io->success(\sprintf('%d entités ont été corrigées avec une date de création valide.', $fixedCount));
 
         return Command::SUCCESS;
     }

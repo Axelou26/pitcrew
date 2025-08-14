@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 use App\Entity\Hashtag;
@@ -20,6 +22,22 @@ class HashtagPostRelationManager
     {
         if ($hashtag->getPosts()->removeElement($post)) {
             $post->getHashtags()->removeElement($hashtag);
+        }
+    }
+
+    public function addHashtagToPost(Post $post, Hashtag $hashtag): void
+    {
+        $hashtags = $post->getHashtags();
+        if ($hashtags !== null) {
+            $hashtags->add($hashtag);
+        }
+    }
+
+    public function removeHashtagFromPost(Post $post, Hashtag $hashtag): void
+    {
+        $hashtags = $post->getHashtags();
+        if ($hashtags !== null) {
+            $hashtags->removeElement($hashtag);
         }
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit\Entity;
 
 use App\Entity\Notification;
@@ -15,15 +17,18 @@ class NotificationTest extends TestCase
     {
         parent::setUp();
         $this->notification = new Notification();
-        $this->user = new User();
+        $this->user         = new User();
         $this->user->setEmail('user@example.com');
     }
 
     public function testConstructor(): void
     {
-        $this->assertInstanceOf(\DateTimeImmutable::class, $this->notification->getCreatedAt());
-        $this->assertFalse($this->notification->isIsRead());
-        $this->assertEquals(Notification::TYPE_INFO, $this->notification->getType());
+        $notification = new Notification();
+        $notification->setType('info');
+
+        $this->assertInstanceOf(\DateTimeInterface::class, $notification->getCreatedAt());
+        $this->assertSame('info', $notification->getType());
+        $this->assertFalse($notification->isIsRead());
     }
 
     public function testUserAssociation(): void
@@ -34,16 +39,16 @@ class NotificationTest extends TestCase
 
     public function testTitle(): void
     {
-        $title = "Nouvelle notification";
+        $title = 'Nouvelle notification';
         $this->notification->setTitle($title);
-        $this->assertEquals($title, $this->notification->getTitle());
+        $this->assertSame($title, $this->notification->getTitle());
     }
 
     public function testMessage(): void
     {
-        $message = "Contenu de la notification";
+        $message = 'Contenu de la notification';
         $this->notification->setMessage($message);
-        $this->assertEquals($message, $this->notification->getMessage());
+        $this->assertSame($message, $this->notification->getMessage());
     }
 
     public function testIsRead(): void
@@ -57,9 +62,9 @@ class NotificationTest extends TestCase
 
     public function testLink(): void
     {
-        $link = "/posts/1";
+        $link = '/posts/1';
         $this->notification->setLink($link);
-        $this->assertEquals($link, $this->notification->getLink());
+        $this->assertSame($link, $this->notification->getLink());
 
         // Test avec une valeur null
         $this->notification->setLink(null);
@@ -75,25 +80,25 @@ class NotificationTest extends TestCase
             Notification::TYPE_COMMENT,
             Notification::TYPE_SHARE,
             Notification::TYPE_FRIEND_REQUEST,
-            Notification::TYPE_APPLICATION
+            Notification::TYPE_APPLICATION,
         ];
 
         foreach ($validTypes as $type) {
             $this->notification->setType($type);
-            $this->assertEquals($type, $this->notification->getType());
+            $this->assertSame($type, $this->notification->getType());
         }
     }
 
     public function testEntityTypeAndId(): void
     {
-        $entityType = "post";
-        $entityId = 1;
+        $entityType = 'post';
+        $entityId   = 1;
 
         $this->notification->setEntityType($entityType);
         $this->notification->setEntityId($entityId);
 
-        $this->assertEquals($entityType, $this->notification->getEntityType());
-        $this->assertEquals($entityId, $this->notification->getEntityId());
+        $this->assertSame($entityType, $this->notification->getEntityType());
+        $this->assertSame($entityId, $this->notification->getEntityId());
 
         // Test avec des valeurs null
         $this->notification->setEntityType(null);
@@ -107,7 +112,7 @@ class NotificationTest extends TestCase
     {
         $actorId = 1;
         $this->notification->setActorId($actorId);
-        $this->assertEquals($actorId, $this->notification->getActorId());
+        $this->assertSame($actorId, $this->notification->getActorId());
 
         // Test avec une valeur null
         $this->notification->setActorId(null);
@@ -118,12 +123,12 @@ class NotificationTest extends TestCase
     {
         $returnedNotification = $this->notification
             ->setUser($this->user)
-            ->setTitle("Titre")
-            ->setMessage("Message")
+            ->setTitle('Titre')
+            ->setMessage('Message')
             ->setIsRead(true)
-            ->setLink("/test")
+            ->setLink('/test')
             ->setType(Notification::TYPE_INFO)
-            ->setEntityType("post")
+            ->setEntityType('post')
             ->setEntityId(1)
             ->setActorId(2);
 

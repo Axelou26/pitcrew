@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Repository\RecruiterSubscriptionRepository;
-use App\Service\StripeService;
 use App\Service\EmailService;
-use DateTime;
+use App\Service\StripeService;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -31,10 +33,10 @@ class RenewSubscriptionsCommand extends Command
         EmailService $emailService
     ) {
         parent::__construct();
-        $this->subRepo = $subRepo;
+        $this->subRepo       = $subRepo;
         $this->entityManager = $entityManager;
         $this->stripeService = $stripeService;
-        $this->emailService = $emailService;
+        $this->emailService  = $emailService;
     }
 
     protected function configure(): void
@@ -55,8 +57,8 @@ class RenewSubscriptionsCommand extends Command
             $ioStyle->info('Recherche des abonnements à renouveler...');
 
             // Récupérer les abonnements qui expirent dans les prochaines 24 heures
-            $now = new DateTime();
-            $tomorrow = (new DateTime())->modify('+1 day');
+            $now      = new DateTimeImmutable();
+            $tomorrow = (new DateTimeImmutable())->modify('+1 day');
 
             $subsToRenew = $this->subRepo->createQueryBuilder('rs')
                 ->where('rs.isActive = :active')
@@ -71,13 +73,13 @@ class RenewSubscriptionsCommand extends Command
                 ->getQuery()
                 ->getResult();
 
-            $ioStyle->info(sprintf('Nombre d\'abonnements à renouveler : %d', count($subsToRenew)));
+            $ioStyle->info(\sprintf('Nombre d\'abonnements à renouveler : %d', \count($subsToRenew)));
 
             $renewedCount = 0;
-            $failedCount = 0;
+            $failedCount  = 0;
 
             foreach ($subsToRenew as $subscription) {
-                $ioStyle->text(sprintf(
+                $ioStyle->text(\sprintf(
                     'Traitement de l\'abonnement #%d pour %s',
                     $subscription->getId(),
                     $subscription->getRecruiter()->getFullName()
@@ -91,7 +93,7 @@ class RenewSubscriptionsCommand extends Command
                     }
 
                     // Pour les abonnements sans ID Stripe, nous devons les renouveler manuellement
-                    $user = $subscription->getRecruiter();
+                    $user    = $subscription->getRecruiter();
                     $subType = $subscription->getSubscription();
 
                     // Vérifier si le renouvellement automatique est possible
@@ -123,7 +125,7 @@ class RenewSubscriptionsCommand extends Command
                     $renewedCount++;
                     $ioStyle->text('<info>Abonnement renouvelé avec succès</info>');
                 } catch (\Exception $e) {
-                    $ioStyle->error(sprintf(
+                    $ioStyle->error(\sprintf(
                         'Erreur lors du renouvellement de l\'abonnement #%d : %s',
                         $subscription->getId(),
                         $e->getMessage()
@@ -132,7 +134,7 @@ class RenewSubscriptionsCommand extends Command
                 }
             }
 
-            $ioStyle->success(sprintf(
+            $ioStyle->success(\sprintf(
                 'Renouvellement terminé : %d abonnements renouvelés, %d échecs',
                 $renewedCount,
                 $failedCount
@@ -141,6 +143,7 @@ class RenewSubscriptionsCommand extends Command
             return Command::SUCCESS;
         } catch (\Exception $e) {
             $ioStyle->error('Une erreur est survenue : ' . $e->getMessage());
+
             return Command::FAILURE;
         }
     }

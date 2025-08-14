@@ -16,7 +16,7 @@ class FlashMessageService
     }
 
     /**
-     * Ajoute un message de succès
+     * Ajoute un message de succès.
      */
     public function addSuccess(string $message): void
     {
@@ -24,7 +24,7 @@ class FlashMessageService
     }
 
     /**
-     * Ajoute un message d'erreur
+     * Ajoute un message d'erreur.
      */
     public function addError(string $message): void
     {
@@ -32,7 +32,7 @@ class FlashMessageService
     }
 
     /**
-     * Ajoute un message d'avertissement
+     * Ajoute un message d'avertissement.
      */
     public function addWarning(string $message): void
     {
@@ -40,7 +40,7 @@ class FlashMessageService
     }
 
     /**
-     * Ajoute un message d'information
+     * Ajoute un message d'information.
      */
     public function addInfo(string $message): void
     {
@@ -48,7 +48,7 @@ class FlashMessageService
     }
 
     /**
-     * Messages prédéfinis pour les entités
+     * Messages prédéfinis pour les entités.
      */
     public function entityCreated(string $entityName): void
     {

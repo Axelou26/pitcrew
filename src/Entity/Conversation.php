@@ -1,24 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\ConversationRepository;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\Mapping as ORM;
-use DateTimeImmutable;
 
 #[ORM\Entity(repositoryClass: ConversationRepository::class)]
 class Conversation
 {
-    /**
-     * @SuppressWarnings("PHPMD.ShortVariable")
-     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\Column(type: 'integer')]
+    private int $id;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
@@ -34,8 +33,10 @@ class Conversation
     #[ORM\Column(nullable: true)]
     private ?DateTimeImmutable $updatedAt = null;
 
-    #[ORM\OneToMany(mappedBy: 'conversation', targetEntity: Message::class, orphanRemoval: true)]
-    #[ORM\OrderBy(['createdAt' => 'ASC'])]
+    /**
+     * @var Collection<int, Message>
+     */
+    #[ORM\OneToMany(mappedBy: 'conversation', targetEntity: Message::class, cascade: ['persist', 'remove'])]
     private Collection $messages;
 
     #[ORM\Column]
@@ -46,9 +47,9 @@ class Conversation
 
     public function __construct()
     {
-        $this->messages = new ArrayCollection();
-        $this->createdAt = new DateTimeImmutable();
-        $this->updatedAt = new DateTimeImmutable();
+        $this->messages      = new ArrayCollection();
+        $this->createdAt     = new DateTimeImmutable();
+        $this->updatedAt     = new DateTimeImmutable();
         $this->lastMessageAt = new DateTimeImmutable();
     }
 
@@ -65,6 +66,7 @@ class Conversation
     public function setParticipant1(?User $participant1): static
     {
         $this->participant1 = $participant1;
+
         return $this;
     }
 
@@ -76,6 +78,7 @@ class Conversation
     public function setParticipant2(?User $participant2): static
     {
         $this->participant2 = $participant2;
+
         return $this;
     }
 
@@ -87,6 +90,7 @@ class Conversation
     public function setCreatedAt(DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
+
         return $this;
     }
 
@@ -98,6 +102,7 @@ class Conversation
     public function setUpdatedAt(DateTimeImmutable $updatedAt): static
     {
         $this->updatedAt = $updatedAt;
+
         return $this;
     }
 
@@ -106,26 +111,43 @@ class Conversation
      */
     public function getMessages(): Collection
     {
+        // Ensure messages is never null
+        if (!isset($this->messages)) {
+            $this->messages = new ArrayCollection();
+        }
+
         return $this->messages;
     }
 
     public function addMessage(Message $message): static
     {
+        // Ensure messages is initialized
+        if (!isset($this->messages)) {
+            $this->messages = new ArrayCollection();
+        }
+
         if (!$this->messages->contains($message)) {
             $this->messages->add($message);
             $message->setConversation($this);
             $this->lastMessageAt = new DateTimeImmutable();
         }
+
         return $this;
     }
 
     public function removeMessage(Message $message): static
     {
+        // Ensure messages is initialized
+        if (!isset($this->messages)) {
+            $this->messages = new ArrayCollection();
+        }
+
         if ($this->messages->removeElement($message)) {
             if ($message->getConversation() === $this) {
                 $message->setConversation(null);
             }
         }
+
         return $this;
     }
 
@@ -137,6 +159,7 @@ class Conversation
     public function setLastMessageAt(DateTimeImmutable $lastMessageAt): static
     {
         $this->lastMessageAt = $lastMessageAt;
+
         return $this;
     }
 
@@ -148,6 +171,20 @@ class Conversation
     public function setJobApplication(?JobApplication $jobApplication): static
     {
         $this->jobApplication = $jobApplication;
+
+        return $this;
+    }
+
+    // Méthodes manquantes ajoutées pour PHPStan
+
+    public function addParticipant(User $participant): static
+    {
+        if ($this->participant1 === null) {
+            $this->participant1 = $participant;
+        } elseif ($this->participant2 === null) {
+            $this->participant2 = $participant;
+        }
+
         return $this;
     }
 
@@ -159,25 +196,32 @@ class Conversation
         if ($this->participant2 === $user) {
             return $this->participant1;
         }
+
         return null;
     }
 
     public function hasUnreadMessages(User $user): bool
     {
+        if (!isset($this->messages)) {
+            return false;
+        }
+
         foreach ($this->messages as $message) {
             if ($message->getRecipient() === $user && !$message->isRead()) {
                 return true;
             }
         }
+
         return false;
     }
 
     /**
-     * Get the last message in the conversation
+     * Get the last message in the conversation.
      */
     public function getLastMessage(): ?Message
     {
-        if ($this->messages->isEmpty()) {
+        // Ensure messages is initialized
+        if (!isset($this->messages) || $this->messages->isEmpty()) {
             return null;
         }
 

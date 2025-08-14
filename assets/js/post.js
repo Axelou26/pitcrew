@@ -58,127 +58,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Gestion des likes
-    document.querySelectorAll('.like-button').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            const postId = this.dataset.postId;
-            if (!postId) {
-                console.error('Erreur: postId indéfini ou vide sur le bouton like.', this);
-                alert('Erreur technique: impossible de liker ce post.');
-                return;
-            }
-            
-            fetch(`/post/${postId}/like`, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'same-origin'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Mettre à jour la persistance locale
-                    if (data.isLiked) {
-                        addLikedPost(postId);
-                    } else {
-                        removeLikedPost(postId);
-                    }
-                    
-                    // Mettre à jour l'apparence du bouton
-                    updateLikeButtonAppearance(this, data.isLiked);
-                    
-                    // Mise à jour du compteur de likes
-                    const likesSummary = this.closest('.post-card')?.querySelector('.likes-summary');
-                    if (likesSummary && data.likesCount !== undefined) {
-                        if (data.likesCount > 0) {
-                            likesSummary.innerHTML = `<span class="likes-count me-1">${data.likesCount}</span> j'aime${data.likesCount > 1 ? 's' : ''}`;
-                        } else {
-                            likesSummary.innerHTML = '';
-                        }
-                    }
-                } else {
-                    alert(data.message || 'Une erreur est survenue');
-                }
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                alert('Une erreur est survenue');
-            });
-        });
-    });
+    // Gestion des likes déplacée dans like-fix.js
+    console.log('La gestion des likes est maintenant dans le module like-fix.js');
 
-    // Gestionnaire des commentaires
-    document.querySelectorAll('.comment-toggle-button').forEach(button => {
-        button.addEventListener('click', function() {
-            const postId = this.dataset.postId;
-            const commentsSection = document.querySelector(`#comments-${postId}`);
-            commentsSection.style.display = commentsSection.style.display === 'none' ? 'block' : 'none';
-        });
-    });
-
-    document.querySelectorAll('.comment-form').forEach(form => {
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const postId = this.dataset.postId;
-            if (!postId) {
-                console.error('Erreur: postId indéfini ou vide pour le commentaire.', this);
-                alert('Erreur technique: impossible d\'ajouter un commentaire.');
-                return;
-            }
-            const input = this.querySelector('.comment-input');
-            const content = input.value.trim();
-
-            if (!content) return;
-
-            try {
-                const response = await fetch(`/post/${postId}/comment/add`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({ content })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.success) {
-                        const commentsSection = document.querySelector(`#comments-${postId} .comments-list`);
-                        const placeholder = commentsSection.querySelector('.comments-placeholder');
-                        
-                        if (placeholder) {
-                            placeholder.classList.add('d-none');
-                        }
-                        
-                        // Ajouter le nouveau commentaire
-                        if (data.html) {
-                            commentsSection.insertAdjacentHTML('beforeend', data.html);
-                        }
-                        
-                        // Mettre à jour le compteur de commentaires
-                        const commentCount = document.querySelector(`.post-card[data-post-id="${postId}"] .comments-count`);
-                        if (commentCount && data.commentsCount !== undefined) {
-                            commentCount.textContent = `${data.commentsCount} commentaire${data.commentsCount > 1 ? 's' : ''}`;
-                        }
-                        
-                        // Vider le champ de saisie
-                        input.value = '';
-                    } else {
-                        throw new Error(data.error || 'Une erreur est survenue');
-                    }
-                } else {
-                    throw new Error('Erreur lors de l\'ajout du commentaire');
-                }
-            } catch (error) {
-                console.error('Erreur lors de l\'ajout du commentaire:', error);
-                showNotification('Une erreur est survenue', 'danger');
-            }
-        });
-    });
-
+    // Gestionnaire des commentaires - SUPPRIMÉ pour éviter les conflits avec feed.js
+    // Les commentaires sont maintenant gérés exclusivement par feed.js
+    
     // Gestionnaire de partage
     document.querySelectorAll('.share-submit').forEach(button => {
         button.addEventListener('click', async function(e) {
@@ -233,8 +118,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Gestionnaire de suppression de posts
     document.querySelectorAll('.delete-post').forEach(button => {
+        // Supprimer l'attribut href pour éviter la redirection
+        if (button.hasAttribute('href')) {
+            button.setAttribute('href', 'javascript:void(0)');
+        }
+        
         button.addEventListener('click', function(e) {
             e.preventDefault();
+            e.stopPropagation();
+            console.log('Clic sur bouton de suppression détecté');
+            
             const postId = this.dataset.postId;
             if (!postId) {
                 console.error('Erreur: postId indéfini ou vide pour la suppression.', this);
@@ -244,6 +137,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const token = this.dataset.token;
 
             if (confirm('Êtes-vous sûr de vouloir supprimer cette publication ?')) {
+                console.log('Suppression en cours du post', postId);
                 fetch(`/post/${postId}/delete`, {
                     method: 'POST',
                     headers: {
@@ -255,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        const postCard = document.querySelector(`[data-post-id="${postId}"]`);
+                        const postCard = document.querySelector(`.post-card[data-post-id="${postId}"]`);
                         if (postCard) {
                             postCard.remove();
                         }
@@ -272,24 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Fonction pour afficher les notifications
-    function showNotification(message, type = 'info') {
-        // Créer une notification Bootstrap
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-        alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        document.body.appendChild(alertDiv);
-        
-        // Supprimer automatiquement après 5 secondes
-        setTimeout(() => {
-            if (alertDiv.parentNode) {
-                alertDiv.remove();
-            }
-        }, 5000);
-    }
-}); 
+    // Fonction showNotification supprimée - elle est déjà définie dans feed.js
+});
+
+export default {}; 

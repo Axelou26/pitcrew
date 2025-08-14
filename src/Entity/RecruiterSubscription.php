@@ -1,55 +1,53 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
-use App\Entity\Recruiter;
 use App\Repository\RecruiterSubscriptionRepository;
+use DateTimeImmutable;
+use DateTimeInterface;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use DateTime;
-use DateTimeInterface;
 
 #[ORM\Entity(repositoryClass: RecruiterSubscriptionRepository::class)]
 class RecruiterSubscription
 {
-    /**
-     * @SuppressWarnings("PHPMD.ShortVariable")
-     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\Column(type: Types::INTEGER)]
+    private int $id;
 
-    #[ORM\ManyToOne(inversedBy: 'subscriptions')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\ManyToOne(targetEntity: Recruiter::class)]
+    #[ORM\JoinColumn(nullable: true)]
     private ?Recruiter $recruiter = null;
 
-    #[ORM\ManyToOne(inversedBy: 'recruiterSubscriptions', cascade: ['persist'])]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\ManyToOne(targetEntity: Subscription::class)]
+    #[ORM\JoinColumn(nullable: true)]
     private ?Subscription $subscription = null;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?DateTimeInterface $startDate = null;
 
-    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?DateTimeInterface $endDate = null;
 
-    #[ORM\Column]
-    private ?bool $isActive = null;
+    #[ORM\Column(type: 'boolean')]
+    private bool $isActive = true;
 
-    #[ORM\Column(length: 50)]
-    private ?string $paymentStatus = null;
+    #[ORM\Column(type: 'string', length: 255)]
+    private string $paymentStatus = 'pending';
 
-    #[ORM\Column(nullable: true)]
+    #[ORM\Column(type: Types::INTEGER, nullable: true)]
     private ?int $remainingJobOffers = null;
 
-    #[ORM\Column]
-    private ?bool $cancelled = false;
+    #[ORM\Column(type: Types::BOOLEAN)]
+    private bool $cancelled = false;
 
-    #[ORM\Column(type: 'boolean', options: ['default' => true])]
+    #[ORM\Column(type: Types::BOOLEAN)]
     private bool $autoRenew = true;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
     private ?string $stripeSubscriptionId = null;
 
     public function getId(): ?int
@@ -105,10 +103,7 @@ class RecruiterSubscription
         return $this;
     }
 
-    /**
-     * @return bool|null
-     */
-    public function getIsActive(): ?bool
+    public function getIsActive(): bool
     {
         return $this->isActive;
     }
@@ -120,12 +115,12 @@ class RecruiterSubscription
         return $this;
     }
 
-    public function getPaymentStatus(): ?string
+    public function getPaymentStatus(): string
     {
         return $this->paymentStatus;
     }
 
-    public function setPaymentStatus(string $paymentStatus): static
+    public function setPaymentStatus(string $paymentStatus): self
     {
         $this->paymentStatus = $paymentStatus;
 
@@ -157,15 +152,15 @@ class RecruiterSubscription
     }
 
     /**
-     * Vérifie si l'abonnement est toujours valide
+     * Vérifie si l'abonnement est toujours valide.
      */
     public function isValid(): bool
     {
-        return $this->isActive && $this->endDate > new DateTime();
+        return $this->isActive && $this->endDate > new DateTimeImmutable();
     }
 
     /**
-     * Vérifie si l'abonnement expire bientôt (dans les 7 jours)
+     * Vérifie si l'abonnement expire bientôt (dans les 7 jours).
      */
     public function isExpiringSoon(): bool
     {
@@ -173,14 +168,14 @@ class RecruiterSubscription
             return false;
         }
 
-        $now = new DateTime();
+        $now  = new DateTimeImmutable();
         $diff = $this->endDate->diff($now);
 
         return $diff->days <= 7 && $this->endDate > $now;
     }
 
     /**
-     * Décrémente le nombre d'offres d'emploi restantes
+     * Décrémente le nombre d'offres d'emploi restantes.
      */
     public function decrementRemainingJobOffers(): static
     {
@@ -189,6 +184,11 @@ class RecruiterSubscription
         }
 
         return $this;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->isActive;
     }
 
     public function isAutoRenew(): bool

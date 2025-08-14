@@ -1,16 +1,16 @@
 <?php
 
-namespace App\Form\DTO;
+declare(strict_types=1);
 
-use DateTimeInterface;
+namespace App\Form\DTO;
 
 class InterviewDTO
 {
-    private ?string $title = null;
-    private ?DateTimeInterface $scheduledAt = null;
-    private ?string $notes = null;
-    private ?int $applicantId = null;
-    private ?int $jobOfferId = null;
+    private ?string $title                   = null;
+    private ?\DateTimeInterface $scheduledAt = null;
+    private ?string $notes                   = null;
+    private ?int $applicantId                = null;
+    private ?int $jobOfferId                 = null;
 
     public function getTitle(): ?string
     {
@@ -20,17 +20,19 @@ class InterviewDTO
     public function setTitle(?string $title): self
     {
         $this->title = $title;
+
         return $this;
     }
 
-    public function getScheduledAt(): ?DateTimeInterface
+    public function getScheduledAt(): ?\DateTimeInterface
     {
         return $this->scheduledAt;
     }
 
-    public function setScheduledAt(?DateTimeInterface $scheduledAt): self
+    public function setScheduledAt(?\DateTimeInterface $scheduledAt): self
     {
         $this->scheduledAt = $scheduledAt;
+
         return $this;
     }
 
@@ -42,6 +44,7 @@ class InterviewDTO
     public function setNotes(?string $notes): self
     {
         $this->notes = $notes;
+
         return $this;
     }
 
@@ -53,6 +56,7 @@ class InterviewDTO
     public function setApplicantId(?int $applicantId): self
     {
         $this->applicantId = $applicantId;
+
         return $this;
     }
 
@@ -64,6 +68,7 @@ class InterviewDTO
     public function setJobOfferId(?int $jobOfferId): self
     {
         $this->jobOfferId = $jobOfferId;
+
         return $this;
     }
 }

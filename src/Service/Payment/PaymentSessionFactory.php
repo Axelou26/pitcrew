@@ -10,9 +10,9 @@ class PaymentSessionFactory
 {
     public function createOfflineSession(string $successUrl): stdClass
     {
-        $session = new stdClass();
-        $session->id = 'offline_' . uniqid();
-        $session->url = $successUrl;
+        $session                     = new stdClass();
+        $session->id                 = 'offline_' . uniqid();
+        $session->url                = $successUrl;
         $session->is_offline_session = true;
 
         return $session;

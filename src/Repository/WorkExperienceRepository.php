@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
 use App\Entity\WorkExperience;
@@ -9,10 +11,18 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<WorkExperience>
  *
- * @method WorkExperience|null find($id, $lockMode = null, $lockVersion = null)
- * @method WorkExperience|null findOneBy(array $criteria, array $orderBy = null)
+ * @method null|WorkExperience find($id, $lockMode = null, $lockVersion = null)
+ * @method null|WorkExperience findOneBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null
+ * )
  * @method WorkExperience[]    findAll()
- * @method WorkExperience[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method WorkExperience[]    findBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null,
+ *     int $limit = null,
+ *     int $offset = null
+ * )
  */
 class WorkExperienceRepository extends ServiceEntityRepository
 {

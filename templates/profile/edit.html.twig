@@ -5,210 +5,441 @@
 {% block stylesheets %}
     {{ parent() }}
     <style>
-        .profile-edit-container {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            min-height: 100vh;
+        .profile-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
             padding: 2rem 0;
+            border-radius: 0 0 20px 20px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
-        .profile-card {
+        
+        .profile-picture-container {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+        }
+        
+        .profile-picture {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        
+        .profile-picture-placeholder {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background-color: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 4px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        
+        .change-photo-btn {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .change-photo-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .profile-section {
             background: white;
             border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.05);
-            border: none;
-        }
-        .profile-card .card-body {
-            padding: 2rem;
-        }
-        .profile-section {
-            background: #f8f9fa;
-            border-radius: 10px;
             padding: 1.5rem;
             margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
         }
+        
         .section-title {
-            color: #2c3e50;
-            font-size: 1.2rem;
-            font-weight: 600;
+            font-weight: 700;
+            color: var(--primary-color);
             margin-bottom: 1.5rem;
-            border-bottom: 2px solid #e9ecef;
-            padding-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
         }
-        .form-control, .form-select {
-            border-radius: 8px;
-            border: 1px solid #e0e0e0;
-            padding: 0.75rem 1rem;
-            transition: all 0.3s ease;
+        
+        .section-title i {
+            margin-right: 0.75rem;
+            font-size: 1.2rem;
         }
-        .form-control:focus, .form-select:focus {
-            box-shadow: 0 0 0 0.2rem rgba(44, 62, 80, 0.15);
-            border-color: #2c3e50;
-        }
+        
         .collection-item {
             position: relative;
-            padding-right: 2.5rem;
-            background: white;
+            background: #f8f9fa;
             border-radius: 8px;
-            padding: 0.5rem 1rem;
-            margin-bottom: 0.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.75rem;
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
         }
+        
+        .collection-item:hover {
+            background: #f0f0f0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
         .collection-item .remove-item {
             position: absolute;
-            right: 1rem;
+            right: 0.75rem;
             top: 50%;
             transform: translateY(-50%);
             cursor: pointer;
-            opacity: 0.7;
-            transition: opacity 0.3s ease;
+            transition: all 0.2s ease;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
         }
+        
         .collection-item .remove-item:hover {
-            opacity: 1;
+            background-color: rgba(220,53,69,0.1);
         }
-        .btn-primary {
-            background: #2c3e50;
-            border: none;
-            padding: 0.75rem 1.5rem;
+        
+        .btn-add-item {
             border-radius: 8px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        .btn-primary:hover {
-            background: #34495e;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .btn-outline-secondary {
-            border-radius: 8px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 500;
-        }
-        .btn-outline-primary {
-            border-radius: 6px;
             padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            background-color: rgba(var(--bs-primary-rgb), 0.1);
+            color: var(--bs-primary);
+            border: 1px solid rgba(var(--bs-primary-rgb), 0.2);
         }
+        
+        .btn-add-item:hover {
+            background-color: rgba(var(--bs-primary-rgb), 0.2);
+            border-color: rgba(var(--bs-primary-rgb), 0.3);
+            color: var(--bs-primary);
+        }
+        
         .profile-picture-preview {
             width: 150px;
             height: 150px;
             border-radius: 50%;
             object-fit: cover;
-            margin: 1rem auto;
-            display: block;
-            border: 3px solid #e9ecef;
-        }
-        .custom-file-upload {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
-            background: #f8f9fa;
-            border-radius: 6px;
-            border: 1px dashed #dee2e6;
-            transition: all 0.3s ease;
-        }
-        .custom-file-upload:hover {
-            background: #e9ecef;
-            border-color: #ced4da;
+            border: 4px solid white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
     </style>
 {% endblock %}
 
 {% block body %}
-<div class="profile-edit-container">
+<!-- Profile Header -->
+<div class="profile-header">
     <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="profile-card card">
-                    <div class="card-body">
-                        <h1 class="text-center mb-4">Modifier mon profil</h1>
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">Modifier mon profil</h1>
+                <p class="lead mb-0">Complétez votre profil pour augmenter vos chances de trouver les meilleures opportunités</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{{ path('app_profile_index') }}" class="btn btn-light rounded-pill px-4">
+                    <i class="bi bi-arrow-left me-2"></i>Retour au profil
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 
-                        {{ form_start(form) }}
-                        
-                        {# Section Informations Personnelles #}
-                        <div class="profile-section">
-                            <h2 class="section-title">Informations Personnelles</h2>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    {{ form_row(form.firstName, {'attr': {'class': 'form-control'}}) }}
+<div class="container pb-5">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3">
+            <div class="profile-picture-container mb-4">
+                {% if user.profilePicture %}
+                    <img src="{{ asset('uploads/profile_pictures/' ~ user.profilePicture) }}" 
+                        class="profile-picture" 
+                        id="profile-picture-preview"
+                        alt="{{ user.fullName }}">
+                {% else %}
+                    <div class="profile-picture-placeholder" id="profile-picture-placeholder">
+                        <i class="bi bi-person-fill text-white fs-1"></i>
+                    </div>
+                {% endif %}
+                
+                <label for="profile-picture-input" class="change-photo-btn">
+                    <i class="bi bi-camera text-white"></i>
+                </label>
+            </div>
+            
+            <div class="card shadow-sm border-0 rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h4 class="fw-bold mb-3">{{ user.fullName }}</h4>
+                    <p class="text-muted mb-0">
+                        {% if user.jobTitle %}
+                            {{ user.jobTitle }}
+                        {% else %}
+                            Complétez votre profil
+                        {% endif %}
+                    </p>
+                    
+                    <hr class="my-3">
+                    
+                    <div class="progress mb-3" style="height: 10px;">
+                        {% set profileCompletion = 25 %}
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ profileCompletion }}%" 
+                            aria-valuenow="{{ profileCompletion }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <p class="text-center small text-muted mb-0">Profil complété à {{ profileCompletion }}%</p>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm border-0 rounded-4 p-0">
+                <div class="list-group list-group-flush rounded-4">
+                    <a href="#personal-info" class="list-group-item list-group-item-action px-4 py-3 border-0 active">
+                        <i class="bi bi-person-badge me-2"></i>
+                        Informations personnelles
+                    </a>
+                    <a href="#professional-info" class="list-group-item list-group-item-action px-4 py-3 border-0">
+                        <i class="bi bi-briefcase me-2"></i>
+                        Expériences professionnelles
+                    </a>
+                    <a href="#education-info" class="list-group-item list-group-item-action px-4 py-3 border-0">
+                        <i class="bi bi-mortarboard me-2"></i>
+                        Formation
+                    </a>
+                    <a href="#skills-info" class="list-group-item list-group-item-action px-4 py-3 border-0">
+                        <i class="bi bi-gear me-2"></i>
+                        Compétences
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            {{ form_start(form, {'attr': {'id': 'profile-form', 'class': 'needs-validation', 'novalidate': 'novalidate'}}) }}
+            
+            {% if form.profilePictureFile is defined %}
+                {{ form_widget(form.profilePictureFile, {'attr': {'class': 'form-control-file d-none', 'id': 'profile-picture-input'}}) }}
+            {% endif %}
+            
+            <!-- Personal Information -->
+            <div class="profile-section" id="personal-info">
+                <h2 class="section-title">
+                    <i class="bi bi-person-badge"></i>
+                    Informations personnelles
+                </h2>
+                
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        {{ form_row(form.firstName, {'attr': {'class': 'form-control', 'placeholder': 'Votre prénom'}}) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form_row(form.lastName, {'attr': {'class': 'form-control', 'placeholder': 'Votre nom'}}) }}
+                    </div>
+                    
+                    {% if form.email is defined %}
+                    <div class="col-md-6">
+                        {{ form_row(form.email, {'attr': {'class': 'form-control', 'placeholder': 'Votre adresse email'}}) }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if form.phone is defined %}
+                    <div class="col-md-6">
+                        {{ form_row(form.phone, {'attr': {'class': 'form-control', 'placeholder': 'Votre numéro de téléphone'}}) }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if form.jobTitle is defined %}
+                    <div class="col-12">
+                        {{ form_row(form.jobTitle, {'attr': {'class': 'form-control', 'placeholder': 'Ex: Développeur Full Stack, Designer UX/UI...'}}) }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if form.bio is defined %}
+                    <div class="col-12">
+                        {{ form_row(form.bio, {'attr': {'class': 'form-control', 'rows': '4', 'placeholder': 'Parlez de vous en quelques lignes...'}}) }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Professional Experience Section -->
+            <div class="profile-section" id="professional-info">
+                <h2 class="section-title">
+                    <i class="bi bi-briefcase"></i>
+                    Expériences professionnelles
+                </h2>
+                
+                {% if user.isRecruiter %}
+                    {{ form_row(form.companyName, {'attr': {'class': 'form-control mb-3'}}) }}
+                    {{ form_row(form.companyDescription, {'attr': {'class': 'form-control mb-3', 'rows': '4'}}) }}
+                {% endif %}
+
+                {% if user.isPostulant and form.workExperience is defined %}
+                    <div class="mb-4">
+                        <div class="work-experience-collection" 
+                             data-prototype="{{ form_widget(form.workExperience.vars.prototype)|e('html_attr') }}">
+                            {% for experience in form.workExperience %}
+                                <div class="collection-item mb-3">
+                                    {{ form_widget(experience, {'attr': {'class': 'form-control'}}) }}
+                                    <span class="remove-item text-danger">
+                                        <i class="bi bi-x-circle-fill"></i>
+                                    </span>
                                 </div>
-                                <div class="col-md-6">
-                                    {{ form_row(form.lastName, {'attr': {'class': 'form-control'}}) }}
+                            {% endfor %}
+                        </div>
+                        <button type="button" class="btn btn-add-item mt-2" id="add-work-experience">
+                            <i class="bi bi-plus-lg me-1"></i>Ajouter une expérience professionnelle
+                        </button>
+                        
+                        <div class="alert alert-info mt-3">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i class="bi bi-info-circle-fill fs-3"></i>
+                                </div>
+                                <div>
+                                    <h6 class="alert-heading">Conseils pour les expériences</h6>
+                                    <p class="mb-0 small">Pour chaque expérience, indiquez le titre du poste, l'entreprise, la période et une description de vos responsabilités et réalisations.</p>
                                 </div>
                             </div>
-                            
-                            {% if form.profilePictureFile is defined %}
-                                <div class="text-center mt-4">
-                                    {% if user.profilePicture %}
-                                        <img src="{{ asset('uploads/profile_pictures/' ~ user.profilePicture) }}" alt="Photo de profil" class="profile-picture-preview">
-                                    {% endif %}
-                                    <div class="mt-3">
-                                        {{ form_widget(form.profilePictureFile, {'attr': {'class': 'form-control-file d-none', 'id': 'profile-picture-input'}}) }}
-                                        <label for="profile-picture-input" class="custom-file-upload">
-                                            <i class="bi bi-camera me-2"></i>Changer la photo de profil
-                                        </label>
                                     </div>
                                 </div>
                             {% endif %}
                         </div>
 
-                        {# Section Spécifique au type d'utilisateur #}
-                        <div class="profile-section">
-                            <h2 class="section-title">{% if user.isRecruiter %}Informations Professionnelles{% else %}Parcours Professionnel{% endif %}</h2>
-                            
-                            {% if user.isRecruiter %}
-                                {{ form_row(form.company, {'attr': {'class': 'form-control mb-3'}}) }}
-                            {% else %}
-                                {{ form_row(form.jobTitle, {'attr': {'class': 'form-control mb-3'}}) }}
+            <!-- Education Section -->
+            <div class="profile-section" id="education-info">
+                <h2 class="section-title">
+                    <i class="bi bi-mortarboard"></i>
+                    Formation
+                </h2>
+                
+                {% if user.isPostulant and form.educationHistory is defined %}
+                    <div class="mb-4">
+                        <div class="education-history-collection" 
+                             data-prototype="{{ form_widget(form.educationHistory.vars.prototype)|e('html_attr') }}">
+                            {% for education in form.educationHistory %}
+                                <div class="collection-item mb-3">
+                                    {{ form_widget(education, {'attr': {'class': 'form-control'}}) }}
+                                    <span class="remove-item text-danger">
+                                        <i class="bi bi-x-circle-fill"></i>
+                                    </span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <button type="button" class="btn btn-add-item mt-2" id="add-education">
+                            <i class="bi bi-plus-lg me-1"></i>Ajouter une formation
+                        </button>
+                        
+                        <div class="alert alert-info mt-3">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i class="bi bi-info-circle-fill fs-3"></i>
+                                </div>
+                                <div>
+                                    <h6 class="alert-heading">Conseils pour les formations</h6>
+                                    <p class="mb-0 small">Indiquez le diplôme obtenu, l'établissement, l'année d'obtention et éventuellement une spécialisation ou des informations complémentaires.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                             {% endif %}
-
-                            {{ form_row(form.bio, {'attr': {'class': 'form-control mb-3', 'rows': '4'}}) }}
+            </div>
+                                
+            <!-- Skills Section -->
+            <div class="profile-section" id="skills-info">
+                <h2 class="section-title">
+                    <i class="bi bi-gear"></i>
+                    Compétences
+                </h2>
 
                             {% if user.isPostulant %}
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        {{ form_row(form.experience, {'attr': {'class': 'form-control'}}) }}
+                    {% if form.technicalSkills is defined %}
+                    <div class="mb-4">
+                        <h5 class="fw-bold text-primary mb-3">Compétences techniques</h5>
+                        <div class="technical-skills-collection">
+                            <div class="row g-2">
+                                {% for skill in form.technicalSkills %}
+                                    <div class="col-md-4 col-sm-6">
+                                        <div class="collection-item">
+                                            {{ form_widget(skill, {'attr': {'class': 'form-control', 'placeholder': 'Ex: JavaScript, React, SQL...'}}) }}
+                                            <span class="remove-item text-danger">
+                                                <i class="bi bi-x-circle-fill"></i>
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        {{ form_row(form.educationCollection, {
-                                            'attr': {
-                                                'class': 'education-collection',
-                                                'data-prototype': form_widget(form.educationCollection.vars.prototype)|e('html_attr')
-                                            }
-                                        }) }}
+                                {% endfor %}
                                     </div>
                                 </div>
-
-                                <div class="mt-4">
-                                    <label class="form-label fw-bold">Compétences</label>
-                                    <div class="skills-collection" 
-                                         data-prototype="{{ form_widget(form.skills.vars.prototype)|e('html_attr') }}">
-                                        {% for skill in form.skills %}
+                        <button type="button" class="btn btn-add-item mt-3" id="add-technical-skill">
+                            <i class="bi bi-plus-lg me-1"></i>Ajouter une compétence technique
+                        </button>
+                    </div>
+                    {% endif %}
+                    
+                    {% if form.softSkills is defined %}
+                    <div class="mb-4">
+                        <h5 class="fw-bold text-primary mb-3">Compétences non techniques</h5>
+                        <div class="soft-skills-collection">
+                            <div class="row g-2">
+                                {% for skill in form.softSkills %}
+                                    <div class="col-md-4 col-sm-6">
                                             <div class="collection-item">
-                                                {{ form_widget(skill, {'attr': {'class': 'form-control'}}) }}
+                                            {{ form_widget(skill, {'attr': {'class': 'form-control', 'placeholder': 'Ex: Travail en équipe, Leadership...'}}) }}
                                                 <span class="remove-item text-danger">
                                                     <i class="bi bi-x-circle-fill"></i>
                                                 </span>
                                             </div>
-                                        {% endfor %}
                                     </div>
-                                    <button type="button" class="btn btn-outline-primary mt-2" id="add-skill">
-                                        <i class="bi bi-plus-lg me-1"></i>Ajouter une compétence
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-add-item mt-3" id="add-soft-skill">
+                            <i class="bi bi-plus-lg me-1"></i>Ajouter une compétence non technique
                                     </button>
+                        
+                        <div class="alert alert-info mt-3">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <i class="bi bi-info-circle-fill fs-3"></i>
                                 </div>
-                            {% endif %}
+                                <div>
+                                    <h6 class="alert-heading">L'importance des compétences</h6>
+                                    <p class="mb-0 small">Les compétences techniques permettent aux recruteurs de trouver votre profil plus facilement. Les compétences non techniques (soft skills) montrent votre personnalité et votre façon de travailler.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endif %}
                         </div>
 
-                        <div class="d-grid gap-2 mt-4">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-lg me-2"></i>Enregistrer les modifications
+            <!-- Submit Button Section -->
+            <div class="profile-section bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="{{ path('app_profile_index') }}" class="btn btn-outline-secondary rounded-pill px-4">
+                        <i class="bi bi-x-lg me-2"></i>Annuler les modifications
+                    </a>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">
+                        <i class="bi bi-check-lg me-2"></i>Enregistrer mon profil
                             </button>
-                            <a href="{{ path('app_profile_index') }}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left me-2"></i>Retour au profil
-                            </a>
+                </div>
                         </div>
 
                         {{ form_end(form) }}
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>
@@ -218,27 +449,58 @@
     {{ parent() }}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Gestion des compétences
-            var collectionHolder = document.querySelector('.skills-collection');
-            var addButton = document.querySelector('#add-skill');
-
-            if (addButton) {
+            // Gestion des collections de formulaires
+            function initializeCollection(collectionClass, buttonId, containerType = 'div') {
+                const collectionHolder = document.querySelector('.' + collectionClass);
+                const addButton = document.getElementById(buttonId);
+                
+                if (addButton && collectionHolder) {
                 addButton.addEventListener('click', function() {
-                    var prototype = collectionHolder.dataset.prototype;
-                    var index = collectionHolder.children.length;
-                    var newForm = prototype.replace(/__name__/g, index);
-                    
-                    var div = document.createElement('div');
+                        const prototype = collectionHolder.dataset.prototype;
+                        const index = document.querySelectorAll('.' + collectionClass + ' .collection-item').length;
+                        const newForm = prototype.replace(/__name__/g, index);
+                        
+                        let container;
+                        if (containerType === 'col') {
+                            container = document.createElement('div');
+                            container.className = 'col-md-4 col-sm-6';
+                            
+                            const div = document.createElement('div');
                     div.classList.add('collection-item');
                     div.innerHTML = newForm + '<span class="remove-item text-danger"><i class="bi bi-x-circle-fill"></i></span>';
                     
                     // Ajouter la classe form-control au nouveau champ
-                    div.querySelector('input').classList.add('form-control');
-                    
-                    collectionHolder.appendChild(div);
-                    addRemoveButton(div);
-                });
+                            const input = div.querySelector('input');
+                            if (input) input.classList.add('form-control');
+                            
+                            container.appendChild(div);
+                        } else {
+                            container = document.createElement('div');
+                            container.classList.add('collection-item', 'mb-3');
+                            container.innerHTML = newForm + '<span class="remove-item text-danger"><i class="bi bi-x-circle-fill"></i></span>';
+                            
+                            // Ajouter la classe form-control au nouveau champ
+                            const input = container.querySelector('input');
+                            if (input) input.classList.add('form-control');
+                        }
+                        
+                        // Trouver le conteneur de row pour les skills
+                        let targetContainer = collectionHolder;
+                        if (containerType === 'col') {
+                            targetContainer = collectionHolder.querySelector('.row') || collectionHolder;
+                        }
+                        
+                        targetContainer.appendChild(container);
+                        addRemoveButton(containerType === 'col' ? container.querySelector('.collection-item') : container);
+                    });
+                }
             }
+            
+            // Initialiser les collections
+            initializeCollection('technical-skills-collection', 'add-technical-skill', 'col');
+            initializeCollection('soft-skills-collection', 'add-soft-skill', 'col');
+            initializeCollection('work-experience-collection', 'add-work-experience');
+            initializeCollection('education-history-collection', 'add-education');
 
             // Ajouter les événements de suppression aux boutons existants
             document.querySelectorAll('.collection-item').forEach(function(item) {
@@ -246,10 +508,45 @@
             });
 
             function addRemoveButton(item) {
-                item.querySelector('.remove-item').addEventListener('click', function() {
+                const removeButton = item.querySelector('.remove-item');
+                if (removeButton) {
+                    removeButton.addEventListener('click', function() {
+                        // Si l'élément parent est une colonne, supprimer la colonne
+                        const parentElement = item.parentElement;
+                        if (parentElement.className.includes('col-md')) {
+                            parentElement.remove();
+                        } else {
                     item.remove();
-                });
+                        }
+                    });
+                }
             }
+
+            // Navigation par onglets dans le profil
+            document.querySelectorAll('.list-group-item-action').forEach(function(tab) {
+                tab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Supprimer la classe active de tous les onglets
+                    document.querySelectorAll('.list-group-item-action').forEach(function(t) {
+                        t.classList.remove('active');
+                    });
+                    
+                    // Ajouter la classe active à l'onglet cliqué
+                    this.classList.add('active');
+                    
+                    // Faire défiler jusqu'à la section correspondante
+                    const targetId = this.getAttribute('href');
+                    const targetSection = document.querySelector(targetId);
+                    
+                    if (targetSection) {
+                        window.scrollTo({
+                            top: targetSection.offsetTop - 20,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
 
             // Prévisualisation de l'image de profil
             const profilePictureInput = document.getElementById('profile-picture-input');
@@ -258,20 +555,40 @@
                     if (e.target.files && e.target.files[0]) {
                         const reader = new FileReader();
                         reader.onload = function(e) {
-                            const preview = document.querySelector('.profile-picture-preview');
+                            const preview = document.getElementById('profile-picture-preview');
+                            const placeholder = document.getElementById('profile-picture-placeholder');
+                            
                             if (preview) {
                                 preview.src = e.target.result;
-                            } else {
-                                const newPreview = document.createElement('img');
-                                newPreview.classList.add('profile-picture-preview');
-                                newPreview.src = e.target.result;
-                                profilePictureInput.parentElement.insertBefore(newPreview, profilePictureInput);
+                            } else if (placeholder) {
+                                // Remplacer le placeholder par une image
+                                const newImg = document.createElement('img');
+                                newImg.id = 'profile-picture-preview';
+                                newImg.className = 'profile-picture';
+                                newImg.src = e.target.result;
+                                newImg.alt = "Photo de profil";
+                                
+                                const container = placeholder.parentElement;
+                                container.replaceChild(newImg, placeholder);
                             }
                         }
                         reader.readAsDataURL(e.target.files[0]);
                     }
                 });
             }
+            
+            // Animation du scroll pour les boutons d'ajout
+            document.querySelectorAll('.btn-add-item').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    setTimeout(function() {
+                        const section = btn.closest('.profile-section');
+                        const lastItem = section.querySelector('.collection-item:last-child');
+                        if (lastItem) {
+                            lastItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 100);
+                });
+            });
         });
     </script>
 {% endblock %} 

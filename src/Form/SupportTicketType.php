@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Form;
 
 use App\Entity\SupportTicket;
@@ -19,50 +21,50 @@ class SupportTicketType extends AbstractType
         $builder
             ->add('subject', TextType::class, [
                 'label' => 'Sujet',
-                'attr' => [
+                'attr'  => [
                     'placeholder' => 'Sujet de votre demande',
-                    'class' => 'form-control'
+                    'class'       => 'form-control',
                 ],
                 'constraints' => [
                     new NotBlank(['message' => 'Le sujet ne peut pas être vide']),
                     new Length([
-                        'min' => 5,
-                        'max' => 100,
+                        'min'        => 5,
+                        'max'        => 100,
                         'minMessage' => 'Le sujet doit contenir au moins {{ limit }} caractères',
-                        'maxMessage' => 'Le sujet ne peut pas dépasser {{ limit }} caractères'
-                    ])
-                ]
+                        'maxMessage' => 'Le sujet ne peut pas dépasser {{ limit }} caractères',
+                    ]),
+                ],
             ])
             ->add('category', ChoiceType::class, [
-                'label' => 'Catégorie',
-                'mapped' => false,
+                'label'   => 'Catégorie',
+                'mapped'  => false,
                 'choices' => [
-                    'Technique' => 'technical',
+                    'Technique'   => 'technical',
                     'Facturation' => 'billing',
-                    'Abonnement' => 'subscription',
-                    'Autre' => 'other'
+                    'Abonnement'  => 'subscription',
+                    'Autre'       => 'other',
                 ],
                 'attr' => [
-                    'class' => 'form-select'
+                    'class' => 'form-select',
                 ],
                 'constraints' => [
-                    new NotBlank(['message' => 'Veuillez sélectionner une catégorie'])
-                ]
+                    new NotBlank(['message' => 'Veuillez sélectionner une catégorie']),
+                ],
             ])
             ->add('content', TextareaType::class, [
                 'label' => 'Description',
-                'attr' => [
+                'attr'  => [
                     'placeholder' => 'Décrivez votre problème en détail',
-                    'class' => 'form-control',
-                    'rows' => 6
+                    'class'       => 'form-control',
+                    'rows'        => 6,
                 ],
                 'constraints' => [
                     new NotBlank(['message' => 'La description ne peut pas être vide']),
                     new Length([
-                        'min' => 20,
-                        'minMessage' => 'La description doit contenir au moins {{ limit }} caractères'
-                    ])
-                ]
+                        'min'        => 20,
+                        'minMessage' => 'La description doit contenir au moins {{ limit }} caractères',
+                    ]),
+                ],
             ])
         ;
     }

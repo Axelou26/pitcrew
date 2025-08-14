@@ -1,0 +1,54 @@
+{# Composant pour charger les assets Vite #}
+{% if app.environment == 'dev' %}
+    {# En développement, utiliser le serveur Vite #}
+    <script type="module" src="http://localhost:5173/assets/main.js"></script>
+    <script type="module" src="http://localhost:5173/assets/app.js"></script>
+{% else %}
+    {# En production, utiliser directement les assets compilés #}
+    <script type="module" src="{{ asset('build/assets/main.js') }}"></script>
+    <script type="module" src="{{ asset('build/assets/app.js') }}"></script>
+{% endif %}
+
+{# Script de secours pour l'initialisation du feed et des boutons like #}
+<script src="{{ asset('js/feed-initializer.js') }}"></script>
+
+{# Style pour les suggestions de mentions #}
+<style>
+    .mention-suggestions {
+        position: absolute;
+        width: 100%;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1050;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        display: none;
+    }
+    
+    .mention-suggestions.show {
+        display: block;
+    }
+    
+    .suggestion-item {
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    
+    .suggestion-item:hover,
+    .suggestion-item.active {
+        background-color: #f8f9fa;
+        color: #e10600; /* Couleur primaire de votre thème */
+    }
+    
+    .mention {
+        color: #e10600;
+        font-weight: 500;
+    }
+    
+    .hashtag {
+        color: #e10600;
+    }
+</style>

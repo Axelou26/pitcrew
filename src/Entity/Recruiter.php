@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\RecruiterRepository;
@@ -10,6 +12,11 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: RecruiterRepository::class)]
 class Recruiter extends User
 {
+    /**
+     * Propriété utilisée pour suivre les propriétés initialisées par l'EventSubscriber.
+     */
+    public array $propertyInitialized = [];
+
     #[ORM\Column(length: 255)]
     private ?string $companyName = null;
 
@@ -37,8 +44,21 @@ class Recruiter extends User
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $location = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $city = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $bio = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $jobTitle = null;
+
+    /**
+     * @var Collection<int, Applicant>
+     */
     #[ORM\ManyToMany(targetEntity: Applicant::class)]
-    private Collection $favoriteApplicants;
+    #[ORM\JoinTable(name: 'recruiter_favorite_applicants')]
+    private ?Collection $favoriteApplicants = null;
 
     public function __construct()
     {
@@ -55,6 +75,7 @@ class Recruiter extends User
     public function setCompanyName(string $companyName): static
     {
         $this->companyName = $companyName;
+
         return $this;
     }
 
@@ -66,6 +87,7 @@ class Recruiter extends User
     public function setCompanyDescription(?string $companyDescription): static
     {
         $this->companyDescription = $companyDescription;
+
         return $this;
     }
 
@@ -77,6 +99,7 @@ class Recruiter extends User
     public function setWebsite(?string $website): static
     {
         $this->website = $website;
+
         return $this;
     }
 
@@ -88,6 +111,7 @@ class Recruiter extends User
     public function setLinkedin(?string $linkedin): static
     {
         $this->linkedin = $linkedin;
+
         return $this;
     }
 
@@ -99,6 +123,7 @@ class Recruiter extends User
     public function setSector(?string $sector): static
     {
         $this->sector = $sector;
+
         return $this;
     }
 
@@ -110,6 +135,7 @@ class Recruiter extends User
     public function setCompanySize(?string $companySize): static
     {
         $this->companySize = $companySize;
+
         return $this;
     }
 
@@ -121,6 +147,7 @@ class Recruiter extends User
     public function setFoundedYear(?int $foundedYear): static
     {
         $this->foundedYear = $foundedYear;
+
         return $this;
     }
 
@@ -132,6 +159,7 @@ class Recruiter extends User
     public function setBenefits(?string $benefits): static
     {
         $this->benefits = $benefits;
+
         return $this;
     }
 
@@ -143,6 +171,7 @@ class Recruiter extends User
     public function setLocation(?string $location): static
     {
         $this->location = $location;
+
         return $this;
     }
 
@@ -151,7 +180,7 @@ class Recruiter extends User
      */
     public function getFavoriteApplicants(): Collection
     {
-        return $this->favoriteApplicants;
+        return $this->favoriteApplicants ?: ($this->favoriteApplicants = new ArrayCollection());
     }
 
     public function addFavoriteApplicant(Applicant $applicant): static
@@ -159,12 +188,14 @@ class Recruiter extends User
         if (!$this->favoriteApplicants->contains($applicant)) {
             $this->favoriteApplicants->add($applicant);
         }
+
         return $this;
     }
 
     public function removeFavoriteApplicant(Applicant $applicant): static
     {
         $this->favoriteApplicants->removeElement($applicant);
+
         return $this;
     }
 
@@ -173,25 +204,72 @@ class Recruiter extends User
         if (!$user instanceof Applicant) {
             return false;
         }
-        return $this->favoriteApplicants->contains($user);
+
+        // Utiliser le getter qui garantit une collection initialisée
+        return $this->getFavoriteApplicants()->contains($user);
     }
 
     public function addJobOffer(JobOffer $jobOffer): static
     {
-        if (!$this->jobOffers->contains($jobOffer)) {
-            $this->jobOffers->add($jobOffer);
+        if (!$this->getJobOffers()->contains($jobOffer)) {
+            $this->getJobOffers()->add($jobOffer);
             $jobOffer->setRecruiter($this);
         }
+
         return $this;
     }
 
     public function removeJobOffer(JobOffer $jobOffer): static
     {
-        if ($this->jobOffers->removeElement($jobOffer)) {
+        if ($this->getJobOffers()->removeElement($jobOffer)) {
             if ($jobOffer->getRecruiter() === $this) {
                 $jobOffer->setRecruiter(null);
             }
         }
+
         return $this;
+    }
+
+    // Méthodes manquantes ajoutées pour PHPStan
+
+    public function setCity(?string $city): static
+    {
+        $this->city = $city;
+
+        return $this;
+    }
+
+    public function getCity(): ?string
+    {
+        return $this->city ?? null;
+    }
+
+    public function setBio(?string $bio): static
+    {
+        $this->bio = $bio;
+
+        return $this;
+    }
+
+    public function getBio(): ?string
+    {
+        return $this->bio ?? null;
+    }
+
+    public function setJobTitle(?string $jobTitle): static
+    {
+        $this->jobTitle = $jobTitle;
+
+        return $this;
+    }
+
+    public function getJobTitle(): ?string
+    {
+        return $this->jobTitle ?? null;
+    }
+
+    public function getJobOffers(): Collection
+    {
+        return parent::getJobOffers();
     }
 }

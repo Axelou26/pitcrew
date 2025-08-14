@@ -1,13 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
-use DateTime;
+use DateTimeImmutable;
+use Doctrine\ORM\EntityManagerInterface;
+use Exception;
+use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Doctrine\ORM\EntityManagerInterface;
-use Psr\Cache\CacheItemPoolInterface;
 
 class HealthController extends AbstractController
 {
@@ -20,8 +23,8 @@ class HealthController extends AbstractController
         CacheItemPoolInterface $cache,
         string $kernelEnvironment
     ) {
-        $this->entityManager = $entityManager;
-        $this->cache = $cache;
+        $this->entityManager     = $entityManager;
+        $this->cache             = $cache;
         $this->kernelEnvironment = $kernelEnvironment;
     }
 
@@ -30,32 +33,37 @@ class HealthController extends AbstractController
     {
         $status = 'healthy';
         $checks = [
-            'database' => true,
-            'cache' => true,
-            'timestamp' => (new DateTime())->format('c'),
-            'environment' => $this->kernelEnvironment
+            'database'    => true,
+            'cache'       => true,
+            'timestamp'   => (new DateTimeImmutable())->format('c'),
+            'environment' => $this->kernelEnvironment,
         ];
 
         try {
             // Vérification de la base de données
             $this->entityManager->getConnection()->connect();
-        } catch (\Exception $e) {
-            $status = 'unhealthy';
-            $checks['database'] = false;
+        } catch (Exception $e) {
+            $status                   = 'unhealthy';
+            $checks['database']       = false;
             $checks['database_error'] = $e->getMessage();
         }
 
         try {
             // Vérification du cache
             $this->cache->hasItem('health_check');
-        } catch (\Exception $e) {
-            $status = 'unhealthy';
-            $checks['cache'] = false;
+        } catch (Exception $e) {
+            $status                = 'unhealthy';
+            $checks['cache']       = false;
             $checks['cache_error'] = $e->getMessage();
         }
 
+        $jsonContent = json_encode(['status' => $status, 'checks' => $checks]);
+        if ($jsonContent === false) {
+            $jsonContent = '{"status":"error","message":"Failed to encode JSON"}';
+        }
+
         $response = new Response(
-            json_encode(['status' => $status, 'checks' => $checks]),
+            $jsonContent,
             $status === 'healthy' ? 200 : 503,
             ['Content-Type' => 'application/json']
         );

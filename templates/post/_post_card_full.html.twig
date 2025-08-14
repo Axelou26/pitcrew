@@ -29,7 +29,7 @@
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="postOptions{{ post.id }}">
                         <li>
-                            <a class="dropdown-item edit-post" href="#" data-post-id="{{ post.id }}">
+                            <a class="dropdown-item" href="{{ path('app_post_edit', {'id': post.id}) }}">
                                 <i class="bi bi-pencil me-2"></i>Modifier
                             </a>
                         </li>
@@ -82,7 +82,9 @@
             {% set processedContent = processedContent|replace({(replacement.key): replacement.value}) %}
         {% endfor %}
         
-        <p class="card-text mb-3 post-content">{{ processedContent|raw }}</p>
+        <div class="post-content-container">
+            <p class="card-text mb-3 post-content" data-full-content="{{ processedContent|raw|escape('html_attr') }}" style="max-height: none !important; overflow: visible !important;">{{ processedContent|raw }}</p>
+        </div>
 
         {% if post.imageName %}
             <a href="{{ asset('uploads/posts/' ~ post.imageName) }}" data-lightbox="post-image-{{ post.id }}">
@@ -167,15 +169,17 @@
                                  <i class="bi bi-person fs-6 text-muted"></i>
                              </div>
                         {% endif %}
-                        <div class="input-group flex-grow-1">
-                            <input type="text"
-                                   class="form-control form-control-sm comment-input bg-light border-0 rounded-start-pill"
-                                   placeholder="Ajouter un commentaire..."
+                        <div class="input-group flex-grow-1 position-relative">
+                            <label for="comment-input-full-{{ post.id }}" class="visually-hidden">Ajouter un commentaire</label>
+                            <input id="comment-input-full-{{ post.id }}" type="text"
+                                   class="form-control form-control-sm comment-input mention-input bg-light border-0 rounded-start-pill"
+                                   placeholder="Ajouter un commentaire... (@ pour mentionner)"
                                    name="content"
                                    required>
                             <button type="submit" class="btn btn-sm btn-primary rounded-end-pill">
                                 <i class="bi bi-send"></i>
                             </button>
+                            <div class="mention-suggestions dropdown-menu suggestion-container"></div>
                         </div>
                     </div>
                 </form>

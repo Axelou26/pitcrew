@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller\Admin;
 
 use App\Entity\RecruiterSubscription;
@@ -23,7 +25,7 @@ class RecruiterSubscriptionAdminController extends AbstractController
         EntityManagerInterface $entityManager,
         RecruiterSubscriptionRepository $recruiterSubRepo
     ) {
-        $this->entityManager = $entityManager;
+        $this->entityManager    = $entityManager;
         $this->recruiterSubRepo = $recruiterSubRepo;
     }
 
@@ -41,7 +43,7 @@ class RecruiterSubscriptionAdminController extends AbstractController
     public function new(Request $request): Response
     {
         $recruiterSub = new RecruiterSubscription();
-        $form = $this->createForm(RecruiterSubscriptionType::class, $recruiterSub);
+        $form         = $this->createForm(RecruiterSubscriptionType::class, $recruiterSub);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -55,7 +57,7 @@ class RecruiterSubscriptionAdminController extends AbstractController
 
         return $this->render('admin/recruiter_subscription/new.html.twig', [
             'recruiter_subscription' => $recruiterSub,
-            'form' => $form,
+            'form'                   => $form,
         ]);
     }
 
@@ -63,15 +65,15 @@ class RecruiterSubscriptionAdminController extends AbstractController
     public function show(RecruiterSubscription $recruiterSub): Response
     {
         $deleteForm = $this->createFormBuilder()
-                    ->setAction($this
-                    ->generateUrl('admin_recruiter_subscription_delete', ['id' => $recruiterSub
+            ->setAction($this
+                ->generateUrl('admin_recruiter_subscription_delete', ['id' => $recruiterSub
                     ->getId()]))
             ->setMethod('POST')
             ->getForm();
 
         return $this->render('admin/recruiter_subscription/show.html.twig', [
             'recruiter_subscription' => $recruiterSub,
-            'delete_form' => $deleteForm,
+            'delete_form'            => $deleteForm,
         ]);
     }
 
@@ -90,16 +92,16 @@ class RecruiterSubscriptionAdminController extends AbstractController
         }
 
         $deleteForm = $this->createFormBuilder()
-                    ->setAction($this
-                    ->generateUrl('admin_recruiter_subscription_delete', ['id' => $recruiterSub
+            ->setAction($this
+                ->generateUrl('admin_recruiter_subscription_delete', ['id' => $recruiterSub
                     ->getId()]))
             ->setMethod('POST')
             ->getForm();
 
         return $this->render('admin/recruiter_subscription/edit.html.twig', [
             'recruiter_subscription' => $recruiterSub,
-            'form' => $form,
-            'delete_form' => $deleteForm,
+            'form'                   => $form,
+            'delete_form'            => $deleteForm,
         ]);
     }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
 use App\Entity\Favorite;
@@ -11,10 +13,18 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<Favorite>
  *
- * @method Favorite|null find($id, $lockMode = null, $lockVersion = null)
- * @method Favorite|null findOneBy(array $criteria, array $orderBy = null)
+ * @method null|Favorite find($id, $lockMode = null, $lockVersion = null)
+ * @method null|Favorite findOneBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null
+ * )
  * @method Favorite[]    findAll()
- * @method Favorite[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method Favorite[]    findBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null,
+ *     int $limit = null,
+ *     int $offset = null
+ * )
  */
 class FavoriteRepository extends ServiceEntityRepository
 {
@@ -24,7 +34,9 @@ class FavoriteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Récupère toutes les offres favorites d'un utilisateur
+     * Trouve les offres d'emploi favorites d'un utilisateur.
+     *
+     * @return Favorite[]
      */
     public function findFavoriteJobOffers(User $user): array
     {
@@ -41,7 +53,9 @@ class FavoriteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Récupère tous les candidats favoris d'un recruteur
+     * Trouve les candidats favoris d'un recruteur.
+     *
+     * @return Favorite[]
      */
     public function findFavoriteCandidates(User $recruiter): array
     {
@@ -58,7 +72,7 @@ class FavoriteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Vérifie si une offre est dans les favoris d'un utilisateur
+     * Vérifie si une offre est dans les favoris d'un utilisateur.
      */
     public function isJobOfferFavorite(User $user, JobOffer $jobOffer): bool
     {
@@ -75,7 +89,7 @@ class FavoriteRepository extends ServiceEntityRepository
     }
 
     /**
-     * Vérifie si un candidat est dans les favoris d'un recruteur
+     * Vérifie si un candidat est dans les favoris d'un recruteur.
      */
     public function isCandidateFavorite(User $recruiter, User $candidate): bool
     {

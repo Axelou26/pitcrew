@@ -69,15 +69,17 @@
                     <i class="bi bi-person fs-6 text-muted"></i>
                 </div>
             {% endif %}
-            <div class="input-group flex-grow-1">
-                <input type="text"
-                       class="form-control form-control-sm comment-input bg-light border-0 rounded-start-pill"
-                       placeholder="Écrire un commentaire..."
+            <div class="input-group flex-grow-1 position-relative">
+                <label for="comment-input-list-{{ post.id }}" class="visually-hidden">Écrire un commentaire</label>
+                <input id="comment-input-list-{{ post.id }}" type="text"
+                       class="form-control form-control-sm comment-input mention-input bg-light border-0 rounded-start-pill"
+                       placeholder="Écrire un commentaire... (@ pour mentionner)"
                        aria-label="Écrire un commentaire"
                        required>
                 <button class="btn btn-light btn-sm comment-submit-button rounded-end-pill border-start-0 border" type="submit">
                     <i class="bi bi-send"></i>
                 </button>
+                <div class="mention-suggestions dropdown-menu suggestion-container"></div>
             </div>
         </div>
     </form>

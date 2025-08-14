@@ -1,26 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\HashtagRepository;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
-use DateTimeImmutable;
 
 #[ORM\Entity(repositoryClass: HashtagRepository::class)]
 #[ORM\Table(name: 'hashtag')]
 #[UniqueEntity(fields: ['name'], message: 'Ce hashtag existe déjà')]
 class Hashtag
 {
-    /**
-     * @SuppressWarnings("PHPMD.ShortVariable")
-     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\Column(type: 'integer')]
+    private int $id;
 
     #[ORM\Column(length: 50, unique: true)]
     private ?string $name = null;
@@ -39,9 +38,14 @@ class Hashtag
 
     public function __construct()
     {
-        $this->createdAt = new DateTimeImmutable();
+        $this->createdAt  = new DateTimeImmutable();
         $this->lastUsedAt = new DateTimeImmutable();
-        $this->posts = new ArrayCollection();
+        $this->posts      = new ArrayCollection();
+    }
+
+    public function __toString(): string
+    {
+        return $this->getFormattedName();
     }
 
     public function getId(): ?int
@@ -61,6 +65,7 @@ class Hashtag
         $name = strtolower($name);
 
         $this->name = $name;
+
         return $this;
     }
 
@@ -72,6 +77,7 @@ class Hashtag
     public function setUsageCount(int $usageCount): static
     {
         $this->usageCount = $usageCount;
+
         return $this;
     }
 
@@ -79,6 +85,7 @@ class Hashtag
     {
         $this->usageCount++;
         $this->lastUsedAt = new DateTimeImmutable();
+
         return $this;
     }
 
@@ -95,6 +102,7 @@ class Hashtag
     public function setLastUsedAt(?DateTimeImmutable $lastUsedAt): static
     {
         $this->lastUsedAt = $lastUsedAt;
+
         return $this;
     }
 
@@ -106,21 +114,20 @@ class Hashtag
         return $this->posts;
     }
 
-    public function addPost(Post $post): self
+    public function addPost(Post $post): static
     {
         if (!$this->posts->contains($post)) {
             $this->posts->add($post);
-            $post->getHashtags()->add($this);
-            $this->incrementUsageCount();
+            $post->addHashtag($this);
         }
 
         return $this;
     }
 
-    public function removePost(Post $post): self
+    public function removePost(Post $post): static
     {
         if ($this->posts->removeElement($post)) {
-            $post->getHashtags()->removeElement($this);
+            $post->removeHashtag($this);
         }
 
         return $this;
@@ -129,10 +136,5 @@ class Hashtag
     public function getFormattedName(): string
     {
         return '#' . $this->name;
-    }
-
-    public function __toString(): string
-    {
-        return $this->getFormattedName();
     }
 }

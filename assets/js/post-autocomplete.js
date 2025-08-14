@@ -1,3 +1,10 @@
+// Fonction d'initialisation exposée globalement
+window.initializePostAutocomplete = function(input) {
+    if (typeof initializeMentionInput === 'function') {
+        initializeMentionInput(input);
+    }
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     // Stocker les IDs des inputs déjà initialisés
     const initializedInputs = new Set();
@@ -73,7 +80,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function initializeMentionInput(input) {
+    // Fonction accessible depuis l'extérieur via notre fonction globale
+    window.initializeMentionInput = function(input) {
         const inputId = input.id || `mention-input-${Math.random().toString(36).substr(2, 9)}`;
         
         // Vérifier si l'input a déjà été initialisé
@@ -87,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let suggestionContainer = input.nextElementSibling;
         if (!suggestionContainer || !suggestionContainer.classList.contains('mention-suggestions')) {
             suggestionContainer = document.createElement('div');
-            suggestionContainer.className = 'mention-suggestions dropdown-menu';
+            suggestionContainer.className = 'mention-suggestions dropdown-menu suggestion-container';
             input.parentNode.appendChild(suggestionContainer);
         }
         
@@ -96,10 +104,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Nettoyer le cache toutes les 5 minutes
         const cacheCleanupInterval = setInterval(cleanCache, CACHE_DURATION);
+        
+        // Stocker l'intervalle dans un objet global pour éviter les doublons
+        if (window._pitCrewCacheInterval) {
+            clearInterval(window._pitCrewCacheInterval);
+        }
+        window._pitCrewCacheInterval = cacheCleanupInterval;
 
         async function fetchSuggestions(type, searchTerm) {
-            // Vérifier la longueur minimale
-            if (searchTerm.length < MIN_CHARS_BEFORE_SEARCH) {
+            // Vérifier la longueur minimale (sauf pour les hashtags/mentions vides où on veut montrer des suggestions)
+            if (searchTerm.length < MIN_CHARS_BEFORE_SEARCH && 
+                !((type === 'hashtag' || type === 'mention') && searchTerm === "")) {
                 hideSuggestions();
                 return;
             }
@@ -159,13 +174,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         ? data.results.map(user => ({
                             text: `${user.firstName} ${user.lastName}`,
                             prefix: '@',
-                            displayText: `@${user.firstName} ${user.lastName}`,
+                            displayText: `<div class="d-flex align-items-center">
+                                ${user.profilePicture 
+                                    ? `<img src="/uploads/profile_pictures/${user.profilePicture}" class="rounded-circle me-2" style="width: 24px; height: 24px; object-fit: cover;">` 
+                                    : `<div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px;"><i class="bi bi-person text-muted" style="font-size: 12px;"></i></div>`
+                                }
+                                <span class="mention">@${user.firstName} ${user.lastName}</span>
+                            </div>`,
                             profilePicture: user.profilePicture
                         }))
                         : data.results.map(hashtag => ({
                             text: hashtag.name,
                             prefix: '#',
-                            displayText: `#${hashtag.name} (${hashtag.usageCount} utilisations)`
+                            displayText: `<span class="hashtag">#${hashtag.name}</span> <span class="usage-count">${hashtag.usageCount} utilisations</span>`
                         }));
 
                     // Mettre en cache les résultats avec timestamp
@@ -195,13 +216,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const cursorPosition = this.selectionStart;
             const textBeforeCursor = this.value.substring(0, cursorPosition);
             
-            const lastMentionMatch = textBeforeCursor.match(/@([a-zA-ZÀ-ÿ]+(?:\s+[a-zA-ZÀ-ÿ]+)*)$/);
-            const lastHashtagMatch = textBeforeCursor.match(/#([a-zA-Z0-9_-]+)$/);
+            const lastMentionMatch = textBeforeCursor.match(/@([a-zA-ZÀ-ÿ0-9_-]*)$/);
+            const lastHashtagMatch = textBeforeCursor.match(/#([a-zA-Z0-9_-]*)$/);
             
-            if (lastMentionMatch && lastMentionMatch[1].length > 0) {
-                debouncedFetchSuggestions('mention', lastMentionMatch[1]);
-            } else if (lastHashtagMatch && lastHashtagMatch[1].length > 0) {
-                debouncedFetchSuggestions('hashtag', lastHashtagMatch[1]);
+            if (lastMentionMatch && lastMentionMatch[1] !== undefined) {
+                debouncedFetchSuggestions('mention', lastMentionMatch[1] || "");
+            } else if (lastHashtagMatch && lastHashtagMatch[1] !== undefined) {
+                debouncedFetchSuggestions('hashtag', lastHashtagMatch[1] || "");
             } else {
                 hideSuggestions();
             }
@@ -250,7 +271,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 hideSuggestions();
                 return;
             }
-
+            
+            // Remplir les suggestions et rendre le conteneur visible
             suggestions.forEach((suggestion, index) => {
                 const div = document.createElement('div');
                 div.className = 'suggestion-item';
@@ -260,13 +282,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 suggestionContainer.appendChild(div);
             });
-
+            
+            // S'assurer que le conteneur est visible
             suggestionContainer.style.display = 'block';
+            suggestionContainer.classList.add('show');
             updateSelection();
         }
 
         function hideSuggestions() {
             suggestionContainer.style.display = 'none';
+            suggestionContainer.classList.remove('show');
             selectedIndex = -1;
             currentSuggestions = [];
         }

@@ -1,11 +1,12 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit\Entity;
 
-use App\Entity\PostLike;
 use App\Entity\Post;
+use App\Entity\PostLike;
 use App\Entity\User;
-use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
 class PostLikeTest extends TestCase
@@ -17,13 +18,19 @@ class PostLikeTest extends TestCase
     protected function setUp(): void
     {
         $this->postLike = new PostLike();
-        $this->user = new User();
-        $this->post = new Post();
+        $this->user     = new User();
+        $this->post     = new Post();
     }
 
     public function testId(): void
     {
-        $this->assertNull($this->postLike->getId());
+        $postLike   = new PostLike();
+        $reflection = new \ReflectionClass(PostLike::class);
+        $property   = $reflection->getProperty('id');
+        $property->setAccessible(true);
+        $property->setValue($postLike, 1);
+
+        $this->assertSame(1, $postLike->getId());
     }
 
     public function testUser(): void
@@ -40,13 +47,13 @@ class PostLikeTest extends TestCase
 
     public function testCreatedAt(): void
     {
-        $createdAt = new DateTimeImmutable();
+        $createdAt = new \DateTimeImmutable();
         $this->postLike->setCreatedAt($createdAt);
         $this->assertSame($createdAt, $this->postLike->getCreatedAt());
     }
 
     public function testCreatedAtIsSetOnConstruction(): void
     {
-        $this->assertInstanceOf(DateTimeImmutable::class, $this->postLike->getCreatedAt());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $this->postLike->getCreatedAt());
     }
 }

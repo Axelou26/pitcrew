@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Form;
 
 use App\Entity\Application;
@@ -9,6 +11,8 @@ use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\All;
+use Symfony\Component\Validator\Constraints\File;
 
 class ApplicationType extends AbstractType
 {
@@ -18,23 +22,52 @@ class ApplicationType extends AbstractType
     {
         $builder
             ->add('coverLetter', TextareaType::class, [
-                'label' => 'Lettre de motivation',
+                'label'    => 'Lettre de motivation',
                 'required' => true,
-                'attr' => [
-                    'rows' => 6,
-                    'placeholder' => 'Expliquez pourquoi vous êtes le candidat idéal pour ce poste...'
-                ]
+                'attr'     => [
+                    'rows'        => 5,
+                    'placeholder' => 'Décrivez votre motivation pour ce poste...',
+                ],
             ])
             ->add('cvFile', FileType::class, [
-                'label' => 'CV (PDF)',
-                'mapped' => false,
-                'required' => true,
+                'label'       => 'CV (PDF)',
+                'required'    => false,
+                'mapped'      => false,
                 'constraints' => [
-                    $this->createPdfFileConstraint(self::MAX_SIZE_SMALL),
+                    new File([
+                        'maxSize'   => '2M',
+                        'mimeTypes' => [
+                            'application/pdf',
+                            'application/msword',
+                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                        ],
+                        'mimeTypesMessage' => 'Veuillez télécharger un fichier PDF ou Word valide.',
+                    ]),
                 ],
-                'attr' => $this->getPdfFileAttributes(),
             ])
-        ;
+            ->add('additionalDocuments', FileType::class, [
+                'label'       => 'Documents additionnels',
+                'required'    => false,
+                'mapped'      => false,
+                'multiple'    => true,
+                'constraints' => [
+                    new All([
+                        'constraints' => [
+                            new File([
+                                'maxSize'   => '5M',
+                                'mimeTypes' => [
+                                    'application/pdf',
+                                    'application/msword',
+                                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                    'image/jpeg',
+                                    'image/png',
+                                ],
+                                'mimeTypesMessage' => 'Veuillez télécharger des fichiers valides.',
+                            ]),
+                        ],
+                    ]),
+                ],
+            ]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void
@@ -42,5 +75,10 @@ class ApplicationType extends AbstractType
         $resolver->setDefaults([
             'data_class' => Application::class,
         ]);
+    }
+
+    public function getMaxFileSize(): int
+    {
+        return 10 * 1024 * 1024; // 10MB
     }
 }

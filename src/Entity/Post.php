@@ -1,73 +1,78 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
-use App\Repository\PostRepository;
-use App\Entity\Trait\PostReactionsTrait;
-use App\Entity\Trait\PostCommentsTrait;
-use App\Entity\Trait\PostTaggingTrait;
-use App\Entity\Trait\PostCountersTrait;
 use App\Entity\Trait\PostBasicTrait;
+use App\Entity\Trait\PostCommentsTrait;
+use App\Entity\Trait\PostCountersTrait;
+use App\Entity\Trait\PostReactionsTrait;
+use App\Entity\Trait\PostTaggingTrait;
+use App\Repository\PostRepository;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use DateTimeImmutable;
 
 #[ORM\Entity(repositoryClass: PostRepository::class)]
 #[ORM\Table(name: 'post')]
 #[ORM\HasLifecycleCallbacks]
 class Post
 {
-    use PostReactionsTrait;
-    use PostCommentsTrait;
-    use PostTaggingTrait;
-    use PostCountersTrait;
     use PostBasicTrait;
+    use PostCommentsTrait;
+    use PostCountersTrait;
+    use PostReactionsTrait;
+    use PostTaggingTrait;
 
-    /**
-     * @SuppressWarnings("PHPMD.ShortVariable")
-     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
-    private ?int $id = null;
+    private int $id;
 
-    #[ORM\OneToMany(mappedBy: 'post', targetEntity: PostLike::class, orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: PostLike::class, mappedBy: 'post', orphanRemoval: true)]
     private Collection $likes;
 
-    #[ORM\OneToMany(mappedBy: 'post', targetEntity: PostComment::class, orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: PostComment::class, mappedBy: 'post', orphanRemoval: true)]
     private Collection $comments;
 
-    #[ORM\ManyToMany(targetEntity: Hashtag::class, inversedBy: 'posts')]
+    #[ORM\ManyToMany(targetEntity: Hashtag::class, inversedBy: 'posts', cascade: ['persist'])]
+    #[ORM\JoinTable(name: 'post_hashtags')]
     private Collection $hashtags;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $imageName = null;
 
     #[ORM\Column]
-    private ?DateTimeImmutable $createdAt = null;
+    private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'reposts')]
-    #[ORM\JoinColumn(name: "original_post_id", referencedColumnName: "id", nullable: true, onDelete: "SET NULL")]
+    #[ORM\JoinColumn(name: 'original_post_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
     private ?Post $originalPost = null;
 
-    #[ORM\OneToMany(mappedBy: 'originalPost', targetEntity: self::class)]
+    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'originalPost')]
     private Collection $reposts;
 
-    #[ORM\Column(options: ["default" => 0])]
+    #[ORM\Column(options: ['default' => 0])]
     private int $likesCounter = 0;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $imageUrls = null;
+
+    #[ORM\Column(type: 'integer', options: ['default' => 0])]
+    private int $sharesCounter = 0;
 
     public function __construct()
     {
-        $this->createdAt = new DateTimeImmutable();
-        $this->likes = new ArrayCollection();
-        $this->comments = new ArrayCollection();
-        $this->hashtags = new ArrayCollection();
-        $this->mentions = [];
-        $this->likesCounter = 0;
+        $this->createdAt       = new DateTimeImmutable();
+        $this->likes           = new ArrayCollection();
+        $this->comments        = new ArrayCollection();
+        $this->hashtags        = new ArrayCollection();
+        $this->mentions        = [];
+        $this->likesCounter    = 0;
         $this->commentsCounter = 0;
-        $this->reposts = new ArrayCollection();
+        $this->reposts         = new ArrayCollection();
         $this->updateCommentsCounter();
     }
 
@@ -84,6 +89,7 @@ class Post
     public function setTitle(?string $title): self
     {
         $this->title = $title;
+
         return $this;
     }
 
@@ -95,6 +101,7 @@ class Post
     public function setContent(string $content): self
     {
         $this->content = $content;
+
         return $this;
     }
 
@@ -106,6 +113,7 @@ class Post
     public function setImage(?string $image): static
     {
         $this->image = $image;
+
         return $this;
     }
 
@@ -117,10 +125,11 @@ class Post
     public function setImageName(?string $imageName): static
     {
         $this->imageName = $imageName;
+
         return $this;
     }
 
-    public function getCreatedAt(): ?DateTimeImmutable
+    public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
     }
@@ -133,6 +142,7 @@ class Post
     public function setAuthor(?User $author): static
     {
         $this->author = $author;
+
         return $this;
     }
 
@@ -151,6 +161,7 @@ class Post
             $like->setPost($this);
             $this->likesCounter++;
         }
+
         return $this;
     }
 
@@ -162,6 +173,7 @@ class Post
             }
             $this->likesCounter = max(0, $this->likesCounter - 1);
         }
+
         return $this;
     }
 
@@ -182,6 +194,7 @@ class Post
                 return true;
             }
         }
+
         return false;
     }
 
@@ -200,6 +213,7 @@ class Post
             $comment->setPost($this);
             $this->commentsCounter++;
         }
+
         return $this;
     }
 
@@ -212,6 +226,7 @@ class Post
             }
             $this->commentsCounter = max(0, $this->commentsCounter - 1);
         }
+
         return $this;
     }
 
@@ -231,9 +246,19 @@ class Post
     /**
      * @return Collection<int, Hashtag>
      */
-    public function getHashtags(): Collection
+    public function getHashtags(): ?Collection
     {
         return $this->hashtags;
+    }
+
+    /**
+     * @param null|Collection<int, Hashtag> $hashtags
+     */
+    public function setHashtags(?Collection $hashtags): self
+    {
+        $this->hashtags = $hashtags;
+
+        return $this;
     }
 
     public function addHashtag(Hashtag $hashtag): self
@@ -256,36 +281,43 @@ class Post
     }
 
     /**
-     * @return array
+     * @return array<int, string>
      */
-    public function getMentions(): ?array
+    public function getMentions(): array
     {
-        return $this->mentions;
+        return $this->mentions ?? [];
     }
 
     /**
-     * @param array|null $mentions
+     * @param array<int, string> $mentions
      */
-    public function setMentions(?array $mentions): static
+    public function setMentions(array $mentions): self
     {
-        $this->mentions = $mentions ?? [];
+        $this->mentions = array_values(
+            array_filter(
+                $mentions,
+                fn ($mention) => \is_string($mention) && $mention !== ''
+            )
+        );
+
         return $this;
     }
 
     /**
-     * Ajoute une mention d'utilisateur
+     * Ajoute une mention d'utilisateur.
      */
     public function addMention(User $user): static
     {
         $userId = $user->getId();
-        if (!in_array($userId, $this->mentions)) {
+        if (!\in_array($userId, $this->mentions, true)) {
             $this->mentions[] = $userId;
         }
+
         return $this;
     }
 
     /**
-     * Récupère le like d'un utilisateur pour ce post
+     * Récupère le like d'un utilisateur pour ce post.
      */
     public function getUserReaction(User $user): ?PostLike
     {
@@ -294,17 +326,19 @@ class Post
                 return $like;
             }
         }
+
         return null;
     }
 
-    public function getOriginalPost(): ?Post
+    public function getOriginalPost(): ?self
     {
         return $this->originalPost;
     }
 
-    public function setOriginalPost(?Post $originalPost): static
+    public function setOriginalPost(?self $originalPost): static
     {
         $this->originalPost = $originalPost;
+
         return $this;
     }
 
@@ -316,16 +350,17 @@ class Post
         return $this->reposts;
     }
 
-    public function addRepost(Post $repost): static
+    public function addRepost(self $repost): static
     {
         if (!$this->reposts->contains($repost)) {
             $this->reposts->add($repost);
             $repost->setOriginalPost($this);
         }
+
         return $this;
     }
 
-    public function removeRepost(Post $repost): static
+    public function removeRepost(self $repost): static
     {
         if ($this->reposts->removeElement($repost)) {
             // set the owning side to null (unless already changed)
@@ -333,11 +368,47 @@ class Post
                 $repost->setOriginalPost(null);
             }
         }
+
         return $this;
     }
 
     public function getRepostsCount(): int
     {
         return $this->reposts->count();
+    }
+
+    public function hasHashtag(string $hashtag): bool
+    {
+        $hashtags = $this->getHashtags();
+        if ($hashtags === null) {
+            return false;
+        }
+
+        foreach ($hashtags as $postHashtag) {
+            if ($postHashtag->getName() === $hashtag) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function getShares(): Collection
+    {
+        return $this->reposts;
+    }
+
+    public function setSharesCounter(int $sharesCounter): static
+    {
+        $this->sharesCounter = $sharesCounter;
+
+        return $this;
+    }
+
+    public function setImageUrls(array $imageUrls): static
+    {
+        $this->imageUrls = $imageUrls;
+
+        return $this;
     }
 }

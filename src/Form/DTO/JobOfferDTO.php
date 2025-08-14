@@ -1,24 +1,36 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Form\DTO;
 
-use DateTimeInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class JobOfferDTO
 {
-    private ?string $title = null;
-    private ?string $description = null;
-    private ?string $company = null;
-    private ?UploadedFile $logoFile = null;
+    private ?string $title           = null;
+    private ?string $description     = null;
+    private ?string $company         = null;
+    private ?UploadedFile $logoFile  = null;
     private ?UploadedFile $imageFile = null;
-    private ?string $contractType = null;
-    private ?string $location = null;
-    private bool $isRemote = false;
-    private ?float $salary = null;
+    private ?string $contractType    = null;
+    private ?string $location        = null;
+    private bool $isRemote           = false;
+    private ?float $salary           = null;
+    /**
+     * @var array<int, string>
+     */
     private array $requiredSkills = [];
-    private ?DateTimeInterface $expiresAt = null;
-    private ?string $contactEmail = null;
+    /**
+     * @var array<int, string>
+     */
+    private array $softSkills = [];
+    /**
+     * @var array<int, string>
+     */
+    private array $benefits                = [];
+    private ?\DateTimeInterface $expiresAt = null;
+    private ?string $contactEmail          = null;
 
     public function getTitle(): ?string
     {
@@ -28,6 +40,7 @@ class JobOfferDTO
     public function setTitle(?string $title): self
     {
         $this->title = $title;
+
         return $this;
     }
 
@@ -39,6 +52,7 @@ class JobOfferDTO
     public function setDescription(?string $description): self
     {
         $this->description = $description;
+
         return $this;
     }
 
@@ -50,6 +64,7 @@ class JobOfferDTO
     public function setCompany(?string $company): self
     {
         $this->company = $company;
+
         return $this;
     }
 
@@ -61,6 +76,7 @@ class JobOfferDTO
     public function setLogoFile(?UploadedFile $logoFile): self
     {
         $this->logoFile = $logoFile;
+
         return $this;
     }
 
@@ -72,6 +88,7 @@ class JobOfferDTO
     public function setImageFile(?UploadedFile $imageFile): self
     {
         $this->imageFile = $imageFile;
+
         return $this;
     }
 
@@ -83,6 +100,7 @@ class JobOfferDTO
     public function setContractType(?string $contractType): self
     {
         $this->contractType = $contractType;
+
         return $this;
     }
 
@@ -94,6 +112,7 @@ class JobOfferDTO
     public function setLocation(?string $location): self
     {
         $this->location = $location;
+
         return $this;
     }
 
@@ -105,6 +124,7 @@ class JobOfferDTO
     public function setIsRemote(bool $isRemote): self
     {
         $this->isRemote = $isRemote;
+
         return $this;
     }
 
@@ -116,28 +136,37 @@ class JobOfferDTO
     public function setSalary(?float $salary): self
     {
         $this->salary = $salary;
+
         return $this;
     }
 
+    /**
+     * @return array<int, string>
+     */
     public function getRequiredSkills(): array
     {
         return $this->requiredSkills;
     }
 
+    /**
+     * @param array<int, string> $requiredSkills
+     */
     public function setRequiredSkills(array $requiredSkills): self
     {
         $this->requiredSkills = $requiredSkills;
+
         return $this;
     }
 
-    public function getExpiresAt(): ?DateTimeInterface
+    public function getExpiresAt(): ?\DateTimeInterface
     {
         return $this->expiresAt;
     }
 
-    public function setExpiresAt(?DateTimeInterface $expiresAt): self
+    public function setExpiresAt(?\DateTimeInterface $expiresAt): self
     {
         $this->expiresAt = $expiresAt;
+
         return $this;
     }
 
@@ -149,6 +178,7 @@ class JobOfferDTO
     public function setContactEmail(?string $contactEmail): self
     {
         $this->contactEmail = $contactEmail;
+
         return $this;
     }
 }

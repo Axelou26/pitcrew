@@ -1,24 +1,91 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 use Prometheus\CollectorRegistry;
-use Prometheus\Storage\InMemory;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class MetricsCollector
 {
-    private CollectorRegistry $registry;
+    private $registry;
+    private $entityManager;
     private LoggerInterface $logger;
+
+    /** @var array<string, mixed> */
     private array $metrics = [];
 
-    public function __construct(LoggerInterface $logger)
+    public function __construct($registry, $entityManager, LoggerInterface $logger)
     {
-        $this->logger = $logger;
-        $this->registry = new CollectorRegistry(new InMemory());
+        $this->registry      = $registry;
+        $this->entityManager = $entityManager;
+        $this->logger        = $logger;
         $this->initializeMetrics();
+    }
+
+    public function recordHttpRequest(Request $request, Response $response, float $duration): void
+    {
+        $method = $request->getMethod();
+        $route  = $request->getPathInfo();
+        $status = $response->getStatusCode();
+
+        $this->metrics['http_requests_total']->inc(['method' => $method, 'route' => $route, 'status' => $status]);
+        $this->metrics['http_request_duration_seconds']->observe($duration, ['method' => $method, 'route' => $route]);
+    }
+
+    public function recordDatabaseQuery(string $type, string $table, float $duration): void
+    {
+        $this->metrics['database_queries_total']->inc(['type' => $type, 'table' => $table]);
+        $this->metrics['database_query_duration_seconds']->observe($duration, ['type' => $type, 'table' => $table]);
+    }
+
+    public function recordCacheHit(string $type): void
+    {
+        $this->metrics['cache_hits_total']->inc(['type' => $type]);
+    }
+
+    public function recordCacheMiss(string $type): void
+    {
+        $this->metrics['cache_misses_total']->inc(['type' => $type]);
+    }
+
+    public function updateSystemMetrics(): void
+    {
+        // Mémoire
+        $memoryUsage = memory_get_usage(true);
+        $this->metrics['memory_usage_bytes']->set($memoryUsage);
+
+        // CPU (si disponible)
+        $cpuLoad = 0;
+        if (\function_exists('sys_getloadavg')) {
+            $load = sys_getloadavg();
+            if ($load !== false && isset($load[0])) {
+                $cpuLoad = $load[0];
+            }
+        }
+        $this->metrics['cpu_usage']->set($cpuLoad);
+    }
+
+    public function updateBusinessMetrics(
+        int $activeUsers,
+        int $postsTotal,
+        int $commentsTotal,
+        int $likesTotal,
+        int $sharesTotal
+    ): void {
+        $this->metrics['active_users']->set($activeUsers);
+        $this->metrics['posts_total']->set($postsTotal);
+        $this->metrics['comments_total']->set($commentsTotal);
+        $this->metrics['likes_total']->set($likesTotal);
+        $this->metrics['shares_total']->set($sharesTotal);
+    }
+
+    public function getRegistry(): CollectorRegistry
+    {
+        return $this->registry;
     }
 
     private function initializeMetrics(): void
@@ -115,63 +182,29 @@ class MetricsCollector
         );
     }
 
-    public function recordHttpRequest(Request $request, Response $response, float $duration): void
+    private function getTopHashtags(): array
     {
-        $method = $request->getMethod();
-        $route = $request->getPathInfo();
-        $status = $response->getStatusCode();
+        try {
+            $result = $this->entityManager->createQuery(
+                'SELECT h.name, COUNT(p.id) as usage_count
+                 FROM App\Entity\Hashtag h
+                 JOIN h.posts p
+                 GROUP BY h.id, h.name
+                 ORDER BY usage_count DESC'
+            )->setMaxResults(10)->getResult();
 
-        $this->metrics['http_requests_total']->inc(['method' => $method, 'route' => $route, 'status' => $status]);
-        $this->metrics['http_request_duration_seconds']->observe($duration, ['method' => $method, 'route' => $route]);
-    }
+            if (!\is_array($result)) {
+                return [];
+            }
 
-    public function recordDatabaseQuery(string $type, string $table, float $duration): void
-    {
-        $this->metrics['database_queries_total']->inc(['type' => $type, 'table' => $table]);
-        $this->metrics['database_query_duration_seconds']->observe($duration, ['type' => $type, 'table' => $table]);
-    }
-
-    public function recordCacheHit(string $type): void
-    {
-        $this->metrics['cache_hits_total']->inc(['type' => $type]);
-    }
-
-    public function recordCacheMiss(string $type): void
-    {
-        $this->metrics['cache_misses_total']->inc(['type' => $type]);
-    }
-
-    public function updateSystemMetrics(): void
-    {
-        // Mémoire
-        $memoryUsage = memory_get_usage(true);
-        $this->metrics['memory_usage_bytes']->set($memoryUsage);
-
-        // CPU (si disponible)
-        $cpuLoad = 0;
-        if (function_exists('sys_getloadavg')) {
-            $load = sys_getloadavg();
-            $cpuLoad = $load[0];
+            return array_map(function ($row) {
+                return [
+                    'hashtag' => $row['name'] ?? '',
+                    'count'   => (int) ($row['usage_count'] ?? 0),
+                ];
+            }, $result);
+        } catch (\Exception $e) {
+            return [];
         }
-        $this->metrics['cpu_usage']->set($cpuLoad);
-    }
-
-    public function updateBusinessMetrics(
-        int $activeUsers,
-        int $postsTotal,
-        int $commentsTotal,
-        int $likesTotal,
-        int $sharesTotal
-    ): void {
-        $this->metrics['active_users']->set($activeUsers);
-        $this->metrics['posts_total']->set($postsTotal);
-        $this->metrics['comments_total']->set($commentsTotal);
-        $this->metrics['likes_total']->set($likesTotal);
-        $this->metrics['shares_total']->set($sharesTotal);
-    }
-
-    public function getRegistry(): CollectorRegistry
-    {
-        return $this->registry;
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit\Config;
 
 use App\Config\SubscriptionFeatures;
@@ -70,19 +72,19 @@ class SubscriptionFeaturesTest extends TestCase
     public function testGetFeatureDescription(): void
     {
         // Test de descriptions existantes
-        $this->assertEquals(
+        $this->assertSame(
             SubscriptionFeatures::FEATURES_DESCRIPTIONS['post_job_offer'],
             SubscriptionFeatures::getFeatureDescription('post_job_offer')
         );
 
         // Test avec une fonctionnalité inexistante
-        $this->assertEquals(
+        $this->assertSame(
             'Description non disponible',
             SubscriptionFeatures::getFeatureDescription('non_existent_feature')
         );
 
         // Test de la casse insensible
-        $this->assertEquals(
+        $this->assertSame(
             SubscriptionFeatures::getFeatureDescription('post_job_offer'),
             SubscriptionFeatures::getFeatureDescription('POST_JOB_OFFER')
         );

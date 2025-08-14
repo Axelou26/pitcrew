@@ -1,29 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\SecurityBundle\Security;
 
 class CompanyVerificationService
 {
-    private $entityManager;
-    private $security;
-    private $subscriptionService;
+    private SubscriptionService $subscriptionService;
 
-    public function __construct(
-        EntityManagerInterface $entityManager,
-        Security $security,
-        SubscriptionService $subscriptionService
-    ) {
-        $this->entityManager = $entityManager;
-        $this->security = $security;
+    public function __construct(SubscriptionService $subscriptionService)
+    {
         $this->subscriptionService = $subscriptionService;
     }
 
     /**
-     * Vérifie si l'entreprise a droit au badge vérifié
+     * Vérifie si l'entreprise a droit au badge vérifié.
      */
     public function hasVerifiedBadge(User $user): bool
     {
@@ -32,32 +25,35 @@ class CompanyVerificationService
     }
 
     /**
-     * Renvoie les détails de vérification de l'entreprise
+     * Renvoie les détails de vérification de l'entreprise.
+     *
+     * @return array<string, mixed>
      */
     public function getVerificationDetails(User $user): array
     {
         if (!$this->hasVerifiedBadge($user)) {
             return [
                 'verified' => false,
-                'message' => 'Cette fonctionnalité est disponible uniquement avec l\'abonnement Business',
-                'level' => 'none'
+                'message'  => 'Cette fonctionnalité est disponible uniquement avec l\'abonnement Business',
+                'level'    => 'none',
             ];
         }
 
         // Pour un abonné Business, renvoyer les détails de vérification
         $subscription = $this->subscriptionService->getActiveSubscription($user);
+        $startDate    = $subscription?->getStartDate();
 
         return [
-            'verified' => true,
-            'message' => 'Entreprise vérifiée par PitCrew',
-            'level' => 'business',
-            'since' => $subscription ? $subscription->getStartDate()->format('d/m/Y') : 'N/A',
-            'badge_info' => 'Ce badge certifie que cette entreprise est un partenaire de confiance de PitCrew'
+            'verified'   => true,
+            'message'    => 'Entreprise vérifiée par PitCrew',
+            'level'      => 'business',
+            'since'      => $startDate ? $startDate->format('d/m/Y') : 'N/A',
+            'badge_info' => 'Ce badge certifie que cette entreprise est un partenaire de confiance de PitCrew',
         ];
     }
 
     /**
-     * Renvoie le HTML du badge vérifié pour affichage
+     * Renvoie le HTML du badge vérifié pour affichage.
      */
     public function getVerifiedBadgeHtml(User $user): string
     {

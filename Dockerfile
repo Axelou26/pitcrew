@@ -80,9 +80,9 @@ RUN chmod +x /usr/local/bin/pitcrew-entrypoint.sh && \
 # Exposition du port
 EXPOSE 9000
 
-# Healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD php-fpm -t || exit 1
+# Healthcheck amélioré qui vérifie à la fois PHP-FPM et l'état d'initialisation
+HEALTHCHECK --interval=10s --timeout=5s --start-period=60s --retries=5 \
+    CMD (php-fpm -t && [ -f /tmp/app-initialized ]) || exit 1
 
 # Utilisation de l'entrypoint natif PHP, mais CMD personnalisé
 CMD ["/usr/local/bin/pitcrew-entrypoint.sh"] 

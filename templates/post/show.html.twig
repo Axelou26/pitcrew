@@ -6,9 +6,21 @@
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-md-8">
+            <!-- Bouton retour -->
+            <div class="mb-3">
+                <a href="{{ path('app_home') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Retour à l'accueil
+                </a>
+            </div>
+            
             <!-- Post principal -->
             {{ include('post/_post_card_full.html.twig', { post: post }) }}
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('js/post-detail.js') }}" defer></script>
+{% endblock %}

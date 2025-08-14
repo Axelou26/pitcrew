@@ -83,7 +83,7 @@
             <!-- Trending Topics -->
             <div class="card border-0 shadow-sm rounded-3 sticky-top" style="top: 20px;">
                 <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0 fw-bold">Tendances F1</h5>
+                    <h5 class="mb-0 fw-bold">Tendances sport automobile</h5>
                 </div>
                 <div class="card-body p-0">
                     <ul class="list-group list-group-flush">
@@ -97,7 +97,7 @@
                     </ul>
                 </div>
                 <div class="card-footer bg-white border-0 text-center py-2">
-                    <a href="#" class="text-decoration-none">Voir plus</a>
+                    <a href="#" class="text-decoration-none text-danger">Voir plus</a>
                 </div>
             </div>
         </div>
@@ -191,9 +191,96 @@
         </div>
         
         <!-- Sidebar Right -->
-        <div class="col-lg-3 d-none d-lg-block">
-            <!-- People to Follow -->
+        <div class="col-lg-3 {% if not app.user %}d-block{% else %}d-none d-lg-block{% endif %}">
+            <!-- PitCrew en chiffres -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold">PitCrew en chiffres</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item border-0 px-3 py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-danger bg-opacity-10 rounded-circle p-2 me-3">
+                                    <i class="bi bi-briefcase text-danger"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0">5+</h6>
+                                    <p class="text-muted small mb-0">Offres d'emploi</p>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="list-group-item border-0 px-3 py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                                    <i class="bi bi-building text-primary"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0">12+</h6>
+                                    <p class="text-muted small mb-0">Entreprises</p>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="list-group-item border-0 px-3 py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3">
+                                    <i class="bi bi-people text-success"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0">12+</h6>
+                                    <p class="text-muted small mb-0">Candidats</p>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Sujets tendance -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">Sujets tendance</h5>
+                        <a href="#" class="text-decoration-none text-danger small">Voir plus</a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item border-0 px-3 py-2">
+                            <a href="#" class="text-decoration-none">
+                                <span class="badge bg-light text-dark">#pitrew</span>
+                                <p class="text-muted small mb-0">0 publications</p>
+                            </a>
+                        </li>
+                        <li class="list-group-item border-0 px-3 py-2">
+                            <a href="#" class="text-decoration-none">
+                                <span class="badge bg-light text-dark">#blabla</span>
+                                <p class="text-muted small mb-0">0 publications</p>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            {% if not app.user %}
+                <!-- Login Card -->
+                <div class="card border-0 shadow-sm rounded-3 mb-4">
+                    <div class="card-body p-4 text-center">
+                        <i class="bi bi-person-circle display-4 text-primary mb-3"></i>
+                        <h5 class="mb-3">Bienvenue sur PitCrew</h5>
+                        <p class="text-muted mb-4">Connectez-vous pour accéder à toutes les fonctionnalités</p>
+                        <a href="{{ path('app_login') }}" class="btn btn-primary rounded-pill w-100 mb-2">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Connexion
+                        </a>
+                        <a href="{{ path('app_register') }}" class="btn btn-outline-primary rounded-pill w-100">
+                            <i class="bi bi-person-plus me-2"></i>Inscription
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+            
             {% if app.user and suggestedUsers is not empty %}
+                <!-- People to Follow -->
                 <div class="card mb-4">
                     <div class="card-header bg-white">
                         <h5 class="mb-0 fw-bold">Suggestions d'amis</h5>
@@ -250,7 +337,7 @@
                     </div>
                     {% if suggestedUsers|length > 5 %}
                         <div class="card-footer bg-white border-0 text-center py-2">
-                            <a href="{{ path('app_user_suggestions') }}" class="text-decoration-none">Voir plus</a>
+                            <a href="{{ path('app_user_suggestions') }}" class="text-decoration-none text-danger">Voir plus</a>
                         </div>
                     {% endif %}
                 </div>

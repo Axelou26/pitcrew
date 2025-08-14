@@ -308,4 +308,41 @@
     display: flex;
     padding: 8px 16px;
     border-top: 1px solid #eee;
+}
+
+/* Styles pour le lien "voir plus" */
+.post-content-container .text-primary {
+    color: #007bff !important;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.post-content-container .text-primary:hover {
+    color: #0056b3 !important;
+    text-decoration: underline !important;
+}
+
+.post-content-container .text-primary i {
+    transition: transform 0.3s ease;
+}
+
+.post-content-container .text-primary:hover i {
+    transform: translateX(3px);
+}
+
+/* Styles spécifiques pour la page de détail d'un post */
+.post-card .post-content[data-full-content] {
+    max-height: none !important;
+    overflow: visible !important;
+    position: static !important;
+}
+
+.post-card .post-content[data-full-content]::after {
+    display: none !important;
+}
+
+/* S'assurer que sur la page de détail, le contenu est toujours complet */
+body:has(.post-card .post-content[data-full-content]) .post-content {
+    max-height: none !important;
+    overflow: visible !important;
 } 

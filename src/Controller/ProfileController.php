@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\User;
 use App\Form\ProfilePostulantType;
 use App\Form\ProfileRecruiterType;
-use DateTime;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -34,7 +36,7 @@ class ProfileController extends AbstractController
 
         // Choisir le formulaire en fonction du type d'utilisateur
         $formType = $user->isRecruiter() ? ProfileRecruiterType::class : ProfilePostulantType::class;
-        $form = $this->createForm($formType, $user);
+        $form     = $this->createForm($formType, $user);
 
         $form->handleRequest($request);
 
@@ -91,11 +93,11 @@ class ProfileController extends AbstractController
                     $newFilename
                 );
 
-                $documents = $user->getDocuments() ?? [];
+                $documents   = $user->getDocuments() ?? [];
                 $documents[] = [
-                    'filename' => $newFilename,
+                    'filename'     => $newFilename,
                     'originalName' => $uploadedFile->getClientOriginalName(),
-                    'uploadedAt' => new DateTime(),
+                    'uploadedAt'   => new DateTimeImmutable(),
                 ];
                 $user->setDocuments($documents);
 
@@ -115,7 +117,7 @@ class ProfileController extends AbstractController
     #[IsGranted('ROLE_POSTULANT')]
     public function deleteDocument(string $filename, EntityManagerInterface $entityManager): Response
     {
-        $user = $this->getUser();
+        $user      = $this->getUser();
         $documents = $user->getDocuments() ?? [];
 
         foreach ($documents as $key => $document) {
@@ -140,7 +142,7 @@ class ProfileController extends AbstractController
     }
 
     /**
-     * Raccourci pour accéder à l'édition des compétences depuis le profil
+     * Raccourci pour accéder à l'édition des compétences depuis le profil.
      */
     #[Route('/edit-skills', name: 'app_profile_edit_skills')]
     #[IsGranted('ROLE_POSTULANT')]
@@ -150,7 +152,7 @@ class ProfileController extends AbstractController
     }
 
     /**
-     * Raccourci pour accéder à l'édition de l'expérience depuis le profil
+     * Raccourci pour accéder à l'édition de l'expérience depuis le profil.
      */
     #[Route('/edit-experience', name: 'app_profile_edit_experience')]
     #[IsGranted('ROLE_POSTULANT')]
@@ -165,5 +167,15 @@ class ProfileController extends AbstractController
         return $this->render('profile/view.html.twig', [
             'user' => $user,
         ]);
+    }
+
+    private function getUploadPath(): string
+    {
+        $uploadDir = $this->getParameter('uploads_directory');
+        if (!$uploadDir) {
+            $uploadDir = 'uploads';
+        }
+
+        return $uploadDir . '/profiles';
     }
 }

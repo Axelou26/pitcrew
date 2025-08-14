@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit\Entity;
 
+use App\Entity\Post;
 use App\Entity\PostComment;
 use App\Entity\User;
-use App\Entity\Post;
-use PHPUnit\Framework\TestCase;
 use Doctrine\Common\Collections\Collection;
+use PHPUnit\Framework\TestCase;
 
 class PostCommentTest extends TestCase
 {
@@ -18,8 +20,8 @@ class PostCommentTest extends TestCase
     {
         parent::setUp();
         $this->comment = new PostComment();
-        $this->author = new User();
-        $this->post = new Post();
+        $this->author  = new User();
+        $this->post    = new Post();
 
         $this->author->setEmail('user@example.com');
     }
@@ -33,9 +35,9 @@ class PostCommentTest extends TestCase
 
     public function testContent(): void
     {
-        $content = "Ceci est un commentaire de test";
+        $content = 'Ceci est un commentaire de test';
         $this->comment->setContent($content);
-        $this->assertEquals($content, $this->comment->getContent());
+        $this->assertSame($content, $this->comment->getContent());
     }
 
     public function testAuthorAssociation(): void
@@ -96,7 +98,7 @@ class PostCommentTest extends TestCase
     {
         $date = new \DateTimeImmutable('2024-01-01 12:00:00');
         $this->comment->setCreatedAt($date);
-        $this->assertEquals($date, $this->comment->getCreatedAt());
+        $this->assertSame($date, $this->comment->getCreatedAt());
     }
 
     public function testFluentInterface(): void

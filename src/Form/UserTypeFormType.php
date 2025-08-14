@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Form;
 
 use App\Entity\User;
@@ -15,13 +17,13 @@ class UserTypeFormType extends AbstractType
     {
         $builder
             ->add('userType', ChoiceType::class, [
-                'label' => 'Quel type de compte souhaitez-vous créer ?',
+                'label'   => 'Quel type de compte souhaitez-vous créer ?',
                 'choices' => [
-                    'Je cherche un emploi dans la F1' => User::ROLE_POSTULANT,
-                    'Je souhaite recruter des talents' => User::ROLE_RECRUTEUR,
+                    'Je cherche un emploi dans le sport automobile' => User::ROLE_POSTULANT,
+                    'Je souhaite recruter des talents'              => User::ROLE_RECRUTEUR,
                 ],
-                'expanded' => true,
-                'multiple' => false,
+                'expanded'    => true,
+                'multiple'    => false,
                 'constraints' => [
                     new NotBlank([
                         'message' => 'Veuillez choisir un type de compte',

@@ -1,14 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\Conversation;
 use App\Entity\Message;
-use App\Entity\User;
 use App\Repository\ConversationRepository;
+use App\Repository\FriendshipRepository;
 use App\Repository\MessageRepository;
 use App\Repository\UserRepository;
-use App\Repository\FriendshipRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -33,21 +34,36 @@ class MessageController extends AbstractController
 
     #[Route('/conversation/{id}', name: 'app_message_conversation', methods: ['GET'])]
     public function conversation(
-        Conversation $conversation,
-        MessageRepository $messageRepository,
+        int $id,
         ConversationRepository $convRepo,
+        MessageRepository $messageRepository,
         EntityManagerInterface $entityManager
     ): Response {
+        // Charger la conversation avec ses messages
+        $conversation = $convRepo->find($id);
+
+        if (!$conversation) {
+            throw $this->createNotFoundException('Conversation non trouvée.');
+        }
+
         // Vérifier que l'utilisateur fait partie de la conversation
         if (
-            $conversation->getParticipant1() !== $this->getUser() &&
-            $conversation->getParticipant2() !== $this->getUser()
+            $conversation->getParticipant1() !== $this->getUser()
+            && $conversation->getParticipant2() !== $this->getUser()
         ) {
             throw $this->createAccessDeniedException();
         }
 
         // Récupérer toutes les conversations de l'utilisateur
         $conversations = $convRepo->findConversationsForUser($this->getUser());
+
+        // Récupérer explicitement les messages de la conversation
+        $messages = $messageRepository->findBy(['conversation' => $conversation], ['createdAt' => 'ASC']);
+
+        // Assurons-nous que la collection de messages est initialisée
+        foreach ($messages as $message) {
+            $conversation->addMessage($message);
+        }
 
         // Marquer les messages comme lus
         $unreadMessages = $messageRepository->findUnreadMessagesInConversation(
@@ -61,7 +77,7 @@ class MessageController extends AbstractController
         $entityManager->flush();
 
         return $this->render('message/conversation.html.twig', [
-            'conversation' => $conversation,
+            'conversation'  => $conversation,
             'conversations' => $conversations,
         ]);
     }
@@ -74,8 +90,8 @@ class MessageController extends AbstractController
     ): JsonResponse {
         // Vérifier que l'utilisateur fait partie de la conversation
         if (
-            $conversation->getParticipant1() !== $this->getUser() &&
-            $conversation->getParticipant2() !== $this->getUser()
+            $conversation->getParticipant1() !== $this->getUser()
+            && $conversation->getParticipant2() !== $this->getUser()
         ) {
             throw $this->createAccessDeniedException();
         }
@@ -95,11 +111,11 @@ class MessageController extends AbstractController
         $entityManager->flush();
 
         return new JsonResponse([
-            'id' => $message->getId(),
-            'content' => $message->getContent(),
+            'id'        => $message->getId(),
+            'content'   => $message->getContent(),
             'createdAt' => $message->getCreatedAt()->format('Y-m-d H:i:s'),
-            'sender' => [
-                'id' => $message->getSender()->getId(),
+            'sender'    => [
+                'id'       => $message->getSender()->getId(),
                 'fullName' => $message->getSender()->getFullName(),
             ],
         ]);
@@ -119,21 +135,24 @@ class MessageController extends AbstractController
         // Vérifier si l'utilisateur existe
         if (!$otherUser) {
             $this->addFlash('error', 'Utilisateur non trouvé.');
+
             return $this->redirectToRoute('app_message_index');
         }
 
         // Vérifier qu'on ne démarre pas une conversation avec soi-même
         if ($otherUser === $this->getUser()) {
             $this->addFlash('error', 'Vous ne pouvez pas démarrer une conversation avec vous-même.');
+
             return $this->redirectToRoute('app_message_index');
         }
 
         // Vérifier si l'utilisateur est ami avec le destinataire
         $friendshipRepository = $entityManager->getRepository(\App\Entity\Friendship::class);
-        $isFriend = $friendshipRepository->areFriends($this->getUser(), $otherUser);
+        $isFriend             = $friendshipRepository->areFriends($this->getUser(), $otherUser);
 
         if (!$isFriend) {
             $this->addFlash('error', 'Vous pouvez uniquement envoyer des messages à vos amis.');
+
             return $this->redirectToRoute('app_message_index');
         }
 
@@ -183,32 +202,36 @@ class MessageController extends AbstractController
         ConversationRepository $convRepo,
         EntityManagerInterface $entityManager
     ): Response {
-        $recipientId = $request->request->get('recipient');
+        $recipientId    = $request->request->get('recipient');
         $messageContent = trim($request->request->get('message', ''));
 
         if (!$recipientId || empty($messageContent)) {
             $this->addFlash('error', 'Veuillez sélectionner un destinataire et saisir un message.');
+
             return $this->redirectToRoute('app_message_index');
         }
 
         $recipient = $userRepository->find($recipientId);
         if (!$recipient) {
             $this->addFlash('error', 'Le destinataire sélectionné n\'existe pas.');
+
             return $this->redirectToRoute('app_message_index');
         }
 
         // Vérifier qu'on ne démarre pas une conversation avec soi-même
         if ($recipient === $this->getUser()) {
             $this->addFlash('error', 'Vous ne pouvez pas démarrer une conversation avec vous-même.');
+
             return $this->redirectToRoute('app_message_index');
         }
 
         // Vérifier si l'utilisateur est ami avec le destinataire
         $friendshipRepository = $entityManager->getRepository(\App\Entity\Friendship::class);
-        $isFriend = $friendshipRepository->areFriends($this->getUser(), $recipient);
+        $isFriend             = $friendshipRepository->areFriends($this->getUser(), $recipient);
 
         if (!$isFriend) {
             $this->addFlash('error', 'Vous pouvez uniquement envoyer des messages à vos amis.');
+
             return $this->redirectToRoute('app_message_index');
         }
 
@@ -237,6 +260,7 @@ class MessageController extends AbstractController
         $entityManager->flush();
 
         $this->addFlash('success', 'Votre message a été envoyé.');
+
         return $this->redirectToRoute('app_message_conversation', ['id' => $conversation->getId()]);
     }
 
@@ -245,7 +269,7 @@ class MessageController extends AbstractController
         UserRepository $userRepository,
         FriendshipRepository $friendshipRepository,
         EntityManagerInterface $entityManager
-    ) {
+    ): JsonResponse {
         $currentUser = $this->getUser();
 
         try {
@@ -254,43 +278,38 @@ class MessageController extends AbstractController
 
             // Débogage : compter les amitiés acceptées
             $count = $entityManager->createQuery(
-                'SELECT COUNT(f) FROM App\Entity\Friendship f 
+                'SELECT COUNT(f) FROM App\Entity\Friendship f
                  WHERE (f.requester = :user OR f.addressee = :user)
                  AND f.status = :status'
             )
-            ->setParameter('user', $currentUser)
-            ->setParameter('status', 'accepted')
-            ->getSingleScalarResult();
+                ->setParameter('user', $currentUser)
+                ->setParameter('status', 'accepted')
+                ->getSingleScalarResult();
 
             $recipients = [];
 
             // N'utiliser que les amis comme destinataires
             foreach ($friends as $friend) {
                 $recipients[] = [
-                    'id' => $friend->getId(),
-                    'fullName' => $friend->getFullName(),
-                    'isRecruiter' => $friend->isRecruiter(),
-                    'profilePicture' => $friend->getProfilePicture()
+                    'id'             => $friend->getId(),
+                    'fullName'       => $friend->getFullName(),
+                    'isRecruiter'    => $friend->isRecruiter(),
+                    'profilePicture' => $friend->getProfilePicture(),
                 ];
             }
 
             return new JsonResponse([
                 'recipients' => $recipients,
-                'debug' => [
-                    'friendCount' => count($friends),
-                    'acceptedFriendshipsCount' => $count,
-                    'currentUserId' => $currentUser->getId()
-                ]
+                'debug'      => [
+                    'friends_count'              => \count($friends),
+                    'accepted_friendships_count' => $count,
+                ],
             ]);
         } catch (\Exception $e) {
-            return new JsonResponse(
-                [
-                    'error' => 'Une erreur est survenue lors de la récupération des contacts.',
-                    'message' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
-                ],
-                JsonResponse::HTTP_INTERNAL_SERVER_ERROR
-            );
+            return new JsonResponse([
+                'error'   => 'Erreur lors de la récupération des destinataires',
+                'message' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }

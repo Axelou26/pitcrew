@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 use App\Entity\Post;
@@ -7,7 +9,7 @@ use App\Entity\Post;
 class PostCounterManager
 {
     /**
-     * Met à jour tous les compteurs d'un post
+     * Met à jour tous les compteurs d'un post.
      */
     public function updateAllCounters(Post $post): void
     {
@@ -17,7 +19,7 @@ class PostCounterManager
     }
 
     /**
-     * Met à jour le compteur de likes
+     * Met à jour le compteur de likes.
      */
     public function updateLikesCounter(Post $post): void
     {
@@ -25,7 +27,7 @@ class PostCounterManager
     }
 
     /**
-     * Met à jour le compteur de commentaires
+     * Met à jour le compteur de commentaires.
      */
     public function updateCommentsCounter(Post $post): void
     {
@@ -33,7 +35,7 @@ class PostCounterManager
     }
 
     /**
-     * Met à jour le compteur de partages
+     * Met à jour le compteur de partages.
      */
     public function updateSharesCounter(Post $post): void
     {

@@ -1,0 +1,380 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Bienvenue sur PitCrew - Complétez votre profil{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .onboarding-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .onboarding-header {
+            padding: 3rem 0;
+            background: linear-gradient(135deg, #e31c25 0%, #9c0e14 100%);
+            margin-bottom: 2rem;
+            color: white;
+            text-align: center;
+        }
+        
+        .progress-bar {
+            background: #f1f1f1;
+            border-radius: 10px;
+            height: 8px;
+            margin: 2rem 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(135deg, #e31c25 0%, #9c0e14 100%);
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        .step-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-left: 5px solid #e31c25;
+        }
+        
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .step-number {
+            background: #e31c25;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 1rem;
+        }
+        
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #e31c25 0%, #9c0e14 100%);
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary-custom:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
+        }
+        
+        .feature-highlight {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            border-left: 4px solid #28a745;
+        }
+        
+        .tips-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .tip-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #e31c25;
+        }
+        
+        .tip-icon {
+            font-size: 2rem;
+            color: #e31c25;
+            margin-bottom: 1rem;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <div class="onboarding-header">
+        <div class="container">
+            <h1>Bienvenue sur PitCrew !</h1>
+            <p class="lead">Complétez votre profil pour optimiser votre expérience</p>
+        </div>
+    </div>
+
+    <div class="container my-5">
+        <div class="onboarding-container">
+            <!-- Barre de progression -->
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 25%;"></div>
+            </div>
+            
+            <!-- Étape 1: Informations de base -->
+            <div class="step-card">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <div>
+                        <h3>Informations de base</h3>
+                        <p class="text-muted mb-0">Vos informations personnelles et professionnelles</p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <p>Nous avons déjà récupéré vos informations de base. Vous pouvez maintenant les compléter ou les modifier.</p>
+                        
+                        <div class="feature-highlight">
+                            <h5><i class="fas fa-check-circle text-success me-2"></i>Profil créé avec succès</h5>
+                            <p class="mb-0">Votre compte est maintenant actif et vous pouvez commencer à utiliser PitCrew.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <a href="{{ path('app_profile_edit') }}" class="btn btn-primary-custom">
+                            <i class="fas fa-edit me-2"></i>Compléter le profil
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Étape 2: Spécifique au type d'utilisateur -->
+            {% if app.user.isRecruiter() %}
+                <div class="step-card">
+                    <div class="step-header">
+                        <div class="step-number">2</div>
+                        <div>
+                            <h3>Informations entreprise</h3>
+                            <p class="text-muted mb-0">Décrivez votre entreprise pour attirer les meilleurs talents</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-8">
+                            <p>Ajoutez des informations détaillées sur votre entreprise pour améliorer votre visibilité auprès des candidats.</p>
+                            
+                            <div class="tips-grid">
+                                <div class="tip-card">
+                                    <div class="tip-icon">
+                                        <i class="fas fa-building"></i>
+                                    </div>
+                                    <h6>Description de l'entreprise</h6>
+                                    <p class="small">Décrivez votre culture, vos valeurs et vos projets pour attirer les candidats qui correspondent à votre vision.</p>
+                                </div>
+                                
+                                <div class="tip-card">
+                                    <div class="tip-icon">
+                                        <i class="fas fa-globe"></i>
+                                    </div>
+                                    <h6>Site web et réseaux</h6>
+                                    <p class="small">Ajoutez vos liens vers votre site web et LinkedIn pour renforcer votre crédibilité.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <a href="{{ path('app_recruiter_profile') }}" class="btn btn-primary-custom">
+                                <i class="fas fa-building me-2"></i>Configurer l'entreprise
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="step-card">
+                    <div class="step-header">
+                        <div class="step-number">2</div>
+                        <div>
+                            <h3>Profil professionnel</h3>
+                            <p class="text-muted mb-0">Mettez en valeur vos compétences et expériences</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-8">
+                            <p>Complétez votre profil professionnel pour augmenter vos chances d'être repéré par les recruteurs.</p>
+                            
+                            <div class="tips-grid">
+                                <div class="tip-card">
+                                    <div class="tip-icon">
+                                        <i class="fas fa-briefcase"></i>
+                                    </div>
+                                    <h6>Expériences professionnelles</h6>
+                                    <p class="small">Ajoutez vos expériences dans le sport automobile pour montrer votre expertise.</p>
+                                </div>
+                                
+                                <div class="tip-card">
+                                    <div class="tip-icon">
+                                        <i class="fas fa-graduation-cap"></i>
+                                    </div>
+                                    <h6>Formation et certifications</h6>
+                                    <p class="small">Mentionnez vos diplômes et certifications spécifiques au domaine.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <a href="{{ path('app_applicant_profile') }}" class="btn btn-primary-custom">
+                                <i class="fas fa-user-edit me-2"></i>Compléter le CV
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Étape 3: Découverte de la plateforme -->
+            <div class="step-card">
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <div>
+                        <h3>Découvrir PitCrew</h3>
+                        <p class="text-muted mb-0">Explorez les fonctionnalités de la plateforme</p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <p>Prenez le temps de découvrir toutes les fonctionnalités disponibles sur PitCrew.</p>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="feature-highlight">
+                                    <h6><i class="fas fa-search me-2"></i>Recherche d'emploi</h6>
+                                    <p class="small mb-0">Trouvez des offres adaptées à votre profil</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="feature-highlight">
+                                    <h6><i class="fas fa-users me-2"></i>Réseau</h6>
+                                    <p class="small mb-0">Connectez-vous avec d'autres professionnels</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="feature-highlight">
+                                    <h6><i class="fas fa-bell me-2"></i>Alertes</h6>
+                                    <p class="small mb-0">Recevez des notifications personnalisées</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="feature-highlight">
+                                    <h6><i class="fas fa-chart-line me-2"></i>Suivi</h6>
+                                    <p class="small mb-0">Suivez vos candidatures et votre progression</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <a href="{{ path('app_dashboard') }}" class="btn btn-primary-custom">
+                            <i class="fas fa-tachometer-alt me-2"></i>Accéder au tableau de bord
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Étape 4: Première action -->
+            <div class="step-card">
+                <div class="step-header">
+                    <div class="step-number">4</div>
+                    <div>
+                        <h3>Première action</h3>
+                        <p class="text-muted mb-0">Commencez à utiliser PitCrew</p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <p>Vous êtes maintenant prêt à utiliser PitCrew ! Choisissez votre première action.</p>
+                        
+                        {% if app.user.isRecruiter() %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                <strong>Conseil :</strong> Commencez par publier votre première offre d'emploi pour attirer des candidats qualifiés.
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                <strong>Conseil :</strong> Parcourez les offres d'emploi disponibles et postulez à celles qui correspondent à votre profil.
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4 text-center">
+                        {% if app.user.isRecruiter() %}
+                            <a href="{{ path('app_job_offer_new') }}" class="btn btn-primary-custom mb-2 d-block">
+                                <i class="fas fa-plus me-2"></i>Publier une offre
+                            </a>
+                        {% else %}
+                            <a href="{{ path('app_job_offer_index') }}" class="btn btn-primary-custom mb-2 d-block">
+                                <i class="fas fa-search me-2"></i>Voir les offres
+                            </a>
+                        {% endif %}
+                        
+                        <a href="{{ path('app_dashboard') }}" class="btn btn-outline-secondary d-block">
+                            <i class="fas fa-home me-2"></i>Tableau de bord
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actions rapides -->
+            <div class="text-center mt-5">
+                <h4>Actions rapides</h4>
+                <div class="row justify-content-center">
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ path('app_profile_edit') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-user-edit me-2"></i>Modifier le profil
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ path('app_settings') }}" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-cog me-2"></i>Paramètres
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ path('app_support') }}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-question-circle me-2"></i>Aide
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animation de la barre de progression
+            const progressFill = document.querySelector('.progress-fill');
+            if (progressFill) {
+                setTimeout(() => {
+                    progressFill.style.width = '100%';
+                }, 500);
+            }
+            
+            // Animation des cartes d'étapes
+            const stepCards = document.querySelectorAll('.step-card');
+            stepCards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                    card.style.transition = 'all 0.5s ease';
+                    
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 100);
+                }, index * 200);
+            });
+        });
+    </script>
+{% endblock %} 

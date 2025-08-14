@@ -1,28 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\Application;
 use App\Entity\JobOffer;
+use App\Form\ApplicantExperienceType;
+use App\Form\ApplicantSkillsType;
 use App\Form\ApplicationType;
 use App\Service\FileUploader;
-use DateTime;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
-use App\Form\ApplicantSkillsType;
-use App\Form\ApplicantExperienceType;
-use App\Entity\Applicant;
-use App\Entity\User;
 
 #[Route('/applicant')]
 class ApplicantController extends AbstractController
 {
     /**
-     * Permet à un utilisateur de modifier ses compétences (techniques et soft skills)
+     * Permet à un utilisateur de modifier ses compétences (techniques et soft skills).
      */
     #[Route('/edit-skills', name: 'app_applicant_edit_skills')]
     public function editSkills(Request $request, EntityManagerInterface $entityManager): Response
@@ -38,11 +37,12 @@ class ApplicantController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->flush();
             $this->addFlash('success', 'Vos compétences ont été mises à jour avec succès.');
+
             return $this->redirectToRoute('app_profile_index');
         }
 
         return $this->render('applicant/edit_skills.html.twig', [
-            'form' => $form->createView()
+            'form' => $form->createView(),
         ]);
     }
 
@@ -55,7 +55,7 @@ class ApplicantController extends AbstractController
 
         // Récupérer les candidatures de l'utilisateur
         $applications = $entityManager->getRepository(Application::class)->findBy([
-            'applicant' => $applicant
+            'applicant' => $applicant,
         ], ['createdAt' => 'DESC']);
 
         // Récupérer les offres favorites
@@ -69,9 +69,9 @@ class ApplicantController extends AbstractController
         );
 
         return $this->render('applicant/dashboard.html.twig', [
-            'applications' => $applications,
+            'applications'   => $applications,
             'favoriteOffers' => $favoriteOffers,
-            'latestOffers' => $latestOffers
+            'latestOffers'   => $latestOffers,
         ]);
     }
 
@@ -79,21 +79,21 @@ class ApplicantController extends AbstractController
     public function jobOffers(Request $request, EntityManagerInterface $entityManager): Response
     {
         $filters = [
-            'location' => $request->query->get('location'),
-            'contractType' => $request->query->get('contractType')
+            'location'     => $request->query->get('location'),
+            'contractType' => $request->query->get('contractType'),
         ];
 
         $search = $request->query->get('search');
 
         $jobOffers = $entityManager->getRepository(JobOffer::class)
-            ->searchOffers($search, $filters);
+            ->findBy(['isActive' => true], ['createdAt' => 'DESC']);
 
         // Ajout du search dans les filtres pour le template
         $filters['search'] = $search;
 
         return $this->render('applicant/job_offers.html.twig', [
             'jobOffers' => $jobOffers,
-            'filters' => $filters
+            'filters'   => $filters,
         ]);
     }
 
@@ -101,7 +101,7 @@ class ApplicantController extends AbstractController
     public function showJobOffer(JobOffer $jobOffer): Response
     {
         return $this->render('applicant/job_offer_show.html.twig', [
-            'jobOffer' => $jobOffer
+            'jobOffer' => $jobOffer,
         ]);
     }
 
@@ -115,11 +115,12 @@ class ApplicantController extends AbstractController
         // Vérifier si l'utilisateur n'a pas déjà postulé
         $existingApplication = $entityManager->getRepository(Application::class)->findOneBy([
             'applicant' => $this->getUser(),
-            'jobOffer' => $jobOffer
+            'jobOffer'  => $jobOffer,
         ]);
 
         if ($existingApplication) {
             $this->addFlash('error', 'Vous avez déjà postulé à cette offre.');
+
             return $this->redirectToRoute('app_applicant_job_offer_show', ['id' => $jobOffer->getId()]);
         }
 
@@ -127,7 +128,7 @@ class ApplicantController extends AbstractController
         $application->setApplicant($this->getUser());
         $application->setJobOffer($jobOffer);
         $application->setStatus('pending');
-        $application->setCreatedAt(new DateTime());
+        $application->setCreatedAt(new DateTimeImmutable());
 
         $form = $this->createForm(ApplicationType::class, $application);
         $form->handleRequest($request);
@@ -144,12 +145,13 @@ class ApplicantController extends AbstractController
             $entityManager->flush();
 
             $this->addFlash('success', 'Votre candidature a été envoyée avec succès.');
+
             return $this->redirectToRoute('app_applicant_dashboard');
         }
 
         return $this->render('applicant/apply.html.twig', [
-            'form' => $form->createView(),
-            'jobOffer' => $jobOffer
+            'form'     => $form->createView(),
+            'jobOffer' => $jobOffer,
         ]);
     }
 
@@ -159,10 +161,17 @@ class ApplicantController extends AbstractController
         $applicant = $this->getUser();
 
         $isFavorite = $applicant->getFavoriteOffers()->contains($jobOffer);
-        $message = $isFavorite ? 'Offre retirée des favoris.' : 'Offre ajoutée aux favoris.';
-        $action = $isFavorite ? 'removeFavoriteOffer' : 'addFavoriteOffer';
+        $message    = $isFavorite ? 'Offre retirée des favoris.' : 'Offre ajoutée aux favoris.';
 
-        $applicant->$action($jobOffer);
+        if ($isFavorite) {
+            $applicant->removeFavoriteOffer($jobOffer);
+            $entityManager->flush();
+            $this->addFlash('success', $message);
+
+            return $this->redirectToRoute('app_applicant_job_offer_show', ['id' => $jobOffer->getId()]);
+        }
+
+        $applicant->addFavoriteOffer($jobOffer);
 
         $entityManager->flush();
         $this->addFlash('success', $message);
@@ -179,12 +188,12 @@ class ApplicantController extends AbstractController
         );
 
         return $this->render('applicant/applications.html.twig', [
-            'applications' => $applications
+            'applications' => $applications,
         ]);
     }
 
     /**
-     * Permet à un candidat de modifier son expérience professionnelle
+     * Permet à un candidat de modifier son expérience professionnelle.
      */
     #[Route('/edit-experience', name: 'app_applicant_edit_experience')]
     public function editExperience(Request $request, EntityManagerInterface $entityManager): Response
@@ -196,11 +205,12 @@ class ApplicantController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->flush();
             $this->addFlash('success', 'Votre expérience a été mise à jour avec succès.');
+
             return $this->redirectToRoute('app_profile_index');
         }
 
         return $this->render('applicant/edit_experience.html.twig', [
-            'form' => $form->createView()
+            'form' => $form->createView(),
         ]);
     }
 }

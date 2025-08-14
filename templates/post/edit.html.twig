@@ -3,14 +3,115 @@
 {% block title %}Modifier le post{% endblock %}
 
 {% block body %}
-    <div class="container mt-4">
-        {{ form_start(form) }}
-        {{ form_widget(form) }}
-        <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
-        {{ form_end(form) }}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Bouton retour -->
+            <div class="mb-3">
+                <a href="{{ path('app_post_show', {'id': post.id}) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Retour au post
+                </a>
+            </div>
+            
+            <!-- Card d'édition -->
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-header bg-white border-0 py-3">
+                    <h4 class="mb-0">
+                        <i class="bi bi-pencil-square text-primary me-2"></i>
+                        Modifier votre post
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    {{ form_start(form, {'attr': {'class': 'needs-validation', 'novalidate': 'novalidate'}}) }}
+                    
+                    <div class="mb-3">
+                        {{ form_label(form.title, 'Titre (optionnel)', {'label_attr': {'class': 'form-label fw-bold'}}) }}
+                        {{ form_widget(form.title, {
+                            'attr': {
+                                'class': 'form-control form-control-lg',
+                                'placeholder': 'Ajoutez un titre à votre post...'
+                            }
+                        }) }}
+                        {{ form_errors(form.title) }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form_label(form.content, 'Contenu', {'label_attr': {'class': 'form-label fw-bold'}}) }}
+                        <div class="position-relative">
+                            {{ form_widget(form.content, {
+                                'attr': {
+                                    'class': 'form-control mention-input',
+                                    'rows': '6',
+                                    'placeholder': 'Partagez vos pensées, expériences ou questions...'
+                                }
+                            }) }}
+                            <div class="mention-suggestions dropdown-menu suggestion-container"></div>
+                        </div>
+                        {{ form_errors(form.content) }}
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Utilisez @ pour mentionner un utilisateur et #hashtag pour créer des liens vers des sujets
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        {{ form_label(form.images, 'Images (optionnel)', {'label_attr': {'class': 'form-label fw-bold'}}) }}
+                        {{ form_widget(form.images, {
+                            'attr': {
+                                'class': 'form-control',
+                                'accept': 'image/*'
+                            }
+                        }) }}
+                        {{ form_errors(form.images) }}
+                        
+                        {% if post.imageName %}
+                            <div class="mt-2">
+                                <small class="text-muted">Image actuelle :</small>
+                                <div class="mt-2">
+                                    <img src="{{ asset('uploads/posts/' ~ post.imageName) }}" 
+                                         class="img-thumbnail" 
+                                         style="max-width: 200px; max-height: 200px; object-fit: cover;"
+                                         alt="Image actuelle">
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ path('app_post_show', {'id': post.id}) }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-2"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>Enregistrer les modifications
+                        </button>
+                    </div>
+                    
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
     </div>
+</div>
 {% endblock %}
 
 {% block javascripts %}
     {{ parent() }}
+    <script>
+        // Validation côté client
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                var forms = document.getElementsByClassName('needs-validation');
+                var validation = Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+    </script>
 {% endblock %} 

@@ -1,21 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\Subscription;
-use App\Repository\SubscriptionRepository;
 use App\Repository\RecruiterSubscriptionRepository;
+use App\Repository\SubscriptionRepository;
 use App\Service\StripeService;
+use App\Service\StripeWebhookHandler;
 use App\Service\SubscriptionManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
-use Stripe\Webhook;
-use App\Service\StripeWebhookHandler;
 
 #[Route('/subscription')]
 #[IsGranted('ROLE_RECRUTEUR')]
@@ -33,14 +34,15 @@ class SubscriptionController extends AbstractController
     #[Route('/', name: 'app_subscription_plans')]
     public function plans(): Response
     {
-        $subscriptions = $this->subscriptionRepo->findBy(['isActive' => true], ['price' => 'ASC']);
+        // Utiliser la nouvelle méthode du repository qui retourne des abonnements uniques
+        $uniqueSubscriptions = $this->subscriptionRepo->findUniqueSubscriptions();
 
         return $this->render('subscription/plans.html.twig', [
-            'subscriptions' => $subscriptions,
+            'subscriptions'       => $uniqueSubscriptions,
             'active_subscription' => $this->recruiterSubRepo->findActiveSubscription($this->getUser()),
-            'stripe_public_key' => $this->params->get('stripe_public_key'),
-            'is_test_mode' => $this->stripeService->isTestMode(),
-            'is_offline_mode' => $this->stripeService->isOfflineMode()
+            'stripe_public_key'   => $this->params->get('stripe_public_key'),
+            'is_test_mode'        => $this->stripeService->isTestMode(),
+            'is_offline_mode'     => $this->stripeService->isOfflineMode(),
         ]);
     }
 
@@ -93,6 +95,7 @@ class SubscriptionController extends AbstractController
             return $this->redirectToRoute('app_subscription_manage');
         } catch (\Exception $e) {
             $this->addFlash('error', $e->getMessage());
+
             return $this->redirectToRoute('app_subscription_plans');
         }
     }
@@ -101,12 +104,12 @@ class SubscriptionController extends AbstractController
     public function manage(): Response
     {
         return $this->render('subscription/manage.html.twig', [
-            'active_subscription' => $this->recruiterSubRepo->findActiveSubscription($this->getUser()),
-            'subscription_history' => $this->recruiterSubRepo->findByUser($this->getUser()),
-            'available_subscriptions' => $this->subscriptionRepo->findBy(['isActive' => true], ['price' => 'ASC']),
-            'stripe_public_key' => $this->params->get('stripe_public_key'),
-            'is_test_mode' => $this->stripeService->isTestMode(),
-            'is_offline_mode' => $this->stripeService->isOfflineMode()
+            'active_subscription'     => $this->recruiterSubRepo->findActiveSubscription($this->getUser()),
+            'subscription_history'    => $this->recruiterSubRepo->findByUser($this->getUser()),
+            'available_subscriptions' => $this->subscriptionRepo->findUniqueSubscriptions(),
+            'stripe_public_key'       => $this->params->get('stripe_public_key'),
+            'is_test_mode'            => $this->stripeService->isTestMode(),
+            'is_offline_mode'         => $this->stripeService->isOfflineMode(),
         ]);
     }
 
@@ -141,6 +144,7 @@ class SubscriptionController extends AbstractController
             );
 
             $webhookHandler->handleEvent($event);
+
             return new Response('Webhook Handled', 200);
         } catch (\Exception $e) {
             return new Response('Webhook Error: ' . $e->getMessage(), 400);
@@ -156,16 +160,17 @@ class SubscriptionController extends AbstractController
             throw $this->createNotFoundException('Abonnement non trouvé');
         }
 
-        $invoiceNumber = 'FACT-' . date('Y') . '-' . str_pad($subscription->getId(), 6, '0', STR_PAD_LEFT);
+        $subscriptionId = $subscription->getId();
+        $invoiceNumber  = 'FACT-' . date('Y') . '-' . str_pad((string) ($subscriptionId ?? 0), 6, '0', \STR_PAD_LEFT);
 
         return $this->render('subscription/invoice.html.twig', [
-            'subscription' => $subscription->getSubscription(),
-            'user' => $this->getUser(),
+            'subscription'   => $subscription->getSubscription(),
+            'user'           => $this->getUser(),
             'invoice_number' => $invoiceNumber,
-            'invoice_date' => $subscription->getStartDate(),
-            'payment_date' => $subscription->getStartDate(),
-            'start_date' => $subscription->getStartDate(),
-            'end_date' => $subscription->getEndDate(),
+            'invoice_date'   => $subscription->getStartDate(),
+            'payment_date'   => $subscription->getStartDate(),
+            'start_date'     => $subscription->getStartDate(),
+            'end_date'       => $subscription->getEndDate(),
         ]);
     }
 }

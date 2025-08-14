@@ -1,37 +1,30 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Form;
 
 use App\Entity\Interview;
 use App\Entity\JobOffer;
 use App\Entity\User;
+use App\Form\Type\InterviewTypeInterface;
 use App\Repository\JobOfferRepository;
 use App\Repository\UserRepository;
+use DateTimeImmutable;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Bundle\SecurityBundle\Security;
-use DateTime;
-use App\Form\Type\InterviewTypeInterface;
 
 class InterviewType extends AbstractType implements InterviewTypeInterface
 {
-    private $security;
-    private $userRepository;
-    private $jobOfferRepository;
-
     public function __construct(
-        Security $security,
-        UserRepository $userRepository,
-        JobOfferRepository $jobOfferRepository
+        private Security $security
     ) {
-        $this->security = $security;
-        $this->userRepository = $userRepository;
-        $this->jobOfferRepository = $jobOfferRepository;
     }
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
@@ -39,34 +32,34 @@ class InterviewType extends AbstractType implements InterviewTypeInterface
         $builder
             ->add('title', TextType::class, [
                 'label' => 'Titre de l\'entretien',
-                'attr' => [
-                    'class' => 'form-control',
-                    'placeholder' => 'Exemple: Entretien pour le poste de Mécanicien F1'
-                ]
+                'attr'  => [
+                    'class'       => 'form-control',
+                    'placeholder' => 'Exemple: Entretien pour le poste de Mécanicien F1',
+                ],
             ])
             ->add('scheduledAt', DateTimeType::class, [
-                'label' => 'Date et heure',
+                'label'  => 'Date et heure',
                 'widget' => 'single_text',
-                'html5' => true,
-                'attr' => ['class' => 'form-control']
+                'html5'  => true,
+                'attr'   => ['class' => 'form-control'],
             ])
             ->add('notes', TextareaType::class, [
-                'label' => 'Notes ou instructions',
+                'label'    => 'Notes ou instructions',
                 'required' => false,
-                'attr' => [
-                    'class' => 'form-control',
-                    'rows' => 3,
-                    'placeholder' => 'Informations supplémentaires pour le candidat'
-                ]
+                'attr'     => [
+                    'class'       => 'form-control',
+                    'rows'        => 3,
+                    'placeholder' => 'Informations supplémentaires pour le candidat',
+                ],
             ]);
 
         // Si c'est un recruteur, on ajoute le champ pour sélectionner un candidat
-        if (in_array('ROLE_RECRUTEUR', $this->security->getUser()->getRoles())) {
+        if (in_array('ROLE_RECRUTEUR', $this->security->getUser()->getRoles(), true)) {
             // Si un job_offer_id est fourni dans les options, on filtre les candidats
             if (isset($options['job_offer_id']) && $options['job_offer_id']) {
                 $jobOfferId = $options['job_offer_id'];
                 $builder->add('applicant', EntityType::class, [
-                    'class' => User::class,
+                    'class'        => User::class,
                     'choice_label' => function (User $user) {
                         return $user->getFullName() . ' (' . $user->getEmail() . ')';
                     },
@@ -79,16 +72,16 @@ class InterviewType extends AbstractType implements InterviewTypeInterface
                             ->setParameter('role', '%ROLE_POSTULANT%')
                             ->orderBy('u.lastName', 'ASC');
                     },
-                    'label' => 'Candidat',
+                    'label'       => 'Candidat',
                     'placeholder' => 'Sélectionnez un candidat',
-                    'attr' => ['class' => 'form-control']
+                    'attr'        => ['class' => 'form-control'],
                 ]);
             }
 
             // Sinon (si job_offer_id n'est pas fourni), on affiche tous les candidats
             if (!isset($options['job_offer_id']) || !$options['job_offer_id']) {
                 $builder->add('applicant', EntityType::class, [
-                    'class' => User::class,
+                    'class'        => User::class,
                     'choice_label' => function (User $user) {
                         return $user->getFullName() . ' (' . $user->getEmail() . ')';
                     },
@@ -98,30 +91,31 @@ class InterviewType extends AbstractType implements InterviewTypeInterface
                             ->setParameter('role', '%ROLE_POSTULANT%')
                             ->orderBy('u.lastName', 'ASC');
                     },
-                    'label' => 'Candidat',
+                    'label'       => 'Candidat',
                     'placeholder' => 'Sélectionnez un candidat',
-                    'attr' => ['class' => 'form-control']
+                    'attr'        => ['class' => 'form-control'],
                 ]);
             }
 
             // Ajout du champ pour sélectionner une offre d'emploi si non pré-définie
             if (!isset($options['job_offer_id']) || !$options['job_offer_id']) {
                 $builder->add('jobOffer', EntityType::class, [
-                    'class' => JobOffer::class,
-                    'choice_label' => 'title',
+                    'class'         => JobOffer::class,
+                    'choice_label'  => 'title',
                     'query_builder' => function (JobOfferRepository $er) {
                         $user = $this->security->getUser();
+
                         return $er->createQueryBuilder('j')
                             ->where('j.recruiter = :recruiter')
-                            ->andWhere('j.expiresAt > :now')
+                            ->andWhere('j.expiresAt > :now OR j.expiresAt IS NULL')
                             ->setParameter('recruiter', $user)
-                            ->setParameter('now', new DateTime())
+                            ->setParameter('now', new DateTimeImmutable())
                             ->orderBy('j.title', 'ASC');
                     },
-                    'label' => 'Offre d\'emploi associée',
-                    'required' => false,
-                    'placeholder' => 'Sélectionnez une offre (optionnel)',
-                    'attr' => ['class' => 'form-control']
+                    'label'       => 'Offre d\'emploi associée',
+                    'required'    => true,
+                    'placeholder' => 'Sélectionnez une offre',
+                    'attr'        => ['class' => 'form-control'],
                 ]);
             }
         }
@@ -130,7 +124,7 @@ class InterviewType extends AbstractType implements InterviewTypeInterface
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'data_class' => Interview::class,
+            'data_class'   => Interview::class,
             'job_offer_id' => null,
         ]);
     }

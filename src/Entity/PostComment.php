@@ -1,25 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\PostCommentRepository;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
-use DateTimeImmutable;
 
 #[ORM\Entity(repositoryClass: PostCommentRepository::class)]
 class PostComment
 {
-    /**
-     * @SuppressWarnings("PHPMD.ShortVariable")
-     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\Column(type: 'integer')]
+    private int $id;
 
     #[ORM\ManyToOne(inversedBy: 'comments')]
     #[ORM\JoinColumn(nullable: false)]
@@ -30,12 +29,12 @@ class PostComment
     private ?User $author = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Assert\NotBlank(message: "Le commentaire ne peut pas être vide")]
+    #[Assert\NotBlank(message: 'Le commentaire ne peut pas être vide')]
     #[Assert\Length(
         min: 2,
         max: 1000,
-        minMessage: "Le commentaire doit contenir au moins {{ limit }} caractères",
-        maxMessage: "Le commentaire ne peut pas dépasser {{ limit }} caractères"
+        minMessage: 'Le commentaire doit contenir au moins {{ limit }} caractères',
+        maxMessage: 'Le commentaire ne peut pas dépasser {{ limit }} caractères'
     )]
     private ?string $content = null;
 
@@ -45,13 +44,16 @@ class PostComment
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'replies')]
     private ?self $parent = null;
 
-    #[ORM\OneToMany(mappedBy: 'parent', targetEntity: self::class, orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'parentComment')]
+    /**
+     * @var Collection<int, PostComment>
+     */
     private Collection $replies;
 
     public function __construct()
     {
         $this->createdAt = new DateTimeImmutable();
-        $this->replies = new ArrayCollection();
+        $this->replies   = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -67,6 +69,7 @@ class PostComment
     public function setPost(?Post $post): static
     {
         $this->post = $post;
+
         return $this;
     }
 
@@ -78,6 +81,7 @@ class PostComment
     public function setAuthor(?User $author): static
     {
         $this->author = $author;
+
         return $this;
     }
 
@@ -89,6 +93,7 @@ class PostComment
     public function setContent(string $content): static
     {
         $this->content = $content;
+
         return $this;
     }
 
@@ -100,6 +105,7 @@ class PostComment
     public function setCreatedAt(DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
+
         return $this;
     }
 
@@ -111,6 +117,7 @@ class PostComment
     public function setParent(?self $parent): static
     {
         $this->parent = $parent;
+
         return $this;
     }
 
@@ -128,6 +135,7 @@ class PostComment
             $this->replies->add($reply);
             $reply->setParent($this);
         }
+
         return $this;
     }
 
@@ -139,6 +147,7 @@ class PostComment
                 $reply->setParent(null);
             }
         }
+
         return $this;
     }
 }

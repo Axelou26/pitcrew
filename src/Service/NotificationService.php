@@ -6,15 +6,14 @@ namespace App\Service;
 
 use App\Entity\JobApplication;
 use App\Entity\Notification;
-use App\Entity\User;
 use App\Entity\Post;
-use App\Entity\PostLike;
 use App\Entity\PostComment;
-use App\Entity\PostShare;
+use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Throwable;
 
 class NotificationService
 {
@@ -26,7 +25,7 @@ class NotificationService
     }
 
     /**
-     * Crée une notification pour un utilisateur
+     * Crée une notification pour un utilisateur.
      */
     public function createNotification(
         User $user,
@@ -49,8 +48,9 @@ class NotificationService
     }
 
     /**
-     * Notifie un recruteur d'une nouvelle candidature
-     * @throws RuntimeException Si les relations requises sont nulles
+     * Notifie un recruteur d'une nouvelle candidature.
+     *
+     * @throws \RuntimeException Si les relations requises sont nulles
      */
     public function notifyNewApplication(JobApplication $application): void
     {
@@ -69,7 +69,7 @@ class NotificationService
             throw new RuntimeException('Applicant not found for application');
         }
 
-        $title = 'Nouvelle candidature';
+        $title   = 'Nouvelle candidature';
         $message = sprintf(
             '%s a postulé à votre offre "%s"',
             $applicant->getFullName(),
@@ -86,8 +86,9 @@ class NotificationService
     }
 
     /**
-     * Notifie un candidat du changement de statut de sa candidature
-     * @throws RuntimeException Si les relations requises sont nulles
+     * Notifie un candidat du changement de statut de sa candidature.
+     *
+     * @throws \RuntimeException Si les relations requises sont nulles
      */
     public function notifyApplicationStatusChange(JobApplication $application): void
     {
@@ -104,20 +105,20 @@ class NotificationService
         $status = $application->getStatus();
 
         $statusLabels = [
-            'pending' => 'en attente',
-            'accepted' => 'acceptée',
-            'rejected' => 'refusée',
-            'interview' => 'entretien programmé'
+            'pending'   => 'en attente',
+            'accepted'  => 'acceptée',
+            'rejected'  => 'refusée',
+            'interview' => 'entretien programmé',
         ];
 
         $statusTypes = [
-            'pending' => 'info',
-            'accepted' => 'success',
-            'rejected' => 'danger',
-            'interview' => 'warning'
+            'pending'   => 'info',
+            'accepted'  => 'success',
+            'rejected'  => 'danger',
+            'interview' => 'warning',
         ];
 
-        $title = 'Mise à jour de candidature';
+        $title   = 'Mise à jour de candidature';
         $message = sprintf(
             'Votre candidature pour l\'offre "%s" est maintenant %s',
             $jobOffer->getTitle() ?? 'Sans titre',
@@ -140,8 +141,9 @@ class NotificationService
     }
 
     /**
-     * Notifie un utilisateur lorsqu'il est mentionné dans un post
-     * @throws RuntimeException Si l'auteur du post est null
+     * Notifie un utilisateur lorsqu'il est mentionné dans un post.
+     *
+     * @throws \RuntimeException Si l'auteur du post est null
      */
     public function notifyMention(Post $post, User $user): void
     {
@@ -179,43 +181,40 @@ class NotificationService
 
             $this->logger->info('Notification de mention créée', [
                 'user_id' => $user->getId(),
-                'post_id' => $post->getId()
+                'post_id' => $post->getId(),
             ]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->logger->error('Erreur lors de la création d\'une notification de mention', [
-                'error' => $e->getMessage(),
+                'error'   => $e->getMessage(),
                 'user_id' => $user->getId(),
-                'post_id' => $post->getId()
+                'post_id' => $post->getId(),
             ]);
         }
     }
 
     /**
-     * Notifie l'auteur d'un post qu'un utilisateur a aimé son post
-     * @throws RuntimeException Si les relations requises sont nulles
-     */
-
-
-    private function generatePostLink(Post $post): string
-    {
-        return $this->urlGenerator->generate(
-            'app_post_show',
-            ['id' => $post->getId()],
-            UrlGeneratorInterface::ABSOLUTE_URL
-        );
-    }
-
-    /**
-     * Notifie l'auteur d'un post qu'un utilisateur a commenté son post
+     * Notifie l'auteur d'un post qu'un utilisateur a commenté son post.
      *
      * @param PostComment $comment Le commentaire
+     *
      * @return void
      */
     public function notifyPostComment(PostComment $comment): void
     {
         $post = $comment->getPost();
+        if ($post === null) {
+            return;
+        }
+
         $author = $post->getAuthor();
+        if ($author === null) {
+            return;
+        }
+
         $commentAuthor = $comment->getAuthor();
+        if ($commentAuthor === null) {
+            return;
+        }
 
         if ($author === $commentAuthor) {
             // Ne pas notifier l'auteur s'il commente son propre post
@@ -247,20 +246,20 @@ class NotificationService
             $this->entityManager->flush();
 
             $this->logger->info('Notification de commentaire créée', [
-                'post_id' => $post->getId(),
-                'comment_id' => $comment->getId()
+                'post_id'    => $post->getId(),
+                'comment_id' => $comment->getId(),
             ]);
         } catch (\Throwable $e) {
             $this->logger->error('Erreur lors de la création d\'une notification de commentaire', [
-                'error' => $e->getMessage(),
-                'post_id' => $post->getId(),
-                'comment_id' => $comment->getId()
+                'error'      => $e->getMessage(),
+                'post_id'    => $post->getId(),
+                'comment_id' => $comment->getId(),
             ]);
         }
     }
 
     /**
-     * Notifie l'auteur d'un post qu'un utilisateur a partagé son post
+     * Notifie l'auteur d'un post qu'un utilisateur a partagé son post.
      */
     public function notifyPostShare(Post $repost): void
     {
@@ -310,22 +309,22 @@ class NotificationService
             $this->entityManager->flush();
 
             $this->logger->info('Notification de partage créée', [
-                'user_id' => $author->getId(),
-                'post_id' => $originalPost->getId(),
-                'reposter_id' => $reposter->getId()
+                'user_id'     => $author->getId(),
+                'post_id'     => $originalPost->getId(),
+                'reposter_id' => $reposter->getId(),
             ]);
         } catch (\Throwable $e) {
             $this->logger->error('Erreur lors de la création d\'une notification de partage', [
-                'error' => $e->getMessage(),
-                'user_id' => $author->getId(),
-                'post_id' => $originalPost->getId(),
-                'reposter_id' => $reposter->getId()
+                'error'       => $e->getMessage(),
+                'user_id'     => $author->getId(),
+                'post_id'     => $originalPost->getId(),
+                'reposter_id' => $reposter->getId(),
             ]);
         }
     }
 
     /**
-     * Notifie tous les utilisateurs mentionnés dans un post
+     * Notifie tous les utilisateurs mentionnés dans un post.
      */
     public function notifyMentionedUsers(Post $post): void
     {
@@ -350,19 +349,19 @@ class NotificationService
             }
 
             $this->logger->info('Notifications envoyées aux utilisateurs mentionnés', [
-                'post_id' => $post->getId(),
-                'mentions_count' => count($mentions)
+                'post_id'        => $post->getId(),
+                'mentions_count' => count($mentions),
             ]);
         } catch (\Throwable $e) {
             $this->logger->error('Erreur lors de l\'envoi des notifications de mentions', [
-                'error' => $e->getMessage(),
-                'post_id' => $post->getId()
+                'error'   => $e->getMessage(),
+                'post_id' => $post->getId(),
             ]);
         }
     }
 
     /**
-     * Marque toutes les notifications d'un utilisateur comme lues
+     * Marque toutes les notifications d'un utilisateur comme lues.
      */
     public function markAllAsRead(User $user): void
     {
@@ -371,7 +370,7 @@ class NotificationService
     }
 
     /**
-     * Marque une notification comme lue
+     * Marque une notification comme lue.
      */
     public function markAsRead(Notification $notification): void
     {
@@ -382,6 +381,9 @@ class NotificationService
     public function createLikeNotification(Post $post, User $user): void
     {
         $author = $post->getAuthor();
+        if ($author === null) {
+            return;
+        }
 
         if ($author === $user) {
             return;
@@ -404,14 +406,28 @@ class NotificationService
 
             $this->logger->info('Notification de like créée', [
                 'post_id' => $post->getId(),
-                'user_id' => $user->getId()
+                'user_id' => $user->getId(),
             ]);
         } catch (\Throwable $e) {
             $this->logger->error('Erreur lors de la création d\'une notification de like', [
-                'error' => $e->getMessage(),
+                'error'   => $e->getMessage(),
                 'post_id' => $post->getId(),
-                'user_id' => $user->getId()
+                'user_id' => $user->getId(),
             ]);
         }
+    }
+
+    /**
+     * Notifie l'auteur d'un post qu'un utilisateur a aimé son post.
+     *
+     * @throws \RuntimeException Si les relations requises sont nulles
+     */
+    private function generatePostLink(Post $post): string
+    {
+        return $this->urlGenerator->generate(
+            'app_post_show',
+            ['id' => $post->getId()],
+            UrlGeneratorInterface::ABSOLUTE_URL
+        );
     }
 }

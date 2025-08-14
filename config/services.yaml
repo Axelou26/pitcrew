@@ -13,6 +13,10 @@ parameters:
     logos_directory: '%kernel.project_dir%/public/uploads/logos'
     job_images_directory: '%kernel.project_dir%/public/uploads/job_images'
     
+    # Configuration Jitsi Meet
+    jitsi_api_key: '%env(JITSI_API_KEY)%'
+    jitsi_domain: '%env(JITSI_DOMAIN)%'
+    
     # Optimisation du container de services
     container.dumper.inline_factories: true
 
@@ -40,6 +44,10 @@ services:
     App\Repository\PostRepository:
         arguments:
             $cache: '@cache.app'
+            
+    App\Repository\HashtagRepository:
+        arguments:
+            $cache: '@cache.app'
 
     # Rendre le service de recommandation public pour les tests
     App\Service\RecommendationService:
@@ -63,5 +71,11 @@ services:
     # Extension Twig personnalisée
     App\Twig\AppExtension:
         tags: ['twig.extension']
+
+    # Configuration du service VideoConferenceService
+    App\Service\VideoConferenceService:
+        arguments:
+            $apiKey: 'default_api_key'
+            $jitsiDomain: 'meet.jit.si'
 
     # Configuration du UserRepository avec autowiring  

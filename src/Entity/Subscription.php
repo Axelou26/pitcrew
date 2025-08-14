@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\SubscriptionRepository;
@@ -10,13 +12,10 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: SubscriptionRepository::class)]
 class Subscription
 {
-    /**
-     * @SuppressWarnings("PHPMD.ShortVariable")
-     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\Column(type: 'integer')]
+    private int $id;
 
     #[ORM\Column(length: 50)]
     private ?string $name = null;
@@ -33,15 +32,20 @@ class Subscription
     #[ORM\Column(nullable: true)]
     private ?int $maxJobOffers = null;
 
-    #[ORM\Column]
-    private ?bool $isActive = true;
+    #[ORM\Column(type: 'boolean')]
+    private bool $isActive = true;
 
-    #[ORM\OneToMany(mappedBy: 'subscription', targetEntity: RecruiterSubscription::class)]
+    #[ORM\OneToMany(targetEntity: RecruiterSubscription::class, mappedBy: 'subscription', orphanRemoval: true)]
     private Collection $recruiterSubscriptions;
 
     public function __construct()
     {
         $this->recruiterSubscriptions = new ArrayCollection();
+    }
+
+    public function __toString(): string
+    {
+        return $this->name ?? '';
     }
 
     public function getId(): ?int
@@ -57,6 +61,7 @@ class Subscription
     public function setName(string $name): static
     {
         $this->name = $name;
+
         return $this;
     }
 
@@ -68,6 +73,7 @@ class Subscription
     public function setPrice(float $price): static
     {
         $this->price = $price;
+
         return $this;
     }
 
@@ -79,17 +85,25 @@ class Subscription
     public function setDuration(int $duration): static
     {
         $this->duration = $duration;
+
         return $this;
     }
 
+    /**
+     * @return array<int, string>
+     */
     public function getFeatures(): array
     {
         return $this->features;
     }
 
-    public function setFeatures(array $features): static
+    /**
+     * @param array<int, string> $features
+     */
+    public function setFeatures(array $features): self
     {
         $this->features = $features;
+
         return $this;
     }
 
@@ -101,6 +115,7 @@ class Subscription
     public function setMaxJobOffers(?int $maxJobOffers): static
     {
         $this->maxJobOffers = $maxJobOffers;
+
         return $this;
     }
 
@@ -112,6 +127,7 @@ class Subscription
     public function setIsActive(bool $isActive): static
     {
         $this->isActive = $isActive;
+
         return $this;
     }
 
@@ -129,6 +145,7 @@ class Subscription
             $this->recruiterSubscriptions->add($recruiterSubscription);
             $recruiterSubscription->setSubscription($this);
         }
+
         return $this;
     }
 
@@ -139,11 +156,7 @@ class Subscription
                 $recruiterSubscription->setSubscription(null);
             }
         }
-        return $this;
-    }
 
-    public function __toString(): string
-    {
-        return $this->name;
+        return $this;
     }
 }

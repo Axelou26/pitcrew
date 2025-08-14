@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
+use App\Entity\Applicant;
 use App\Entity\JobApplication;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -10,10 +13,15 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * @extends ServiceEntityRepository<JobApplication>
  *
- * @method JobApplication|null find($id, $lockMode = null, $lockVersion = null)
- * @method JobApplication|null findOneBy(array $criteria, array $orderBy = null)
+ * @method null|JobApplication find($id, $lockMode = null, $lockVersion = null)
+ * @method null|JobApplication findOneBy(array<string, mixed> $criteria, array<string, string> $orderBy = null)
  * @method JobApplication[]    findAll()
- * @method JobApplication[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method JobApplication[]    findBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null,
+ *     int $limit = null,
+ *     int $offset = null
+ * )
  */
 class JobApplicationRepository extends ServiceEntityRepository
 {
@@ -34,6 +42,53 @@ class JobApplicationRepository extends ServiceEntityRepository
             ->orderBy('ja.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * @return JobApplication[] Returns an array of JobApplication objects for a user
+     */
+    public function findByUser(User $user): array
+    {
+        // Si l'utilisateur est déjà un Applicant, l'utiliser directement
+        if ($user instanceof Applicant) {
+            // Utiliser une requête SQL native pour contourner le problème de reconnaissance de champ
+            $conn = $this->getEntityManager()->getConnection();
+            $sql  = '
+                SELECT ja.*
+                FROM job_application ja
+                WHERE ja.applicant_id = :applicant_id
+                ORDER BY ja.created_at DESC
+            ';
+            $stmt      = $conn->prepare($sql);
+            $resultSet = $stmt->executeQuery(['applicant_id' => $user->getId()]);
+            $results   = $resultSet->fetchAllAssociative();
+
+            return $this->hydrateResults($results);
+        }
+
+        // Sinon, vérifier si un Applicant avec le même ID existe
+        // Cela fonctionne parce qu'Applicant hérite de User et partage la même table et ID
+        $applicant = $this->getEntityManager()
+            ->getRepository(Applicant::class)
+            ->find($user->getId());
+
+        if (!$applicant) {
+            return [];
+        }
+
+        // Utiliser une requête SQL native
+        $conn = $this->getEntityManager()->getConnection();
+        $sql  = '
+            SELECT ja.*
+            FROM job_application ja
+            WHERE ja.applicant_id = :applicant_id
+            ORDER BY ja.created_at DESC
+        ';
+        $stmt      = $conn->prepare($sql);
+        $resultSet = $stmt->executeQuery(['applicant_id' => $applicant->getId()]);
+        $results   = $resultSet->fetchAllAssociative();
+
+        return $this->hydrateResults($results);
     }
 
     /**
@@ -65,13 +120,13 @@ class JobApplicationRepository extends ServiceEntityRepository
     }
 
     /**
-     * @return int Returns the number of applications for a job offer
+     * Compte le nombre de candidatures pour une offre d'emploi.
      */
     public function countByJobOffer(int $jobOfferId): int
     {
-        return $this->createQueryBuilder('ja')
+        return (int) $this->createQueryBuilder('ja')
             ->select('COUNT(ja.id)')
-            ->where('ja.jobOffer = :jobOfferId')
+            ->andWhere('ja.jobOffer = :jobOfferId')
             ->setParameter('jobOfferId', $jobOfferId)
             ->getQuery()
             ->getSingleScalarResult();
@@ -82,15 +137,57 @@ class JobApplicationRepository extends ServiceEntityRepository
      */
     public function hasUserApplied(User $user, int $jobOfferId): bool
     {
-        $result = $this->createQueryBuilder('ja')
-            ->select('COUNT(ja.id)')
-            ->where('ja.applicant = :user')
-            ->andWhere('ja.jobOffer = :jobOfferId')
-            ->setParameter('user', $user)
-            ->setParameter('jobOfferId', $jobOfferId)
-            ->getQuery()
-            ->getSingleScalarResult();
+        // Si l'utilisateur est déjà un Applicant, l'utiliser directement
+        if ($user instanceof Applicant) {
+            $applicant = $user;
+        }
 
-        return $result > 0;
+        if (!isset($applicant)) {
+            // Sinon, vérifier si un Applicant avec le même ID existe
+            $applicant = $this->getEntityManager()
+                ->getRepository(Applicant::class)
+                ->find($user->getId());
+
+            if (!$applicant) {
+                return false;
+            }
+        }
+
+        $conn = $this->getEntityManager()->getConnection();
+        $sql  = '
+            SELECT COUNT(ja.id) as count
+            FROM job_application ja
+            WHERE ja.applicant_id = :applicant_id
+            AND ja.job_offer_id = :job_offer_id
+        ';
+        $stmt   = $conn->prepare($sql);
+        $result = $stmt->executeQuery([
+            'applicant_id' => $applicant->getId(),
+            'job_offer_id' => $jobOfferId,
+        ]);
+
+        return (int) $result->fetchOne() > 0;
+    }
+
+    /**
+     * Hydrate raw database results into JobApplication entities.
+     *
+     * @param array $results Raw database results
+     *
+     * @return array Array of JobApplication objects
+     */
+    private function hydrateResults(array $results): array
+    {
+        $applicationEntities = [];
+        $em                  = $this->getEntityManager();
+
+        foreach ($results as $row) {
+            $application = $this->find($row['id']);
+            if ($application) {
+                $applicationEntities[] = $application;
+            }
+        }
+
+        return $applicationEntities;
     }
 }

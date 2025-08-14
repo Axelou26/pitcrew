@@ -22,6 +22,7 @@ trait PostReactionsTrait
             $like->setPost($this);
             $this->likesCounter++;
         }
+
         return $this;
     }
 
@@ -33,6 +34,7 @@ trait PostReactionsTrait
             }
             $this->likesCounter = max(0, $this->likesCounter - 1);
         }
+
         return $this;
     }
 
@@ -53,6 +55,7 @@ trait PostReactionsTrait
                 return true;
             }
         }
+
         return false;
     }
 
@@ -63,6 +66,7 @@ trait PostReactionsTrait
                 return $like;
             }
         }
+
         return null;
     }
 }

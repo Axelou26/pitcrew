@@ -8,10 +8,10 @@ use Doctrine\ORM\Mapping as ORM;
 
 trait PostCountersTrait
 {
-    #[ORM\Column(options: ["default" => 0])]
+    #[ORM\Column(options: ['default' => 0])]
     private int $likesCounter = 0;
 
-    #[ORM\Column(options: ["default" => 0])]
+    #[ORM\Column(options: ['default' => 0])]
     private int $commentsCounter = 0;
 
     public function getLikesCounter(): int
@@ -22,6 +22,7 @@ trait PostCountersTrait
     public function setLikesCounter(int $likesCounter): static
     {
         $this->likesCounter = $likesCounter;
+
         return $this;
     }
 
@@ -33,6 +34,7 @@ trait PostCountersTrait
     public function setCommentsCounter(int $commentsCounter): static
     {
         $this->commentsCounter = $commentsCounter;
+
         return $this;
     }
 

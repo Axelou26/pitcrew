@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit\Entity;
 
 use App\Entity\Interview;
@@ -18,7 +20,7 @@ class InterviewTest extends TestCase
     {
         parent::setUp();
         $this->interview = new Interview();
-        $this->jobOffer = new JobOffer();
+        $this->jobOffer  = new JobOffer();
         $this->recruiter = new User();
         $this->applicant = new User();
 
@@ -28,9 +30,11 @@ class InterviewTest extends TestCase
 
     public function testConstructor(): void
     {
-        $this->assertInstanceOf(\DateTime::class, $this->interview->getScheduledAt());
-        $this->assertEquals('scheduled', $this->interview->getStatus());
-        $this->assertNull($this->interview->getNotes());
+        $interview = new Interview();
+        $interview->setScheduledAt(new \DateTimeImmutable());
+
+        $this->assertInstanceOf(\DateTimeInterface::class, $interview->getScheduledAt());
+        $this->assertSame('scheduled', $interview->getStatus());
     }
 
     public function testJobOfferAssociation(): void
@@ -41,35 +45,41 @@ class InterviewTest extends TestCase
 
     public function testApplicantAssociation(): void
     {
-        $this->interview->setApplicant($this->applicant);
-        $this->assertSame($this->applicant, $this->interview->getApplicant());
+        $interview = new Interview();
+        $applicant = $this->createMock(User::class);
+
+        $interview->setApplicant($applicant);
+        $this->assertSame($applicant, $interview->getApplicant());
     }
 
     public function testRecruiterAssociation(): void
     {
-        $this->interview->setRecruiter($this->recruiter);
-        $this->assertSame($this->recruiter, $this->interview->getRecruiter());
+        $interview = new Interview();
+        $recruiter = $this->createMock(User::class);
+
+        $interview->setRecruiter($recruiter);
+        $this->assertSame($recruiter, $interview->getRecruiter());
     }
 
     public function testTitle(): void
     {
-        $title = "Entretien technique";
+        $title = 'Entretien technique';
         $this->interview->setTitle($title);
-        $this->assertEquals($title, $this->interview->getTitle());
+        $this->assertSame($title, $this->interview->getTitle());
     }
 
     public function testScheduledAt(): void
     {
-        $scheduledAt = new \DateTime('2024-01-01 14:00:00');
+        $scheduledAt = new \DateTimeImmutable('2024-01-01 14:00:00');
         $this->interview->setScheduledAt($scheduledAt);
-        $this->assertEquals($scheduledAt, $this->interview->getScheduledAt());
+        $this->assertSame($scheduledAt, $this->interview->getScheduledAt());
     }
 
     public function testEndedAt(): void
     {
-        $endedAt = new \DateTime('2024-01-01 15:00:00');
+        $endedAt = new \DateTimeImmutable('2024-01-01 15:00:00');
         $this->interview->setEndedAt($endedAt);
-        $this->assertEquals($endedAt, $this->interview->getEndedAt());
+        $this->assertSame($endedAt, $this->interview->getEndedAt());
 
         // Test avec une valeur null
         $this->interview->setEndedAt(null);
@@ -78,9 +88,9 @@ class InterviewTest extends TestCase
 
     public function testRoomId(): void
     {
-        $roomId = "room-123";
+        $roomId = 'room-123';
         $this->interview->setRoomId($roomId);
-        $this->assertEquals($roomId, $this->interview->getRoomId());
+        $this->assertSame($roomId, $this->interview->getRoomId());
 
         // Test avec une valeur null
         $this->interview->setRoomId(null);
@@ -91,7 +101,7 @@ class InterviewTest extends TestCase
     {
         $notes = "Notes sur l'entretien";
         $this->interview->setNotes($notes);
-        $this->assertEquals($notes, $this->interview->getNotes());
+        $this->assertSame($notes, $this->interview->getNotes());
 
         // Test avec une valeur null
         $this->interview->setNotes(null);
@@ -102,28 +112,28 @@ class InterviewTest extends TestCase
     {
         // Test des différents statuts
         $this->interview->setStatus('completed');
-        $this->assertEquals('completed', $this->interview->getStatus());
+        $this->assertSame('completed', $this->interview->getStatus());
         $this->assertTrue($this->interview->isCompleted());
         $this->assertFalse($this->interview->isScheduled());
         $this->assertFalse($this->interview->isCancelled());
         $this->assertFalse($this->interview->isActive());
 
         $this->interview->setStatus('scheduled');
-        $this->assertEquals('scheduled', $this->interview->getStatus());
+        $this->assertSame('scheduled', $this->interview->getStatus());
         $this->assertTrue($this->interview->isScheduled());
         $this->assertFalse($this->interview->isCompleted());
         $this->assertFalse($this->interview->isCancelled());
         $this->assertFalse($this->interview->isActive());
 
         $this->interview->setStatus('cancelled');
-        $this->assertEquals('cancelled', $this->interview->getStatus());
+        $this->assertSame('cancelled', $this->interview->getStatus());
         $this->assertTrue($this->interview->isCancelled());
         $this->assertFalse($this->interview->isScheduled());
         $this->assertFalse($this->interview->isCompleted());
         $this->assertFalse($this->interview->isActive());
 
         $this->interview->setStatus('active');
-        $this->assertEquals('active', $this->interview->getStatus());
+        $this->assertSame('active', $this->interview->getStatus());
         $this->assertTrue($this->interview->isActive());
         $this->assertFalse($this->interview->isScheduled());
         $this->assertFalse($this->interview->isCompleted());
@@ -132,9 +142,9 @@ class InterviewTest extends TestCase
 
     public function testMeetingUrl(): void
     {
-        $url = "https://meet.example.com/interview-123";
+        $url = 'https://meet.example.com/interview-123';
         $this->interview->setMeetingUrl($url);
-        $this->assertEquals($url, $this->interview->getMeetingUrl());
+        $this->assertSame($url, $this->interview->getMeetingUrl());
 
         // Test avec une valeur null
         $this->interview->setMeetingUrl(null);
@@ -143,18 +153,20 @@ class InterviewTest extends TestCase
 
     public function testFluentInterface(): void
     {
-        $returnedInterview = $this->interview
-            ->setJobOffer($this->jobOffer)
-            ->setApplicant($this->applicant)
-            ->setRecruiter($this->recruiter)
-            ->setTitle("Entretien technique")
-            ->setScheduledAt(new \DateTime())
-            ->setEndedAt(new \DateTime())
-            ->setRoomId("room-123")
-            ->setNotes("Notes")
-            ->setStatus("scheduled")
-            ->setMeetingUrl("https://meet.example.com");
+        $interview   = new Interview();
+        $applicant   = $this->createMock(User::class);
+        $recruiter   = $this->createMock(User::class);
+        $jobOffer    = $this->createMock(JobOffer::class);
+        $scheduledAt = new \DateTimeImmutable();
 
-        $this->assertSame($this->interview, $returnedInterview);
+        $result = $interview
+            ->setApplicant($applicant)
+            ->setRecruiter($recruiter)
+            ->setJobOffer($jobOffer)
+            ->setTitle('Entretien test')
+            ->setScheduledAt($scheduledAt)
+            ->setStatus('active');
+
+        $this->assertSame($interview, $result);
     }
 }

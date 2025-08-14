@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\EducationRepository;
@@ -9,12 +11,12 @@ use Doctrine\ORM\Mapping as ORM;
 class Education
 {
     /**
-     * @SuppressWarnings("PHPMD.ShortVariable")
+     * Identifiant de la formation.
      */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\Column(type: 'integer')]
+    private int $id;
 
     #[ORM\Column(length: 255)]
     private ?string $degree = null;
@@ -51,6 +53,7 @@ class Education
     public function setDegree(string $degree): self
     {
         $this->degree = $degree;
+
         return $this;
     }
 
@@ -62,6 +65,7 @@ class Education
     public function setInstitution(string $institution): self
     {
         $this->institution = $institution;
+
         return $this;
     }
 
@@ -73,6 +77,7 @@ class Education
     public function setLocation(string $location): self
     {
         $this->location = $location;
+
         return $this;
     }
 
@@ -84,6 +89,7 @@ class Education
     public function setStartDate(string $startDate): self
     {
         $this->startDate = $startDate;
+
         return $this;
     }
 
@@ -95,6 +101,7 @@ class Education
     public function setEndDate(string $endDate): self
     {
         $this->endDate = $endDate;
+
         return $this;
     }
 
@@ -106,6 +113,7 @@ class Education
     public function setDescription(?string $description): self
     {
         $this->description = $description;
+
         return $this;
     }
 
@@ -117,6 +125,7 @@ class Education
     public function setUser(?User $user): self
     {
         $this->user = $user;
+
         return $this;
     }
 }

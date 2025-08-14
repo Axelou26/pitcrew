@@ -17,7 +17,7 @@
                                 <div class="d-flex align-items-center gap-3 mb-3">
                                     <a href="{{ path('app_profile_view', {'id': app.user.id}) }}" class="flex-shrink-0">
                                         {% if app.user.profilePicture %}
-                                            <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}" 
+                                            <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture, 'profile_pictures') }}" 
                                                  class="rounded-circle border"
                                                  alt="{{ app.user.fullName }}"
                                                  style="width: 48px; height: 48px; object-fit: cover;">
@@ -31,7 +31,7 @@
                                     <div class="flex-grow-1 position-relative">
                                         <input type="text" id="quick-post-content" class="form-control form-control-lg text-start py-3 bg-light border-0 rounded-pill mention-input" 
                                                placeholder="Quoi de neuf, {{ app.user.firstName }} ?" style="height: auto;">
-                                        <div id="mention-suggestions" class="mention-suggestions dropdown-menu"></div>
+                                        <div class="mention-suggestions dropdown-menu suggestion-container"></div>
                                     </div>
                                 </div>
                                 
@@ -65,7 +65,7 @@
                     {% else %}
                         <div class="mb-4">
                             <h2 class="display-6 fw-bold mb-3">Dernières publications</h2>
-                            <p class="text-muted lead">Découvrez les actualités de notre communauté F1</p>
+                            <p class="text-muted lead">Découvrez les actualités de notre communauté sport automobile</p>
                         </div>
                     {% endif %}
                     
@@ -100,7 +100,7 @@
                             <div class="card-body p-4">
                                 <div class="text-center mb-4">
                                     {% if app.user.profilePicture %}
-                                        <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture) }}" 
+                                        <img src="{{ asset('uploads/profile_pictures/' ~ app.user.profilePicture, 'profile_pictures') }}" 
                                              class="rounded-circle border mb-3"
                                              alt="{{ app.user.fullName }}"
                                              style="width: 96px; height: 96px; object-fit: cover;">
@@ -227,7 +227,7 @@
                                             <div class="d-flex align-items-center">
                                             <a href="{{ path('app_profile_view', {'id': user.id}) }}" class="me-2">
                                                 {% if user.profilePicture %}
-                                                    <img src="{{ asset('uploads/profile_pictures/' ~ user.profilePicture) }}" 
+                                                    <img src="{{ asset('uploads/profile_pictures/' ~ user.profilePicture, 'profile_pictures') }}" 
                                                              class="rounded-circle border"
                                                          alt="{{ user.fullName }}"
                                                              style="width: 40px; height: 40px; object-fit: cover;">
@@ -268,7 +268,7 @@
                                 {% endfor %}
                                 </div>
                                 {% if suggestedUsers|length > 5 %}
-                                    <a href="{{ path('app_user_suggestions') }}" class="btn btn-light rounded-pill w-100">
+                                    <a href="{{ path('app_user_suggestions') }}" class="btn btn-outline-danger rounded-pill w-100">
                                         Voir plus
                                     </a>
                                 {% endif %}
@@ -281,7 +281,7 @@
                         <div class="card-body p-4">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="fw-bold mb-0">Sujets tendance</h6>
-                                <a href="{{ path('app_hashtags_trending') }}" class="text-decoration-none small">
+                                <a href="{{ path('app_hashtags_trending') }}" class="text-decoration-none small text-danger">
                                     Voir plus
                                 </a>
                             </div>

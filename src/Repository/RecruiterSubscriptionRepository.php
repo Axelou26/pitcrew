@@ -1,20 +1,30 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
 use App\Entity\RecruiterSubscription;
 use App\Entity\User;
+use DateTimeImmutable;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
-use DateTime;
 
 /**
  * @extends ServiceEntityRepository<RecruiterSubscription>
  *
- * @method RecruiterSubscription|null find($id, $lockMode = null, $lockVersion = null)
- * @method RecruiterSubscription|null findOneBy(array $criteria, array $orderBy = null)
+ * @method null|RecruiterSubscription find($id, $lockMode = null, $lockVersion = null)
+ * @method null|RecruiterSubscription findOneBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null
+ * )
  * @method RecruiterSubscription[]    findAll()
- * @method RecruiterSubscription[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method RecruiterSubscription[]    findBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null,
+ *     int $limit = null,
+ *     int $offset = null
+ * )
  */
 class RecruiterSubscriptionRepository extends ServiceEntityRepository
 {
@@ -24,7 +34,7 @@ class RecruiterSubscriptionRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve l'abonnement actif d'un recruteur
+     * Trouve l'abonnement actif d'un recruteur.
      */
     public function findActiveSubscription(User $recruiter): ?RecruiterSubscription
     {
@@ -34,7 +44,7 @@ class RecruiterSubscriptionRepository extends ServiceEntityRepository
             ->andWhere('rs.endDate > :now')
             ->setParameter('recruiter', $recruiter)
             ->setParameter('active', true)
-            ->setParameter('now', new DateTime())
+            ->setParameter('now', new DateTimeImmutable())
             ->orderBy('rs.endDate', 'DESC')
             ->setMaxResults(1)
             ->getQuery()
@@ -42,12 +52,14 @@ class RecruiterSubscriptionRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve tous les abonnements qui expirent bientôt (dans les 7 jours)
+     * Trouve les abonnements qui expirent bientôt.
+     *
+     * @return RecruiterSubscription[]
      */
     public function findExpiringSubscriptions(): array
     {
-        $now = new DateTime();
-        $sevenDaysLater = (new DateTime())->modify('+7 days');
+        $now            = new DateTimeImmutable();
+        $sevenDaysLater = (new DateTimeImmutable())->modify('+7 days');
 
         return $this->createQueryBuilder('rs')
             ->andWhere('rs.isActive = :active')
@@ -63,7 +75,9 @@ class RecruiterSubscriptionRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve tous les abonnements expirés qui sont encore marqués comme actifs
+     * Trouve les abonnements expirés.
+     *
+     * @return RecruiterSubscription[]
      */
     public function findExpiredSubscriptions(): array
     {
@@ -71,14 +85,14 @@ class RecruiterSubscriptionRepository extends ServiceEntityRepository
             ->andWhere('rs.isActive = :active')
             ->andWhere('rs.endDate < :now')
             ->setParameter('active', true)
-            ->setParameter('now', new DateTime())
+            ->setParameter('now', new DateTimeImmutable())
             ->orderBy('rs.endDate', 'ASC')
             ->getQuery()
             ->getResult();
     }
 
     /**
-     * Vérifie si un recruteur a un abonnement actif d'un certain type
+     * Vérifie si un recruteur a un abonnement actif d'un certain type.
      */
     public function hasActiveSubscriptionType(User $recruiter, string $subscriptionName): bool
     {
@@ -91,7 +105,7 @@ class RecruiterSubscriptionRepository extends ServiceEntityRepository
             ->andWhere('s.name = :name')
             ->setParameter('recruiter', $recruiter)
             ->setParameter('active', true)
-            ->setParameter('now', new DateTime())
+            ->setParameter('now', new DateTimeImmutable())
             ->setParameter('name', $subscriptionName)
             ->getQuery()
             ->getSingleScalarResult();
@@ -100,7 +114,9 @@ class RecruiterSubscriptionRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve tous les abonnements d'un recruteur
+     * Trouve les abonnements d'un recruteur.
+     *
+     * @return RecruiterSubscription[]
      */
     public function findByUser(User $recruiter): array
     {

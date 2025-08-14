@@ -1,19 +1,36 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
 use App\Entity\Interview;
+use App\Entity\JobOffer;
 use App\Entity\User;
 use App\Repository\Trait\FlushTrait;
+use DateTime;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
-use DateTime;
 
 /**
  * @extends ServiceEntityRepository<Interview>
+ *
+ * @method null|Interview find($id, $lockMode = null, $lockVersion = null)
+ * @method null|Interview findOneBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null
+ * )
+ * @method Interview[]    findAll()
+ * @method Interview[]    findBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null,
+ *     int $limit = null,
+ *     int $offset = null
+ * )
  */
 class InterviewRepository extends ServiceEntityRepository
 {
+    /** @use FlushTrait<Interview> */
     use FlushTrait;
 
     public function __construct(ManagerRegistry $registry)
@@ -22,7 +39,9 @@ class InterviewRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve les entretiens à venir pour un utilisateur (recruteur ou candidat)
+     * Trouve les entretiens à venir pour un utilisateur.
+     *
+     * @return Interview[]
      */
     public function findUpcomingInterviewsForUser(User $user): array
     {
@@ -33,15 +52,19 @@ class InterviewRepository extends ServiceEntityRepository
             ->setParameter('status', 'scheduled')
             ->orderBy('i.scheduledAt', 'ASC');
 
-        $userRoleField = in_array('ROLE_RECRUTEUR', $user->getRoles()) ? 'recruiter' : 'applicant';
+        $userRoleField = \in_array('ROLE_RECRUTEUR', $user->getRoles(), true)
+            ? 'recruiter'
+            : 'applicant';
         $queryBuilder->andWhere('i.' . $userRoleField . ' = :user')
-           ->setParameter('user', $user);
+            ->setParameter('user', $user);
 
         return $queryBuilder->getQuery()->getResult();
     }
 
     /**
-     * Trouve les entretiens passés pour un utilisateur (recruteur ou candidat)
+     * Trouve les entretiens passés pour un utilisateur.
+     *
+     * @return Interview[]
      */
     public function findPastInterviewsForUser(User $user): array
     {
@@ -50,7 +73,9 @@ class InterviewRepository extends ServiceEntityRepository
             ->setParameter('now', new DateTime())
             ->orderBy('i.scheduledAt', 'DESC');
 
-        $userRoleField = in_array('ROLE_RECRUTEUR', $user->getRoles()) ? 'recruiter' : 'applicant';
+        $userRoleField = \in_array('ROLE_RECRUTEUR', $user->getRoles(), true)
+            ? 'recruiter'
+            : 'applicant';
         $queryBuilder->andWhere('i.' . $userRoleField . ' = :user')
             ->setParameter('user', $user);
 
@@ -58,27 +83,29 @@ class InterviewRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouve les entretiens pour une offre d'emploi spécifique
+     * Trouve les entretiens pour une offre d'emploi.
+     *
+     * @return Interview[]
      */
-    public function findInterviewsForJobOffer(int $jobOfferId): array
+    public function findInterviewsForJobOffer(JobOffer $jobOffer): array
     {
         return $this->createQueryBuilder('i')
             ->andWhere('i.jobOffer = :jobOfferId')
-            ->setParameter('jobOfferId', $jobOfferId)
+            ->setParameter('jobOfferId', $jobOffer->getId())
             ->orderBy('i.scheduledAt', 'ASC')
             ->getQuery()
             ->getResult();
     }
 
     /**
-     * Vérifie les conflits d'horaire pour un utilisateur
+     * Vérifie s'il y a un conflit d'horaire.
      */
     public function hasScheduleConflict(
         User $user,
-        DateTime $startTime,
-        DateTime $endTime,
-        ?int $excludeInterviewId = null
-    ) {
+        \DateTimeImmutable $startTime,
+        \DateTimeImmutable $endTime,
+        ?Interview $excludeInterview = null
+    ): bool {
         $queryBuilder = $this->createQueryBuilder('i')
             ->where('i.status = :status')
             ->andWhere('i.scheduledAt >= :startTime')
@@ -87,16 +114,18 @@ class InterviewRepository extends ServiceEntityRepository
             ->setParameter('startTime', $startTime)
             ->setParameter('endTime', $endTime);
 
-        $userRoleField = in_array('ROLE_RECRUTEUR', $user->getRoles()) ? 'recruiter' : 'applicant';
+        $userRoleField = \in_array('ROLE_RECRUTEUR', $user->getRoles(), true)
+            ? 'recruiter'
+            : 'applicant';
         $queryBuilder->andWhere('i.' . $userRoleField . ' = :user')
-           ->setParameter('user', $user);
+            ->setParameter('user', $user);
 
-        if ($excludeInterviewId) {
+        if ($excludeInterview) {
             $queryBuilder->andWhere('i.id != :excludeId')
-                ->setParameter('excludeId', $excludeInterviewId);
+                ->setParameter('excludeId', $excludeInterview->getId());
         }
 
-        return count($queryBuilder->getQuery()->getResult()) > 0;
+        return \count($queryBuilder->getQuery()->getResult()) > 0;
     }
 
     public function save(Interview $entity, bool $flush = false): void

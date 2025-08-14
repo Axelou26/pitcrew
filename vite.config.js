@@ -7,10 +7,30 @@ export default defineConfig({
         symfonyPlugin(),
     ],
     build: {
+        outDir: 'public/build',
+        assetsDir: 'assets',
+        manifest: true,
         rollupOptions: {
             input: {
-                app: './assets/app.js'
+                app: './assets/app.js',
+                main: './assets/main.js'
             },
+            output: {
+                entryFileNames: 'assets/[name]-[hash].js',
+                chunkFileNames: 'assets/[name]-[hash].js',
+                assetFileNames: 'assets/[name]-[hash].[ext]'
+            }
+        }
+    },
+    optimizeDeps: {
+        include: ['bootstrap']
+    },
+    server: {
+        port: 5173,
+        host: '0.0.0.0',
+        strictPort: true,
+        hmr: {
+            host: 'localhost'
         }
     },
     resolve: {

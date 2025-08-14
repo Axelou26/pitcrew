@@ -1,14 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Doctrine\Connection;
 
 use Doctrine\DBAL\Connections\PrimaryReadReplicaConnection;
-use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 
 /**
  * Connection qui optimise les performances en mettant en cache certaines requêtes
- * Compatible avec Doctrine DBAL 3.9
+ * Compatible avec Doctrine DBAL 3.9.
  */
 class CacheableConnection extends PrimaryReadReplicaConnection
 {
@@ -16,7 +18,7 @@ class CacheableConnection extends PrimaryReadReplicaConnection
     private int $queryCacheTtl = 60; // 1 minute par défaut
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function __construct(array $params, $driver, $config = null, $eventManager = null)
     {
@@ -27,18 +29,19 @@ class CacheableConnection extends PrimaryReadReplicaConnection
     }
 
     /**
-     * Optimise les requêtes SELECT fréquentes
+     * Optimise les requêtes SELECT fréquentes.
      *
      * @param string $sql
      * @param array $params
      * @param array $types
+     *
      * @return mixed
      */
     public function fetchAssociative(string $sql, array $params = [], array $types = [])
     {
         // Si la requête peut être mise en cache
         if ($this->shouldCache($sql)) {
-            $cacheKey = $this->generateCacheKey($sql, $params);
+            $cacheKey  = $this->generateCacheKey($sql, $params);
             $cacheItem = $this->queryCache->getItem($cacheKey);
 
             if ($cacheItem->isHit()) {
@@ -61,7 +64,7 @@ class CacheableConnection extends PrimaryReadReplicaConnection
     }
 
     /**
-     * Détermine si une requête devrait être mise en cache
+     * Détermine si une requête devrait être mise en cache.
      */
     private function shouldCache(string $sql): bool
     {
@@ -82,7 +85,7 @@ class CacheableConnection extends PrimaryReadReplicaConnection
     }
 
     /**
-     * Génère une clé de cache unique pour une requête
+     * Génère une clé de cache unique pour une requête.
      */
     private function generateCacheKey(string $sql, array $params): string
     {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Form;
 
 use App\Entity\Post;
@@ -10,8 +12,9 @@ use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\All;
+use Symfony\Component\Validator\Constraints\File;
 use Symfony\Component\Validator\Constraints\Length;
-use Symfony\Component\Validator\Constraints\NotBlank;
 
 class PostType extends AbstractType
 {
@@ -21,42 +24,49 @@ class PostType extends AbstractType
     {
         $builder
             ->add('title', TextType::class, [
-                'label' => 'Titre',
+                'label'    => 'Titre',
                 'required' => false,
-                'attr' => [
+                'attr'     => [
                     'placeholder' => 'Titre de votre post (optionnel)',
-                    'class' => 'form-control'
+                    'class'       => 'form-control',
                 ],
                 'constraints' => [
                     new Length([
-                        'min' => 3,
-                        'max' => 255,
+                        'min'        => 3,
+                        'max'        => 255,
                         'minMessage' => 'Le titre doit contenir au moins {{ limit }} caractères',
-                        'maxMessage' => 'Le titre ne peut pas dépasser {{ limit }} caractères'
-                    ])
-                ]
+                        'maxMessage' => 'Le titre ne peut pas dépasser {{ limit }} caractères',
+                    ]),
+                ],
             ])
             ->add('content', TextareaType::class, [
-                'label' => 'Contenu',
-                'attr' => [
-                    'placeholder' => 'Partagez vos pensées...',
-                    'rows' => 5,
-                    'class' => 'form-control'
+                'label'    => 'Contenu',
+                'required' => true,
+                'attr'     => [
+                    'rows'        => 4,
+                    'placeholder' => 'Partagez quelque chose avec votre réseau...',
                 ],
-                'constraints' => [
-                    new NotBlank([
-                        'message' => 'Veuillez entrer un contenu'
-                    ])
-                ]
             ])
-            ->add('imageFile', FileType::class, [
-                'label' => 'Image (optionnelle)',
-                'mapped' => false,
-                'required' => false,
+            ->add('images', FileType::class, [
+                'label'       => 'Images',
+                'required'    => false,
+                'multiple'    => true,
+                'mapped'      => false,
                 'constraints' => [
-                    $this->createImageFileConstraint(),
+                    new All([
+                        'constraints' => [
+                            new File([
+                                'maxSize'   => '5M',
+                                'mimeTypes' => [
+                                    'image/jpeg',
+                                    'image/png',
+                                    'image/gif',
+                                ],
+                                'mimeTypesMessage' => 'Veuillez télécharger des images valides.',
+                            ]),
+                        ],
+                    ]),
                 ],
-                'attr' => $this->getImageFileAttributes(),
             ])
         ;
     }
@@ -66,5 +76,10 @@ class PostType extends AbstractType
         $resolver->setDefaults([
             'data_class' => Post::class,
         ]);
+    }
+
+    public function getMaxFileSize(): int
+    {
+        return 5 * 1024 * 1024; // 5MB
     }
 }

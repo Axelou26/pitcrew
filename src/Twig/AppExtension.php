@@ -1,52 +1,50 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Twig;
 
+use App\Entity\User;
 use App\Repository\FriendshipRepository;
-use Symfony\Bundle\SecurityBundle\Security;
-use Symfony\Contracts\Cache\CacheInterface;
-use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
+use Twig\TwigFilter;
 
 class AppExtension extends AbstractExtension
 {
-    public function __construct(
-        private Security $security,
-        private FriendshipRepository $friendshipRepository,
-        private CacheInterface $cache
-    ) {
+    private FriendshipRepository $friendshipRepository;
+
+    public function __construct(FriendshipRepository $friendshipRepository)
+    {
+        $this->friendshipRepository = $friendshipRepository;
     }
 
     public function getFunctions(): array
     {
         return [
-            new TwigFunction('get_likes_count', [$this, 'getLikesCount']),
-            new TwigFunction('pending_friend_requests_count', [$this, 'getPendingFriendRequestsCount']),
+            new TwigFunction('pending_requests_count', [$this, 'getPendingRequestsCount']),
         ];
     }
 
-    /**
-     * Récupère le nombre de likes
-     */
-    public function getLikesCount(int $likesCount): int
+    public function getFilters(): array
     {
-        return $likesCount;
+        return [
+            new TwigFilter('json_decode', [$this, 'jsonDecode']),
+        ];
     }
 
-    public function getPendingFriendRequestsCount(): int
+    public function getPendingRequestsCount(UserInterface $user): int
     {
-        $user = $this->security->getUser();
-
-        if (!$user) {
+        if (!$user instanceof User) {
             return 0;
         }
 
-        // Utiliser le cache pour éviter les requêtes répétées
-        $cacheKey = 'pending_friend_requests_' . $user->getId();
-        return $this->cache->get($cacheKey, function (ItemInterface $item) use ($user) {
-            $item->expiresAfter(300); // Cache pour 5 minutes
-            return $this->friendshipRepository->countPendingRequestsReceived($user);
-        });
+        return $this->friendshipRepository->countPendingRequestsReceived($user);
+    }
+
+    public function jsonDecode(string $json, bool $assoc = true): mixed
+    {
+        return json_decode($json, $assoc);
     }
 }

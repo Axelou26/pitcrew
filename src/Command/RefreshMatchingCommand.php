@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Command;
 
 use App\Entity\Applicant;
@@ -26,7 +28,7 @@ class RefreshMatchingCommand extends Command
         EntityManagerInterface $entityManager,
         MatchingService $matchingService
     ) {
-        $this->entityManager = $entityManager;
+        $this->entityManager   = $entityManager;
         $this->matchingService = $matchingService;
 
         parent::__construct();
@@ -46,25 +48,28 @@ class RefreshMatchingCommand extends Command
         $ioStyle = new SymfonyStyle($input, $output);
         $ioStyle->title('Rafraîchissement des scores de matching');
 
-        $limit = (int)$input->getOption('limit');
-        $jobOfferId = $input->getOption('job-offer');
+        $limit       = (int) $input->getOption('limit');
+        $jobOfferId  = $input->getOption('job-offer');
         $applicantId = $input->getOption('applicant');
-        $dump = $input->getOption('dump');
+        $dump        = $input->getOption('dump');
 
         if ($jobOfferId) {
-            $this->processSpecificJobOffer($ioStyle, (int)$jobOfferId, $limit, $dump);
+            $this->processSpecificJobOffer($ioStyle, (int) $jobOfferId, $limit, $dump);
             $ioStyle->success('Les scores de matching ont été rafraîchis avec succès.');
+
             return Command::SUCCESS;
         }
 
         if ($applicantId) {
-            $this->processSpecificApplicant($ioStyle, (int)$applicantId, $limit, $dump);
+            $this->processSpecificApplicant($ioStyle, (int) $applicantId, $limit, $dump);
             $ioStyle->success('Les scores de matching ont été rafraîchis avec succès.');
+
             return Command::SUCCESS;
         }
 
         $this->processAllMatches($ioStyle, $limit, $dump);
         $ioStyle->success('Les scores de matching ont été rafraîchis avec succès.');
+
         return Command::SUCCESS;
     }
 
@@ -73,16 +78,18 @@ class RefreshMatchingCommand extends Command
         $jobOffer = $this->entityManager->getRepository(JobOffer::class)->find($jobOfferId);
 
         if (!$jobOffer) {
-            $ioStyle->error(sprintf('Offre d\'emploi #%d introuvable.', $jobOfferId));
+            $ioStyle->error(\sprintf('Offre d\'emploi #%d introuvable.', $jobOfferId));
+
             return;
         }
 
-        $ioStyle->section(sprintf('Traitement de l\'offre: %s (ID: %d)', $jobOffer->getTitle(), $jobOffer->getId()));
+        $ioStyle->section(\sprintf('Traitement de l\'offre: %s (ID: %d)', $jobOffer->getTitle(), $jobOffer->getId()));
 
         $candidates = $this->matchingService->findBestCandidatesForJobOffer($jobOffer, $limit);
 
         if (empty($candidates)) {
             $ioStyle->warning('Aucun candidat trouvé pour cette offre.');
+
             return;
         }
 
@@ -94,11 +101,12 @@ class RefreshMatchingCommand extends Command
         $applicant = $this->entityManager->getRepository(Applicant::class)->find($applicantId);
 
         if (!$applicant) {
-            $ioStyle->error(sprintf('Candidat #%d introuvable.', $applicantId));
+            $ioStyle->error(\sprintf('Candidat #%d introuvable.', $applicantId));
+
             return;
         }
 
-        $ioStyle->section(sprintf(
+        $ioStyle->section(\sprintf(
             'Traitement du candidat: %s %s (ID: %d)',
             $applicant->getFirstName(),
             $applicant->getLastName(),
@@ -109,6 +117,7 @@ class RefreshMatchingCommand extends Command
 
         if (empty($offers)) {
             $ioStyle->warning('Aucune offre d\'emploi trouvée pour ce candidat.');
+
             return;
         }
 
@@ -120,13 +129,13 @@ class RefreshMatchingCommand extends Command
         $ioStyle->section('Traitement de tous les candidats et offres d\'emploi actifs');
 
         $candidates = $this->entityManager->getRepository(Applicant::class)->findAll();
-        $offers = $this->entityManager->getRepository(JobOffer::class)->findBy(['isActive' => true]);
+        $offers     = $this->entityManager->getRepository(JobOffer::class)->findBy(['isActive' => true]);
 
         $ioStyle
-            ->writeln(sprintf('Trouvé %d candidat(s) et %d offre(s) d\'emploi active(s)
-                .', count($candidates), count($offers)));
+            ->writeln(\sprintf('Trouvé %d candidat(s) et %d offre(s) d\'emploi active(s)
+                .', \count($candidates), \count($offers)));
 
-        $progressBar = $ioStyle->createProgressBar(count($candidates));
+        $progressBar = $ioStyle->createProgressBar(\count($candidates));
         $progressBar->start();
 
         foreach ($candidates as $applicant) {
@@ -139,7 +148,7 @@ class RefreshMatchingCommand extends Command
         $ioStyle->newLine(2);
 
         // Afficher quelques exemples aléatoires
-        if (count($candidates) > 0 && count($offers) > 0) {
+        if (\count($candidates) > 0 && \count($offers) > 0) {
             $randomCandidate = $candidates[array_rand($candidates)];
             $ioStyle->section('Exemple de résultats pour un candidat aléatoire');
             $sampleOffers = $this->matchingService->findBestJobOffersForCandidate($randomCandidate, 5);
@@ -161,7 +170,7 @@ class RefreshMatchingCommand extends Command
                 $candidate['applicant']->getId(),
                 $candidate['applicant']->getFirstName() . ' ' . $candidate['applicant']->getLastName(),
                 $candidate['score'] . '%',
-                $this->getSkillMatches($candidate['reasons'])
+                $this->getSkillMatches($candidate['reasons']),
             ];
 
             if ($dump) {
@@ -184,7 +193,7 @@ class RefreshMatchingCommand extends Command
                 $offer['jobOffer']->getId(),
                 $offer['jobOffer']->getTitle(),
                 $offer['score'] . '%',
-                $offer['jobOffer']->getLocation()
+                $offer['jobOffer']->getLocation(),
             ];
 
             if ($dump) {
@@ -204,11 +213,11 @@ class RefreshMatchingCommand extends Command
 
         foreach ($reasons as $reason) {
             if ($reason['category'] === 'Compétences techniques' && !empty($reason['matches'])) {
-                $skillMatches = array_merge($skillMatches, array_slice($reason['matches'], 0, 3));
+                $skillMatches = array_merge($skillMatches, \array_slice($reason['matches'], 0, 3));
             }
         }
 
-        return implode(', ', array_slice($skillMatches, 0, 5));
+        return implode(', ', \array_slice($skillMatches, 0, 5));
     }
 
     private function dumpReasonDetails(SymfonyStyle $ioStyle, array $reasons): void
@@ -216,7 +225,7 @@ class RefreshMatchingCommand extends Command
         $ioStyle->writeln('<info>Détails du score:</info>');
 
         foreach ($reasons as $reason) {
-            $ioStyle->writeln(sprintf(
+            $ioStyle->writeln(\sprintf(
                 '- <comment>%s</comment>: %d/%d (%d%%)',
                 $reason['category'],
                 $reason['score'],

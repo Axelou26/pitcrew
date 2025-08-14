@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Security;
 
 use App\Entity\User;
@@ -16,18 +18,18 @@ class SecurityTest extends WebTestCase
 
     protected function setUp(): void
     {
-        $this->client = static::createClient();
+        $this->client         = static::createClient();
         $this->userRepository = static::getContainer()->get(UserRepository::class);
         $this->passwordHasher = static::getContainer()->get(UserPasswordHasherInterface::class);
     }
 
     /**
-     * Test de la force des mots de passe
+     * Test de la force des mots de passe.
      */
     public function testPasswordStrength(): void
     {
-        $user = new User();
-        $weakPassword = 'password123';
+        $user           = new User();
+        $weakPassword   = 'password123';
         $strongPassword = 'Str0ngP@ssw0rd!2024';
 
         // Test avec un mot de passe faible
@@ -46,7 +48,7 @@ class SecurityTest extends WebTestCase
     }
 
     /**
-     * Test de protection contre les attaques XSS
+     * Test de protection contre les attaques XSS.
      */
     public function testXssProtection(): void
     {
@@ -60,30 +62,30 @@ class SecurityTest extends WebTestCase
     }
 
     /**
-     * Test de protection contre les attaques CSRF
+     * Test de protection contre les attaques CSRF.
      */
     public function testCsrfProtection(): void
     {
         // Test sans token CSRF
         $this->client->request('POST', '/post/create', [
-            'content' => 'Test post'
+            'content' => 'Test post',
         ]);
-        $this->assertEquals(Response::HTTP_FORBIDDEN, $this->client->getResponse()->getStatusCode());
+        $this->assertSame(Response::HTTP_FORBIDDEN, $this->client->getResponse()->getStatusCode());
 
         // Test avec token CSRF valide
         $this->client->request('GET', '/post/create');
         $crawler = $this->client->getCrawler();
-        $token = $crawler->filter('input[name="_token"]')->attr('value');
+        $token   = $crawler->filter('input[name="_token"]')->attr('value');
 
         $this->client->request('POST', '/post/create', [
             'content' => 'Test post',
-            '_token' => $token
+            '_token'  => $token,
         ]);
-        $this->assertEquals(Response::HTTP_OK, $this->client->getResponse()->getStatusCode());
+        $this->assertSame(Response::HTTP_OK, $this->client->getResponse()->getStatusCode());
     }
 
     /**
-     * Test de protection contre les attaques par injection SQL
+     * Test de protection contre les attaques par injection SQL.
      */
     public function testSqlInjectionProtection(): void
     {
@@ -92,12 +94,12 @@ class SecurityTest extends WebTestCase
         $this->client->request('GET', '/search', ['q' => $sqlInjectionPayload]);
         $response = $this->client->getResponse();
 
-        $this->assertEquals(Response::HTTP_OK, $response->getStatusCode());
+        $this->assertSame(Response::HTTP_OK, $response->getStatusCode());
         $this->assertStringNotContainsString('SQL syntax', $response->getContent());
     }
 
     /**
-     * Test de la gestion des sessions
+     * Test de la gestion des sessions.
      */
     public function testSessionManagement(): void
     {
@@ -106,13 +108,13 @@ class SecurityTest extends WebTestCase
 
         // Vérifier que la session est sécurisée
         $this->assertTrue($session->isStarted());
-        $this->assertTrue(ini_get('session.cookie_httponly'));
-        $this->assertTrue(ini_get('session.cookie_secure'));
-        $this->assertEquals('Lax', ini_get('session.cookie_samesite'));
+        $this->assertTrue(\ini_get('session.cookie_httponly'));
+        $this->assertTrue(\ini_get('session.cookie_secure'));
+        $this->assertSame('Lax', \ini_get('session.cookie_samesite'));
     }
 
     /**
-     * Test des en-têtes de sécurité
+     * Test des en-têtes de sécurité.
      */
     public function testSecurityHeaders(): void
     {

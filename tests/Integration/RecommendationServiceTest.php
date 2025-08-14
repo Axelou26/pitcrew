@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Integration;
 
-use App\Entity\User;
-use App\Entity\Post;
 use App\Entity\Hashtag;
+use App\Entity\Post;
+use App\Entity\User;
 use App\Service\RecommendationService;
-use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 class RecommendationServiceTest extends KernelTestCase
 {
@@ -16,7 +18,7 @@ class RecommendationServiceTest extends KernelTestCase
 
     protected function setUp(): void
     {
-        $kernel = self::bootKernel();
+        $kernel              = self::bootKernel();
         $this->entityManager = $kernel->getContainer()
             ->get('doctrine')
             ->getManager();
@@ -27,27 +29,13 @@ class RecommendationServiceTest extends KernelTestCase
         $this->cleanDatabase();
     }
 
-    private function cleanDatabase(): void
+    protected function tearDown(): void
     {
-        if (!$this->entityManager) {
-            return;
+        parent::tearDown();
+
+        if ($this->entityManager) {
+            $this->entityManager->close();
         }
-
-        $this->entityManager->getConnection()->executeQuery('SET FOREIGN_KEY_CHECKS=0');
-
-        $tables = [
-            'post_hashtag',
-            'post',
-            'hashtag',
-            'user'
-        ];
-
-        foreach ($tables as $table) {
-            $this->entityManager->getConnection()->executeQuery("TRUNCATE TABLE {$table}");
-        }
-
-        $this->entityManager->getConnection()->executeQuery('SET FOREIGN_KEY_CHECKS=1');
-        $this->entityManager->clear();
     }
 
     public function testGetRecommendedPosts(): void
@@ -82,7 +70,7 @@ class RecommendationServiceTest extends KernelTestCase
         $recommendedPosts = $this->recommendationService->getRecommendedPosts($user, 5);
 
         $this->assertIsArray($recommendedPosts);
-        $this->assertLessThanOrEqual(5, count($recommendedPosts));
+        $this->assertLessThanOrEqual(5, \count($recommendedPosts));
         $this->assertContains($post, $recommendedPosts);
     }
 
@@ -124,7 +112,7 @@ class RecommendationServiceTest extends KernelTestCase
         $suggestedUsers = $this->recommendationService->getSuggestedUsers($user1, 5);
 
         $this->assertIsArray($suggestedUsers);
-        $this->assertLessThanOrEqual(5, count($suggestedUsers));
+        $this->assertLessThanOrEqual(5, \count($suggestedUsers));
         $this->assertContains($user2, $suggestedUsers);
     }
 
@@ -174,7 +162,7 @@ class RecommendationServiceTest extends KernelTestCase
         $trendingHashtags = $this->recommendationService->getTrendingHashtags(5);
 
         $this->assertIsArray($trendingHashtags);
-        $this->assertLessThanOrEqual(5, count($trendingHashtags));
+        $this->assertLessThanOrEqual(5, \count($trendingHashtags));
         $this->assertContains($hashtag1, $trendingHashtags);
         $this->assertContains($hashtag2, $trendingHashtags);
         // Vérifier que hashtag1 apparaît avant hashtag2 car il est plus utilisé
@@ -182,12 +170,26 @@ class RecommendationServiceTest extends KernelTestCase
         $this->assertSame($hashtag2, $trendingHashtags[1]);
     }
 
-    protected function tearDown(): void
+    private function cleanDatabase(): void
     {
-        parent::tearDown();
-
-        if ($this->entityManager) {
-            $this->entityManager->close();
+        if (!$this->entityManager) {
+            return;
         }
+
+        $this->entityManager->getConnection()->executeQuery('SET FOREIGN_KEY_CHECKS=0');
+
+        $tables = [
+            'post_hashtag',
+            'post',
+            'hashtag',
+            'user',
+        ];
+
+        foreach ($tables as $table) {
+            $this->entityManager->getConnection()->executeQuery("TRUNCATE TABLE {$table}");
+        }
+
+        $this->entityManager->getConnection()->executeQuery('SET FOREIGN_KEY_CHECKS=1');
+        $this->entityManager->clear();
     }
 }

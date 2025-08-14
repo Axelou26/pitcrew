@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit\Entity;
 
 use App\Entity\Conversation;
-use App\Entity\User;
-use App\Entity\Message;
 use App\Entity\JobApplication;
-use PHPUnit\Framework\TestCase;
+use App\Entity\Message;
+use App\Entity\User;
 use Doctrine\Common\Collections\ArrayCollection;
+use PHPUnit\Framework\TestCase;
 
 class ConversationTest extends TestCase
 {
@@ -20,10 +22,10 @@ class ConversationTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->conversation = new Conversation();
-        $this->participant1 = new User();
-        $this->participant2 = new User();
-        $this->message = new Message();
+        $this->conversation   = new Conversation();
+        $this->participant1   = new User();
+        $this->participant2   = new User();
+        $this->message        = new Message();
         $this->jobApplication = new JobApplication();
 
         $this->participant1->setEmail('participant1@example.com');
@@ -62,13 +64,13 @@ class ConversationTest extends TestCase
         $newDate = new \DateTimeImmutable('2024-01-01 12:00:00');
 
         $this->conversation->setCreatedAt($newDate);
-        $this->assertEquals($newDate, $this->conversation->getCreatedAt());
+        $this->assertSame($newDate, $this->conversation->getCreatedAt());
 
         $this->conversation->setUpdatedAt($newDate);
-        $this->assertEquals($newDate, $this->conversation->getUpdatedAt());
+        $this->assertSame($newDate, $this->conversation->getUpdatedAt());
 
         $this->conversation->setLastMessageAt($newDate);
-        $this->assertEquals($newDate, $this->conversation->getLastMessageAt());
+        $this->assertSame($newDate, $this->conversation->getLastMessageAt());
     }
 
     public function testMessagesCollection(): void
@@ -104,7 +106,7 @@ class ConversationTest extends TestCase
         $this->assertSame($this->participant1, $otherParticipant);
 
         // Test pour un utilisateur non participant
-        $nonParticipant = new User();
+        $nonParticipant   = new User();
         $otherParticipant = $this->conversation->getOtherParticipant($nonParticipant);
         $this->assertNull($otherParticipant);
     }

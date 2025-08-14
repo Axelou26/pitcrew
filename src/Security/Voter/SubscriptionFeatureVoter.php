@@ -1,33 +1,37 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Security\Voter;
 
 use App\Config\SubscriptionFeatures;
 use App\Entity\User;
 use App\Service\SubscriptionService;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
-use Symfony\Component\Security\Core\User\UserInterface;
-use Psr\Log\LoggerInterface;
 
+/**
+ * @template TAttribute of string
+ * @template TSubject of mixed
+ *
+ * @extends Voter<TAttribute, TSubject>
+ */
 class SubscriptionFeatureVoter extends Voter
 {
     private const VERIFIED_BADGE_FEATURE = 'verified_badge';
 
-    private $subscriptionService;
-    private $logger;
-    private $features;
-    private $businessLevel;
+    private SubscriptionService $subscriptionService;
+    private ?LoggerInterface $logger;
+    private string $businessLevel;
 
     public function __construct(
         SubscriptionService $subscriptionService,
-        LoggerInterface $logger = null,
-        array $features = null
+        ?LoggerInterface $logger = null
     ) {
         $this->subscriptionService = $subscriptionService;
-        $this->logger = $logger;
-        $this->features = $features ?? SubscriptionFeatures::FEATURES_DESCRIPTIONS;
-        $this->businessLevel = SubscriptionFeatures::LEVEL_BUSINESS;
+        $this->logger              = $logger;
+        $this->businessLevel       = SubscriptionFeatures::LEVEL_BUSINESS;
     }
 
     protected function supports(string $attribute, mixed $subject): bool
@@ -40,7 +44,7 @@ class SubscriptionFeatureVoter extends Voter
         // Vérifier si la fonctionnalité existe dans au moins un niveau d'abonnement
         foreach (SubscriptionFeatures::SUBSCRIPTION_LEVELS as $level) {
             $features = SubscriptionFeatures::getAvailableFeatures($level);
-            if (in_array(strtolower($attribute), array_map('strtolower', $features))) {
+            if (\in_array(strtolower($attribute), array_map('strtolower', $features), true)) {
                 return true;
             }
         }
@@ -51,13 +55,13 @@ class SubscriptionFeatureVoter extends Voter
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
     {
         $user = $token->getUser();
-        if (!$user instanceof UserInterface) {
+        if (!$user instanceof User) {
             return false;
         }
 
-        $feature = $this->normalizeFeatureName($attribute);
+        $feature            = $this->normalizeFeatureName($attribute);
         $activeSubscription = $this->subscriptionService->getActiveSubscription($user);
-        $subscriptionName = $this->getSubscriptionName($activeSubscription);
+        $subscriptionName   = $this->getSubscriptionName($activeSubscription);
 
         if ($this->isVerifiedBadgeFeature($feature, $subject)) {
             return $this->handleVerifiedBadgeAccess($subject, $subscriptionName);
@@ -73,7 +77,21 @@ class SubscriptionFeatureVoter extends Voter
 
     private function getSubscriptionName(?object $subscription): ?string
     {
-        return $subscription ? strtolower($subscription->getSubscription()->getName()) : null;
+        if ($subscription === null) {
+            return null;
+        }
+
+        $subscriptionObj = $subscription->getSubscription();
+        if ($subscriptionObj === null) {
+            return null;
+        }
+
+        $subscriptionName = $subscriptionObj->getName();
+        if (!\is_string($subscriptionName)) {
+            return null;
+        }
+
+        return strtolower($subscriptionName ?? '');
     }
 
     private function isVerifiedBadgeFeature(string $feature, mixed $subject): bool
@@ -88,24 +106,32 @@ class SubscriptionFeatureVoter extends Voter
         }
 
         if ($subscriptionName === $this->businessLevel) {
-            $this->logAccess($subject->getId(), self::VERIFIED_BADGE_FEATURE, true);
+            $userId = $subject->getId();
+            if ($userId !== null) {
+                $this->logAccess($userId, self::VERIFIED_BADGE_FEATURE, true);
+            }
+
             return true;
         }
 
         return false;
     }
 
-    private function handleFeatureAccess(UserInterface $user, string $feature, ?string $subscriptionName): bool
+    private function handleFeatureAccess(User $user, string $feature, ?string $subscriptionName): bool
     {
+        $userId = $user->getId();
         if (!$subscriptionName || !$this->isValidSubscriptionLevel($subscriptionName)) {
-            $this->logAccess($user->getId(), $feature, false, 'Aucun abonnement valide');
+            if ($userId !== null) {
+                $this->logAccess($userId, $feature, false, 'Aucun abonnement valide');
+            }
+
             return false;
         }
 
         $hasAccess = $this->isFeatureAvailableForLevel($feature, $subscriptionName);
 
-        if (!$hasAccess) {
-            $this->logAccess($user->getId(), $feature, false, $subscriptionName);
+        if (!$hasAccess && $userId !== null) {
+            $this->logAccess($userId, $feature, false, $subscriptionName);
         }
 
         return $hasAccess;
@@ -113,24 +139,12 @@ class SubscriptionFeatureVoter extends Voter
 
     private function isValidSubscriptionLevel(string $level): bool
     {
-        return in_array(strtolower($level), array_map('strtolower', SubscriptionFeatures::SUBSCRIPTION_LEVELS));
+        return \in_array(strtolower($level), array_map('strtolower', SubscriptionFeatures::SUBSCRIPTION_LEVELS), true);
     }
 
     private function isFeatureAvailableForLevel(string $feature, string $level): bool
     {
         return SubscriptionFeatures::isFeatureAvailableForLevel($feature, $level);
-    }
-
-    private function getFeatures(User $user): array
-    {
-        $subscription = $this->subscriptionService->getActiveSubscription($user);
-
-        if (!$subscription) {
-            return [];
-        }
-
-        $subscriptionName = strtolower($subscription->getSubscription()->getName());
-        return $this->features[$subscriptionName] ?? [];
     }
 
     private function logAccess(int $userId, string $feature, bool $granted, ?string $subscriptionName = null): void
@@ -140,8 +154,8 @@ class SubscriptionFeatureVoter extends Voter
         }
 
         $message = $granted
-            ? sprintf('Accès accordé à la fonctionnalité "%s" pour l\'utilisateur #%d', $feature, $userId)
-            : sprintf(
+            ? \sprintf('Accès accordé à la fonctionnalité "%s" pour l\'utilisateur #%d', $feature, $userId)
+            : \sprintf(
                 'Accès refusé à la fonctionnalité "%s" pour l\'utilisateur #%d. Abonnement actuel: %s',
                 $feature,
                 $userId,

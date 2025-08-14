@@ -19,9 +19,12 @@ chmod -R 777 var
 echo "🗄️  Vérification de la base de données..."
 timeout=60
 counter=0
+db_ready=0
+
 while [ $counter -lt $timeout ]; do
-    if php bin/console doctrine:query:sql "SELECT 1" > /dev/null 2>&1; then
+    if MYSQL_PWD=azerty-26 mysql -h database -u root -e "SELECT 1" >/dev/null 2>&1; then
         echo "✅ Base de données connectée !"
+        db_ready=1
         break
     fi
     echo "⏳ En attente de la base de données... ($counter/$timeout)"
@@ -29,23 +32,29 @@ while [ $counter -lt $timeout ]; do
     counter=$((counter + 2))
 done
 
-if [ $counter -eq $timeout ]; then
-    echo "❌ Timeout: Impossible de se connecter à la base de données"
-    echo "🔄 Démarrage de PHP-FPM malgré tout..."
+# Créer le fichier d'initialisation même si la base de données n'est pas prête
+touch /tmp/app-initialized
+
+if [ $db_ready -eq 0 ]; then
+    echo "⚠️ Timeout: Impossible de se connecter à la base de données"
+    echo "⚠️ L'application pourrait ne pas fonctionner correctement"
+    echo "⚠️ PHP-FPM va démarrer malgré tout"
 fi
 
-# Exécution des migrations si nécessaire
-if [ "$APP_ENV" = "dev" ]; then
+# Exécution des migrations si nécessaire et si la base de données est prête
+if [ "$APP_ENV" = "dev" ] && [ $db_ready -eq 1 ]; then
     echo "🔄 Exécution des migrations..."
     php bin/console doctrine:migrations:migrate --no-interaction || echo "⚠️  Erreur lors des migrations"
 fi
 
-# Optimisation complète du démarrage
-echo "🔥 Optimisation et warmup du cache..."
-if [ -f /usr/local/bin/optimize-startup.sh ]; then
-    /usr/local/bin/optimize-startup.sh || echo "⚠️  Erreur lors de l'optimisation"
-else
-    php bin/console cache:warmup || echo "⚠️  Erreur lors du warmup du cache"
+# Optimisation complète du démarrage seulement si la BDD est prête
+if [ $db_ready -eq 1 ]; then
+    echo "🔥 Optimisation et warmup du cache..."
+    if [ -f /usr/local/bin/optimize-startup.sh ]; then
+        /usr/local/bin/optimize-startup.sh || echo "⚠️  Erreur lors de l'optimisation"
+    else
+        php bin/console cache:warmup || echo "⚠️  Erreur lors du warmup du cache"
+    fi
 fi
 
 echo "✅ Application prête !"

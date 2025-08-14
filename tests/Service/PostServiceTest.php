@@ -1,22 +1,23 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Service;
 
+use App\Entity\Hashtag;
 use App\Entity\Post;
 use App\Entity\User;
-use App\Entity\Hashtag;
-use App\Service\PostService;
+use App\Repository\HashtagRepository;
+use App\Repository\PostRepository;
+use App\Repository\UserRepository;
 use App\Service\NotificationService;
 use App\Service\Post\PostContentProcessor;
 use App\Service\Post\PostImageHandler;
-use App\Repository\PostRepository;
-use App\Repository\UserRepository;
-use App\Repository\HashtagRepository;
+use App\Service\PostService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class PostServiceTest extends TestCase
 {
@@ -33,15 +34,15 @@ class PostServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        $this->contentProcessor = $this->createMock(PostContentProcessor::class);
-        $this->imageHandler = $this->createMock(PostImageHandler::class);
+        $this->entityManager       = $this->createMock(EntityManagerInterface::class);
+        $this->contentProcessor    = $this->createMock(PostContentProcessor::class);
+        $this->imageHandler        = $this->createMock(PostImageHandler::class);
         $this->notificationService = $this->createMock(NotificationService::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
-        $this->cache = $this->createMock(CacheItemPoolInterface::class);
-        $this->postRepository = $this->createMock(PostRepository::class);
-        $this->userRepository = $this->createMock(UserRepository::class);
-        $this->hashtagRepository = $this->createMock(HashtagRepository::class);
+        $this->logger              = $this->createMock(LoggerInterface::class);
+        $this->cache               = $this->createMock(CacheItemPoolInterface::class);
+        $this->postRepository      = $this->createMock(PostRepository::class);
+        $this->userRepository      = $this->createMock(UserRepository::class);
+        $this->hashtagRepository   = $this->createMock(HashtagRepository::class);
 
         $this->postService = new PostService(
             $this->postRepository,
@@ -57,8 +58,8 @@ class PostServiceTest extends TestCase
     public function testCreatePostWithHashtagsAndMentions(): void
     {
         // Arrange
-        $content = "Test post with #hashtag and @username";
-        $author = new User();
+        $content = 'Test post with #hashtag and @username';
+        $author  = new User();
         $author->setEmail('author@example.com');
 
         $mentionedUser = $this->createMock(User::class);
@@ -85,7 +86,7 @@ class PostServiceTest extends TestCase
             ->method('getRepository')
             ->willReturnMap([
                 [Hashtag::class, $this->hashtagRepository],
-                [User::class, $this->userRepository]
+                [User::class, $this->userRepository],
             ]);
 
         $this->hashtagRepository->expects($this->once())
@@ -111,9 +112,9 @@ class PostServiceTest extends TestCase
     public function testUpdatePostWithHashtagsAndMentions(): void
     {
         // Arrange
-        $content = "Updated post with #newtag and @newuser";
-        $post = new Post();
-        $author = new User();
+        $content = 'Updated post with #newtag and @newuser';
+        $post    = new Post();
+        $author  = new User();
         $author->setEmail('author@example.com');
         $post->setAuthor($author);
 
@@ -145,7 +146,7 @@ class PostServiceTest extends TestCase
             ->method('getRepository')
             ->willReturnMap([
                 [Hashtag::class, $this->hashtagRepository],
-                [User::class, $this->userRepository]
+                [User::class, $this->userRepository],
             ]);
 
         $this->hashtagRepository->expects($this->once())

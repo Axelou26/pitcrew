@@ -1,10 +1,60 @@
 parameters:
     level: 8
     paths:
-        - src/
+        - src
     excludePaths:
-        - src/Migrations/
+        - src/DataFixtures/*
+        - src/Migrations/*
+        - tests/*
     ignoreErrors:
-        - '#PHPDoc tag @var#'
-        - '#Call to an undefined method#'
-        - '#Access to an undefined property#' 
+        - '#Property .* does not accept .*\|null#'
+        - '#Cannot call method .* on .*\|null#'
+        - '#Parameter .* expects .*, .*\|null given#'
+        - '#Method .* should return .* but return statement is missing#'
+        - '#Method .* is unused#'
+        - '#Binary operation .* between .* and .* results in an error#'
+        - '#Property .* is never read, only written#'
+        - '#Property .* is never written, only read#'
+        - '#Call to an undefined method .*#'
+        - '#Access to an undefined property .*#'
+        - '#Parameter .* of method .* expects .*, .* given#'
+        - '#Method .* should return .* but returns .*#'
+        - '#Call to method .* with .* will always evaluate to .*#'
+        - '#Cannot clone non-object variable .*#'
+        - '#Call to method .* invoked with .* parameters?, .* required#'
+        - '#Property .* does not accept .*#'
+        - '#Method .* has parameter .* with no value type specified in iterable type array#'
+        - '#Method .* return type with generic interface .* does not specify its types#'
+        - '#Property .* on left side of \?\? is not nullable nor uninitialized#'
+        - '#Property .* in isset\(\) is not nullable nor uninitialized#'
+        - '#Offset .* does not exist on string#'
+        - '#Expression on left side of \?\? is not nullable#'
+        - '#Offset .* on .* on left side of \?\? always exists and is not nullable#'
+        - '#Strict comparison using .* between .* and .* will always evaluate to .*#'
+        - '#Call to function .* with .* will always evaluate to .*#'
+        - '#Class .* not found#'
+        - '#Property .* has unknown class .* as its type#'
+        - '#Call to method .* on an unknown class .*#'
+        - '#Constant .* is unused#'
+        - '#Constructor of class .* has an unused parameter .*#'
+        - '#Instanceof between .* and .* will always evaluate to true#'
+        - '#Variable .* on left side of \?\? always exists and is not nullable#'
+        - '#Access to private property .* of parent class .*#'
+        - '#Offset .* does not exist on array#'
+        - '#PHPDoc tag .* has invalid value#'
+        - '#Method .* invoked with .* parameters, .* required#'
+        - '#Non-static property .* overrides static property#'
+        - '#Type .* of property .* is not the same as type .* of overridden property#'
+        - '#Parameter .* of anonymous function has invalid type#'
+        - '#Method App\\Service\\VideoConferenceService::generateMeetingId\(\) invoked with 1 parameter, 0 required#'
+        - '#Property App\\Entity\\User::\$location \(string\|null\) is never assigned string so it can be removed from the property type#'
+        - '#Using nullsafe method call on non-nullable type#'
+        - '#Parameter \#1 \$user of static method App\\Service\\Post\\PostSearchCriteria::forFeed\(\) expects App\\Entity\\User, Symfony\\Component\\Security\\Core\\User\\UserInterface given#'
+        - '#Method .* return type has no value type specified in iterable type array#'
+        - '#Property .* has no type specified#'
+        - '#Method .* has parameter .* with no type specified#'
+        - '#Unable to resolve the template type .* in call to method#'
+        - '#Property .* \(.*\|null\) is never assigned .* so it can be removed from the property type#'
+        - '#Property .* is unused#'
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false 

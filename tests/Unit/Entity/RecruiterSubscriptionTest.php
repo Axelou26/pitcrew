@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit\Entity;
 
-use App\Entity\RecruiterSubscription;
 use App\Entity\Recruiter;
+use App\Entity\RecruiterSubscription;
 use App\Entity\Subscription;
 use PHPUnit\Framework\TestCase;
 
@@ -17,8 +19,8 @@ class RecruiterSubscriptionTest extends TestCase
     {
         parent::setUp();
         $this->recruiterSubscription = new RecruiterSubscription();
-        $this->recruiter = new Recruiter();
-        $this->subscription = new Subscription();
+        $this->recruiter             = new Recruiter();
+        $this->subscription          = new Subscription();
 
         $this->recruiter->setEmail('recruiter@example.com');
         $this->subscription->setName('Premium');
@@ -26,8 +28,13 @@ class RecruiterSubscriptionTest extends TestCase
 
     public function testConstructor(): void
     {
-        $this->assertFalse($this->recruiterSubscription->isCancelled());
-        $this->assertTrue($this->recruiterSubscription->isAutoRenew());
+        $recruiterSubscription = new RecruiterSubscription();
+
+        // Vérifier que les valeurs par défaut sont correctes
+        $this->assertTrue($recruiterSubscription->getIsActive());
+        $this->assertSame('pending', $recruiterSubscription->getPaymentStatus());
+        $this->assertFalse($recruiterSubscription->isCancelled());
+        $this->assertTrue($recruiterSubscription->isAutoRenew());
     }
 
     public function testRecruiterAssociation(): void
@@ -52,14 +59,14 @@ class RecruiterSubscriptionTest extends TestCase
 
     public function testDates(): void
     {
-        $startDate = new \DateTime('2024-01-01');
-        $endDate = new \DateTime('2024-02-01');
+        $startDate = new \DateTimeImmutable('2024-01-01');
+        $endDate   = new \DateTimeImmutable('2024-02-01');
 
         $this->recruiterSubscription->setStartDate($startDate);
         $this->recruiterSubscription->setEndDate($endDate);
 
-        $this->assertEquals($startDate, $this->recruiterSubscription->getStartDate());
-        $this->assertEquals($endDate, $this->recruiterSubscription->getEndDate());
+        $this->assertSame($startDate, $this->recruiterSubscription->getStartDate());
+        $this->assertSame($endDate, $this->recruiterSubscription->getEndDate());
     }
 
     public function testIsActive(): void
@@ -75,7 +82,7 @@ class RecruiterSubscriptionTest extends TestCase
     {
         $status = 'completed';
         $this->recruiterSubscription->setPaymentStatus($status);
-        $this->assertEquals($status, $this->recruiterSubscription->getPaymentStatus());
+        $this->assertSame($status, $this->recruiterSubscription->getPaymentStatus());
     }
 
     public function testRemainingJobOffers(): void
@@ -83,7 +90,7 @@ class RecruiterSubscriptionTest extends TestCase
         // Test avec une valeur numérique
         $remaining = 3;
         $this->recruiterSubscription->setRemainingJobOffers($remaining);
-        $this->assertEquals($remaining, $this->recruiterSubscription->getRemainingJobOffers());
+        $this->assertSame($remaining, $this->recruiterSubscription->getRemainingJobOffers());
 
         // Test avec une valeur null (illimité)
         $this->recruiterSubscription->setRemainingJobOffers(null);
@@ -112,7 +119,7 @@ class RecruiterSubscriptionTest extends TestCase
     {
         $stripeId = 'sub_123456789';
         $this->recruiterSubscription->setStripeSubscriptionId($stripeId);
-        $this->assertEquals($stripeId, $this->recruiterSubscription->getStripeSubscriptionId());
+        $this->assertSame($stripeId, $this->recruiterSubscription->getStripeSubscriptionId());
 
         // Test avec une valeur null
         $this->recruiterSubscription->setStripeSubscriptionId(null);
@@ -124,8 +131,8 @@ class RecruiterSubscriptionTest extends TestCase
         $returnedSubscription = $this->recruiterSubscription
             ->setRecruiter($this->recruiter)
             ->setSubscription($this->subscription)
-            ->setStartDate(new \DateTime())
-            ->setEndDate(new \DateTime())
+            ->setStartDate(new \DateTimeImmutable())
+            ->setEndDate(new \DateTimeImmutable())
             ->setIsActive(true)
             ->setPaymentStatus('completed')
             ->setRemainingJobOffers(3)

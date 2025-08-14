@@ -1,13 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
 use App\Entity\JobOffer;
 use App\Form\JobOfferType;
 use App\Repository\JobOfferRepository;
-use App\Repository\FavoriteRepository;
-use App\Service\SubscriptionService;
 use App\Service\FileUploader;
+use App\Service\SubscriptionService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -26,17 +27,17 @@ class JobOfferController extends AbstractController
         EntityManagerInterface $entityManager
     ) {
         $this->jobOfferRepository = $jobOfferRepository;
-        $this->entityManager = $entityManager;
+        $this->entityManager      = $entityManager;
     }
 
     #[Route('', name: 'app_job_offer_index', methods: ['GET'])]
     public function index(Request $request, JobOfferRepository $jobOfferRepository): Response
     {
-        $query = $request->query->get('q');
+        $query   = $request->query->get('q');
         $filters = [
             'contractType' => $request->query->get('contractType'),
-            'location' => $request->query->get('location'),
-            'minSalary' => $request->query->get('minSalary')
+            'location'     => $request->query->get('location'),
+            'minSalary'    => $request->query->get('minSalary'),
         ];
 
         $offers = $jobOfferRepository->searchOffers($query, $filters);
@@ -56,11 +57,11 @@ class JobOfferController extends AbstractController
             ->getResult();
 
         return $this->render('job_offer/index.html.twig', [
-            'offers' => $offers,
+            'offers'        => $offers,
             'contractTypes' => array_column($contractTypes, 'contractType'),
-            'locations' => array_column($locations, 'location'),
-            'query' => $query,
-            'filters' => $filters
+            'locations'     => array_column($locations, 'location'),
+            'query'         => $query,
+            'filters'       => $filters,
         ]);
     }
 
@@ -105,12 +106,13 @@ class JobOfferController extends AbstractController
             $this->entityManager->flush();
 
             $this->addFlash('success', 'Votre offre d\'emploi a été créée avec succès !');
+
             return $this->redirectToRoute('app_job_offer_index', [], Response::HTTP_SEE_OTHER);
         }
 
         return $this->render('job_offer/new.html.twig', [
             'job_offer' => $jobOffer,
-            'form' => $form,
+            'form'      => $form,
         ]);
     }
 
@@ -128,8 +130,8 @@ class JobOfferController extends AbstractController
         $similarOffers = $this->jobOfferRepository->findSimilarOffers($jobOffer);
 
         return $this->render('job_offer/show.html.twig', [
-            'jobOffer' => $jobOffer,
-            'similarOffers' => $similarOffers
+            'jobOffer'      => $jobOffer,
+            'similarOffers' => $similarOffers,
         ]);
     }
 
@@ -153,12 +155,13 @@ class JobOfferController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $this->entityManager->flush();
             $this->addFlash('success', 'Offre d\'emploi modifiée avec succès');
+
             return $this->redirectToRoute('app_job_offer_show', ['offerId' => $jobOffer->getId()]);
         }
 
         return $this->render('job_offer/edit.html.twig', [
-            'form' => $form->createView(),
-            'jobOffer' => $jobOffer
+            'form'     => $form->createView(),
+            'jobOffer' => $jobOffer,
         ]);
     }
 
@@ -188,8 +191,8 @@ class JobOfferController extends AbstractController
     #[Route('/recherche', name: 'app_job_offer_search', methods: ['GET'])]
     public function search(Request $request, JobOfferRepository $jobOfferRepository): Response
     {
-        $query = $request->query->get('q');
-        $location = $request->query->get('location');
+        $query        = $request->query->get('q');
+        $location     = $request->query->get('location');
         $contractType = $request->query->get('contract_type');
 
         $offers = $jobOfferRepository->search($query, $location, $contractType);
@@ -201,9 +204,9 @@ class JobOfferController extends AbstractController
         }
 
         return $this->render('job_offer/search.html.twig', [
-            'offers' => $offers,
-            'query' => $query,
-            'location' => $location,
+            'offers'        => $offers,
+            'query'         => $query,
+            'location'      => $location,
             'contract_type' => $contractType,
         ]);
     }

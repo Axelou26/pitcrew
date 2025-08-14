@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 use App\Entity\Post;
@@ -8,7 +10,7 @@ use App\Entity\User;
 class PostReactionManager
 {
     /**
-     * Met à jour les compteurs de likes pour un post
+     * Met à jour les compteurs de likes pour un post.
      */
     public function updateReactionCounts(Post $post): void
     {
@@ -16,7 +18,7 @@ class PostReactionManager
     }
 
     /**
-     * Récupère le like d'un utilisateur pour un post
+     * Récupère le like d'un utilisateur pour un post.
      */
     public function getUserReaction(Post $post, User $user): ?bool
     {
@@ -24,7 +26,7 @@ class PostReactionManager
     }
 
     /**
-     * Retourne le nombre de likes
+     * Retourne le nombre de likes.
      */
     public function getReactionCount(Post $post): int
     {

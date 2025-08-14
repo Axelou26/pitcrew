@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Tests\Unit\Entity;
 
 use App\Entity\Hashtag;
 use App\Entity\Post;
-use PHPUnit\Framework\TestCase;
 use Doctrine\Common\Collections\Collection;
+use PHPUnit\Framework\TestCase;
 
 class HashtagTest extends TestCase
 {
@@ -16,7 +18,7 @@ class HashtagTest extends TestCase
     {
         parent::setUp();
         $this->hashtag = new Hashtag();
-        $this->post = new Post();
+        $this->post    = new Post();
     }
 
     public function testConstructor(): void
@@ -25,32 +27,32 @@ class HashtagTest extends TestCase
         $this->assertInstanceOf(\DateTimeImmutable::class, $this->hashtag->getLastUsedAt());
         $this->assertInstanceOf(Collection::class, $this->hashtag->getPosts());
         $this->assertCount(0, $this->hashtag->getPosts());
-        $this->assertEquals(0, $this->hashtag->getUsageCount());
+        $this->assertSame(0, $this->hashtag->getUsageCount());
     }
 
     public function testName(): void
     {
         // Test avec un nom simple
         $this->hashtag->setName('test');
-        $this->assertEquals('test', $this->hashtag->getName());
+        $this->assertSame('test', $this->hashtag->getName());
 
         // Test avec un nom contenant un #
         $this->hashtag->setName('#test');
-        $this->assertEquals('test', $this->hashtag->getName());
+        $this->assertSame('test', $this->hashtag->getName());
 
         // Test avec des majuscules
         $this->hashtag->setName('TestTag');
-        $this->assertEquals('testtag', $this->hashtag->getName());
+        $this->assertSame('testtag', $this->hashtag->getName());
     }
 
     public function testUsageCount(): void
     {
         $this->hashtag->setUsageCount(5);
-        $this->assertEquals(5, $this->hashtag->getUsageCount());
+        $this->assertSame(5, $this->hashtag->getUsageCount());
 
         // Test de l'incrémentation
         $this->hashtag->incrementUsageCount();
-        $this->assertEquals(6, $this->hashtag->getUsageCount());
+        $this->assertSame(6, $this->hashtag->getUsageCount());
 
         // Vérifier que lastUsedAt est mis à jour lors de l'incrémentation
         $beforeIncrement = $this->hashtag->getLastUsedAt()->getTimestamp();
@@ -63,7 +65,7 @@ class HashtagTest extends TestCase
     {
         $date = new \DateTimeImmutable('2024-01-01 12:00:00');
         $this->hashtag->setLastUsedAt($date);
-        $this->assertEquals($date, $this->hashtag->getLastUsedAt());
+        $this->assertSame($date, $this->hashtag->getLastUsedAt());
     }
 
     public function testPosts(): void
@@ -82,16 +84,16 @@ class HashtagTest extends TestCase
     public function testFormattedName(): void
     {
         $this->hashtag->setName('test');
-        $this->assertEquals('#test', $this->hashtag->getFormattedName());
+        $this->assertSame('#test', $this->hashtag->getFormattedName());
 
         $this->hashtag->setName('#another');
-        $this->assertEquals('#another', $this->hashtag->getFormattedName());
+        $this->assertSame('#another', $this->hashtag->getFormattedName());
     }
 
     public function testToString(): void
     {
         $this->hashtag->setName('test');
-        $this->assertEquals('#test', (string) $this->hashtag);
+        $this->assertSame('#test', (string) $this->hashtag);
     }
 
     public function testFluentInterface(): void

@@ -1,10 +1,17 @@
-name: Docker Deployment
+name: Déploiement Production
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches: [ production, master ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environnement à déployer'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+        - prod
 
 jobs:
   test-and-quality:
@@ -81,13 +88,13 @@ jobs:
           DATABASE_URL: "mysql://root:azerty-26@127.0.0.1:3306/blog_test?serverVersion=8.0"
           APP_ENV: test
 
-  docker-build-and-deploy:
+  deploy-prod:
     needs: test-and-quality
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/production' || github.ref == 'refs/heads/master' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod')
     runs-on: ubuntu-latest
     environment: 
       name: production
-      url: http://localhost:8888
+      url: https://pitcrew.com
     
     steps:
     - uses: actions/checkout@v4
@@ -109,14 +116,15 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-buildx-
 
-    - name: Build and push Docker image
+    - name: Build and push Docker image (prod)
       uses: docker/build-push-action@v5
       with:
         context: .
         push: true
         tags: |
           ${{ secrets.DOCKER_HUB_USERNAME }}/pitcrew:latest
-          ${{ secrets.DOCKER_HUB_USERNAME }}/pitcrew:${{ github.sha }}
+          ${{ secrets.DOCKER_HUB_USERNAME }}/pitcrew:prod
+          ${{ secrets.DOCKER_HUB_USERNAME }}/pitcrew:prod-${{ github.sha }}
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
@@ -125,42 +133,42 @@ jobs:
         rm -rf /tmp/.buildx-cache
         mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
-    - name: Deploy locally
+    - name: Deploy to Production Environment
       run: |
         # Créer le fichier .env.prod
         cat > .env.prod << EOL
         APP_ENV=prod
-        APP_SECRET=${{ secrets.APP_SECRET }}
-        DATABASE_URL="${{ secrets.DATABASE_URL }}"
+        APP_SECRET=${{ secrets.APP_SECRET_PROD }}
+        DATABASE_URL="${{ secrets.DATABASE_URL_PROD }}"
         EOL
         
         # Pull des images en parallèle
-        docker compose pull -q
+        docker compose -f docker-compose.prod.yml pull -q
         
         # Arrêter les conteneurs existants
-        docker compose down --remove-orphans
+        docker compose -f docker-compose.prod.yml down --remove-orphans
         
         # Démarrer les nouveaux conteneurs en arrière-plan
-        docker compose --env-file .env.prod up -d
+        docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
         
         # Attendre que la base de données soit prête
-        docker compose exec -T database mysqladmin ping -h localhost -u root -pazerty-26 --wait=30
+        docker compose -f docker-compose.prod.yml exec -T database mysqladmin ping -h localhost -u root -pazerty-26 --wait=30
 
         # Exécuter les migrations et le cache en parallèle
-        docker compose exec -T app php bin/console doctrine:migrations:migrate --no-interaction --env=prod &
-        docker compose exec -T app php bin/console cache:clear --env=prod &
+        docker compose -f docker-compose.prod.yml exec -T app php bin/console doctrine:migrations:migrate --no-interaction --env=prod &
+        docker compose -f docker-compose.prod.yml exec -T app php bin/console cache:clear --env=prod &
         wait
 
-    - name: Health Check
+    - name: Health Check (Prod)
       run: |
-        curl --retry 10 --retry-delay 5 --retry-connrefused http://localhost:8888/health
-        curl --retry 10 --retry-delay 5 --retry-connrefused http://localhost:8888/api/health
+        curl --retry 10 --retry-delay 5 --retry-connrefused https://pitcrew.com/health
+        curl --retry 10 --retry-delay 5 --retry-connrefused https://pitcrew.com/api/health
 
-    - name: Notify Slack
+    - name: Notify Slack (Prod)
       if: always()
       uses: rtCamp/action-slack-notify@v2
       env:
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-        SLACK_MESSAGE: ${{ job.status == 'success' && '🐳 Déploiement Docker réussi en local' || '❌ Échec du déploiement Docker en local' }}
+        SLACK_MESSAGE: ${{ job.status == 'success' && '🟢 Déploiement PROD réussi' || '🔴 Échec du déploiement PROD' }}
         SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
-        SLACK_FOOTER: "Commit: ${{ github.sha }}" 
+        SLACK_FOOTER: "Commit: ${{ github.sha }} | Branch: ${{ github.ref_name }}" 

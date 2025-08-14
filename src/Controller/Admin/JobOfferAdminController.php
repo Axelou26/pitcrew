@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller\Admin;
 
 use App\Entity\JobOffer;
@@ -23,7 +25,7 @@ class JobOfferAdminController extends AbstractController
         EntityManagerInterface $entityManager,
         JobOfferRepository $jobOfferRepository
     ) {
-        $this->entityManager = $entityManager;
+        $this->entityManager      = $entityManager;
         $this->jobOfferRepository = $jobOfferRepository;
     }
 
@@ -41,7 +43,7 @@ class JobOfferAdminController extends AbstractController
     public function new(Request $request): Response
     {
         $jobOffer = new JobOffer();
-        $form = $this->createForm(JobOfferType::class, $jobOffer);
+        $form     = $this->createForm(JobOfferType::class, $jobOffer);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -55,7 +57,7 @@ class JobOfferAdminController extends AbstractController
 
         return $this->render('admin/job_offer/new.html.twig', [
             'job_offer' => $jobOffer,
-            'form' => $form,
+            'form'      => $form,
         ]);
     }
 
@@ -68,7 +70,7 @@ class JobOfferAdminController extends AbstractController
             ->getForm();
 
         return $this->render('admin/job_offer/show.html.twig', [
-            'job_offer' => $jobOffer,
+            'job_offer'   => $jobOffer,
             'delete_form' => $deleteForm,
         ]);
     }
@@ -93,8 +95,8 @@ class JobOfferAdminController extends AbstractController
             ->getForm();
 
         return $this->render('admin/job_offer/edit.html.twig', [
-            'job_offer' => $jobOffer,
-            'form' => $form,
+            'job_offer'   => $jobOffer,
+            'form'        => $form,
             'delete_form' => $deleteForm,
         ]);
     }

@@ -1,23 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\SupportTicketRepository;
+use DateTimeImmutable;
+use DateTimeInterface;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use DateTime;
-use DateTimeInterface;
 
 #[ORM\Entity(repositoryClass: SupportTicketRepository::class)]
 class SupportTicket
 {
-    /**
-     * @SuppressWarnings("PHPMD.ShortVariable")
-     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
+    #[ORM\Column(type: 'integer')]
+    private int $id;
 
     #[ORM\ManyToOne(inversedBy: 'supportTickets')]
     #[ORM\JoinColumn(nullable: false)]
@@ -41,15 +40,18 @@ class SupportTicket
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?DateTimeInterface $updatedAt = null;
 
-    #[ORM\Column(type: Types::JSON, nullable: true)]
-    private ?array $replies = [];
+    #[ORM\Column(type: 'json')]
+    /**
+     * @var array<int, string>
+     */
+    private array $replies = [];
 
     public function __construct()
     {
-        $this->createdAt = new DateTime();
-        $this->status = 'new';
-        $this->priority = 'normal';
-        $this->replies = [];
+        $this->createdAt = new DateTimeImmutable();
+        $this->status    = 'new';
+        $this->priority  = 'normal';
+        $this->replies   = [];
     }
 
     public function getId(): ?int
@@ -141,19 +143,28 @@ class SupportTicket
         return $this;
     }
 
-    public function getReplies(): ?array
+    /**
+     * @return array<int, string>
+     */
+    public function getReplies(): array
     {
         return $this->replies;
     }
 
-    public function setReplies(?array $replies): static
+    /**
+     * @param array<int, string> $replies
+     */
+    public function setReplies(array $replies): static
     {
         $this->replies = $replies;
 
         return $this;
     }
 
-    public function addReply(array $reply): static
+    /**
+     * @param string $reply
+     */
+    public function addReply(string $reply): static
     {
         $this->replies[] = $reply;
 
@@ -161,7 +172,7 @@ class SupportTicket
     }
 
     /**
-     * Vérifie si le ticket est prioritaire
+     * Vérifie si le ticket est prioritaire.
      */
     public function isPriority(): bool
     {
@@ -169,60 +180,60 @@ class SupportTicket
     }
 
     /**
-     * Renvoie la classe CSS correspondant au statut du ticket
+     * Renvoie la classe CSS correspondant au statut du ticket.
      */
     public function getStatusClass(): string
     {
         return match ($this->status) {
-            'new' => 'info',
-            'in_progress' => 'primary',
-            'waiting_for_user' => 'warning',
+            'new'                 => 'info',
+            'in_progress'         => 'primary',
+            'waiting_for_user'    => 'warning',
             'waiting_for_support' => 'secondary',
-            'resolved' => 'success',
-            'closed' => 'dark',
-            default => 'light'
+            'resolved'            => 'success',
+            'closed'              => 'dark',
+            default               => 'light'
         };
     }
 
     /**
-     * Renvoie la classe CSS correspondant à la priorité du ticket
+     * Renvoie la classe CSS correspondant à la priorité du ticket.
      */
     public function getPriorityClass(): string
     {
         return match ($this->priority) {
-            'high' => 'danger',
+            'high'   => 'danger',
             'normal' => 'primary',
-            'low' => 'secondary',
-            default => 'light'
+            'low'    => 'secondary',
+            default  => 'light'
         };
     }
 
     /**
-     * Renvoie le libellé du statut du ticket
+     * Renvoie le libellé du statut du ticket.
      */
     public function getStatusLabel(): string
     {
         return match ($this->status) {
-            'new' => 'Nouveau',
-            'in_progress' => 'En cours',
-            'waiting_for_user' => 'En attente de votre réponse',
+            'new'                 => 'Nouveau',
+            'in_progress'         => 'En cours',
+            'waiting_for_user'    => 'En attente de votre réponse',
             'waiting_for_support' => 'En attente de réponse du support',
-            'resolved' => 'Résolu',
-            'closed' => 'Fermé',
-            default => 'Inconnu'
+            'resolved'            => 'Résolu',
+            'closed'              => 'Fermé',
+            default               => 'Inconnu'
         };
     }
 
     /**
-     * Renvoie le libellé de la priorité du ticket
+     * Renvoie le libellé de la priorité du ticket.
      */
     public function getPriorityLabel(): string
     {
         return match ($this->priority) {
-            'high' => 'Prioritaire',
+            'high'   => 'Prioritaire',
             'normal' => 'Normal',
-            'low' => 'Faible',
-            default => 'Inconnu'
+            'low'    => 'Faible',
+            default  => 'Inconnu'
         };
     }
 }

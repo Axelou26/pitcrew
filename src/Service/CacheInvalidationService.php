@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
-use Symfony\Contracts\Cache\CacheInterface;
-use App\Entity\User;
 use App\Entity\Friendship;
+use App\Entity\User;
+use Symfony\Contracts\Cache\CacheInterface;
 
 class CacheInvalidationService
 {
@@ -14,7 +16,7 @@ class CacheInvalidationService
     }
 
     /**
-     * Invalide le cache des demandes d'amitié pour un utilisateur
+     * Invalide le cache des demandes d'amitié pour un utilisateur.
      */
     public function invalidatePendingFriendRequestsCache(User $user): void
     {
@@ -23,7 +25,7 @@ class CacheInvalidationService
     }
 
     /**
-     * Invalide le cache des statistiques utilisateur
+     * Invalide le cache des statistiques utilisateur.
      */
     public function invalidateUserStatsCache(User $user): void
     {
@@ -32,17 +34,17 @@ class CacheInvalidationService
     }
 
     /**
-     * Invalide le cache de la page d'accueil
+     * Invalide le cache de la page d'accueil.
      */
     public function invalidateHomepageCache(?User $user = null): void
     {
-        $userId = $user ? $user->getId() : 'anonymous';
+        $userId   = $user ? $user->getId() : 'anonymous';
         $cacheKey = 'homepage_data_' . $userId;
         $this->cache->delete($cacheKey);
     }
 
     /**
-     * Invalide tous les caches liés à une amitié
+     * Invalide tous les caches liés à une amitié.
      */
     public function invalidateFriendshipCaches(Friendship $friendship): void
     {

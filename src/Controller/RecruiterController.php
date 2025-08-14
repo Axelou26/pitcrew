@@ -1,21 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller;
 
+use App\Entity\Applicant;
 use App\Entity\JobOffer;
 use App\Form\JobOfferType;
+use App\Repository\ApplicantRepository;
+use App\Repository\JobApplicationRepository;
+use App\Repository\JobOfferRepository;
+use App\Service\StatisticsService;
+use App\Service\SubscriptionService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use App\Service\SubscriptionService;
-use App\Entity\Applicant;
-use App\Repository\ApplicantRepository;
-use App\Repository\JobApplicationRepository;
-use App\Repository\JobOfferRepository;
-use App\Service\StatisticsService;
 
 #[Route('/recruiter')]
 #[IsGranted('ROLE_RECRUTEUR')]
@@ -47,6 +49,7 @@ class RecruiterController extends AbstractController
             $route = $activeSubscription ? 'app_subscription_manage' : 'app_subscription_plans';
 
             $this->addFlash('error', $message);
+
             return $this->redirectToRoute($route);
         }
 
@@ -64,12 +67,13 @@ class RecruiterController extends AbstractController
             $subscriptionService->decrementRemainingJobOffers($this->getUser());
 
             $this->addFlash('success', 'L\'offre d\'emploi a été créée avec succès.');
+
             return $this->redirectToRoute('app_recruiter_dashboard');
         }
 
         return $this->render('recruiter/job_offer_form.html.twig', [
-            'form' => $form->createView(),
-            'jobOffer' => $jobOffer
+            'form'     => $form->createView(),
+            'jobOffer' => $jobOffer,
         ]);
     }
 
@@ -87,12 +91,13 @@ class RecruiterController extends AbstractController
             $entityManager->flush();
 
             $this->addFlash('success', 'L\'offre d\'emploi a été mise à jour avec succès.');
+
             return $this->redirectToRoute('app_recruiter_dashboard');
         }
 
         return $this->render('recruiter/job_offer_form.html.twig', [
-            'form' => $form->createView(),
-            'jobOffer' => $jobOffer
+            'form'     => $form->createView(),
+            'jobOffer' => $jobOffer,
         ]);
     }
 
@@ -119,7 +124,7 @@ class RecruiterController extends AbstractController
             ->findApplicationsByRecruiter($this->getUser());
 
         return $this->render('recruiter/applications.html.twig', [
-            'applications' => $applications
+            'applications' => $applications,
         ]);
     }
 
@@ -129,19 +134,19 @@ class RecruiterController extends AbstractController
         Request $request,
         ApplicantRepository $applicantRepository
     ): Response {
-        $query = $request->query->get('q');
+        $query  = $request->query->get('q');
         $skills = $request->query->all('skills');
 
         // Utiliser une condition unique pour déterminer la recherche
         $hasSearchCriteria = $query || !empty($skills);
-        $candidates = $hasSearchCriteria
+        $candidates        = $hasSearchCriteria
             ? $applicantRepository->searchBySkillsAndKeywords($skills, $query)
             : $applicantRepository->findAll();
 
         return $this->render('recruiter/candidates.html.twig', [
-            'candidates' => $candidates,
-            'query' => $query,
-            'selectedSkills' => $skills
+            'candidates'     => $candidates,
+            'query'          => $query,
+            'selectedSkills' => $skills,
         ]);
     }
 
@@ -150,7 +155,7 @@ class RecruiterController extends AbstractController
     public function candidateProfile(Applicant $applicant): Response
     {
         return $this->render('recruiter/candidate_profile.html.twig', [
-            'candidate' => $applicant
+            'candidate' => $applicant,
         ]);
     }
 
@@ -161,20 +166,15 @@ class RecruiterController extends AbstractController
         ApplicantRepository $applicantRepository
     ): Response {
         $formData = $request->query->all();
-        $results = [];
+        $results  = [];
 
         if (!empty($formData)) {
-            $results = $applicantRepository->advancedSearch(
-                $formData['skills'] ?? [],
-                $formData['education'] ?? null,
-                $formData['experience'] ?? null,
-                $formData['location'] ?? null
-            );
+            $results = $applicantRepository->advancedSearch($formData);
         }
 
         return $this->render('recruiter/advanced_search.html.twig', [
-            'results' => $results,
-            'formData' => $formData
+            'results'  => $results,
+            'formData' => $formData,
         ]);
     }
 
@@ -184,19 +184,19 @@ class RecruiterController extends AbstractController
         JobOfferRepository $jobOfferRepository,
         ApplicantRepository $applicantRepository
     ): Response {
-        $recruiter = $this->getUser();
+        $recruiter    = $this->getUser();
         $activeOffers = $jobOfferRepository->findBy(['recruiter' => $recruiter, 'isActive' => true]);
 
         $recommendations = [];
         foreach ($activeOffers as $offer) {
             $recommendations[$offer->getId()] = [
-                'offer' => $offer,
-                'candidates' => $applicantRepository->findMatchingCandidates($offer)
+                'offer'      => $offer,
+                'candidates' => $applicantRepository->findMatchingCandidates($offer),
             ];
         }
 
         return $this->render('recruiter/recommendations.html.twig', [
-            'recommendations' => $recommendations
+            'recommendations' => $recommendations,
         ]);
     }
 
@@ -206,22 +206,22 @@ class RecruiterController extends AbstractController
         StatisticsService $statisticsService,
         SubscriptionService $subscriptionService
     ): Response {
-        $recruiter = $this->getUser();
+        $recruiter        = $this->getUser();
         $hasDetailedStats = $subscriptionService->hasAccessToPremiumFeature($recruiter, 'detailed_statistics');
 
         // Statistiques de base
-        $basicStats = $statisticsService->getBasicStatistics($recruiter);
+        $basicStats = $statisticsService->getBasicStatistics();
 
         // Statistiques détaillées (uniquement pour Business)
         $detailedStats = null;
         if ($hasDetailedStats) {
-            $detailedStats = $statisticsService->getDetailedStatistics($recruiter);
+            $detailedStats = $statisticsService->getDetailedStatistics();
         }
 
         return $this->render('recruiter/statistics.html.twig', [
-            'basicStats' => $basicStats,
-            'detailedStats' => $detailedStats,
-            'hasDetailedStats' => $hasDetailedStats
+            'basicStats'       => $basicStats,
+            'detailedStats'    => $detailedStats,
+            'hasDetailedStats' => $hasDetailedStats,
         ]);
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace DoctrineMigrations;
 
@@ -25,7 +25,7 @@ final class Version20250411133512 extends AbstractMigration
         SQL);
 
         $this->addSql(<<<'SQL'
-            UPDATE user 
+            UPDATE user
             SET username = SUBSTRING_INDEX(email, '@', 1)
         SQL);
 

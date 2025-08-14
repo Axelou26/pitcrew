@@ -1,0 +1,24 @@
+# Configuration des assets pour Symfony
+framework:
+    assets:
+        # Configuration des packages d'assets
+        packages:
+            # Package par défaut
+            _default:
+                base_path: '%kernel.project_dir%/public'
+            
+            # Package pour les uploads
+            uploads:
+                base_path: '%kernel.project_dir%/public/uploads'
+            
+            # Package pour les images de profil
+            profile_pictures:
+                base_path: '%kernel.project_dir%/public/uploads/profile_pictures'
+            
+            # Package pour les images de posts
+            post_images:
+                base_path: '%kernel.project_dir%/public/uploads/posts'
+            
+            # Package Vite pour le développement
+            vite:
+                json_manifest_path: '%kernel.project_dir%/public/build/.vite/manifest.json'

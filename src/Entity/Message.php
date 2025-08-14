@@ -1,23 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Entity;
 
 use App\Repository\MessageRepository;
+use DateTimeImmutable;
+use DateTimeInterface;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Validator\Constraints as Assert;
-use DateTimeImmutable;
 
 #[ORM\Entity(repositoryClass: MessageRepository::class)]
 class Message
 {
-    /**
-     * @SuppressWarnings("PHPMD.ShortVariable")
-     */
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
+    #[ORM\Column(type: 'integer')]
     private ?int $id = null;
+
+    #[ORM\Column(type: Types::TEXT)]
+    private string $content;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    private DateTimeInterface $createdAt;
 
     #[ORM\ManyToOne(inversedBy: 'messages')]
     #[ORM\JoinColumn(nullable: false)]
@@ -25,34 +30,50 @@ class Message
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
+    private ?User $author = null;
+
     private ?User $sender = null;
 
-    #[ORM\ManyToOne]
-    #[ORM\JoinColumn(nullable: false)]
     private ?User $recipient = null;
 
-    #[ORM\Column(type: Types::TEXT)]
-    #[Assert\NotBlank(message: 'Le message ne peut pas être vide')]
-    private ?string $content = null;
-
-    #[ORM\Column]
-    private ?DateTimeImmutable $createdAt = null;
-
-    #[ORM\Column]
-    private ?bool $isRead = false;
-
-    #[ORM\ManyToOne(inversedBy: 'messages')]
     private ?JobApplication $jobApplication = null;
+
+    // Temporarily removing ORM mapping until we can run migrations
+    // #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $isRead = false;
 
     public function __construct()
     {
         $this->createdAt = new DateTimeImmutable();
-        $this->isRead = false;
     }
 
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function getContent(): ?string
+    {
+        return $this->content;
+    }
+
+    public function setContent(string $content): static
+    {
+        $this->content = $content;
+
+        return $this;
+    }
+
+    public function getCreatedAt(): ?DateTimeInterface
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(DateTimeInterface $createdAt): static
+    {
+        $this->createdAt = $createdAt;
+
+        return $this;
     }
 
     public function getConversation(): ?Conversation
@@ -69,19 +90,19 @@ class Message
 
     public function getSender(): ?User
     {
-        return $this->sender;
+        return $this->author;
     }
 
     public function setSender(?User $sender): static
     {
-        $this->sender = $sender;
+        $this->author = $sender;
 
         return $this;
     }
 
     public function getRecipient(): ?User
     {
-        return $this->recipient;
+        return $this->recipient ?? null;
     }
 
     public function setRecipient(?User $recipient): static
@@ -91,31 +112,19 @@ class Message
         return $this;
     }
 
-    public function getContent(): ?string
+    public function getJobApplication(): ?JobApplication
     {
-        return $this->content;
+        return $this->jobApplication ?? null;
     }
 
-    public function setContent(string $content): static
+    public function setJobApplication(?JobApplication $jobApplication): static
     {
-        $this->content = $content;
+        $this->jobApplication = $jobApplication;
 
         return $this;
     }
 
-    public function getCreatedAt(): ?DateTimeImmutable
-    {
-        return $this->createdAt;
-    }
-
-    public function setCreatedAt(DateTimeImmutable $createdAt): static
-    {
-        $this->createdAt = $createdAt;
-
-        return $this;
-    }
-
-    public function isRead(): ?bool
+    public function isRead(): bool
     {
         return $this->isRead;
     }
@@ -123,18 +132,6 @@ class Message
     public function setIsRead(bool $isRead): static
     {
         $this->isRead = $isRead;
-
-        return $this;
-    }
-
-    public function getJobApplication(): ?JobApplication
-    {
-        return $this->jobApplication;
-    }
-
-    public function setJobApplication(?JobApplication $jobApplication): static
-    {
-        $this->jobApplication = $jobApplication;
 
         return $this;
     }

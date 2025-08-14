@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Controller\Admin;
 
 use App\Entity\Subscription;
@@ -24,7 +26,7 @@ class SubscriptionAdminController extends AbstractController
         SubscriptionRepository $subRepo
     ) {
         $this->entityManager = $entityManager;
-        $this->subRepo = $subRepo;
+        $this->subRepo       = $subRepo;
     }
 
     #[Route('/', name: 'index', methods: ['GET'])]
@@ -41,7 +43,7 @@ class SubscriptionAdminController extends AbstractController
     public function new(Request $request): Response
     {
         $subscription = new Subscription();
-        $form = $this->createForm(SubscriptionType::class, $subscription);
+        $form         = $this->createForm(SubscriptionType::class, $subscription);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -55,7 +57,7 @@ class SubscriptionAdminController extends AbstractController
 
         return $this->render('admin/subscription/new.html.twig', [
             'subscription' => $subscription,
-            'form' => $form,
+            'form'         => $form,
         ]);
     }
 
@@ -69,7 +71,7 @@ class SubscriptionAdminController extends AbstractController
 
         return $this->render('admin/subscription/show.html.twig', [
             'subscription' => $subscription,
-            'delete_form' => $deleteForm,
+            'delete_form'  => $deleteForm,
         ]);
     }
 
@@ -94,8 +96,8 @@ class SubscriptionAdminController extends AbstractController
 
         return $this->render('admin/subscription/edit.html.twig', [
             'subscription' => $subscription,
-            'form' => $form,
-            'delete_form' => $deleteForm,
+            'form'         => $form,
+            'delete_form'  => $deleteForm,
         ]);
     }
 

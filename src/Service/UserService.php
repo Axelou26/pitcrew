@@ -1,19 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Service;
 
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Mailer\MailerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Symfony\Component\Mime\Email;
 
 class UserService
 {
     public function __construct(
         private UserPasswordHasherInterface $passwordHasher,
         private EntityManagerInterface $entityManager,
-        private MailerInterface $mailer
+        private EmailService $emailService,
+        private LoggerInterface $logger
     ) {
     }
 
@@ -47,12 +49,14 @@ class UserService
 
     public function sendVerificationEmail(User $user): void
     {
-        $email = (new Email())
-            ->from('noreply@pitcrew.com')
-            ->to($user->getEmail())
-            ->subject('Vérification de votre compte')
-            ->html('<p>Cliquez sur le lien suivant pour vérifier votre compte :</p>');
+        $this->emailService->sendVerificationEmail($user);
+    }
 
-        $this->mailer->send($email);
+    public function sendWelcomeEmail(User $user): void
+    {
+        $email = $user->getEmail();
+        if ($email !== null) {
+            $this->emailService->sendWelcomeEmail($user);
+        }
     }
 }

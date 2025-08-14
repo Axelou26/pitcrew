@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\DataFixtures;
 
 use App\Entity\Application;
+use DateTimeImmutable;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
-use DateTimeImmutable;
 
 class ApplicationFixtures extends Fixture implements DependentFixtureInterface
 {

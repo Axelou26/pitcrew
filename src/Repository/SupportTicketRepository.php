@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Repository;
 
 use App\Entity\SupportTicket;
@@ -18,7 +20,11 @@ class SupportTicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouver les tickets en fonction du statut et de la priorité
+     * Trouver les tickets en fonction du statut et de la priorité.
+     *
+     * @param array<string, mixed> $criteria
+     *
+     * @return SupportTicket[]
      */
     public function findByStatusAndPriority(array $criteria): array
     {
@@ -28,19 +34,21 @@ class SupportTicketRepository extends ServiceEntityRepository
 
         if (isset($criteria['status'])) {
             $queryBuilder->andWhere('t.status = :status')
-               ->setParameter('status', $criteria['status']);
+                ->setParameter('status', $criteria['status']);
         }
 
         if (isset($criteria['priority'])) {
             $queryBuilder->andWhere('t.priority = :priority')
-               ->setParameter('priority', $criteria['priority']);
+                ->setParameter('priority', $criteria['priority']);
         }
 
         return $queryBuilder->getQuery()->getResult();
     }
 
     /**
-     * Trouver les tickets prioritaires non résolus
+     * Trouver les tickets prioritaires non résolus.
+     *
+     * @return SupportTicket[]
      */
     public function findPriorityTickets(): array
     {
@@ -55,7 +63,9 @@ class SupportTicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Trouver les tickets non résolus d'un utilisateur
+     * Trouver les tickets non résolus d'un utilisateur.
+     *
+     * @return SupportTicket[]
      */
     public function findOpenTicketsForUser(User $user): array
     {
@@ -70,7 +80,9 @@ class SupportTicketRepository extends ServiceEntityRepository
     }
 
     /**
-     * Compter le nombre de tickets par statut
+     * Compter le nombre de tickets par statut.
+     *
+     * @return array<string, int>
      */
     public function countByStatus(): array
     {

@@ -1,18 +1,18 @@
 <?php
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace App\Tests;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
-use Symfony\Component\Mailer\MailerInterface;
-use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Routing\RouterInterface;
+use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 abstract class BaseTestCase extends KernelTestCase
 {
@@ -28,23 +28,23 @@ abstract class BaseTestCase extends KernelTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
-        $this->kernel = self::bootKernel();
+
+        $this->kernel    = self::bootKernel();
         $this->container = static::getContainer();
-        
+
         // Services communs
-        $this->entityManager = $this->container->get(EntityManagerInterface::class);
-        $this->validator = $this->container->get(ValidatorInterface::class);
+        $this->entityManager   = $this->container->get(EntityManagerInterface::class);
+        $this->validator       = $this->container->get(ValidatorInterface::class);
         $this->passwordEncoder = $this->container->get(UserPasswordEncoderInterface::class);
-        $this->mailer = $this->container->get(MailerInterface::class);
-        $this->router = $this->container->get(RouterInterface::class);
-        $this->requestStack = $this->container->get(RequestStack::class);
+        $this->mailer          = $this->container->get(MailerInterface::class);
+        $this->router          = $this->container->get(RouterInterface::class);
+        $this->requestStack    = $this->container->get(RequestStack::class);
     }
 
     protected function tearDown(): void
     {
         parent::tearDown();
-        
+
         // Nettoyage de l'EntityManager
         if ($this->entityManager->isOpen()) {
             $this->entityManager->close();
@@ -52,7 +52,7 @@ abstract class BaseTestCase extends KernelTestCase
     }
 
     /**
-     * Crée un utilisateur de test
+     * Crée un utilisateur de test.
      */
     protected function createTestUser(
         string $email = 'test@example.com',
@@ -62,18 +62,18 @@ abstract class BaseTestCase extends KernelTestCase
         $user = new \App\Entity\User();
         $user->setEmail($email);
         $user->setRoles($roles);
-        
+
         $encodedPassword = $this->passwordEncoder->encodePassword($user, $password);
         $user->setPassword($encodedPassword);
-        
+
         $this->entityManager->persist($user);
         $this->entityManager->flush();
-        
+
         return $user;
     }
 
     /**
-     * Crée un recruteur de test
+     * Crée un recruteur de test.
      */
     protected function createTestRecruiter(
         string $email = 'recruiter@example.com',
@@ -83,18 +83,18 @@ abstract class BaseTestCase extends KernelTestCase
         $recruiter->setEmail($email);
         $recruiter->setCompanyName($companyName);
         $recruiter->setRoles(['ROLE_RECRUITER']);
-        
+
         $encodedPassword = $this->passwordEncoder->encodePassword($recruiter, 'password123');
         $recruiter->setPassword($encodedPassword);
-        
+
         $this->entityManager->persist($recruiter);
         $this->entityManager->flush();
-        
+
         return $recruiter;
     }
 
     /**
-     * Crée un post de test
+     * Crée un post de test.
      */
     protected function createTestPost(
         \App\Entity\User $author,
@@ -103,15 +103,15 @@ abstract class BaseTestCase extends KernelTestCase
         $post = new \App\Entity\Post();
         $post->setContent($content);
         $post->setAuthor($author);
-        
+
         $this->entityManager->persist($post);
         $this->entityManager->flush();
-        
+
         return $post;
     }
 
     /**
-     * Crée une offre d'emploi de test
+     * Crée une offre d'emploi de test.
      */
     protected function createTestJobOffer(
         \App\Entity\Recruiter $recruiter,
@@ -124,15 +124,15 @@ abstract class BaseTestCase extends KernelTestCase
         $jobOffer->setContractType('CDI');
         $jobOffer->setLocation('Paris');
         $jobOffer->setSalary(50000);
-        
+
         $this->entityManager->persist($jobOffer);
         $this->entityManager->flush();
-        
+
         return $jobOffer;
     }
 
     /**
-     * Crée une candidature de test
+     * Crée une candidature de test.
      */
     protected function createTestApplication(
         \App\Entity\User $applicant,
@@ -143,15 +143,15 @@ abstract class BaseTestCase extends KernelTestCase
         $application->setJobOffer($jobOffer);
         $application->setCoverLetter('Test cover letter');
         $application->setResume('test-resume.pdf');
-        
+
         $this->entityManager->persist($application);
         $this->entityManager->flush();
-        
+
         return $application;
     }
 
     /**
-     * Crée une notification de test
+     * Crée une notification de test.
      */
     protected function createTestNotification(
         \App\Entity\User $user,
@@ -162,28 +162,29 @@ abstract class BaseTestCase extends KernelTestCase
         $notification->setUser($user);
         $notification->setTitle($title);
         $notification->setMessage($message);
-        
+
         $this->entityManager->persist($notification);
         $this->entityManager->flush();
-        
+
         return $notification;
     }
 
     /**
-     * Crée un hashtag de test
+     * Crée un hashtag de test.
      */
-    protected function createTestHashtag(string $name = 'test'): \App\Entity\Hashtag {
+    protected function createTestHashtag(string $name = 'test'): \App\Entity\Hashtag
+    {
         $hashtag = new \App\Entity\Hashtag();
         $hashtag->setName($name);
-        
+
         $this->entityManager->persist($hashtag);
         $this->entityManager->flush();
-        
+
         return $hashtag;
     }
 
     /**
-     * Crée une conversation de test
+     * Crée une conversation de test.
      */
     protected function createTestConversation(
         \App\Entity\User $user1,
@@ -192,15 +193,15 @@ abstract class BaseTestCase extends KernelTestCase
         $conversation = new \App\Entity\Conversation();
         $conversation->addParticipant($user1);
         $conversation->addParticipant($user2);
-        
+
         $this->entityManager->persist($conversation);
         $this->entityManager->flush();
-        
+
         return $conversation;
     }
 
     /**
-     * Crée un message de test
+     * Crée un message de test.
      */
     protected function createTestMessage(
         \App\Entity\Conversation $conversation,
@@ -211,15 +212,15 @@ abstract class BaseTestCase extends KernelTestCase
         $message->setConversation($conversation);
         $message->setSender($sender);
         $message->setContent($content);
-        
+
         $this->entityManager->persist($message);
         $this->entityManager->flush();
-        
+
         return $message;
     }
 
     /**
-     * Crée une amitié de test
+     * Crée une amitié de test.
      */
     protected function createTestFriendship(
         \App\Entity\User $sender,
@@ -230,45 +231,45 @@ abstract class BaseTestCase extends KernelTestCase
         $friendship->setSender($sender);
         $friendship->setReceiver($receiver);
         $friendship->setStatus($status);
-        
+
         $this->entityManager->persist($friendship);
         $this->entityManager->flush();
-        
+
         return $friendship;
     }
 
     /**
-     * Crée un entretien de test
+     * Crée un entretien de test.
      */
     protected function createTestInterview(
         \App\Entity\User $candidate,
         \App\Entity\JobOffer $jobOffer,
-        \DateTime $date = null
+        ?\DateTimeImmutable $date = null
     ): \App\Entity\Interview {
         $interview = new \App\Entity\Interview();
         $interview->setCandidate($candidate);
         $interview->setJobOffer($jobOffer);
-        $interview->setDate($date ?? new \DateTime('+1 day'));
+        $interview->setDate($date ?? new \DateTimeImmutable('+1 day'));
         $interview->setType('video');
         $interview->setStatus('scheduled');
-        
+
         $this->entityManager->persist($interview);
         $this->entityManager->flush();
-        
+
         return $interview;
     }
 
     /**
-     * Nettoie la base de données de test
+     * Nettoie la base de données de test.
      */
     protected function cleanDatabase(): void
     {
         $connection = $this->entityManager->getConnection();
-        $platform = $connection->getDatabasePlatform();
-        
+        $platform   = $connection->getDatabasePlatform();
+
         // Désactiver les contraintes de clés étrangères
         $connection->executeStatement('SET FOREIGN_KEY_CHECKS = 0');
-        
+
         // Tables à nettoyer dans l'ordre (pour éviter les contraintes)
         $tables = [
             'message',
@@ -287,9 +288,9 @@ abstract class BaseTestCase extends KernelTestCase
             'recruiter_subscription',
             'subscription',
             'hashtag',
-            'user'
+            'user',
         ];
-        
+
         foreach ($tables as $table) {
             try {
                 $connection->executeStatement($platform->getTruncateTableSQL($table, true));
@@ -297,13 +298,13 @@ abstract class BaseTestCase extends KernelTestCase
                 // Ignorer les erreurs si la table n'existe pas
             }
         }
-        
+
         // Réactiver les contraintes de clés étrangères
         $connection->executeStatement('SET FOREIGN_KEY_CHECKS = 1');
     }
 
     /**
-     * Valide une entité
+     * Valide une entité.
      */
     protected function validateEntity(object $entity): array
     {
@@ -311,7 +312,7 @@ abstract class BaseTestCase extends KernelTestCase
     }
 
     /**
-     * Vérifie si une entité est valide
+     * Vérifie si une entité est valide.
      */
     protected function assertEntityIsValid(object $entity): void
     {
@@ -320,22 +321,22 @@ abstract class BaseTestCase extends KernelTestCase
     }
 
     /**
-     * Vérifie si une entité a des violations spécifiques
+     * Vérifie si une entité a des violations spécifiques.
      */
     protected function assertEntityHasViolations(object $entity, array $expectedViolations): void
     {
-        $violations = $this->validateEntity($entity);
+        $violations       = $this->validateEntity($entity);
         $actualViolations = [];
-        
+
         foreach ($violations as $violation) {
             $actualViolations[] = $violation->getPropertyPath() . ': ' . $violation->getMessage();
         }
-        
-        $this->assertEquals($expectedViolations, $actualViolations);
+
+        $this->assertSame($expectedViolations, $actualViolations);
     }
 
     /**
-     * Génère un email unique pour les tests
+     * Génère un email unique pour les tests.
      */
     protected function generateUniqueEmail(): string
     {
@@ -343,10 +344,10 @@ abstract class BaseTestCase extends KernelTestCase
     }
 
     /**
-     * Génère un nom unique pour les tests
+     * Génère un nom unique pour les tests.
      */
     protected function generateUniqueName(): string
     {
         return 'Test_' . uniqid();
     }
-} 
+}

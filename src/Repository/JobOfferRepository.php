@@ -7,22 +7,30 @@ namespace App\Repository;
 use App\Entity\JobOffer;
 use App\Entity\User;
 use App\Repository\Trait\FlushTrait;
+use DateTime;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\Query\QueryException;
 use Doctrine\Persistence\ManagerRegistry;
-use Doctrine\ORM\QueryBuilder;
-use DateTime;
 
 /**
  * @extends ServiceEntityRepository<JobOffer>
  *
- * @method JobOffer|null find($id, $lockMode = null, $lockVersion = null)
- * @method JobOffer|null findOneBy(array $criteria, array $orderBy = null)
+ * @method null|JobOffer find($id, $lockMode = null, $lockVersion = null)
+ * @method null|JobOffer findOneBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null
+ * )
  * @method JobOffer[]    findAll()
- * @method JobOffer[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method JobOffer[]    findBy(
+ *     array<string, mixed> $criteria,
+ *     array<string, string> $orderBy = null,
+ *     int $limit = null,
+ *     int $offset = null
+ * )
  */
 class JobOfferRepository extends ServiceEntityRepository
 {
+    /** @use FlushTrait<JobOffer> */
     use FlushTrait;
 
     public function __construct(ManagerRegistry $registry)
@@ -61,6 +69,7 @@ class JobOfferRepository extends ServiceEntityRepository
 
     /**
      * @param array<string, mixed> $filters
+     *
      * @return array<int, JobOffer>
      */
     public function searchOffers(?string $query = null, array $filters = []): array
@@ -113,70 +122,20 @@ class JobOfferRepository extends ServiceEntityRepository
 
         $parameters = [
             'currentId' => $jobOffer->getId(),
-            'active' => true,
-            'now' => new DateTime()
+            'active'    => true,
+            'now'       => new DateTime(),
         ];
 
         $conditions = $this->buildSimilarityConditions($jobOffer, $parameters);
-        $scoreExpr = implode(' + ', $conditions);
+        $scoreExpr  = implode(' + ', $conditions);
 
         $queryBuilder->select('j, (' . $scoreExpr . ') as HIDDEN score')
-           ->setParameters($parameters)
-           ->orderBy('score', 'DESC')
-           ->addOrderBy('j.createdAt', 'DESC')
-           ->setMaxResults($limit);
+            ->setParameters($parameters)
+            ->orderBy('score', 'DESC')
+            ->addOrderBy('j.createdAt', 'DESC')
+            ->setMaxResults($limit);
 
         return $queryBuilder->getQuery()->getResult();
-    }
-
-    /**
-     * @param array<string, mixed> $parameters
-     * @return string[]
-     */
-    private function buildSimilarityConditions(JobOffer $jobOffer, array &$parameters): array
-    {
-        $conditions = [];
-
-        if ($jobOffer->getContractType()) {
-            $conditions[] = 'CASE WHEN j.contractType = :contractType THEN 2 ELSE 0 END';
-            $parameters['contractType'] = $jobOffer->getContractType();
-        }
-
-        if ($jobOffer->getLocation()) {
-            $conditions[] = 'CASE WHEN j.location = :location THEN 2 ELSE 0 END';
-            $parameters['location'] = $jobOffer->getLocation();
-        }
-
-        if ($jobOffer->getSalary()) {
-            $conditions[] = 'CASE WHEN ABS(j.salary - :salary) <= 5000 THEN 1 ELSE 0 END';
-            $parameters['salary'] = $jobOffer->getSalary();
-        }
-
-        if ($jobOffer->getTitle() && $jobOffer->getDescription()) {
-            $this->addKeywordConditions($jobOffer, $conditions, $parameters);
-        }
-
-        return empty($conditions) ? ['0'] : $conditions;
-    }
-
-    /**
-     * @param string[] $conditions
-     * @param array<string, mixed> $parameters
-     */
-    private function addKeywordConditions(JobOffer $jobOffer, array &$conditions, array &$parameters): void
-    {
-        $titleWords = explode(' ', strtolower($jobOffer->getTitle()));
-        $descriptionWords = explode(' ', strtolower($jobOffer->getDescription()));
-        $keywords = array_unique(array_merge($titleWords, $descriptionWords));
-
-        foreach ($keywords as $index => $keyword) {
-            if (strlen($keyword) > 3) {
-                $conditions[] =
-                    "CASE WHEN LOWER(j.title) LIKE :keyword{$index} OR " .
-                    "LOWER(j.description) LIKE :keyword{$index} THEN 3 ELSE 0 END";
-                $parameters["keyword{$index}"] = '%' . strtolower($keyword) . '%';
-            }
-        }
     }
 
     /**
@@ -210,8 +169,11 @@ class JobOfferRepository extends ServiceEntityRepository
         return (int) $result;
     }
 
-    public function countJobOffersByUserAndDateRange(User $user, DateTime $startDate, DateTime $endDate): int
-    {
+    public function countJobOffersByUserAndDateRange(
+        User $user,
+        \DateTimeImmutable $startDate,
+        \DateTimeImmutable $endDate
+    ): int {
         $result = $this->createQueryBuilder('j')
             ->select('COUNT(j.id)')
             ->where('j.recruiter = :user')
@@ -223,5 +185,90 @@ class JobOfferRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
 
         return (int) $result;
+    }
+
+    public function searchByLocationAndContractType(?string $location, ?string $contractType): array
+    {
+        $qb = $this->createQueryBuilder('jo');
+
+        if ($location !== null && $location !== '') {
+            $qb->andWhere('LOWER(jo.location) LIKE LOWER(:location)')
+                ->setParameter('location', '%' . $location . '%');
+        }
+
+        if ($contractType !== null && $contractType !== '') {
+            $qb->andWhere('LOWER(jo.contractType) LIKE LOWER(:contractType)')
+                ->setParameter('contractType', '%' . $contractType . '%');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * @param array<string, mixed> $parameters
+     *
+     * @return string[]
+     */
+    private function buildSimilarityConditions(JobOffer $jobOffer, array &$parameters): array
+    {
+        $conditions = [];
+
+        if ($jobOffer->getContractType()) {
+            $conditions[]               = 'CASE WHEN j.contractType = :contractType THEN 2 ELSE 0 END';
+            $parameters['contractType'] = $jobOffer->getContractType();
+        }
+
+        if ($jobOffer->getLocation()) {
+            $conditions[]           = 'CASE WHEN j.location = :location THEN 2 ELSE 0 END';
+            $parameters['location'] = $jobOffer->getLocation();
+        }
+
+        if ($jobOffer->getSalary()) {
+            $conditions[]         = 'CASE WHEN ABS(j.salary - :salary) <= 5000 THEN 1 ELSE 0 END';
+            $parameters['salary'] = $jobOffer->getSalary();
+        }
+
+        if ($jobOffer->getTitle() && $jobOffer->getDescription()) {
+            $this->addKeywordConditions($jobOffer, $conditions, $parameters);
+        }
+
+        return empty($conditions) ? ['0'] : $conditions;
+    }
+
+    /**
+     * @param string[] $conditions
+     * @param array<string, mixed> $parameters
+     */
+    private function addKeywordConditions(JobOffer $jobOffer, array &$conditions, array &$parameters): void
+    {
+        $titleWords       = explode(' ', strtolower($jobOffer->getTitle()));
+        $descriptionWords = explode(' ', strtolower($jobOffer->getDescription()));
+        $keywords         = array_unique(array_merge($titleWords, $descriptionWords));
+
+        foreach ($keywords as $index => $keyword) {
+            if (\strlen($keyword) > 3) {
+                $conditions[] = "CASE WHEN LOWER(j.title) LIKE :keyword{$index} OR " .
+                    "LOWER(j.description) LIKE :keyword{$index} THEN 3 ELSE 0 END";
+                $parameters["keyword{$index}"] = '%' . strtolower($keyword) . '%';
+            }
+        }
+    }
+
+    private function normalizeLocation(?string $location): string
+    {
+        if ($location === null) {
+            return '';
+        }
+
+        return strtolower(trim($location));
+    }
+
+    private function normalizeContractType(?string $contractType): string
+    {
+        if ($contractType === null) {
+            return '';
+        }
+
+        return strtolower(trim($contractType));
     }
 }

@@ -5,19 +5,18 @@ declare(strict_types=1);
 namespace App\Service\Post;
 
 use App\Entity\User;
-use DateTimeInterface;
 
 class PostSearchCriteria
 {
-    public const TYPE_SEARCH = 'search';
-    public const TYPE_FEED = 'feed';
+    public const TYPE_SEARCH   = 'search';
+    public const TYPE_FEED     = 'feed';
     public const TYPE_HASHTAGS = 'hashtags';
     public const TYPE_MENTIONS = 'mentions';
 
     private string $type;
-    private ?string $query = null;
-    private ?User $user = null;
-    private ?DateTimeInterface $fromDate = null;
+    private ?string $query                = null;
+    private ?User $user                   = null;
+    private ?\DateTimeInterface $fromDate = null;
 
     private function __construct(string $type)
     {
@@ -26,29 +25,33 @@ class PostSearchCriteria
 
     public static function forSearch(string $query): self
     {
-        $criteria = new self(self::TYPE_SEARCH);
+        $criteria        = new self(self::TYPE_SEARCH);
         $criteria->query = $query;
+
         return $criteria;
     }
 
     public static function forFeed(User $user): self
     {
-        $criteria = new self(self::TYPE_FEED);
+        $criteria       = new self(self::TYPE_FEED);
         $criteria->user = $user;
+
         return $criteria;
     }
 
-    public static function forHashtags(DateTimeInterface $fromDate): self
+    public static function forHashtags(\DateTimeInterface $fromDate): self
     {
-        $criteria = new self(self::TYPE_HASHTAGS);
+        $criteria           = new self(self::TYPE_HASHTAGS);
         $criteria->fromDate = $fromDate;
+
         return $criteria;
     }
 
     public static function forMentions(User $user): self
     {
-        $criteria = new self(self::TYPE_MENTIONS);
+        $criteria       = new self(self::TYPE_MENTIONS);
         $criteria->user = $user;
+
         return $criteria;
     }
 
@@ -67,7 +70,7 @@ class PostSearchCriteria
         return $this->user;
     }
 
-    public function getFromDate(): ?DateTimeInterface
+    public function getFromDate(): ?\DateTimeInterface
     {
         return $this->fromDate;
     }

@@ -227,8 +227,52 @@
                             {% if subscription.price == 0 %}Gratuit{% else %}Tout ce dont vous avez besoin{% endif %}
                         </p>
                         <ul class="list-unstyled mt-3 mb-4 text-start">
+                            {% set displayed_features = [] %}
                             {% for feature in subscription.features %}
-                                <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>{{ feature }}</li>
+                                {# Vérifier si la fonctionnalité n'a pas déjà été affichée #}
+                                {% if feature not in displayed_features %}
+                                    <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>
+                                        {% if feature == 'post_job_offer' %}
+                                            {% if subscription.name|lower == 'basic' %}
+                                                Publication de 3 offres d'emploi maximum
+                                            {% else %}
+                                                Publication d'offres d'emploi
+                                            {% endif %}
+                                        {% elseif feature == 'basic_applications' %}
+                                            Accès aux candidatures de base
+                                        {% elseif feature == 'limited_messaging' %}
+                                            Messagerie limitée avec les candidats
+                                        {% elseif feature == 'standard_profile' %}
+                                            Profil standard d'entreprise
+                                        {% elseif feature == 'unlimited_job_offers' %}
+                                            Offres d'emploi illimitées
+                                        {% elseif feature == 'highlighted_offers' %}
+                                            Mise en avant de vos offres
+                                        {% elseif feature == 'full_cv_access' %}
+                                            Accès complet aux CV des candidats
+                                        {% elseif feature == 'unlimited_messaging' %}
+                                            Messagerie illimitée
+                                        {% elseif feature == 'basic_statistics' %}
+                                            Statistiques de base sur vos offres
+                                        {% elseif feature == 'enhanced_profile' %}
+                                            Profil entreprise amélioré
+                                        {% elseif feature == 'advanced_candidate_search' %}
+                                            Recherche avancée de candidats
+                                        {% elseif feature == 'automatic_recommendations' %}
+                                            Recommandations automatiques
+                                        {% elseif feature == 'detailed_statistics' %}
+                                            Statistiques détaillées
+                                        {% elseif feature == 'verified_badge' %}
+                                            Badge "Entreprise vérifiée"
+                                        {% elseif feature == 'priority_support' %}
+                                            Support prioritaire
+                                        {% else %}
+                                            {{ feature }}
+                                        {% endif %}
+                                    </li>
+                                    {# Marquer cette fonctionnalité comme affichée #}
+                                    {% set displayed_features = displayed_features|merge([feature]) %}
+                                {% endif %}
                             {% endfor %}
                         </ul>
                         <div class="mt-auto">

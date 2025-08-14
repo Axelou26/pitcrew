@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\User;
-use App\Repository\RecruiterSubscriptionRepository;
-use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Stripe\Event;
 use Stripe\StripeClient;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
@@ -18,24 +17,31 @@ class StripeWebhookHandler
 {
     private string $webhookSecret;
     private StripeClient $stripe;
+    private EntityManagerInterface $entityManager;
+    private SubscriptionService $subscriptionService;
+    private EmailService $emailService;
+    private LoggerInterface $logger;
 
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly RecruiterSubscriptionRepository $recruiterSubRepo,
-        private readonly StripeService $stripeService,
-        private readonly EmailService $emailService,
-        private readonly UserRepository $userRepository,
+        EntityManagerInterface $entityManager,
+        SubscriptionService $subscriptionService,
+        EmailService $emailService,
+        LoggerInterface $logger,
         ParameterBagInterface $params,
         string $webhookSecret,
         StripeClient $stripe
     ) {
-        $this->webhookSecret = $webhookSecret;
-        $this->stripe = $stripe;
+        $this->entityManager       = $entityManager;
+        $this->subscriptionService = $subscriptionService;
+        $this->emailService        = $emailService;
+        $this->logger              = $logger;
+        $this->webhookSecret       = $webhookSecret;
+        $this->stripe              = $stripe;
     }
 
     public function constructEvent(Request $request): Event
     {
-        $payload = $request->getContent();
+        $payload   = $request->getContent();
         $sigHeader = $request->headers->get('Stripe-Signature');
 
         if ($sigHeader === null) {
@@ -61,67 +67,100 @@ class StripeWebhookHandler
         }
     }
 
-    private function handleCheckoutSessionCompleted(array $data): void
+    /**
+     * Gère l'événement checkout.session.completed.
+     *
+     * @param array<string, mixed> $data
+     */
+    public function handleCheckoutSessionCompleted(array $data): void
     {
-        $this->stripeService->handlePaymentSucceeded($data);
+        $this->subscriptionService->handlePaymentSucceeded($data);
     }
 
-    private function handleInvoicePaymentSucceeded(array $data): void
+    /**
+     * Gère l'événement invoice.payment_succeeded.
+     *
+     * @param array<string, mixed> $data
+     */
+    public function handleInvoicePaymentSucceeded(array $data): void
     {
-        $invoice = $data['object'];
-        $subId = $invoice['subscription'];
-        $customerId = $invoice['customer'];
+        $subscription = $this->subscriptionService->findByStripeSubscriptionId($data['subscription'] ?? '');
 
-        $user = $this->findUserByStripeId($customerId);
-        if (!$user) {
+        if ($subscription === null) {
+            $this->logger->warning(
+                'Subscription not found for Stripe subscription ID: ' . ($data['subscription'] ?? '')
+            );
+
             return;
         }
 
-        $sub = $this->recruiterSubRepo->findOneBy(['stripeSubscriptionId' => $subId]);
-        if (!$sub) {
+        $recruiter = $subscription->getRecruiter();
+        if ($recruiter === null) {
+            $this->logger->warning('Recruiter not found for subscription: ' . $subscription->getId());
+
             return;
         }
 
-        $newEndDate = clone $sub->getEndDate();
-        $newEndDate->modify('+' . $sub->getSubscription()->getDuration() . ' days');
-        $sub->setEndDate($newEndDate)
-            ->setIsActive(true)
-            ->setCancelled(false);
+        // Mettre à jour la date de fin de l'abonnement
+        $startDate = $subscription->getStartDate();
+        if ($startDate === null) {
+            $this->logger->warning('Subscription start date is null for subscription: ' . $subscription->getId());
 
-        $this->entityManager->persist($sub);
+            return;
+        }
+
+        $duration = $subscription->getDuration();
+        if ($duration === null) {
+            $this->logger->warning('Subscription duration is null for subscription: ' . $subscription->getId());
+
+            return;
+        }
+
+        $endDate = clone $startDate;
+        $endDate->modify('+' . $duration . ' months');
+
+        $recruiter->setEndDate($endDate);
+        $this->entityManager->flush();
+    }
+
+    /**
+     * Gère l'événement customer.subscription.deleted.
+     *
+     * @param array<string, mixed> $data
+     */
+    public function handleCustomerSubscriptionDeleted(array $data): void
+    {
+        $subscription = $this->subscriptionService->findByStripeSubscriptionId($data['id'] ?? '');
+
+        if ($subscription === null) {
+            $this->logger->warning('Subscription not found for Stripe subscription ID: ' . ($data['id'] ?? ''));
+
+            return;
+        }
+
+        $recruiter = $subscription->getRecruiter();
+        if ($recruiter === null) {
+            $this->logger->warning('Recruiter not found for subscription: ' . $subscription->getId());
+
+            return;
+        }
+
+        // Désactiver l'abonnement
+        $recruiter->setIsActive(false);
         $this->entityManager->flush();
 
-        $this->emailService->sendSubscriptionConfirmation($user, $sub);
+        // Envoyer un email de confirmation
+        $this->emailService->sendSubscriptionCancellationConfirmation($recruiter, 'Votre abonnement a été annulé');
     }
 
-    private function handleCustomerSubscriptionDeleted(array $data): void
+    /**
+     * Gère l'événement payment_intent.payment_failed.
+     *
+     * @param array<string, mixed> $data
+     */
+    public function handlePaymentIntentPaymentFailed(array $data): void
     {
-        $stripeSub = $data['object'];
-        $subId = $stripeSub['id'];
-
-        $sub = $this->recruiterSubRepo->findOneBy(['stripeSubscriptionId' => $subId]);
-        if (!$sub) {
-            return;
-        }
-
-        $sub->setCancelled(true)
-            ->setAutoRenew(false);
-
-        $this->entityManager->persist($sub);
-        $this->entityManager->flush();
-
-        $this->emailService->sendSubscriptionCancellationConfirmation($sub->getRecruiter(), $sub);
-    }
-
-    private function handlePaymentIntentPaymentFailed(array $data): void
-    {
-        $paymentIntent = $data['object'];
-        $customerId = $paymentIntent['customer'];
-
-        $user = $this->findUserByStripeId($customerId);
-        if ($user) {
-            $this->emailService->sendPaymentFailedNotification($user);
-        }
+        $this->emailService->sendPaymentFailedNotification($data['customer'] ?? '', $data['amount'] ?? 0);
     }
 
     private function findUserByStripeId(string $stripeCustomerId): ?User

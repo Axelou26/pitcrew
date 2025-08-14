@@ -16,7 +16,7 @@
                                 {{ form_label(form.content) }}
                                 <div class="position-relative">
                                     {{ form_widget(form.content, {'attr': {'class': 'form-control mention-input'}}) }}
-                                    <div id="mention-suggestions" class="mention-suggestions"></div>
+                                    <div class="mention-suggestions suggestion-container"></div>
                                 </div>
                                 {{ form_errors(form.content) }}
                                 <small class="text-muted">Utilisez @ pour mentionner un utilisateur et # pour un hashtag</small>
