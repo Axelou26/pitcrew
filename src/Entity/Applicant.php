@@ -42,12 +42,7 @@ class Applicant extends User
     #[ORM\Column(type: 'json', nullable: true)]
     private array $workExperience = [];
 
-    /**
-     * @var Collection<int, JobOffer>
-     */
-    #[ORM\ManyToMany(targetEntity: JobOffer::class)]
-    #[ORM\JoinTable(name: 'applicant_job_offer')]
-    private Collection $favoriteOffers;
+
 
     /**
      * @var Collection<int, JobApplication>
@@ -70,7 +65,6 @@ class Applicant extends User
     public function __construct()
     {
         parent::__construct();
-        $this->favoriteOffers  = new ArrayCollection();
         $this->jobApplications = new ArrayCollection();
         $this->setRoles(['ROLE_POSTULANT']);
         $this->technicalSkills  = [];
@@ -176,43 +170,7 @@ class Applicant extends User
         return $this;
     }
 
-    /**
-     * @return Collection<int, JobOffer>
-     */
-    public function getFavoriteOffers(): Collection
-    {
-        if (!isset($this->favoriteOffers)) {
-            $this->favoriteOffers = new ArrayCollection();
-        }
-        return $this->favoriteOffers;
-    }
 
-    public function addFavoriteOffer(JobOffer $jobOffer): static
-    {
-        if (!isset($this->favoriteOffers)) {
-            $this->favoriteOffers = new ArrayCollection();
-        }
-
-        if (!$this->favoriteOffers->contains($jobOffer)) {
-            $this->favoriteOffers->add($jobOffer);
-        }
-
-        return $this;
-    }
-
-    public function removeFavoriteOffer(JobOffer $jobOffer): static
-    {
-        if (isset($this->favoriteOffers)) {
-            $this->favoriteOffers->removeElement($jobOffer);
-        }
-
-        return $this;
-    }
-
-    public function hasJobOfferInFavorites(JobOffer $jobOffer): bool
-    {
-        return isset($this->favoriteOffers) && $this->favoriteOffers->contains($jobOffer);
-    }
 
     /**
      * @return Collection<int, JobApplication>

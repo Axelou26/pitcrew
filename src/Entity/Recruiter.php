@@ -44,14 +44,11 @@ class Recruiter extends User
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $location = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $city = null;
 
-    #[ORM\Column(type: 'text', nullable: true)]
-    private ?string $bio = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $jobTitle = null;
+
+
+
 
     /**
      * @var Collection<int, Applicant>
@@ -232,41 +229,11 @@ class Recruiter extends User
 
     // Méthodes manquantes ajoutées pour PHPStan
 
-    public function setCity(?string $city): static
-    {
-        $this->city = $city;
 
-        return $this;
-    }
 
-    public function getCity(): ?string
-    {
-        return $this->city ?? null;
-    }
 
-    public function setBio(?string $bio): static
-    {
-        $this->bio = $bio;
 
-        return $this;
-    }
 
-    public function getBio(): ?string
-    {
-        return $this->bio ?? null;
-    }
-
-    public function setJobTitle(?string $jobTitle): static
-    {
-        $this->jobTitle = $jobTitle;
-
-        return $this;
-    }
-
-    public function getJobTitle(): ?string
-    {
-        return $this->jobTitle ?? null;
-    }
 
     public function getJobOffers(): Collection
     {
