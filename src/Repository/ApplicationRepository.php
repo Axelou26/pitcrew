@@ -165,7 +165,7 @@ class ApplicationRepository extends ServiceEntityRepository
     public function findRecentApplications(User $recruiter, int $days = 7): array
     {
         $date = new DateTimeImmutable();
-        $date->modify('-' . $days . ' days');
+        $date = $date->modify('-' . $days . ' days');
 
         return $this->createQueryBuilder('a')
             ->join('a.jobOffer', 'j')

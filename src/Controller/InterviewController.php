@@ -427,7 +427,7 @@ class InterviewController extends AbstractController
 
         while ($currentDate < $endDateTime) {
             $slots[] = clone $currentDate;
-            $currentDate->modify("+{$durationMinutes} minutes");
+            $currentDate = $currentDate->modify("+{$durationMinutes} minutes");
         }
 
         return $slots;
